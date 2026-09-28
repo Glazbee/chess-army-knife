@@ -42,6 +42,7 @@ class Chess_Army_Knife_Templates {
 			'biggest-gainers'    => __( 'ECF Biggest Rating Gainers', 'chess-army-knife' ),
 			'featured-player'    => __( 'ECF Featured Player', 'chess-army-knife' ),
 			'tournament-status'  => __( 'Tournament Status', 'chess-army-knife' ),
+			'tournament-players' => __( 'Tournament Players', 'chess-army-knife' ),
 			'tournament-games'   => __( 'Tournament Games to Play', 'chess-army-knife' ),
 			'tournament-winners' => __( 'Tournament Past Winners', 'chess-army-knife' ),
 		);

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "chess-army-knife/tournament-players",
+  "title": "Tournament Players",
+  "category": "widgets",
+  "icon": "groups",
+  "description": "List the players in a tournament with their ECF codes and ratings.",
+  "keywords": [
+    "chess",
+    "tournament",
+    "players",
+    "ratings",
+    "entrants"
+  ],
+  "version": "0.0.1",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "tournamentId": {
+      "type": "number",
+      "default": 0
+    },
+    "templateId": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

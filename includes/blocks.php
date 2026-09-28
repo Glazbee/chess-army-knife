@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 function Chess_Army_Knife_register() {
 	$blocks_dir = Chess_Army_Knife_DIR . 'build/';
 
-	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-results', 'tournament-status', 'tournament-games', 'tournament-winners' ) as $block ) {
+	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-results', 'tournament-status', 'tournament-players', 'tournament-games', 'tournament-winners' ) as $block ) {
 		$path = $blocks_dir . $block;
 		if ( file_exists( $path . '/block.json' ) ) {
 			register_block_type( $path );

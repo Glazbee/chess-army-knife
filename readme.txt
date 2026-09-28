@@ -12,7 +12,7 @@ Three Gutenberg blocks for English chess clubs: ECF rating history charts, club 
 
 == Description ==
 
-This plugin adds nine blocks to the WordPress block editor, pulling live data from:
+This plugin adds ten blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -29,6 +29,7 @@ This plugin adds nine blocks to the WordPress block editor, pulling live data fr
 7. **Tournament Status** — where a tournament stands: status, format, players, current round (Swiss), games played and the winner.
 8. **Tournament Games to Play** — the games in a tournament that still have no result, grouped by round.
 9. **Tournament Past Winners** — the winners of completed tournaments, most recent first.
+10. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
 
 **Global defaults**
 
@@ -70,6 +71,10 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: choosing players for a tournament is much quicker. A scrolling, filterable list of saved players lets you tick several at once; a search of the ECF list by name fills in the ECF code and saves the player as you go; players without a code can be added by hand. The same control is on the create-tournament form, so players can be added when the tournament is created. The Players page also searches the ECF list to fill in the name and code.
+* Added: "Create a page for this tournament" on a tournament. It makes a draft page showing the tournament status, its players with their ratings, and the games still to play, for everyone at the event. New Tournament Players block for the list of players.
+* Changed: the create-tournament form only shows the settings that apply to the chosen format (rounds and initial colour for Swiss; double round-robin, groups and the knockout stage for round-robin), and the players advancing setting only appears once the knockout stage is switched on.
+* Changed: a manual player rating must now be 1300 or higher, and the Players page makes clear that the ECF code is preferred and the manual rating is only for players without one.
 * Added: Swiss requested byes. A player who cannot play a round can be given a half-point or zero-point bye before that round is paired (Tournaments, Requested byes). They sit the round out and are left out of the pairing.
 * Added: Swiss initial colour setting (white or black), the colour given to the top seed of the first pairing.
 * Changed: Swiss Buchholz now treats byes, forfeits and rounds a player missed as a virtual opponent, as in the FIDE Tie-Break Regulations, instead of ignoring them.

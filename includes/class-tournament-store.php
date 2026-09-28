@@ -144,6 +144,20 @@ class Chess_Army_Knife_Tournament_Store {
 	}
 
 	/**
+	 * The saved player profile with an ECF rating code, if any.
+	 *
+	 * @param string $code ECF rating code.
+	 * @return array|null
+	 */
+	public static function find_player_by_code( $code ) {
+		global $wpdb;
+		$table = self::table( 'players' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE ecf_code = %s ORDER BY id ASC LIMIT 1", (string) $code ), ARRAY_A );
+		return $row ? self::cast_player( $row ) : null;
+	}
+
+	/**
 	 * Insert or update a player profile.
 	 *
 	 * @param array $data name, ecf_code, manual_rating (int|null), and optionally id.

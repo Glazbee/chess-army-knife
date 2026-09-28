@@ -12,6 +12,9 @@ class Chess_Army_Knife_Players_Page {
 
 	const SLUG = 'chess-army-knife-players';
 
+	/** The lowest rating that can be entered by hand. */
+	const MIN_MANUAL_RATING = 1300;
+
 	/**
 	 * Boot the admin page and its form handlers.
 	 */
@@ -52,8 +55,8 @@ class Chess_Army_Knife_Players_Page {
 		$rating = null;
 		if ( isset( $input['manual_rating'] ) && '' !== trim( (string) $input['manual_rating'] ) ) {
 			$rating = (int) $input['manual_rating'];
-			if ( $rating < 0 || $rating > 4000 ) {
-				return new WP_Error( 'player_rating', __( 'Rating must be between 0 and 4000.', 'chess-army-knife' ) );
+			if ( $rating < self::MIN_MANUAL_RATING || $rating > 4000 ) {
+				return new WP_Error( 'player_rating', self::rating_message() );
 			}
 		}
 
@@ -65,6 +68,16 @@ class Chess_Army_Knife_Players_Page {
 	}
 
 	/**
+	 * The message for a manual rating that is out of range.
+	 *
+	 * @return string
+	 */
+	protected static function rating_message() {
+		/* translators: 1: lowest manual rating, 2: highest manual rating */
+		return sprintf( __( 'A manual rating must be between %1$d and %2$d.', 'chess-army-knife' ), self::MIN_MANUAL_RATING, 4000 );
+	}
+
+	/**
 	 * Human-readable message for an error code passed back in the URL.
 	 *
 	 * @param string $code Error code from sanitize_player().
@@ -73,7 +86,7 @@ class Chess_Army_Knife_Players_Page {
 	protected static function error_message( $code ) {
 		$messages = array(
 			'player_name'   => __( 'Please enter a name.', 'chess-army-knife' ),
-			'player_rating' => __( 'Rating must be between 0 and 4000.', 'chess-army-knife' ),
+			'player_rating' => self::rating_message(),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : __( 'Something went wrong.', 'chess-army-knife' );
 	}
@@ -137,7 +150,7 @@ class Chess_Army_Knife_Players_Page {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h1>
 			<p class="description">
-				<?php esc_html_e( 'Saved player profiles for tournaments. With an ECF rating code, the current ECF rating is fetched when a tournament starts and used for seeding. Without one, the manual rating is used.', 'chess-army-knife' ); ?>
+				<?php esc_html_e( 'Saved player profiles for tournaments. With an ECF rating code, the current ECF rating is fetched when a tournament starts and used for seeding; a manual rating is only used for players without one.', 'chess-army-knife' ); ?>
 			</p>
 
 			<?php // phpcs:disable WordPress.Security.NonceVerification.Recommended ?>
@@ -215,6 +228,15 @@ class Chess_Army_Knife_Players_Page {
 				<?php wp_nonce_field( 'chess_army_knife_save_player' ); ?>
 				<table class="form-table" role="presentation">
 					<tr>
+						<th scope="row"><label for="cak-ecf-search"><?php esc_html_e( 'Find on the ECF list', 'chess-army-knife' ); ?></label></th>
+						<td data-cak-fill>
+							<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a surname…', 'chess-army-knife' ); ?>" />
+							<span class="spinner" data-cak-spinner></span>
+							<ul class="cak-selector__results" data-cak-results></ul>
+							<p class="description"><?php esc_html_e( 'Choose a player to fill in their name and ECF rating code.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
 						<th scope="row"><label for="name"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></label></th>
 						<td><input type="text" id="name" name="name" class="regular-text" value="<?php echo esc_attr( $editing ? $editing['name'] : '' ); ?>" required /></td>
 					</tr>
@@ -222,14 +244,19 @@ class Chess_Army_Knife_Players_Page {
 						<th scope="row"><label for="ecf_code"><?php esc_html_e( 'ECF rating code', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="text" id="ecf_code" name="ecf_code" class="regular-text" placeholder="e.g. 120787J" value="<?php echo esc_attr( $editing ? $editing['ecf_code'] : '' ); ?>" />
-							<p class="description"><?php esc_html_e( 'Optional. Used to fetch the live ECF rating when a tournament starts.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Preferred. Used to fetch the live ECF rating when a tournament starts.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="manual_rating"><?php esc_html_e( 'Manual rating', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="number" id="manual_rating" name="manual_rating" min="0" max="4000" value="<?php echo esc_attr( $editing && null !== $editing['manual_rating'] ? $editing['manual_rating'] : '' ); ?>" />
-							<p class="description"><?php esc_html_e( 'Optional. Used for seeding when there is no ECF code or the ECF rating cannot be found.', 'chess-army-knife' ); ?></p>
+							<input type="number" id="manual_rating" name="manual_rating" min="<?php echo esc_attr( self::MIN_MANUAL_RATING ); ?>" max="4000" value="<?php echo esc_attr( $editing && null !== $editing['manual_rating'] ? $editing['manual_rating'] : '' ); ?>" />
+							<p class="description">
+								<?php
+								/* translators: %d: lowest manual rating */
+								echo esc_html( sprintf( __( 'Only for players without an ECF code. A rating of %d or higher must be entered. Used for seeding when there is no code or the ECF rating cannot be found.', 'chess-army-knife' ), self::MIN_MANUAL_RATING ) );
+								?>
+							</p>
 						</td>
 					</tr>
 				</table>

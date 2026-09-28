@@ -241,6 +241,85 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 		);
 	}
 
+	public function test_a_manual_rating_must_be_1300_or_higher() {
+		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
+
+		$below = Chess_Army_Knife_Players_Page::sanitize_player(
+			array(
+				'name'          => 'A',
+				'manual_rating' => '1299',
+			)
+		);
+		$this->assertSame( 'player_rating', $below->get_error_code() );
+		$this->assertStringContainsString( '1300', $below->get_error_message() );
+
+		$this->assertSame(
+			1300,
+			Chess_Army_Knife_Players_Page::sanitize_player(
+				array(
+					'name'          => 'A',
+					'manual_rating' => '1300',
+				)
+			)['manual_rating']
+		);
+	}
+
+	public function test_new_players_from_the_selector_are_cleaned_and_deduplicated() {
+		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
+
+		$parsed = Chess_Army_Knife_Player_Selector::parse_new_players(
+			array(
+				array(
+					'name'     => 'Alice',
+					'ecf_code' => '120787j',
+				),
+				array(
+					'name'     => 'Alice again',
+					'ecf_code' => '120787J',
+				),
+				array(
+					'name'          => 'Bob',
+					'ecf_code'      => '',
+					'manual_rating' => '1450',
+				),
+				array(
+					'name'          => 'Cy',
+					'manual_rating' => '900',
+				),
+				'not a player',
+				array( 'name' => '  ' ),
+			)
+		);
+
+		$this->assertSame( array( 'Alice', 'Bob' ), array_column( $parsed['players'], 'name' ) );
+		$this->assertSame( 1450, $parsed['players'][1]['manual_rating'] );
+		$this->assertCount( 2, $parsed['errors'] ); // Cy's rating and the blank name.
+		$this->assertSame( array(), Chess_Army_Knife_Player_Selector::parse_new_players( 'nonsense' )['players'] );
+	}
+
+	public function test_a_tournament_page_shows_status_players_and_games() {
+		$content = Chess_Army_Knife_Tournaments::page_content( 7 );
+
+		foreach ( array( 'tournament-status', 'tournament-players', 'tournament-games' ) as $block ) {
+			$this->assertStringContainsString( '<!-- wp:chess-army-knife/' . $block . ' {"tournamentId":7} /-->', $content );
+		}
+	}
+
+	public function test_rating_from_data_picks_the_first_usable_rating() {
+		$this->assertSame( 1720, Chess_Army_Knife_Tournaments::rating_from_data( array( 'revised_rating' => '1720' ) ) );
+		$this->assertSame(
+			1650,
+			Chess_Army_Knife_Tournaments::rating_from_data(
+				array(
+					'revised_rating'  => 0,
+					'original_rating' => 1650,
+				)
+			)
+		);
+		$this->assertNull( Chess_Army_Knife_Tournaments::rating_from_data( array( 'revised_rating' => 'none' ) ) );
+		$this->assertNull( Chess_Army_Knife_Tournaments::rating_from_data( new WP_Error( 'x', 'y' ) ) );
+	}
+
 	public function test_points_are_formatted_with_halves() {
 		$this->assertSame( '0', Chess_Army_Knife_Tournaments_Page::format_points( 0.0 ) );
 		$this->assertSame( '½', Chess_Army_Knife_Tournaments_Page::format_points( 0.5 ) );
