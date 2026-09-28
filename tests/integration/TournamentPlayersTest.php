@@ -75,7 +75,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 		$cy = Chess_Army_Knife_Tournament_Store::find_player_by_code( '555555K' );
 		$this->assertSame( 'Cy From ECF', $cy['name'] );
-		$this->assertCount( 5, Chess_Army_Knife_Tournament_Store::get_players() ); // Alice, Bob, Cy, Di, plus none for the duplicate.
+		$this->assertCount( 4, Chess_Army_Knife_Tournament_Store::get_players() ); // Alice, Bob, Cy and Di: the duplicate Alice reuses her profile.
 	}
 
 	public function test_invalid_new_players_are_reported_and_the_rest_are_still_added() {
