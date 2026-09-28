@@ -17,7 +17,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
-		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round' ) as $action ) {
+		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -85,13 +85,14 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		$result = Chess_Army_Knife_Tournaments::create(
 			array(
-				'name'          => isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '',
-				'format'        => isset( $_POST['format'] ) ? sanitize_key( wp_unslash( $_POST['format'] ) ) : '',
-				'rating_domain' => isset( $_POST['rating_domain'] ) ? sanitize_text_field( wp_unslash( $_POST['rating_domain'] ) ) : 'S',
-				'double_round'  => ! empty( $_POST['double_round'] ),
-				'rounds'        => isset( $_POST['rounds'] ) ? (int) $_POST['rounds'] : 0,
-				'groups'        => isset( $_POST['groups'] ) ? (int) $_POST['groups'] : 1,
-				'advance'       => isset( $_POST['advance'] ) ? (int) $_POST['advance'] : 0,
+				'name'           => isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '',
+				'format'         => isset( $_POST['format'] ) ? sanitize_key( wp_unslash( $_POST['format'] ) ) : '',
+				'rating_domain'  => isset( $_POST['rating_domain'] ) ? sanitize_text_field( wp_unslash( $_POST['rating_domain'] ) ) : 'S',
+				'double_round'   => ! empty( $_POST['double_round'] ),
+				'rounds'         => isset( $_POST['rounds'] ) ? (int) $_POST['rounds'] : 0,
+				'initial_colour' => isset( $_POST['initial_colour'] ) ? sanitize_key( wp_unslash( $_POST['initial_colour'] ) ) : 'white',
+				'groups'         => isset( $_POST['groups'] ) ? (int) $_POST['groups'] : 1,
+				'advance'        => isset( $_POST['advance'] ) ? (int) $_POST['advance'] : 0,
 			)
 		);
 
@@ -195,6 +196,33 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		/* translators: %d: round number */
 		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired again.', 'chess-army-knife' ), $round ), $tournament_id );
+	}
+
+	/**
+	 * Ask for a half-point or zero-point bye in a Swiss round.
+	 */
+	public static function handle_request_bye() {
+		self::authorise( 'request_bye' );
+
+		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
+		$entry_id      = isset( $_POST['entry_id'] ) ? (int) $_POST['entry_id'] : 0;
+		$round         = isset( $_POST['round'] ) ? (int) $_POST['round'] : 0;
+		$kind          = isset( $_POST['kind'] ) ? sanitize_key( wp_unslash( $_POST['kind'] ) ) : '';
+
+		self::finish( Chess_Army_Knife_Tournaments::request_bye( $tournament_id, $entry_id, $round, $kind ), __( 'Bye requested.', 'chess-army-knife' ), $tournament_id );
+	}
+
+	/**
+	 * Cancel a requested bye.
+	 */
+	public static function handle_cancel_bye() {
+		self::authorise( 'cancel_bye' );
+
+		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
+		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
+		$round         = isset( $_GET['round'] ) ? (int) $_GET['round'] : 0;
+
+		self::finish( Chess_Army_Knife_Tournaments::cancel_bye( $tournament_id, $entry_id, $round ), __( 'Bye cancelled.', 'chess-army-knife' ), $tournament_id );
 	}
 
 	/**
@@ -346,6 +374,16 @@ class Chess_Army_Knife_Tournaments_Page {
 					<td>
 						<input type="number" id="rounds" name="rounds" min="1" max="30" value="5" class="small-text" />
 						<p class="description"><?php esc_html_e( 'Swiss only. Each round is paired after the previous one is finished, using the FIDE Dutch system. Nobody plays the same opponent twice, so there can be at most one fewer rounds than players.', 'chess-army-knife' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="initial_colour"><?php esc_html_e( 'Initial colour', 'chess-army-knife' ); ?></label></th>
+					<td>
+						<select id="initial_colour" name="initial_colour">
+							<option value="white"><?php esc_html_e( 'White', 'chess-army-knife' ); ?></option>
+							<option value="black"><?php esc_html_e( 'Black', 'chess-army-knife' ); ?></option>
+						</select>
+						<p class="description"><?php esc_html_e( 'Swiss only. The colour given to the top seed of the first pairing (FIDE 5.2.5); later colours alternate from there. Draw it by lot if your rules require.', 'chess-army-knife' ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -589,7 +627,7 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		$started = false;
 		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament['id'] ) as $game ) {
-			if ( 'main' === $game['stage'] && $game['round'] === $current && null !== $game['result'] ) {
+			if ( 'main' === $game['stage'] && $game['round'] === $current && ! $game['is_bye'] && null !== $game['result'] ) {
 				$started = true;
 			}
 		}
@@ -622,6 +660,96 @@ class Chess_Army_Knife_Tournaments_Page {
 				><?php esc_html_e( 'Pair this round again', 'chess-army-knife' ); ?></a>
 			</p>
 		<?php endif; ?>
+		<?php
+		self::render_requested_byes( $tournament, $current );
+	}
+
+	/**
+	 * Label for a bye game, by the result stored on it.
+	 *
+	 * @param string|null $result Stored result.
+	 * @return string
+	 */
+	protected static function bye_label( $result ) {
+		if ( Chess_Army_Knife_Standings::HALF_POINT_BYE === $result ) {
+			return __( 'Requested bye (half a point)', 'chess-army-knife' );
+		}
+		if ( Chess_Army_Knife_Standings::ZERO_POINT_BYE === $result ) {
+			return __( 'Requested bye (no points)', 'chess-army-knife' );
+		}
+		return __( 'Bye', 'chess-army-knife' );
+	}
+
+	/**
+	 * Byes players have asked for in rounds that are not paired yet, and a form to add one.
+	 *
+	 * @param array $tournament Tournament row.
+	 * @param int   $current    Latest paired round.
+	 */
+	protected static function render_requested_byes( array $tournament, $current ) {
+		$config = Chess_Army_Knife_Tournaments::config( $tournament );
+		if ( $current >= $config['rounds'] ) {
+			return;
+		}
+
+		$names = array();
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament['id'] ) as $entry ) {
+			if ( 'withdrawn' !== $entry['status'] ) {
+				$names[ $entry['id'] ] = $entry['name'];
+			}
+		}
+		?>
+		<h2><?php esc_html_e( 'Requested byes', 'chess-army-knife' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'A player who cannot play a round can ask for a bye before that round is paired. It scores half a point or nothing, and they sit the round out.', 'chess-army-knife' ); ?></p>
+		<ul>
+			<?php foreach ( Chess_Army_Knife_Tournaments::requested_byes( $tournament ) as $round => $byes ) : ?>
+				<?php foreach ( $byes as $entry_id => $kind ) : ?>
+					<?php if ( $round > $current && isset( $names[ $entry_id ] ) ) : ?>
+						<li>
+							<?php
+							/* translators: 1: player name, 2: round number, 3: bye type */
+							echo esc_html( sprintf( __( '%1$s: round %2$d (%3$s)', 'chess-army-knife' ), $names[ $entry_id ], $round, 'half' === $kind ? __( 'half-point bye', 'chess-army-knife' ) : __( 'zero-point bye', 'chess-army-knife' ) ) );
+							?>
+							<a href="
+							<?php
+							echo esc_url(
+								self::action_url(
+									'cancel_bye',
+									array(
+										'tournament_id' => $tournament['id'],
+										'entry_id'      => $entry_id,
+										'round'         => $round,
+									)
+								)
+							);
+							?>
+										"><?php esc_html_e( 'Cancel', 'chess-army-knife' ); ?></a>
+						</li>
+					<?php endif; ?>
+				<?php endforeach; ?>
+			<?php endforeach; ?>
+		</ul>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="chess_army_knife_tournament_request_bye" />
+			<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
+			<?php wp_nonce_field( 'chess_army_knife_tournament_request_bye' ); ?>
+			<select name="entry_id" required>
+				<?php foreach ( $names as $entry_id => $name ) : ?>
+					<option value="<?php echo esc_attr( $entry_id ); ?>"><?php echo esc_html( $name ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<select name="round">
+				<?php for ( $round = $current + 1; $round <= $config['rounds']; $round++ ) : ?>
+					<?php /* translators: %d: round number */ ?>
+					<option value="<?php echo esc_attr( $round ); ?>"><?php echo esc_html( sprintf( __( 'Round %d', 'chess-army-knife' ), $round ) ); ?></option>
+				<?php endfor; ?>
+			</select>
+			<select name="kind">
+				<option value="half"><?php esc_html_e( 'Half-point bye', 'chess-army-knife' ); ?></option>
+				<option value="zero"><?php esc_html_e( 'Zero-point bye', 'chess-army-knife' ); ?></option>
+			</select>
+			<?php submit_button( __( 'Request bye', 'chess-army-knife' ), 'secondary', 'submit', false ); ?>
+		</form>
 		<?php
 	}
 
@@ -842,7 +970,7 @@ class Chess_Army_Knife_Tournaments_Page {
 							</td>
 							<td style="width:220px;">
 								<?php if ( $game['is_bye'] ) : ?>
-									<em><?php esc_html_e( 'Bye', 'chess-army-knife' ); ?></em>
+									<em><?php echo esc_html( self::bye_label( $game['result'] ) ); ?></em>
 								<?php elseif ( $waiting ) : ?>
 									<em><?php esc_html_e( 'Waiting for players', 'chess-army-knife' ); ?></em>
 								<?php else : ?>

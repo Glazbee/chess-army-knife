@@ -70,6 +70,9 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: Swiss requested byes. A player who cannot play a round can be given a half-point or zero-point bye before that round is paired (Tournaments, Requested byes). They sit the round out and are left out of the pairing.
+* Added: Swiss initial colour setting (white or black), the colour given to the top seed of the first pairing.
+* Changed: Swiss Buchholz now treats byes, forfeits and rounds a player missed as a virtual opponent, as in the FIDE Tie-Break Regulations, instead of ignoring them.
 * Added: Tournament Status, Tournament Games to Play and Tournament Past Winners blocks for showing tournaments on the site. All three support templates (styling only).
 * Added: Swiss tournaments using the FIDE (Dutch) system, C.04.3 (2026 edition). Rounds are paired one at a time from the results so far, with the top half of each score group playing the bottom half, moved-down players, floaters, colour allocation, the bye and criteria C1-C21. Rankings use points, then Buchholz, Sonneborn-Berger and wins. A round can be paired again while it has no results, and a player who withdraws forfeits their unplayed game. Forfeit results (+/-) are available for Swiss and round-robin games.
 * Known limitation: the pairing engine was checked against an independent implementation on about 1,600 random rounds of up to 24 players and matched every one. Rounds in much larger fields (roughly 30 players and above) can be slow to pair in some cases; this has not been investigated yet.

@@ -214,4 +214,125 @@ class StandingsTest extends Chess_Army_Knife_TestCase {
 		$this->assertGreaterThan( $by_id[2]['buchholz'], $by_id[1]['buchholz'] );
 		$this->assertLessThan( $by_id[2]['rank'], $by_id[1]['rank'] );
 	}
+
+	private function bye( $player, $round, $result = null ) {
+		return array(
+			'white_entry_id' => $player,
+			'black_entry_id' => null,
+			'result'         => $result,
+			'is_bye'         => 1,
+			'round'          => $round,
+		);
+	}
+
+	private function round_game( $round, $white, $black, $result ) {
+		return array_merge( $this->game( $white, $black, $result ), array( 'round' => $round ) );
+	}
+
+	private function by_id( array $rows ) {
+		$by_id = array();
+		foreach ( $rows as $row ) {
+			$by_id[ $row['entry_id'] ] = $row;
+		}
+		return $by_id;
+	}
+
+	public function test_requested_byes_score_half_or_nothing() {
+		$rows = $this->by_id(
+			Chess_Army_Knife_Standings::calculate(
+				$this->entries( 3 ),
+				array(
+					$this->bye( 1, 1, Chess_Army_Knife_Standings::HALF_POINT_BYE ),
+					$this->bye( 2, 1, Chess_Army_Knife_Standings::ZERO_POINT_BYE ),
+					$this->bye( 3, 1 ),
+				),
+				array(),
+				array(
+					'swiss'      => true,
+					'bye_points' => 1.0,
+				)
+			)
+		);
+
+		$this->assertSame( 0.5, $rows[1]['points'] );
+		$this->assertSame( 0.0, $rows[2]['points'] );
+		$this->assertSame( 1.0, $rows[3]['points'] );
+	}
+
+	public function test_buchholz_uses_a_virtual_opponent_for_forfeits() {
+		// Round 1 is a forfeit win for player 1; round 2 is played. Two rounds in all.
+		$games = array(
+			$this->round_game( 1, 1, 2, Chess_Army_Knife_Standings::WHITE_FORFEIT_WIN ),
+			$this->round_game( 2, 1, 2, '1-0' ),
+		);
+		$rows  = $this->by_id(
+			Chess_Army_Knife_Standings::calculate(
+				$this->entries( 2 ),
+				$games,
+				array(),
+				array(
+					'swiss'  => true,
+					'rounds' => 2,
+				)
+			)
+		);
+
+		// Player 1: virtual opponent 0 + (1 - 1) + 0.5 = 0.5, plus player 2's 0 points.
+		$this->assertSame( 0.5, $rows[1]['buchholz'] );
+		// Player 2: virtual opponent 0 + (1 - 0) + 0.5 = 1.5, plus player 1's 2 points.
+		$this->assertSame( 3.5, $rows[2]['buchholz'] );
+	}
+
+	public function test_buchholz_uses_a_virtual_opponent_for_byes() {
+		$games = array(
+			$this->round_game( 1, 1, 2, '1-0' ),
+			$this->bye( 3, 1 ),
+			$this->round_game( 2, 2, 3, '1/2-1/2' ),
+			$this->bye( 1, 2, Chess_Army_Knife_Standings::HALF_POINT_BYE ),
+		);
+		$rows  = $this->by_id(
+			Chess_Army_Knife_Standings::calculate(
+				$this->entries( 3 ),
+				$games,
+				array(),
+				array(
+					'swiss'      => true,
+					'bye_points' => 1.0,
+					'rounds'     => 3,
+				)
+			)
+		);
+
+		$this->assertSame( 1.5, $rows[1]['points'] );
+		// Player 1: played player 2 (0.5) + virtual opponent 1 + (1 - 0.5) + 0.5 = 2.
+		$this->assertSame( 2.5, $rows[1]['buchholz'] );
+		// Player 2: player 1 (1.5) and player 3 (1.5).
+		$this->assertSame( 3.0, $rows[2]['buchholz'] );
+		// Player 3: virtual opponent 0 + (1 - 1) + 0.5 * 2 = 1, plus player 2 (0.5).
+		$this->assertSame( 1.5, $rows[3]['buchholz'] );
+	}
+
+	public function test_buchholz_counts_a_round_a_player_sat_out_and_skips_games_still_in_play() {
+		// Player 3 missed round 1 (no game); round 2 is still being played.
+		$games = array(
+			$this->round_game( 1, 1, 2, '1-0' ),
+			$this->round_game( 2, 1, 3, null ),
+		);
+		$rows  = $this->by_id(
+			Chess_Army_Knife_Standings::calculate(
+				$this->entries( 3 ),
+				$games,
+				array(),
+				array(
+					'swiss'  => true,
+					'rounds' => 3,
+				)
+			)
+		);
+
+		// Player 3: virtual opponent 0 + (1 - 0) + 0.5 * 2 = 2; the unfinished round adds nothing.
+		$this->assertSame( 2.0, $rows[3]['buchholz'] );
+		// Player 1 met player 2 (0 points) and has a game in progress.
+		$this->assertSame( 0.0, $rows[1]['buchholz'] );
+	}
 }

@@ -23,6 +23,12 @@ class Chess_Army_Knife_Standings {
 	/** Black wins because white did not play (a forfeit). */
 	const BLACK_FORFEIT_WIN = '-+';
 
+	/** Result stored on a bye game the player asked for: half a point. */
+	const HALF_POINT_BYE = 'bye-half';
+
+	/** Result stored on a bye game the player asked for: no points. */
+	const ZERO_POINT_BYE = 'bye-zero';
+
 	/**
 	 * Valid game results.
 	 *
@@ -69,13 +75,17 @@ class Chess_Army_Knife_Standings {
 	 * @param array[] $games   Each: white_entry_id, black_entry_id, result, and optionally is_bye.
 	 * @param int[]   $scheduled_games Optional map of entry id => games scheduled, for the withdrawal rule.
 	 * @param array   $options Optional: swiss (bool) ranks by Buchholz then Sonneborn-Berger instead of
-	 *                         head-to-head; bye_points (float) is what a bye game (no black player) scores.
+	 *                         head-to-head; bye_points (float) is what a bye game (no black player) scores
+	 *                         (a requested half-point or zero-point bye scores its own points); rounds (int)
+	 *                         is the tournament length, and turns on the FIDE virtual-opponent rule for the
+	 *                         Buchholz of unplayed games (needs a round number on each game).
 	 * @return array[] Ranked rows: entry_id, name, seed, rank, played, won, drawn, lost, points, buchholz,
 	 *                 sonneborn_berger, withdrawn, excluded.
 	 */
 	public static function calculate( array $entries, array $games, array $scheduled_games = array(), array $options = array() ) {
 		$swiss      = ! empty( $options['swiss'] );
 		$bye_points = isset( $options['bye_points'] ) ? (float) $options['bye_points'] : 0.0;
+		$rounds     = isset( $options['rounds'] ) ? (int) $options['rounds'] : 0;
 
 		$rows = array();
 		foreach ( $entries as $entry ) {
@@ -110,13 +120,24 @@ class Chess_Army_Knife_Standings {
 			$played[ $black ] = ( isset( $played[ $black ] ) ? $played[ $black ] : 0 ) + 1;
 		}
 
-		// A bye (no opponent) scores the configured bye points, when there are any.
-		if ( $bye_points > 0 ) {
-			foreach ( $games as $game ) {
-				$white = isset( $game['white_entry_id'] ) ? (int) $game['white_entry_id'] : 0;
-				if ( ! empty( $game['is_bye'] ) && $white && empty( $game['black_entry_id'] ) && isset( $rows[ $white ] ) ) {
-					$rows[ $white ]['points'] += $bye_points;
-				}
+		// A bye (no opponent) scores the configured bye points, unless the player asked for a lesser one.
+		$bye_score = array();
+		foreach ( $games as $game ) {
+			$white = isset( $game['white_entry_id'] ) ? (int) $game['white_entry_id'] : 0;
+			if ( empty( $game['is_bye'] ) || ! $white || ! empty( $game['black_entry_id'] ) || ! isset( $rows[ $white ] ) ) {
+				continue;
+			}
+			$result = isset( $game['result'] ) ? $game['result'] : null;
+			if ( self::HALF_POINT_BYE === $result && $swiss ) {
+				$earned = 0.5;
+			} elseif ( self::ZERO_POINT_BYE === $result && $swiss ) {
+				$earned = 0.0;
+			} else {
+				$earned = $bye_points;
+			}
+			$rows[ $white ]['points'] += $earned;
+			if ( isset( $game['round'] ) ) {
+				$bye_score[ $white ][ (int) $game['round'] ] = $earned;
 			}
 		}
 
@@ -146,7 +167,11 @@ class Chess_Army_Knife_Standings {
 		}
 
 		// Sonneborn-Berger: points of each beaten opponent plus half the points of each drawn one.
-		// Buchholz: the total points of every opponent actually played (forfeits do not count).
+		// Buchholz: the total points of every opponent actually played (forfeits do not count),
+		// plus a virtual opponent for every unplayed game when the tournament length is known.
+		if ( $swiss && $rounds > 0 ) {
+			self::add_virtual_opponents( $rows, $games, $bye_score, $rounds );
+		}
 		foreach ( $played_games as $game ) {
 			list( $white, $black, $white_score, $black_score, $forfeit ) = array_pad( $game, 5, false );
 			if ( $forfeit ) {
@@ -199,6 +224,66 @@ class Chess_Army_Knife_Standings {
 		}
 
 		return $ranked;
+	}
+
+	/**
+	 * Add the Buchholz of unplayed games: byes, forfeits and rounds a player sat out.
+	 *
+	 * FIDE Tie-Break Regulations, unplayed games: the player is treated as having met a virtual
+	 * opponent who starts the round on the player's own score, scores the opposite of the player's
+	 * result in that round, and draws every later round: SVO = SP + (1 - RES) + 0.5 * (rounds - round).
+	 * Rounds that are still being played (a game without a result) are left out.
+	 *
+	 * @param array[] $rows      Standings rows keyed by entry id (by reference); buchholz is added to.
+	 * @param array[] $games     Games, each with a round number.
+	 * @param array   $bye_score Entry id => round => points earned by a bye.
+	 * @param int     $rounds    Tournament length.
+	 */
+	protected static function add_virtual_opponents( array &$rows, array $games, array $bye_score, $rounds ) {
+		$earned  = array(); // Entry id => round => points scored.
+		$decided = array(); // Entry id => round => true when the game was played to a result.
+		$open    = array(); // Entry id => round => true when the game has no result yet.
+		$last    = 0;
+
+		foreach ( $games as $game ) {
+			$round = isset( $game['round'] ) ? (int) $game['round'] : 0;
+			$last  = max( $last, $round );
+			$white = isset( $game['white_entry_id'] ) ? (int) $game['white_entry_id'] : 0;
+			$black = isset( $game['black_entry_id'] ) ? (int) $game['black_entry_id'] : 0;
+			if ( ! $round || ! $white || ! $black ) {
+				continue;
+			}
+
+			$score = isset( $game['result'] ) ? self::points_for( $game['result'] ) : null;
+			if ( null === $score ) {
+				$open[ $white ][ $round ] = true;
+				$open[ $black ][ $round ] = true;
+				continue;
+			}
+			$earned[ $white ][ $round ] = $score[0];
+			$earned[ $black ][ $round ] = $score[1];
+			if ( ! self::is_forfeit( $game['result'] ) ) {
+				$decided[ $white ][ $round ] = true;
+				$decided[ $black ][ $round ] = true;
+			}
+		}
+		foreach ( $bye_score as $id => $by_round ) {
+			foreach ( $by_round as $round => $points ) {
+				$earned[ $id ][ $round ] = $points;
+				$last                    = max( $last, $round );
+			}
+		}
+
+		foreach ( $rows as $id => $row ) {
+			$before = 0.0;
+			for ( $round = 1; $round <= $last; $round++ ) {
+				$result = isset( $earned[ $id ][ $round ] ) ? $earned[ $id ][ $round ] : 0.0;
+				if ( ! isset( $decided[ $id ][ $round ] ) && ! isset( $open[ $id ][ $round ] ) ) {
+					$rows[ $id ]['buchholz'] += $before + ( 1 - $result ) + 0.5 * ( $rounds - $round );
+				}
+				$before += $result;
+			}
+		}
 	}
 
 	/**
