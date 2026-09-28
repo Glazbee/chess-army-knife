@@ -1,0 +1,46 @@
+.wp-block-chess-army-knife-tournament-standings {
+	margin-bottom: 1.5em;
+
+	.cak-standings__title {
+		margin: 0 0 0.5em;
+		font-size: 1.1em;
+		font-weight: 600;
+	}
+
+	.cak-standings__group {
+		margin: 1em 0 0.25em;
+		font-weight: 600;
+	}
+
+	// Many rounds can be wider than a phone.
+	.cak-standings__scroll {
+		overflow-x: auto;
+	}
+
+	.cak-standings__table {
+		width: 100%;
+		border-collapse: collapse;
+
+		th,
+		td {
+			text-align: left;
+			padding: 0.4em 0.6em;
+			border-bottom: 1px solid #e2e2e2;
+			white-space: nowrap;
+		}
+
+		th {
+			font-weight: 600;
+			border-bottom: 2px solid var(--ecf-accent, #c3c4c7);
+		}
+
+		th.is-numeric,
+		td.is-numeric {
+			text-align: right;
+		}
+
+		.is-withdrawn {
+			opacity: 0.6;
+		}
+	}
+}

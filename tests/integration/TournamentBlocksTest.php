@@ -23,8 +23,8 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 	 *
 	 * @return int Tournament id.
 	 */
-	private function tournament( $name, $count, $start = true ) {
-		$id = Chess_Army_Knife_Tournaments::create( array( 'name' => $name ) );
+	private function tournament( $name, $count, $start = true, array $args = array() ) {
+		$id = Chess_Army_Knife_Tournaments::create( array_merge( array( 'name' => $name ), $args ) );
 		$this->assertIsInt( $id );
 
 		for ( $i = 1; $i <= $count; $i++ ) {
@@ -157,5 +157,114 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 		$html = $this->render( 'tournament-winners', array( 'title' => 'Hall of fame' ) );
 		$this->assertStringContainsString( 'Hall of fame', $html );
 		$this->assertStringContainsString( 'Spring Open Player 1', $html );
+	}
+
+	private function row_named( array $table, $name ) {
+		foreach ( $table['rows'] as $row ) {
+			if ( $name === $row['name'] ) {
+				return $row;
+			}
+		}
+		return null;
+	}
+
+	public function test_the_cross_table_lists_each_rounds_points_and_the_total_in_rank_order() {
+		$id = $this->tournament( 'Cup', 4 );
+		$this->finish( $id );
+
+		$table = Chess_Army_Knife_Tournament_Summary::crosstable( Chess_Army_Knife_Tournament_Store::get_tournament( $id ), 0 );
+
+		$this->assertSame( array( 1, 2, 3 ), $table['rounds'] );
+		$this->assertCount( 4, $table['rows'] );
+		$this->assertSame( array( 1, 2, 3, 4 ), array_column( $table['rows'], 'rank' ) );
+		$this->assertSame( 6.0, array_sum( array_column( $table['rows'], 'total' ) ) ); // Six games, a point each.
+		foreach ( $table['rows'] as $row ) {
+			$this->assertSame( $row['total'], array_sum( $row['scores'] ) );
+			$this->assertCount( 3, $row['scores'] );
+		}
+		$totals = array_column( $table['rows'], 'total' );
+		$sorted = $totals;
+		rsort( $sorted );
+		$this->assertSame( $sorted, $totals );
+	}
+
+	public function test_the_cross_table_leaves_games_without_a_result_blank() {
+		$id    = $this->tournament( 'Cup', 4 );
+		$games = Chess_Army_Knife_Tournaments::games_to_play( $id );
+		Chess_Army_Knife_Tournaments::record_result( $games[0]['id'], '1/2-1/2' );
+
+		$table = Chess_Army_Knife_Tournament_Summary::crosstable( Chess_Army_Knife_Tournament_Store::get_tournament( $id ), 0 );
+
+		$played = array_filter(
+			$table['rows'],
+			function ( $row ) {
+				return null !== $row['scores'][1];
+			}
+		);
+		$this->assertCount( 2, $played );
+		foreach ( $played as $row ) {
+			$this->assertSame( 0.5, $row['scores'][1] );
+			$this->assertNull( $row['scores'][2] );
+		}
+	}
+
+	public function test_the_cross_table_shows_swiss_byes_and_requested_byes() {
+		$id = $this->tournament(
+			'Open',
+			3,
+			true,
+			array(
+				'format' => 'swiss',
+				'rounds' => 2,
+			)
+		);
+		$this->finish( $id );
+
+		$requested = Chess_Army_Knife_Tournament_Store::get_entries( $id )[0];
+		Chess_Army_Knife_Tournaments::request_bye( $id, $requested['id'], 2, 'half' );
+		$this->assertSame( 2, Chess_Army_Knife_Tournaments::next_round( $id ) );
+
+		$table = Chess_Army_Knife_Tournament_Summary::crosstable( Chess_Army_Knife_Tournament_Store::get_tournament( $id ), 0 );
+
+		$this->assertSame( array( 1, 2 ), $table['rounds'] );
+		$this->assertSame( 0.5, $this->row_named( $table, $requested['name'] )['scores'][2] );
+		// Round 1's pairing bye scored a point for somebody.
+		$round_one = array_column( array_column( $table['rows'], 'scores' ), 1 );
+		$this->assertCount( 3, array_filter( $round_one, 'is_float' ) );
+		$this->assertSame( 2.0, array_sum( $round_one ) ); // A game and a bye point.
+	}
+
+	public function test_the_standings_block_shows_a_table_with_a_column_per_round() {
+		$id = $this->tournament( 'Cup', 4 );
+		$this->finish( $id );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/tournament-standings {"tournamentId":' . $id . '} /-->' );
+
+		foreach ( array( '>R1<', '>R2<', '>R3<', '>Total<', 'Cup Player 1' ) as $expected ) {
+			$this->assertStringContainsString( $expected, $html );
+		}
+		$this->assertStringNotContainsString( '>R4<', $html );
+	}
+
+	public function test_the_standings_block_has_a_table_per_group() {
+		$id = $this->tournament( 'Groups', 8, true, array( 'groups' => 2 ) );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/tournament-standings {"tournamentId":' . $id . '} /-->' );
+
+		$this->assertSame( 2, substr_count( $html, '<table' ) );
+		$this->assertStringContainsString( 'Group A', $html );
+		$this->assertStringContainsString( 'Group B', $html );
+	}
+
+	public function test_the_standings_block_handles_unstarted_knockout_and_missing_tournaments() {
+		$draft = $this->tournament( 'Draft', 3, false );
+		$this->assertStringContainsString( 'not started', do_blocks( '<!-- wp:chess-army-knife/tournament-standings {"tournamentId":' . $draft . '} /-->' ) );
+
+		$knockout = $this->tournament( 'KO', 4, true, array( 'format' => 'knockout' ) );
+		$html     = do_blocks( '<!-- wp:chess-army-knife/tournament-standings {"tournamentId":' . $knockout . '} /-->' );
+		$this->assertStringContainsString( 'no standings table', $html );
+		$this->assertStringNotContainsString( '<table', $html );
+
+		$this->assertStringContainsString( 'choose a tournament', do_blocks( '<!-- wp:chess-army-knife/tournament-standings {} /-->' ) );
 	}
 }

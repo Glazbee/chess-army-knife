@@ -480,11 +480,11 @@ class KnockoutTest extends WP_UnitTestCase {
 		$this->assertTrue( rest_do_request( $request )->get_data()['reload'] ); // The knockout was created.
 	}
 
-	public function test_results_block_shows_knockout_rounds_but_hides_games_awaiting_players() {
+	public function test_games_block_shows_knockout_rounds_but_hides_games_awaiting_players() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$id = $this->started( 4, array( 'format' => 'knockout' ) );
 
-		$html = do_blocks( '<!-- wp:chess-army-knife/tournament-results {"tournamentId":' . $id . '} /-->' );
+		$html = do_blocks( '<!-- wp:chess-army-knife/tournament-games {"tournamentId":' . $id . '} /-->' );
 
 		$this->assertStringContainsString( 'Semi-finals', $html );
 		$this->assertStringNotContainsString( '>Final<', $html );

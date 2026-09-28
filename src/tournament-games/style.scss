@@ -7,6 +7,22 @@
 		font-weight: 600;
 	}
 
+	.cak-games__toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.75em;
+		margin: 0 0 0.5em;
+	}
+
+	.cak-games__status {
+		font-size: 0.9em;
+	}
+
+	.cak-games__status--error,
+	.cak-games__row-error {
+		color: #b32d2e;
+	}
+
 	.cak-games__round {
 		margin: 1em 0 0.25em;
 		font-weight: 600;
@@ -17,14 +33,37 @@
 		margin: 0;
 		padding: 0;
 		list-style: none;
+	}
 
-		li {
-			display: grid;
-			grid-template-columns: 1fr auto 1fr;
-			gap: 0.5em;
-			padding: 0.35em 0;
-			border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-		}
+	// Player A [score] vs [score] Player B
+	.cak-games__game {
+		display: grid;
+		grid-template-columns: 1fr auto auto auto 1fr;
+		gap: 0.5em;
+		align-items: center;
+		padding: 0.35em 0;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+	}
+
+	.cak-games__game--readonly {
+		grid-template-columns: 1fr auto 1fr;
+	}
+
+	.cak-games__game--saved {
+		opacity: 0.6;
+	}
+
+	.cak-games__player--white {
+		text-align: right;
+	}
+
+	.cak-games__score {
+		min-width: 4em;
+	}
+
+	.cak-games__row-error {
+		grid-column: 1 / -1;
+		font-size: 0.85em;
 	}
 
 	.cak-games__vs {

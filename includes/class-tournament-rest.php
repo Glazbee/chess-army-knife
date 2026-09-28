@@ -1,7 +1,7 @@
 <?php
 /**
  * REST endpoints for tournaments: the editor's tournament picker and
- * the front-end result entry used by the admin-only results block.
+ * saving results from the Tournament Games to Play block.
  *
  * @package Chess_Army_Knife
  */
@@ -11,6 +11,9 @@ defined( 'ABSPATH' ) || exit;
 class Chess_Army_Knife_Tournament_REST {
 
 	const NAMESPACE_V1 = 'chess-army-knife/v1';
+
+	/** Most results accepted in one request. */
+	const MAX_BATCH = 200;
 
 	/**
 	 * Hook up the routes.
@@ -32,6 +35,22 @@ class Chess_Army_Knife_Tournament_REST {
 				'permission_callback' => function () {
 					return current_user_can( 'edit_posts' );
 				},
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE_V1,
+			'/games/results',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'set_results' ),
+				'permission_callback' => array( 'Chess_Army_Knife_Tournaments', 'user_can_manage' ),
+				'args'                => array(
+					'results' => array(
+						'type'     => 'object',
+						'required' => true,
+					),
+				),
 			)
 		);
 
@@ -72,6 +91,42 @@ class Chess_Army_Knife_Tournament_REST {
 			);
 		}
 		return rest_ensure_response( $out );
+	}
+
+	/**
+	 * Record the results of several games at once, in game order (an earlier
+	 * knockout round has to be recorded before a later one).
+	 *
+	 * @param WP_REST_Request $request Request with results: game id => result.
+	 * @return WP_REST_Response|WP_Error { saved: int[], errors: game id => message, reload: bool }
+	 */
+	public static function set_results( WP_REST_Request $request ) {
+		$results = $request['results'];
+		if ( ! is_array( $results ) || empty( $results ) || count( $results ) > self::MAX_BATCH ) {
+			return new WP_Error( 'results_invalid', __( 'Choose at least one result to save.', 'chess-army-knife' ), array( 'status' => 400 ) );
+		}
+
+		$ids = array_map( 'absint', array_keys( $results ) );
+		sort( $ids );
+
+		$saved  = array();
+		$errors = array();
+		foreach ( $ids as $id ) {
+			$result = isset( $results[ $id ] ) ? sanitize_text_field( (string) $results[ $id ] ) : '';
+			$game   = Chess_Army_Knife_Tournaments::record_result( $id, $result );
+			if ( is_wp_error( $game ) ) {
+				$errors[ $id ] = $game->get_error_message();
+			} else {
+				$saved[] = $id;
+			}
+		}
+
+		return rest_ensure_response(
+			array(
+				'saved'  => $saved,
+				'errors' => (object) $errors,
+			)
+		);
 	}
 
 	/**

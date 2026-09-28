@@ -1,16 +1,12 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import {
-	PanelBody,
-	SelectControl,
-	ToggleControl,
-	Placeholder,
-} from '@wordpress/components';
+import { PanelBody, SelectControl, Placeholder } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import useTournaments from '../shared/use-tournaments';
+import TemplatePicker from '../shared/template-picker';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { tournamentId, showCompleted } = attributes;
+	const { tournamentId } = attributes;
 	const blockProps = useBlockProps();
 	const tournaments = useTournaments();
 
@@ -37,32 +33,26 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { tournamentId: Number( value ) } )
 						}
 					/>
-					<ToggleControl
-						label={ __(
-							'Show games that already have a result',
-							'chess-army-knife'
-						) }
-						checked={ showCompleted }
-						onChange={ ( value ) =>
-							setAttributes( { showCompleted: value } )
-						}
-					/>
 				</PanelBody>
+				<TemplatePicker
+					blockSlug="tournament-standings"
+					value={ attributes.templateId }
+					onChange={ ( value ) =>
+						setAttributes( { templateId: value } )
+					}
+				/>
 			</InspectorControls>
 			{ tournamentId ? (
 				<ServerSideRender
-					block="chess-army-knife/tournament-results"
+					block="chess-army-knife/tournament-standings"
 					attributes={ attributes }
 				/>
 			) : (
 				<Placeholder
-					icon="edit"
-					label={ __(
-						'Tournament Results Entry',
-						'chess-army-knife'
-					) }
+					icon="editor-ol"
+					label={ __( 'Tournament Standings', 'chess-army-knife' ) }
 					instructions={ __(
-						'Choose a tournament in the block settings. Only users who can manage tournaments will see this block on the site.',
+						'Choose a tournament in the block settings.',
 						'chess-army-knife'
 					) }
 				/>
