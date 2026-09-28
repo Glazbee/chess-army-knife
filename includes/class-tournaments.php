@@ -989,14 +989,13 @@ class Chess_Army_Knife_Tournaments {
 		if ( ! $tournament || 'swiss' !== $tournament['format'] ) {
 			return new WP_Error( 'swiss_only', __( 'Only Swiss tournaments are paired round by round.', 'chess-army-knife' ) );
 		}
-		if ( self::STATUS_ACTIVE !== $tournament['status'] ) {
-			return new WP_Error( 'tournament_not_active', __( 'This tournament is not in progress.', 'chess-army-knife' ) );
-		}
-
 		$config  = self::config( $tournament );
 		$current = self::current_round( $tournament_id );
-		if ( $current >= $config['rounds'] ) {
+		if ( $current > 0 && $current >= $config['rounds'] ) {
 			return new WP_Error( 'swiss_last_round', __( 'All rounds have already been paired.', 'chess-army-knife' ) );
+		}
+		if ( self::STATUS_ACTIVE !== $tournament['status'] ) {
+			return new WP_Error( 'tournament_not_active', __( 'This tournament is not in progress.', 'chess-army-knife' ) );
 		}
 		if ( ! empty( self::games_to_play( $tournament_id ) ) ) {
 			return new WP_Error( 'swiss_round_unfinished', __( 'Record every result of the current round before pairing the next.', 'chess-army-knife' ) );
