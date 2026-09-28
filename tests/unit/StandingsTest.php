@@ -151,4 +151,67 @@ class StandingsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( 1, 2, 3 ), array_column( $rows, 'entry_id' ) );
 		$this->assertSame( 1.0, $rows[0]['points'] );
 	}
+
+	public function test_forfeit_results_score_like_wins_but_do_not_feed_tie_breaks() {
+		$this->assertSame( array( 1.0, 0.0 ), Chess_Army_Knife_Standings::points_for( '+-' ) );
+		$this->assertSame( array( 0.0, 1.0 ), Chess_Army_Knife_Standings::points_for( '-+' ) );
+		$this->assertTrue( Chess_Army_Knife_Standings::is_forfeit( '+-' ) );
+		$this->assertFalse( Chess_Army_Knife_Standings::is_forfeit( '1-0' ) );
+
+		$rows = Chess_Army_Knife_Standings::calculate(
+			$this->entries( 2 ),
+			array( $this->game( 1, 2, '+-' ) ),
+			array(),
+			array( 'swiss' => true )
+		);
+
+		$this->assertSame( 1.0, $rows[0]['points'] );
+		$this->assertSame( 1, $rows[0]['won'] );
+		$this->assertSame( 0.0, $rows[0]['buchholz'] );
+		$this->assertSame( 0.0, $rows[0]['sonneborn_berger'] );
+	}
+
+	public function test_swiss_byes_score_the_configured_points() {
+		$bye  = array(
+			'white_entry_id' => 3,
+			'black_entry_id' => null,
+			'result'         => null,
+			'is_bye'         => 1,
+		);
+		$rows = Chess_Army_Knife_Standings::calculate(
+			$this->entries( 3 ),
+			array( $this->game( 1, 2, '1/2-1/2' ), $bye ),
+			array(),
+			array(
+				'swiss'      => true,
+				'bye_points' => 1.0,
+			)
+		);
+
+		$this->assertSame( 3, $rows[0]['entry_id'] ); // 1 point beats two draws' half points.
+		$this->assertSame( 1.0, $rows[0]['points'] );
+
+		// Without bye points (round-robin) a bye scores nothing.
+		$rows = Chess_Army_Knife_Standings::calculate( $this->entries( 3 ), array( $bye ) );
+		$this->assertSame( 0.0, $rows[0]['points'] );
+	}
+
+	public function test_swiss_ranks_by_points_then_buchholz_then_sonneborn_berger() {
+		// Players 1 and 2 both score 1; player 1 beat the stronger opponent, so has the better Buchholz.
+		$games = array(
+			$this->game( 1, 3, '1-0' ),
+			$this->game( 2, 4, '1-0' ),
+			$this->game( 3, 5, '1-0' ),
+			$this->game( 6, 4, '1-0' ),
+		);
+		$rows  = Chess_Army_Knife_Standings::calculate( $this->entries( 6 ), $games, array(), array( 'swiss' => true ) );
+
+		$by_id = array();
+		foreach ( $rows as $row ) {
+			$by_id[ $row['entry_id'] ] = $row;
+		}
+		// Player 1 (beat 3, who scored 1) outranks player 2 (beat 4, who scored 0).
+		$this->assertGreaterThan( $by_id[2]['buchholz'], $by_id[1]['buchholz'] );
+		$this->assertLessThan( $by_id[2]['rank'], $by_id[1]['rank'] );
+	}
 }

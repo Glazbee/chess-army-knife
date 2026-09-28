@@ -24,6 +24,7 @@ class Chess_Army_Knife_Tournaments {
 		return array(
 			'round-robin' => __( 'Round-robin', 'chess-army-knife' ),
 			'knockout'    => __( 'Knockout', 'chess-army-knife' ),
+			'swiss'       => __( 'Swiss (Dutch system)', 'chess-army-knife' ),
 		);
 	}
 
@@ -35,19 +36,29 @@ class Chess_Army_Knife_Tournaments {
 	 * knockout tournament always has one group and no group stage.
 	 *
 	 * @param array $tournament Tournament row.
-	 * @return array { groups: int, advance: int }
+	 * @return array { groups: int, advance: int, rounds: int } Rounds is only used by Swiss tournaments.
 	 */
 	public static function config( array $tournament ) {
 		$settings = isset( $tournament['settings'] ) && is_array( $tournament['settings'] ) ? $tournament['settings'] : array();
+
+		if ( 'swiss' === $tournament['format'] ) {
+			return array(
+				'groups'  => 1,
+				'advance' => 0,
+				'rounds'  => max( 1, isset( $settings['rounds'] ) ? (int) $settings['rounds'] : 5 ),
+			);
+		}
 		if ( 'round-robin' !== $tournament['format'] ) {
 			return array(
 				'groups'  => 1,
 				'advance' => 0,
+				'rounds'  => 0,
 			);
 		}
 		return array(
 			'groups'  => max( 1, isset( $settings['groups'] ) ? (int) $settings['groups'] : 1 ),
 			'advance' => max( 0, isset( $settings['advance'] ) ? (int) $settings['advance'] : 0 ),
+			'rounds'  => 0,
 		);
 	}
 
@@ -133,6 +144,13 @@ class Chess_Army_Knife_Tournaments {
 
 		$groups  = 1;
 		$advance = 0;
+		$rounds  = 0;
+		if ( 'swiss' === $format ) {
+			$rounds = isset( $args['rounds'] ) ? (int) $args['rounds'] : 0;
+			if ( $rounds < 1 || $rounds > 30 ) {
+				return new WP_Error( 'tournament_rounds', __( 'The number of rounds must be between 1 and 30.', 'chess-army-knife' ) );
+			}
+		}
 		if ( 'round-robin' === $format ) {
 			$groups  = isset( $args['groups'] ) ? (int) $args['groups'] : 1;
 			$advance = isset( $args['advance'] ) ? (int) $args['advance'] : 0;
@@ -154,6 +172,7 @@ class Chess_Army_Knife_Tournaments {
 				'settings'      => array(
 					'groups'  => $groups,
 					'advance' => $advance,
+					'rounds'  => $rounds,
 				),
 			)
 		);
@@ -329,6 +348,11 @@ class Chess_Army_Knife_Tournaments {
 
 		if ( 'knockout' === $tournament['format'] ) {
 			self::generate_knockout_games( $tournament_id, array_column( $seeded, 'id' ) );
+		} elseif ( 'swiss' === $tournament['format'] ) {
+			$generated = self::generate_swiss_round( $tournament, 1 );
+			if ( is_wp_error( $generated ) ) {
+				return $generated;
+			}
 		} else {
 			self::generate_round_robin( $tournament, $seeded );
 		}
@@ -357,6 +381,9 @@ class Chess_Army_Knife_Tournaments {
 		}
 		if ( $config['groups'] > 1 && $count < $config['groups'] * 2 ) {
 			return new WP_Error( 'tournament_groups_players', __( 'Every group needs at least two players.', 'chess-army-knife' ) );
+		}
+		if ( isset( $config['rounds'] ) && $config['rounds'] > 0 && $config['rounds'] > $count - 1 ) {
+			return new WP_Error( 'tournament_rounds_players', __( 'There are too many rounds for this number of players: nobody can meet the same opponent twice.', 'chess-army-knife' ) );
 		}
 		$smallest_group = (int) floor( $count / $config['groups'] );
 		if ( $config['advance'] > 0 && $config['advance'] >= $smallest_group ) {
@@ -458,6 +485,10 @@ class Chess_Army_Knife_Tournaments {
 		$result = ( null === $result || '' === $result ) ? null : (string) $result;
 		if ( null !== $result && ! in_array( $result, Chess_Army_Knife_Standings::results(), true ) ) {
 			return new WP_Error( 'game_result', __( 'That is not a valid result.', 'chess-army-knife' ) );
+		}
+
+		if ( 'knockout' === $game['stage'] && Chess_Army_Knife_Standings::is_forfeit( $result ) ) {
+			return new WP_Error( 'game_result', __( 'A knockout game cannot be a forfeit. Record the winner instead.', 'chess-army-knife' ) );
 		}
 
 		if ( 'knockout' === $game['stage'] ) {
@@ -774,6 +805,11 @@ class Chess_Army_Knife_Tournaments {
 	 * @return bool
 	 */
 	protected static function is_finished( array $tournament ) {
+		if ( 'swiss' === $tournament['format'] ) {
+			$config = self::config( $tournament );
+			return self::current_round( $tournament['id'] ) >= $config['rounds'] && 0 === count( self::games_to_play( $tournament['id'] ) );
+		}
+
 		if ( self::has_knockout_stage( $tournament ) ) {
 			$knockout = self::knockout_games( $tournament['id'] );
 			if ( empty( $knockout ) ) {
@@ -854,6 +890,17 @@ class Chess_Army_Knife_Tournaments {
 			return new WP_Error( 'tournament_not_active', __( 'Players can only withdraw from a tournament in progress.', 'chess-army-knife' ) );
 		}
 
+		// In a Swiss the opponents of the withdrawn player win their unplayed games by forfeit.
+		if ( 'swiss' === $tournament['format'] ) {
+			foreach ( self::games_to_play( $tournament['id'] ) as $game ) {
+				if ( $game['white_entry_id'] === (int) $entry_id ) {
+					Chess_Army_Knife_Tournament_Store::set_result( $game['id'], Chess_Army_Knife_Standings::BLACK_FORFEIT_WIN );
+				} elseif ( $game['black_entry_id'] === (int) $entry_id ) {
+					Chess_Army_Knife_Tournament_Store::set_result( $game['id'], Chess_Army_Knife_Standings::WHITE_FORFEIT_WIN );
+				}
+			}
+		}
+
 		Chess_Army_Knife_Tournament_Store::update_entry( $entry_id, array( 'status' => 'withdrawn' ) );
 		self::resolve_walkovers( $tournament['id'] );
 		self::maybe_generate_knockout( $tournament );
@@ -897,7 +944,203 @@ class Chess_Army_Knife_Tournaments {
 			}
 		}
 
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		if ( $tournament && 'swiss' === $tournament['format'] ) {
+			// A Swiss bye scores a point; results stay in the table after a withdrawal.
+			return Chess_Army_Knife_Standings::calculate(
+				$entries,
+				$games,
+				array(),
+				array(
+					'swiss'      => true,
+					'bye_points' => 1.0,
+				)
+			);
+		}
+
 		return Chess_Army_Knife_Standings::calculate( $entries, $games, $scheduled );
+	}
+
+	/**
+	 * The latest round that has games (0 before a Swiss has started).
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int
+	 */
+	public static function current_round( $tournament_id ) {
+		$round = 0;
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament_id ) as $game ) {
+			if ( 'main' === $game['stage'] ) {
+				$round = max( $round, $game['round'] );
+			}
+		}
+		return $round;
+	}
+
+	/**
+	 * Pair the next round of a Swiss tournament, once every game of the
+	 * current round has a result.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int|WP_Error The new round number.
+	 */
+	public static function next_round( $tournament_id ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		if ( ! $tournament || 'swiss' !== $tournament['format'] ) {
+			return new WP_Error( 'swiss_only', __( 'Only Swiss tournaments are paired round by round.', 'chess-army-knife' ) );
+		}
+		$config  = self::config( $tournament );
+		$current = self::current_round( $tournament_id );
+		if ( $current > 0 && $current >= $config['rounds'] ) {
+			return new WP_Error( 'swiss_last_round', __( 'All rounds have already been paired.', 'chess-army-knife' ) );
+		}
+		if ( self::STATUS_ACTIVE !== $tournament['status'] ) {
+			return new WP_Error( 'tournament_not_active', __( 'This tournament is not in progress.', 'chess-army-knife' ) );
+		}
+		if ( ! empty( self::games_to_play( $tournament_id ) ) ) {
+			return new WP_Error( 'swiss_round_unfinished', __( 'Record every result of the current round before pairing the next.', 'chess-army-knife' ) );
+		}
+
+		$generated = self::generate_swiss_round( $tournament, $current + 1 );
+		return is_wp_error( $generated ) ? $generated : $current + 1;
+	}
+
+	/**
+	 * Throw away the latest Swiss round and pair it again. Only possible while
+	 * it has no results, for example after a player withdrew or asked to be left out.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int|WP_Error The round that was paired again.
+	 */
+	public static function redo_round( $tournament_id ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		if ( ! $tournament || 'swiss' !== $tournament['format'] || self::STATUS_ACTIVE !== $tournament['status'] ) {
+			return new WP_Error( 'swiss_only', __( 'Only a Swiss tournament in progress can be paired again.', 'chess-army-knife' ) );
+		}
+
+		$round = self::current_round( $tournament_id );
+		$games = array();
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament_id ) as $game ) {
+			if ( 'main' === $game['stage'] && $game['round'] === $round ) {
+				if ( null !== $game['result'] ) {
+					return new WP_Error( 'swiss_round_started', __( 'This round already has results, so it cannot be paired again.', 'chess-army-knife' ) );
+				}
+				$games[] = $game;
+			}
+		}
+
+		foreach ( $games as $game ) {
+			Chess_Army_Knife_Tournament_Store::delete_game( $game['id'] );
+		}
+
+		$generated = self::generate_swiss_round( $tournament, $round );
+		return is_wp_error( $generated ) ? $generated : $round;
+	}
+
+	/**
+	 * Pair a round of a Swiss tournament with the FIDE Dutch system and store the games.
+	 *
+	 * @param array $tournament Tournament row.
+	 * @param int   $round      Round to pair.
+	 * @return true|WP_Error
+	 */
+	protected static function generate_swiss_round( array $tournament, $round ) {
+		$config = self::config( $tournament );
+
+		$ids    = array();
+		$active = array();
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament['id'] ) as $entry ) {
+			$ids[] = $entry['id'];
+			if ( 'withdrawn' !== $entry['status'] ) {
+				$active[] = $entry['id'];
+			}
+		}
+
+		$result = Chess_Army_Knife_Swiss_Dutch::pair( $ids, $active, self::swiss_history( $tournament['id'], $round ), $config['rounds'] );
+		if ( null !== $result['error'] ) {
+			return new WP_Error( 'swiss_pairing', __( 'No valid pairing exists for this round: the remaining players have all met, or cannot receive the bye. Withdraw a player or end the tournament early.', 'chess-army-knife' ) );
+		}
+
+		$board = 0;
+		foreach ( $result['pairings'] as $pair ) {
+			Chess_Army_Knife_Tournament_Store::add_game(
+				array(
+					'tournament_id'  => $tournament['id'],
+					'stage'          => 'main',
+					'group_no'       => 0,
+					'round'          => $round,
+					'board'          => ++$board,
+					'white_entry_id' => $pair[0],
+					'black_entry_id' => $pair[1],
+					'is_bye'         => 0,
+				)
+			);
+		}
+		if ( null !== $result['bye'] ) {
+			Chess_Army_Knife_Tournament_Store::add_game(
+				array(
+					'tournament_id'  => $tournament['id'],
+					'stage'          => 'main',
+					'group_no'       => 0,
+					'round'          => $round,
+					'board'          => ++$board,
+					'white_entry_id' => $result['bye'],
+					'black_entry_id' => null,
+					'is_bye'         => 1,
+				)
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * The completed rounds before $round, in the form the pairing engine expects.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @param int $round         The round about to be paired.
+	 * @return array[]
+	 */
+	protected static function swiss_history( $tournament_id, $round ) {
+		$history = array();
+		for ( $r = 1; $r < $round; $r++ ) {
+			$history[ $r - 1 ] = array(
+				'games' => array(),
+				'byes'  => array(),
+			);
+		}
+
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament_id ) as $game ) {
+			if ( 'main' !== $game['stage'] || $game['round'] >= $round ) {
+				continue;
+			}
+			$index = $game['round'] - 1;
+
+			if ( $game['is_bye'] ) {
+				$history[ $index ]['byes'][] = array(
+					'player' => $game['white_entry_id'],
+					'kind'   => 'pairing',
+				);
+				continue;
+			}
+
+			$entry = array(
+				'white'  => $game['white_entry_id'],
+				'black'  => $game['black_entry_id'],
+				'result' => $game['result'],
+			);
+			if ( Chess_Army_Knife_Standings::WHITE_FORFEIT_WIN === $game['result'] ) {
+				$entry['result']  = Chess_Army_Knife_Standings::WHITE_WIN;
+				$entry['forfeit'] = 'black';
+			} elseif ( Chess_Army_Knife_Standings::BLACK_FORFEIT_WIN === $game['result'] ) {
+				$entry['result']  = Chess_Army_Knife_Standings::BLACK_WIN;
+				$entry['forfeit'] = 'white';
+			}
+			$history[ $index ]['games'][] = $entry;
+		}
+
+		ksort( $history );
+		return $history;
 	}
 
 	/**

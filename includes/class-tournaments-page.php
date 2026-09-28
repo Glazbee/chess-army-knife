@@ -17,7 +17,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
-		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete' ) as $action ) {
+		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -89,6 +89,7 @@ class Chess_Army_Knife_Tournaments_Page {
 				'format'        => isset( $_POST['format'] ) ? sanitize_key( wp_unslash( $_POST['format'] ) ) : '',
 				'rating_domain' => isset( $_POST['rating_domain'] ) ? sanitize_text_field( wp_unslash( $_POST['rating_domain'] ) ) : 'S',
 				'double_round'  => ! empty( $_POST['double_round'] ),
+				'rounds'        => isset( $_POST['rounds'] ) ? (int) $_POST['rounds'] : 0,
 				'groups'        => isset( $_POST['groups'] ) ? (int) $_POST['groups'] : 1,
 				'advance'       => isset( $_POST['advance'] ) ? (int) $_POST['advance'] : 0,
 			)
@@ -168,6 +169,32 @@ class Chess_Army_Knife_Tournaments_Page {
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
 
 		self::finish( Chess_Army_Knife_Tournaments::withdraw( $entry_id ), __( 'Player withdrawn.', 'chess-army-knife' ), $tournament_id );
+	}
+
+	/**
+	 * Pair the next round of a Swiss tournament.
+	 */
+	public static function handle_next_round() {
+		self::authorise( 'next_round' );
+
+		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
+		$round         = Chess_Army_Knife_Tournaments::next_round( $tournament_id );
+
+		/* translators: %d: round number */
+		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired.', 'chess-army-knife' ), $round ), $tournament_id );
+	}
+
+	/**
+	 * Pair the latest Swiss round again.
+	 */
+	public static function handle_redo_round() {
+		self::authorise( 'redo_round' );
+
+		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
+		$round         = Chess_Army_Knife_Tournaments::redo_round( $tournament_id );
+
+		/* translators: %d: round number */
+		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired again.', 'chess-army-knife' ), $round ), $tournament_id );
 	}
 
 	/**
@@ -315,6 +342,13 @@ class Chess_Army_Knife_Tournaments_Page {
 					</td>
 				</tr>
 				<tr>
+					<th scope="row"><label for="rounds"><?php esc_html_e( 'Rounds', 'chess-army-knife' ); ?></label></th>
+					<td>
+						<input type="number" id="rounds" name="rounds" min="1" max="30" value="5" class="small-text" />
+						<p class="description"><?php esc_html_e( 'Swiss only. Each round is paired after the previous one is finished, using the FIDE Dutch system. Nobody plays the same opponent twice, so there can be at most one fewer rounds than players.', 'chess-army-knife' ); ?></p>
+					</td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="rating_domain"><?php esc_html_e( 'Rating list for seeding', 'chess-army-knife' ); ?></label></th>
 					<td>
 						<select id="rating_domain" name="rating_domain">
@@ -367,6 +401,25 @@ class Chess_Army_Knife_Tournaments_Page {
 			<a href="<?php echo esc_url( $back ); ?>">&larr; <?php esc_html_e( 'All tournaments', 'chess-army-knife' ); ?></a>
 			&middot; <?php echo esc_html( self::status_label( $tournament['status'] ) ); ?>
 			&middot; <?php echo esc_html( isset( $formats[ $tournament['format'] ] ) ? $formats[ $tournament['format'] ] : $tournament['format'] ); ?>
+			<?php if ( 'swiss' === $tournament['format'] && ! $draft ) : ?>
+				<?php
+				echo esc_html(
+					' ('
+					/* translators: 1: current round, 2: total rounds */
+					. sprintf( __( 'round %1$d of %2$d', 'chess-army-knife' ), Chess_Army_Knife_Tournaments::current_round( $id ), $config['rounds'] )
+					. ')'
+				);
+				?>
+			<?php elseif ( 'swiss' === $tournament['format'] ) : ?>
+				<?php
+				echo esc_html(
+					' ('
+					/* translators: %d: total rounds */
+					. sprintf( _n( '%d round', '%d rounds', $config['rounds'], 'chess-army-knife' ), $config['rounds'] )
+					. ')'
+				);
+				?>
+			<?php endif; ?>
 			<?php if ( $config['groups'] > 1 || $config['advance'] > 0 ) : ?>
 				<?php
 				echo esc_html(
@@ -466,6 +519,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		<?php if ( $draft ) : ?>
 			<?php self::render_draft_controls( $tournament, $entries ); ?>
 		<?php else : ?>
+			<?php self::render_swiss_controls( $tournament ); ?>
 			<?php self::render_standings( $tournament ); ?>
 			<?php self::render_games( $tournament, $entries ); ?>
 		<?php endif; ?>
@@ -519,6 +573,59 @@ class Chess_Army_Knife_Tournaments_Page {
 	}
 
 	/**
+	 * Swiss round controls: pair the next round, or pair the current one again.
+	 *
+	 * @param array $tournament Tournament row.
+	 */
+	protected static function render_swiss_controls( array $tournament ) {
+		if ( 'swiss' !== $tournament['format'] || Chess_Army_Knife_Tournaments::STATUS_ACTIVE !== $tournament['status'] ) {
+			return;
+		}
+
+		$config   = Chess_Army_Knife_Tournaments::config( $tournament );
+		$current  = Chess_Army_Knife_Tournaments::current_round( $tournament['id'] );
+		$waiting  = count( Chess_Army_Knife_Tournaments::games_to_play( $tournament['id'] ) );
+		$has_next = $current < $config['rounds'];
+
+		$started = false;
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament['id'] ) as $game ) {
+			if ( 'main' === $game['stage'] && $game['round'] === $current && null !== $game['result'] ) {
+				$started = true;
+			}
+		}
+		?>
+		<h2><?php esc_html_e( 'Rounds', 'chess-army-knife' ); ?></h2>
+		<?php if ( $has_next ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-right:1em;">
+				<input type="hidden" name="action" value="chess_army_knife_tournament_next_round" />
+				<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
+				<?php wp_nonce_field( 'chess_army_knife_tournament_next_round' ); ?>
+				<?php
+				/* translators: %d: round number */
+				submit_button( sprintf( __( 'Pair round %d', 'chess-army-knife' ), $current + 1 ), 'primary', 'submit', false, $waiting > 0 ? array( 'disabled' => 'disabled' ) : array() );
+				?>
+			</form>
+			<?php if ( $waiting > 0 ) : ?>
+				<span class="description">
+					<?php
+					/* translators: %d: number of games */
+					echo esc_html( sprintf( _n( '%d game in this round still needs a result.', '%d games in this round still need a result.', $waiting, 'chess-army-knife' ), $waiting ) );
+					?>
+				</span>
+			<?php endif; ?>
+		<?php endif; ?>
+		<?php if ( ! $started ) : ?>
+			<p>
+				<a
+					href="<?php echo esc_url( self::action_url( 'redo_round', array( 'tournament_id' => $tournament['id'] ) ) ); ?>"
+					onclick="return confirm('<?php echo esc_js( __( 'Pair this round again? Use this after a player withdraws.', 'chess-army-knife' ) ); ?>');"
+				><?php esc_html_e( 'Pair this round again', 'chess-army-knife' ); ?></a>
+			</p>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
 	 * Standings tables: one per group, or a single table. Not shown for a
 	 * pure knockout tournament, which has a bracket instead.
 	 *
@@ -541,7 +648,7 @@ class Chess_Army_Knife_Tournaments_Page {
 			return;
 		}
 
-		self::render_standings_table( Chess_Army_Knife_Tournaments::standings( $tournament['id'], 0 ), __( 'Standings', 'chess-army-knife' ), $config['advance'] );
+		self::render_standings_table( Chess_Army_Knife_Tournaments::standings( $tournament['id'], 0 ), __( 'Standings', 'chess-army-knife' ), $config['advance'], 'swiss' === $tournament['format'] );
 	}
 
 	/**
@@ -550,8 +657,9 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * @param array[] $rows    Ranked rows.
 	 * @param string  $heading Heading text.
 	 * @param int     $advance Number of top places that advance (highlighted); 0 for none.
+	 * @param bool    $swiss   Whether to show the Buchholz column.
 	 */
-	protected static function render_standings_table( array $rows, $heading, $advance ) {
+	protected static function render_standings_table( array $rows, $heading, $advance, $swiss = false ) {
 		?>
 		<h2><?php echo esc_html( $heading ); ?></h2>
 		<table class="wp-list-table widefat fixed striped">
@@ -564,6 +672,9 @@ class Chess_Army_Knife_Tournaments_Page {
 					<th><?php esc_html_e( 'D', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'L', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Points', 'chess-army-knife' ); ?></th>
+					<?php if ( $swiss ) : ?>
+						<th><?php esc_html_e( 'Buchholz', 'chess-army-knife' ); ?></th>
+					<?php endif; ?>
 					<th><?php esc_html_e( 'SB', 'chess-army-knife' ); ?></th>
 				</tr>
 			</thead>
@@ -577,6 +688,9 @@ class Chess_Army_Knife_Tournaments_Page {
 						<td><?php echo esc_html( $row['drawn'] ); ?></td>
 						<td><?php echo esc_html( $row['lost'] ); ?></td>
 						<td><strong><?php echo esc_html( self::format_points( $row['points'] ) ); ?></strong></td>
+						<?php if ( $swiss ) : ?>
+							<td><?php echo esc_html( self::format_points( $row['buchholz'] ) ); ?></td>
+						<?php endif; ?>
 						<td><?php echo esc_html( self::format_points( $row['sonneborn_berger'] ) ); ?></td>
 					</tr>
 				<?php endforeach; ?>
@@ -615,12 +729,20 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * @return array Value => label.
 	 */
 	public static function result_options( $knockout ) {
-		return array(
+		$options = array(
 			''        => __( 'Not played', 'chess-army-knife' ),
 			'1-0'     => '1-0',
 			'0-1'     => '0-1',
 			'1/2-1/2' => $knockout ? __( '½-½ (tie-break follows)', 'chess-army-knife' ) : '½-½',
 		);
+
+		// A forfeit means the game was not played (for example the opponent did not turn up).
+		if ( ! $knockout ) {
+			$options['+-'] = __( 'White wins (forfeit)', 'chess-army-knife' );
+			$options['-+'] = __( 'Black wins (forfeit)', 'chess-army-knife' );
+		}
+
+		return $options;
 	}
 
 	/**

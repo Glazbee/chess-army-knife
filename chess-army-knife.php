@@ -30,6 +30,8 @@ require_once Chess_Army_Knife_DIR . 'includes/class-templates.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-berger.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-standings.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-bracket.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-matching.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-swiss-dutch.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournaments.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-rest.php';

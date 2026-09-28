@@ -40,6 +40,41 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 	public function test_supported_formats() {
 		$this->assertArrayHasKey( 'round-robin', Chess_Army_Knife_Tournaments::formats() );
 		$this->assertArrayHasKey( 'knockout', Chess_Army_Knife_Tournaments::formats() );
+		$this->assertArrayHasKey( 'swiss', Chess_Army_Knife_Tournaments::formats() );
+	}
+
+	public function test_swiss_config_and_round_limit() {
+		$swiss = array(
+			'format'   => 'swiss',
+			'settings' => array(
+				'rounds'  => 6,
+				'groups'  => 3,
+				'advance' => 2,
+			),
+		);
+
+		$this->assertSame(
+			array(
+				'groups'  => 1,
+				'advance' => 0,
+				'rounds'  => 6,
+			),
+			Chess_Army_Knife_Tournaments::config( $swiss )
+		);
+		$this->assertFalse( Chess_Army_Knife_Tournaments::has_knockout_stage( $swiss ) );
+		$this->assertSame(
+			5,
+			Chess_Army_Knife_Tournaments::config(
+				array(
+					'format'   => 'swiss',
+					'settings' => array(),
+				)
+			)['rounds']
+		);
+
+		// Nobody can meet twice, so there can be at most players - 1 rounds.
+		$this->assertTrue( Chess_Army_Knife_Tournaments::check_player_count( 7, Chess_Army_Knife_Tournaments::config( $swiss ) ) );
+		$this->assertSame( 'tournament_rounds_players', Chess_Army_Knife_Tournaments::check_player_count( 6, Chess_Army_Knife_Tournaments::config( $swiss ) )->get_error_code() );
 	}
 
 	public function test_players_are_dealt_into_groups_snake_style() {
@@ -66,6 +101,7 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 			array(
 				'groups'  => 4,
 				'advance' => 2,
+				'rounds'  => 0,
 			),
 			Chess_Army_Knife_Tournaments::config( $round_robin )
 		);
@@ -79,6 +115,7 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 			array(
 				'groups'  => 1,
 				'advance' => 0,
+				'rounds'  => 0,
 			),
 			Chess_Army_Knife_Tournaments::config( $plain )
 		);
@@ -95,6 +132,7 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 			array(
 				'groups'  => 1,
 				'advance' => 0,
+				'rounds'  => 0,
 			),
 			Chess_Army_Knife_Tournaments::config( $knockout )
 		);
