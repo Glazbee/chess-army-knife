@@ -67,7 +67,7 @@ $title      = '';
 $admin_keys = array();
 
 if ( '' !== $player_code ) {
-	$player = ECF_Client::get_player_by_code( $player_code );
+	$player       = ECF_Client::get_player_by_code( $player_code );
 	$admin_keys[] = ECF_Client::cache_key_player( $player_code );
 
 	if ( ! is_wp_error( $player ) && is_array( $player ) ) {
@@ -136,7 +136,10 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 						<span class="ecf-featured__rating"><?php echo esc_html( $rating ); ?></span>
 						<?php echo esc_html( isset( $domain_labels[ $domain ] ) ? $domain_labels[ $domain ] : '' ); ?>
 					<?php endif; ?>
-					<?php if ( '' !== $rating && $show_club && '' !== $club ) : ?> · <?php endif; ?>
+					<?php
+					if ( '' !== $rating && $show_club && '' !== $club ) :
+						?>
+						· <?php endif; ?>
 					<?php if ( $show_club && '' !== $club ) : ?>
 						<?php echo esc_html( $club ); ?>
 					<?php endif; ?>

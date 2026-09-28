@@ -182,7 +182,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<ServerSideRender
-				block="ecf-lms/league-table"
+				block="chess-army-knife/league-table"
 				attributes={ attributes }
 			/>
 		</div>

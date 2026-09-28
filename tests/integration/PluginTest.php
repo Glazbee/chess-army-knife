@@ -51,8 +51,8 @@ class PluginTest extends WP_UnitTestCase {
 	public function test_all_blocks_are_registered() {
 		$registry = WP_Block_Type_Registry::get_instance();
 
-		foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player' ) as $block ) {
-			$this->assertTrue( $registry->is_registered( "ecf-lms/{$block}" ), $block );
+		foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-results' ) as $block ) {
+			$this->assertTrue( $registry->is_registered( "chess-army-knife/{$block}" ), $block );
 		}
 	}
 
@@ -152,7 +152,7 @@ class PluginTest extends WP_UnitTestCase {
 	}
 
 	public function test_featured_player_block_renders_without_ecf_code() {
-		$html = do_blocks( '<!-- wp:ecf-lms/featured-player {"playerName":"Jane Doe","blurb":"Club champion"} /-->' );
+		$html = do_blocks( '<!-- wp:chess-army-knife/featured-player {"playerName":"Jane Doe","blurb":"Club champion"} /-->' );
 
 		$this->assertStringContainsString( 'Jane Doe', $html );
 		$this->assertStringContainsString( 'Club champion', $html );
@@ -160,7 +160,7 @@ class PluginTest extends WP_UnitTestCase {
 	}
 
 	public function test_block_shows_notice_when_unconfigured() {
-		$html = do_blocks( '<!-- wp:ecf-lms/featured-player /-->' );
+		$html = do_blocks( '<!-- wp:chess-army-knife/featured-player /-->' );
 
 		$this->assertStringContainsString( 'chess-army-knife-notice', $html );
 	}

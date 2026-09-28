@@ -16,15 +16,15 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'club-results', $attributes );
 
-$club_code           = strtoupper( trim( Chess_Army_Knife_Settings::resolve( 'default_club_code', $attributes['clubCode'] ?? '' ) ) );
-$club_name           = isset( $attributes['clubName'] ) ? $attributes['clubName'] : '';
-$domain              = ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
-$max_players         = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_max_players', empty( $attributes['maxPlayers'] ) ? '' : $attributes['maxPlayers'], 12 ) );
-$games_per_player    = isset( $attributes['gamesPerPlayer'] ) ? max( 1, (int) $attributes['gamesPerPlayer'] ) : 5;
-$days_back           = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
-$max_results         = isset( $attributes['maxResults'] ) ? max( 1, (int) $attributes['maxResults'] ) : 20;
-$show_event          = ! isset( $attributes['showEvent'] ) || (bool) $attributes['showEvent'];
-$title               = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$club_code            = strtoupper( trim( Chess_Army_Knife_Settings::resolve( 'default_club_code', $attributes['clubCode'] ?? '' ) ) );
+$club_name            = isset( $attributes['clubName'] ) ? $attributes['clubName'] : '';
+$domain               = ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$max_players          = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_max_players', empty( $attributes['maxPlayers'] ) ? '' : $attributes['maxPlayers'], 12 ) );
+$games_per_player     = isset( $attributes['gamesPerPlayer'] ) ? max( 1, (int) $attributes['gamesPerPlayer'] ) : 5;
+$days_back            = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
+$max_results          = isset( $attributes['maxResults'] ) ? max( 1, (int) $attributes['maxResults'] ) : 20;
+$show_event           = ! isset( $attributes['showEvent'] ) || (bool) $attributes['showEvent'];
+$title                = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $show_opponent_rating = ! isset( $attributes['showOpponentRating'] ) || (bool) $attributes['showOpponentRating'];
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-results', $attributes );
@@ -117,12 +117,12 @@ $result_labels = array(
 	'0' => __( 'Loss', 'chess-army-knife' ),
 );
 
-$results = array();
+$results          = array();
 $admin_cache_keys = array( ECF_Client::cache_key_club_players( $club_code ) );
 
 foreach ( $players as $player ) {
 	$admin_cache_keys[] = ECF_Client::cache_key_games( $player['code'], $domain, $games_per_player );
-	$games = ECF_Client::get_games( $player['code'], $domain, $games_per_player );
+	$games              = ECF_Client::get_games( $player['code'], $domain, $games_per_player );
 
 	if ( is_wp_error( $games ) || empty( $games ) ) {
 		continue;
@@ -142,18 +142,18 @@ foreach ( $players as $player ) {
 		}
 
 		$results[] = array(
-			'date'             => $game['game_date'],
-			'player_name'      => $player['name'],
-			'opponent_name'    => $game['opponent_name'],
-			'opponent_rating'  => isset( $game['opponent_rating'] ) ? $game['opponent_rating'] : '',
-			'result_label'     => $result_labels[ $score ],
-			'result_class'     => array(
+			'date'            => $game['game_date'],
+			'player_name'     => $player['name'],
+			'opponent_name'   => $game['opponent_name'],
+			'opponent_rating' => isset( $game['opponent_rating'] ) ? $game['opponent_rating'] : '',
+			'result_label'    => $result_labels[ $score ],
+			'result_class'    => array(
 				'1' => 'ecf-result-win',
 				'5' => 'ecf-result-draw',
 				'0' => 'ecf-result-loss',
 			)[ $score ],
-			'colour'           => isset( $game['colour'] ) ? strtoupper( $game['colour'] ) : '',
-			'event_name'       => isset( $game['event_name'] ) ? $game['event_name'] : '',
+			'colour'          => isset( $game['colour'] ) ? strtoupper( $game['colour'] ) : '',
+			'event_name'      => isset( $game['event_name'] ) ? $game['event_name'] : '',
 		);
 	}
 }
@@ -191,7 +191,10 @@ $heading = $title ? $title : sprintf(
 					<th><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Opponent', 'chess-army-knife' ); ?></th>
-					<?php if ( $show_event ) : ?><th><?php esc_html_e( 'Event', 'chess-army-knife' ); ?></th><?php endif; ?>
+					<?php
+					if ( $show_event ) :
+						?>
+						<th><?php esc_html_e( 'Event', 'chess-army-knife' ); ?></th><?php endif; ?>
 				</tr>
 			</thead>
 			<tbody>
@@ -208,7 +211,10 @@ $heading = $title ? $title : sprintf(
 							}
 							?>
 						</td>
-						<?php if ( $show_event ) : ?><td><?php echo esc_html( $row['event_name'] ); ?></td><?php endif; ?>
+						<?php
+						if ( $show_event ) :
+							?>
+							<td><?php echo esc_html( $row['event_name'] ); ?></td><?php endif; ?>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>

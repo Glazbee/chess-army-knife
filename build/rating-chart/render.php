@@ -115,7 +115,7 @@ $chart_payload = array(
 	'unratedLabel' => isset( $domain_labels[ $domain ] ) ? $domain_labels[ $domain ] : __( 'Rating', 'chess-army-knife' ),
 );
 
-$canvas_id = 'ecf-rating-chart-' . wp_unique_id();
+$canvas_id       = 'ecf-rating-chart-' . wp_unique_id();
 $admin_cache_key = ECF_Client::cache_key_games( $player_code, $domain, $games_limit );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

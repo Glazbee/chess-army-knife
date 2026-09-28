@@ -73,19 +73,20 @@ class Chess_Army_Knife_Settings {
 	 */
 	public static function defaults() {
 		return array(
-			'default_club_code'   => '',
-			'default_org_id'      => '',
-			'default_event_name'  => '',
-			'default_domain'      => 'S',
-			'default_days_back'   => 60,
-			'default_max_players' => 12,
-			'lms_base_url'        => '',
-			'club_teams'          => '',  // Raw textarea: one "org | event | team" per line.
-			'fast_cache_enabled'  => 1,
-			'match_time'          => '19:30',
-			'cache_ecf_minutes'   => 360, // Player info / games / club roster.
-			'cache_lms_minutes'   => 30,  // League tables / matches / fixtures.
-			'use_local_cache'     => 1,   // Persistent custom-table cache vs. plain transients.
+			'default_club_code'        => '',
+			'default_org_id'           => '',
+			'default_event_name'       => '',
+			'default_domain'           => 'S',
+			'default_days_back'        => 60,
+			'default_max_players'      => 12,
+			'lms_base_url'             => '',
+			'club_teams'               => '',  // Raw textarea: one "org | event | team" per line.
+			'fast_cache_enabled'       => 1,
+			'match_time'               => '19:30',
+			'cache_ecf_minutes'        => 360, // Player info / games / club roster.
+			'cache_lms_minutes'        => 30,  // League tables / matches / fixtures.
+			'use_local_cache'          => 1,   // Persistent custom-table cache vs. plain transients.
+			'delete_data_on_uninstall' => 0, // Also delete tournaments and players when the plugin is deleted.
 		);
 	}
 
@@ -280,7 +281,8 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['cache_lms_minutes'] ) ) {
 			$clean['cache_lms_minutes'] = max( 5, (int) $input['cache_lms_minutes'] );
 		}
-		$clean['use_local_cache'] = ! empty( $input['use_local_cache'] ) ? 1 : 0;
+		$clean['use_local_cache']          = ! empty( $input['use_local_cache'] ) ? 1 : 0;
+		$clean['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
 
 		return $clean;
 	}
@@ -450,6 +452,18 @@ class Chess_Army_Knife_Settings {
 							<?php if ( self::in_fast_cache_window() ) : ?>
 								<p><strong><?php esc_html_e( 'Fast cache is active right now.', 'chess-army-knife' ); ?></strong></p>
 							<?php endif; ?>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'When the plugin is deleted', 'chess-army-knife' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( self::OPTION ); ?>[delete_data_on_uninstall]" value="1" <?php checked( ! empty( $options['delete_data_on_uninstall'] ) ); ?> />
+								<?php esc_html_e( 'Also delete all tournaments, results and player profiles', 'chess-army-knife' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'Off by default, so deleting the plugin keeps your tournament history. Settings and cached data are always removed. This cannot be undone.', 'chess-army-knife' ); ?>
+							</p>
 						</td>
 					</tr>
 				</table>

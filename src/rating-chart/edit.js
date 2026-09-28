@@ -214,7 +214,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			) : (
 				<div ref={ previewRef }>
 					<ServerSideRender
-						block="ecf-lms/rating-chart"
+						block="chess-army-knife/rating-chart"
 						attributes={ attributes }
 					/>
 				</div>

@@ -208,7 +208,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				</Placeholder>
 			) : (
 				<ServerSideRender
-					block="ecf-lms/club-results"
+					block="chess-army-knife/club-results"
 					attributes={ attributes }
 				/>
 			) }

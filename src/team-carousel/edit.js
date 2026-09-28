@@ -225,7 +225,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<ServerSideRender
-				block="ecf-lms/team-carousel"
+				block="chess-army-knife/team-carousel"
 				attributes={ attributes }
 			/>
 		</div>

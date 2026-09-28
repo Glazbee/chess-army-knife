@@ -245,7 +245,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				</Placeholder>
 			) : (
 				<ServerSideRender
-					block="ecf-lms/featured-player"
+					block="chess-army-knife/featured-player"
 					attributes={ attributes }
 				/>
 			) }
