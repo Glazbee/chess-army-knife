@@ -66,6 +66,11 @@ Yes — add as many blocks as you like, each configured independently.
 
 == Changelog ==
 
+= Unreleased =
+* Added: Tournaments (ECF & LMS → Tournaments) and saved player profiles (ECF & LMS → Players). Phase 1 supports round-robin (Berger tables from the FIDE General Regulations, single or double round). Players with an ECF rating code have their rating fetched when the tournament starts and used for seeding; later rating changes don't affect seeding. Players without a code use a manual rating.
+* Added: Tournament Results Entry block — an admin-only block for recording game results from the front end (visitors see nothing).
+* Note: tournament data is kept when the plugin is deleted.
+
 = 0.0.1 =
 * Changed: version numbering reset to 0.0.1 ahead of a first stable 1.0 release. Earlier 1.x entries below are historical.
 * Changed: minimum WordPress version is now 7.1.2.

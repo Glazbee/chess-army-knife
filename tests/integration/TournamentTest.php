@@ -1,0 +1,329 @@
+<?php
+/**
+ * Integration tests: tournaments running against real WordPress and database.
+ *
+ * @package Chess_Army_Knife
+ */
+
+class TournamentTest extends WP_UnitTestCase {
+
+	/** @var int[] Player ids keyed by name. */
+	private $players = array();
+
+	public function set_up() {
+		parent::set_up();
+		global $wpdb;
+
+		// Use transients for the ECF cache, and start each test with fresh (temporary) tables.
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
+			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+		Chess_Army_Knife_Tournament_Store::install_tables();
+	}
+
+	/**
+	 * Answer ECF rating requests from a code => rating map.
+	 */
+	private function mock_ratings( array $ratings ) {
+		add_filter(
+			'pre_http_request',
+			function ( $preempt, $args, $url ) use ( $ratings ) {
+				parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+				$code = isset( $query['player_no'] ) ? $query['player_no'] : '';
+				if ( ! isset( $ratings[ $code ] ) ) {
+					return array(
+						'headers'  => array(),
+						'body'     => wp_json_encode(
+							array(
+								'success' => false,
+								'message' => 'Not found',
+							)
+						),
+						'response' => array(
+							'code'    => 404,
+							'message' => '',
+						),
+						'cookies'  => array(),
+						'filename' => null,
+					);
+				}
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode(
+						array(
+							'success' => true,
+							'data'    => array( 'revised_rating' => $ratings[ $code ] ),
+						)
+					),
+					'response' => array(
+						'code'    => 200,
+						'message' => '',
+					),
+					'cookies'  => array(),
+					'filename' => null,
+				);
+			},
+			10,
+			3
+		);
+	}
+
+	private function add_player( $name, $code = '', $manual = null ) {
+		$id                     = Chess_Army_Knife_Tournament_Store::save_player(
+			array(
+				'name'          => $name,
+				'ecf_code'      => $code,
+				'manual_rating' => $manual,
+			)
+		);
+		$this->players[ $name ] = $id;
+		return $id;
+	}
+
+	private function create_tournament( array $args = array() ) {
+		return Chess_Army_Knife_Tournaments::create( array_merge( array( 'name' => 'Club Championship' ), $args ) );
+	}
+
+	/**
+	 * A draft tournament with four players (ratings by ECF code or manual).
+	 */
+	private function four_player_tournament() {
+		$this->mock_ratings(
+			array(
+				'100001' => 1900,
+				'100002' => 2100,
+				'100003' => 1700,
+			)
+		);
+		$id = $this->create_tournament();
+		foreach ( array(
+			$this->add_player( 'Alice', '100001A' ),
+			$this->add_player( 'Bob', '100002B' ),
+			$this->add_player( 'Cara', '100003C' ),
+			$this->add_player( 'Dan', '', 1500 ),
+		) as $player_id ) {
+			$this->assertIsInt( Chess_Army_Knife_Tournaments::add_player( $id, $player_id ) );
+		}
+		return $id;
+	}
+
+	public function test_player_profiles_round_trip() {
+		$id = $this->add_player( 'Alice', '100001A', 1650 );
+
+		$player = Chess_Army_Knife_Tournament_Store::get_player( $id );
+		$this->assertSame( 'Alice', $player['name'] );
+		$this->assertSame( '100001A', $player['ecf_code'] );
+		$this->assertSame( 1650, $player['manual_rating'] );
+
+		Chess_Army_Knife_Tournament_Store::delete_player( $id );
+		$this->assertNull( Chess_Army_Knife_Tournament_Store::get_player( $id ) );
+	}
+
+	public function test_create_validates_name_and_format() {
+		$this->assertWPError( Chess_Army_Knife_Tournaments::create( array( 'name' => '  ' ) ) );
+		$this->assertWPError(
+			Chess_Army_Knife_Tournaments::create(
+				array(
+					'name'   => 'X',
+					'format' => 'made-up',
+				)
+			)
+		);
+	}
+
+	public function test_cannot_enter_the_same_player_twice() {
+		$id     = $this->create_tournament();
+		$player = $this->add_player( 'Alice' );
+
+		Chess_Army_Knife_Tournaments::add_player( $id, $player );
+
+		$this->assertWPError( Chess_Army_Knife_Tournaments::add_player( $id, $player ) );
+	}
+
+	public function test_cannot_start_with_fewer_than_two_players() {
+		$id = $this->create_tournament();
+		Chess_Army_Knife_Tournaments::add_player( $id, $this->add_player( 'Alice' ) );
+
+		$this->assertWPError( Chess_Army_Knife_Tournaments::start( $id ) );
+	}
+
+	public function test_start_snapshots_ratings_seeds_and_generates_pairings() {
+		$id = $this->four_player_tournament();
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::start( $id ) );
+
+		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $id );
+		$this->assertSame( array( 'Bob', 'Alice', 'Cara', 'Dan' ), wp_list_pluck( $entries, 'name' ) );
+		$this->assertSame( array( 1, 2, 3, 4 ), wp_list_pluck( $entries, 'seed' ) );
+		$this->assertSame( array( 2100, 1900, 1700, 1500 ), wp_list_pluck( $entries, 'start_rating' ) );
+		$this->assertSame( array( 'ecf', 'ecf', 'ecf', 'manual' ), wp_list_pluck( $entries, 'rating_source' ) );
+
+		$games = Chess_Army_Knife_Tournament_Store::get_games( $id );
+		$this->assertCount( 6, $games ); // 4 players: 3 rounds of 2 games.
+		$this->assertSame( array( 1, 1, 2, 2, 3, 3 ), wp_list_pluck( $games, 'round' ) );
+
+		// Round 1 is seed 1 v seed 4 and seed 2 v seed 3 (Berger table).
+		$this->assertSame( $entries[0]['id'], $games[0]['white_entry_id'] );
+		$this->assertSame( $entries[3]['id'], $games[0]['black_entry_id'] );
+
+		$this->assertSame( 'active', Chess_Army_Knife_Tournament_Store::get_tournament( $id )['status'] );
+		$this->assertWPError( Chess_Army_Knife_Tournaments::start( $id ) );
+	}
+
+	public function test_missing_ecf_rating_falls_back_to_manual_then_unrated() {
+		$this->mock_ratings( array() ); // The ECF knows nobody.
+		$id = $this->create_tournament();
+		Chess_Army_Knife_Tournaments::add_player( $id, $this->add_player( 'Alice', '999999Z', 1400 ) );
+		Chess_Army_Knife_Tournaments::add_player( $id, $this->add_player( 'Bob', '888888Y' ) );
+
+		Chess_Army_Knife_Tournaments::start( $id );
+
+		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $id );
+		$this->assertSame( 'Alice', $entries[0]['name'] );
+		$this->assertSame( 'manual', $entries[0]['rating_source'] );
+		$this->assertNull( $entries[1]['start_rating'] );
+		$this->assertSame( 'none', $entries[1]['rating_source'] );
+	}
+
+	public function test_ratings_changing_after_start_do_not_change_seeding() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+
+		// Alice's ECF rating jumps past Bob's after the tournament has started.
+		remove_all_filters( 'pre_http_request' );
+		$this->mock_ratings( array( '100001' => 2500 ) );
+		Chess_Army_Knife_Cache::forget( ECF_Client::cache_key_rating( '100001', 'S' ) );
+
+		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $id );
+		$this->assertSame( 'Bob', $entries[0]['name'] );
+		$this->assertSame( 1900, $entries[1]['start_rating'] );
+	}
+
+	public function test_recording_results_updates_standings_and_completes_the_tournament() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+
+		$this->assertCount( 6, Chess_Army_Knife_Tournaments::games_to_play( $id ) );
+
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $id ) as $game ) {
+			$updated = Chess_Army_Knife_Tournaments::record_result( $game['id'], '1-0' );
+			$this->assertSame( '1-0', $updated['result'] );
+		}
+
+		$this->assertSame( 'complete', Chess_Army_Knife_Tournament_Store::get_tournament( $id )['status'] );
+		$this->assertCount( 0, Chess_Army_Knife_Tournaments::games_to_play( $id ) );
+
+		$standings = Chess_Army_Knife_Tournaments::standings( $id );
+		$this->assertCount( 4, $standings );
+		$this->assertSame( 6.0, array_sum( wp_list_pluck( $standings, 'points' ) ) );
+
+		// Clearing a result reopens the tournament.
+		$first = Chess_Army_Knife_Tournament_Store::get_games( $id )[0];
+		Chess_Army_Knife_Tournaments::record_result( $first['id'], '' );
+		$this->assertSame( 'active', Chess_Army_Knife_Tournament_Store::get_tournament( $id )['status'] );
+	}
+
+	public function test_invalid_results_and_unstarted_tournaments_are_rejected() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+		$game = Chess_Army_Knife_Tournament_Store::get_games( $id )[0];
+
+		$this->assertWPError( Chess_Army_Knife_Tournaments::record_result( $game['id'], '2-0' ) );
+		$this->assertWPError( Chess_Army_Knife_Tournaments::record_result( 999999, '1-0' ) );
+		$this->assertNull( Chess_Army_Knife_Tournament_Store::get_game( $game['id'] )['result'] );
+	}
+
+	public function test_odd_player_count_creates_byes_that_need_no_result() {
+		$id = $this->create_tournament();
+		foreach ( array( 'A', 'B', 'C' ) as $name ) {
+			Chess_Army_Knife_Tournaments::add_player( $id, $this->add_player( $name, '', 1500 ) );
+		}
+		Chess_Army_Knife_Tournaments::start( $id );
+
+		$games = Chess_Army_Knife_Tournament_Store::get_games( $id );
+		$byes  = array_filter(
+			$games,
+			function ( $game ) {
+				return $game['is_bye'];
+			}
+		);
+		$this->assertCount( 3, $byes );
+		$this->assertCount( 3, Chess_Army_Knife_Tournaments::games_to_play( $id ) );
+
+		$bye = reset( $byes );
+		$this->assertWPError( Chess_Army_Knife_Tournaments::record_result( $bye['id'], '1-0' ) );
+	}
+
+	public function test_withdrawing_drops_unplayed_games() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+		$dan = Chess_Army_Knife_Tournament_Store::get_entries( $id )[3];
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::withdraw( $dan['id'] ) );
+
+		$this->assertCount( 3, Chess_Army_Knife_Tournaments::games_to_play( $id ) ); // Dan's 3 games are gone.
+	}
+
+	public function test_rest_result_endpoint_requires_permission() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+		$game = Chess_Army_Knife_Tournament_Store::get_games( $id )[0];
+
+		$request = new WP_REST_Request( 'POST', '/chess-army-knife/v1/games/' . $game['id'] . '/result' );
+		$request->set_param( 'result', '1-0' );
+
+		// Logged out and subscribers are refused.
+		$this->assertContains( rest_do_request( $request )->get_status(), array( 401, 403 ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( 403, rest_do_request( $request )->get_status() );
+
+		// Administrators can record results.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$response = rest_do_request( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( '1-0', $response->get_data()['result'] );
+
+		$bad = new WP_REST_Request( 'POST', '/chess-army-knife/v1/games/' . $game['id'] . '/result' );
+		$bad->set_param( 'result', 'nonsense' );
+		$this->assertSame( 400, rest_do_request( $bad )->get_status() );
+
+		$missing = new WP_REST_Request( 'POST', '/chess-army-knife/v1/games/999999/result' );
+		$missing->set_param( 'result', '1-0' );
+		$this->assertSame( 404, rest_do_request( $missing )->get_status() );
+	}
+
+	public function test_results_block_is_only_visible_to_managers() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+		$block = '<!-- wp:chess-army-knife/tournament-results {"tournamentId":' . $id . '} /-->';
+
+		$this->assertSame( '', trim( do_blocks( $block ) ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$html = do_blocks( $block );
+		$this->assertStringContainsString( 'Club Championship', $html );
+		$this->assertStringContainsString( 'cak-results__select', $html );
+		$this->assertStringContainsString( 'data-nonce', $html );
+	}
+
+	public function test_results_block_explains_unstarted_and_unconfigured_states() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertStringContainsString( 'choose a tournament', do_blocks( '<!-- wp:chess-army-knife/tournament-results /-->' ) );
+
+		$id = $this->create_tournament();
+		$this->assertStringContainsString( 'not started', do_blocks( '<!-- wp:chess-army-knife/tournament-results {"tournamentId":' . $id . '} /-->' ) );
+	}
+
+	public function test_deleting_a_tournament_removes_its_entries_and_games() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+
+		Chess_Army_Knife_Tournament_Store::delete_tournament( $id );
+
+		$this->assertNull( Chess_Army_Knife_Tournament_Store::get_tournament( $id ) );
+		$this->assertSame( array(), Chess_Army_Knife_Tournament_Store::get_entries( $id ) );
+		$this->assertSame( array(), Chess_Army_Knife_Tournament_Store::get_games( $id ) );
+	}
+}

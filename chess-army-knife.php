@@ -27,6 +27,13 @@ require_once Chess_Army_Knife_DIR . 'includes/class-lms-client.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-settings-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-club-teams-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-templates.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-berger.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-standings.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-tournament-store.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-tournaments.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-tournament-rest.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-players-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-tournaments-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-admin-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
@@ -36,6 +43,7 @@ require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
  */
 function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Cache::install_table();
+	Chess_Army_Knife_Tournament_Store::install_tables();
 
 	if ( ! wp_next_scheduled( 'Chess_Army_Knife_cleanup_cache' ) ) {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'Chess_Army_Knife_cleanup_cache' );
@@ -74,6 +82,7 @@ add_action( 'Chess_Army_Knife_cleanup_cache', 'Chess_Army_Knife_cleanup_cache' )
 function Chess_Army_Knife_maybe_upgrade() {
 	if ( get_option( 'Chess_Army_Knife_db_version' ) !== Chess_Army_Knife_VERSION ) {
 		Chess_Army_Knife_Cache::install_table();
+		Chess_Army_Knife_Tournament_Store::install_tables();
 		update_option( 'Chess_Army_Knife_db_version', Chess_Army_Knife_VERSION );
 	}
 }
