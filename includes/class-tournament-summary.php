@@ -49,6 +49,55 @@ class Chess_Army_Knife_Tournament_Summary {
 	}
 
 	/**
+	 * The players in a tournament with their ratings, for the public players list.
+	 *
+	 * Once started the rating is the one recorded at the start. Before that a
+	 * player's rating is not known (it is fetched when the tournament starts),
+	 * so only a manual rating is shown and no ECF request is made for the page.
+	 *
+	 * @param array $tournament Tournament row.
+	 * @return array[] Each: seed, name, ecf_code, rating, source ('ecf'|'manual'|'none'|'pending'), withdrawn.
+	 */
+	public static function players( array $tournament ) {
+		$started  = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
+		$profiles = array();
+		if ( ! $started ) {
+			foreach ( Chess_Army_Knife_Tournament_Store::get_players() as $profile ) {
+				$profiles[ $profile['id'] ] = $profile;
+			}
+		}
+
+		$rows = array();
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament['id'] ) as $entry ) {
+			$rating = $entry['start_rating'];
+			$source = $entry['rating_source'];
+
+			if ( ! $started ) {
+				$manual = isset( $profiles[ $entry['player_id'] ] ) ? $profiles[ $entry['player_id'] ]['manual_rating'] : null;
+				if ( '' !== $entry['ecf_code'] ) {
+					$rating = null;
+					$source = 'pending';
+				} elseif ( null !== $manual ) {
+					$rating = $manual;
+					$source = 'manual';
+				} else {
+					$source = 'none';
+				}
+			}
+
+			$rows[] = array(
+				'seed'      => $entry['seed'],
+				'name'      => $entry['name'],
+				'ecf_code'  => $entry['ecf_code'],
+				'rating'    => $rating,
+				'source'    => $source,
+				'withdrawn' => 'withdrawn' === $entry['status'],
+			);
+		}
+		return $rows;
+	}
+
+	/**
 	 * Games still to be played, grouped under a round label.
 	 *
 	 * @param int $tournament_id Tournament id.

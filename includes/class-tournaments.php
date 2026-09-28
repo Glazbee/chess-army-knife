@@ -186,6 +186,78 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
+	 * Block markup for a tournament's own page: status, players and games to play.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return string
+	 */
+	public static function page_content( $tournament_id ) {
+		$attributes = wp_json_encode( array( 'tournamentId' => (int) $tournament_id ) );
+		$blocks     = array();
+		foreach ( array( 'tournament-status', 'tournament-players', 'tournament-games' ) as $block ) {
+			$blocks[] = '<!-- wp:chess-army-knife/' . $block . ' ' . $attributes . ' /-->';
+		}
+		return implode( "\n\n", $blocks );
+	}
+
+	/**
+	 * The tournament's own page, if it has one that is not in the trash.
+	 *
+	 * @param array $tournament Tournament row.
+	 * @return WP_Post|null
+	 */
+	public static function get_page( array $tournament ) {
+		$page_id = isset( $tournament['settings']['page_id'] ) ? (int) $tournament['settings']['page_id'] : 0;
+		$page    = $page_id ? get_post( $page_id ) : null;
+		return ( $page && 'page' === $page->post_type && 'trash' !== $page->post_status ) ? $page : null;
+	}
+
+	/**
+	 * Create a draft page for a tournament that shows its status, players and games to play,
+	 * for everyone at the event to refer to.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int|WP_Error Page id.
+	 */
+	public static function create_page( $tournament_id ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		if ( ! $tournament ) {
+			return new WP_Error( 'tournament_missing', __( 'Tournament not found.', 'chess-army-knife' ) );
+		}
+		if ( self::get_page( $tournament ) ) {
+			return new WP_Error( 'page_exists', __( 'This tournament already has a page.', 'chess-army-knife' ) );
+		}
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			return new WP_Error( 'page_permission', __( 'You are not allowed to create pages.', 'chess-army-knife' ) );
+		}
+
+		$page_id = wp_insert_post(
+			wp_slash(
+				array(
+					'post_type'    => 'page',
+					'post_status'  => 'draft',
+					'post_title'   => $tournament['name'],
+					'post_content' => self::page_content( $tournament['id'] ),
+				)
+			),
+			true
+		);
+		if ( is_wp_error( $page_id ) ) {
+			return $page_id;
+		}
+
+		$settings            = $tournament['settings'];
+		$settings['page_id'] = (int) $page_id;
+		Chess_Army_Knife_Tournament_Store::save_tournament(
+			array(
+				'id'       => $tournament['id'],
+				'settings' => $settings,
+			)
+		);
+		return (int) $page_id;
+	}
+
+	/**
 	 * Enter a saved player profile in a draft tournament.
 	 *
 	 * @param int $tournament_id Tournament id.
@@ -240,6 +312,24 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
+	 * The rating in an ECF rating response, if it has a usable one.
+	 *
+	 * @param array|WP_Error $data Response from ECF_Client::get_rating().
+	 * @return int|null
+	 */
+	public static function rating_from_data( $data ) {
+		if ( is_wp_error( $data ) || ! is_array( $data ) ) {
+			return null;
+		}
+		foreach ( array( 'revised_rating', 'original_rating', 'rating' ) as $key ) {
+			if ( isset( $data[ $key ] ) && is_numeric( $data[ $key ] ) && (int) $data[ $key ] > 0 ) {
+				return (int) $data[ $key ];
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Look up a player's current rating for seeding, bypassing the cache so
 	 * the snapshot reflects the rating at the moment the tournament starts.
 	 *
@@ -252,16 +342,12 @@ class Chess_Army_Knife_Tournaments {
 
 		if ( '' !== $code ) {
 			Chess_Army_Knife_Cache::forget( ECF_Client::cache_key_rating( $code, $domain ) );
-			$data = ECF_Client::get_rating( $code, $domain );
-			if ( ! is_wp_error( $data ) && is_array( $data ) ) {
-				foreach ( array( 'revised_rating', 'original_rating', 'rating' ) as $key ) {
-					if ( isset( $data[ $key ] ) && is_numeric( $data[ $key ] ) && (int) $data[ $key ] > 0 ) {
-						return array(
-							'rating' => (int) $data[ $key ],
-							'source' => 'ecf',
-						);
-					}
-				}
+			$rating = self::rating_from_data( ECF_Client::get_rating( $code, $domain ) );
+			if ( null !== $rating ) {
+				return array(
+					'rating' => $rating,
+					'source' => 'ecf',
+				);
 			}
 		}
 

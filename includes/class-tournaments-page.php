@@ -17,7 +17,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
-		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye' ) as $action ) {
+		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye', 'create_page' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -92,23 +92,43 @@ class Chess_Army_Knife_Tournaments_Page {
 				'rounds'         => isset( $_POST['rounds'] ) ? (int) $_POST['rounds'] : 0,
 				'initial_colour' => isset( $_POST['initial_colour'] ) ? sanitize_key( wp_unslash( $_POST['initial_colour'] ) ) : 'white',
 				'groups'         => isset( $_POST['groups'] ) ? (int) $_POST['groups'] : 1,
-				'advance'        => isset( $_POST['advance'] ) ? (int) $_POST['advance'] : 0,
+				// The number advancing only counts when the knockout stage is switched on.
+				'advance'        => ! empty( $_POST['knockout_stage'] ) && isset( $_POST['advance'] ) ? (int) $_POST['advance'] : 0,
 			)
 		);
+		if ( is_wp_error( $result ) ) {
+			self::finish( $result, '' );
+		}
 
-		self::finish( $result, __( 'Tournament created. Add players, then start it.', 'chess-army-knife' ), is_wp_error( $result ) ? 0 : $result );
+		$entered = Chess_Army_Knife_Player_Selector::enter_players( $result, wp_unslash( $_POST ) );
+		$outcome = Chess_Army_Knife_Player_Selector::outcome( $entered );
+
+		self::finish(
+			$outcome,
+			$entered['added']
+				/* translators: %d: number of players */
+				? sprintf( _n( 'Tournament created with %d player. Add more, then start it.', 'Tournament created with %d players. Add more, then start it.', $entered['added'], 'chess-army-knife' ), $entered['added'] )
+				: __( 'Tournament created. Add players, then start it.', 'chess-army-knife' ),
+			$result
+		);
 	}
 
 	/**
-	 * Add a player to a tournament.
+	 * Add the players chosen in the selector to a tournament.
 	 */
 	public static function handle_add_player() {
 		self::authorise( 'add_player' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
-		$player_id     = isset( $_POST['player_id'] ) ? (int) $_POST['player_id'] : 0;
+		$entered       = Chess_Army_Knife_Player_Selector::enter_players( $tournament_id, wp_unslash( $_POST ) );
+		$outcome       = Chess_Army_Knife_Player_Selector::outcome( $entered );
 
-		self::finish( Chess_Army_Knife_Tournaments::add_player( $tournament_id, $player_id ), __( 'Player added.', 'chess-army-knife' ), $tournament_id );
+		self::finish(
+			$outcome,
+			/* translators: %d: number of players */
+			sprintf( _n( '%d player added.', '%d players added.', $entered['added'], 'chess-army-knife' ), $entered['added'] ),
+			$tournament_id
+		);
 	}
 
 	/**
@@ -223,6 +243,17 @@ class Chess_Army_Knife_Tournaments_Page {
 		$round         = isset( $_GET['round'] ) ? (int) $_GET['round'] : 0;
 
 		self::finish( Chess_Army_Knife_Tournaments::cancel_bye( $tournament_id, $entry_id, $round ), __( 'Bye cancelled.', 'chess-army-knife' ), $tournament_id );
+	}
+
+	/**
+	 * Create the tournament's own page.
+	 */
+	public static function handle_create_page() {
+		self::authorise( 'create_page' );
+
+		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
+
+		self::finish( Chess_Army_Knife_Tournaments::create_page( $tournament_id ), __( 'Page created as a draft. Edit it to publish.', 'chess-army-knife' ), $tournament_id );
 	}
 
 	/**
@@ -351,7 +382,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		</table>
 
 		<h2><?php esc_html_e( 'Create a tournament', 'chess-army-knife' ); ?></h2>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-cak-create-form>
 			<input type="hidden" name="action" value="chess_army_knife_tournament_create" />
 			<?php wp_nonce_field( 'chess_army_knife_tournament_create' ); ?>
 			<table class="form-table" role="presentation">
@@ -369,21 +400,21 @@ class Chess_Army_Knife_Tournaments_Page {
 						</select>
 					</td>
 				</tr>
-				<tr>
+				<tr data-cak-formats="swiss">
 					<th scope="row"><label for="rounds"><?php esc_html_e( 'Rounds', 'chess-army-knife' ); ?></label></th>
 					<td>
 						<input type="number" id="rounds" name="rounds" min="1" max="30" value="5" class="small-text" />
-						<p class="description"><?php esc_html_e( 'Swiss only. Each round is paired after the previous one is finished, using the FIDE Dutch system. Nobody plays the same opponent twice, so there can be at most one fewer rounds than players.', 'chess-army-knife' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Each round is paired after the previous one is finished, using the FIDE Dutch system. Nobody plays the same opponent twice, so there can be at most one fewer rounds than players.', 'chess-army-knife' ); ?></p>
 					</td>
 				</tr>
-				<tr>
+				<tr data-cak-formats="swiss">
 					<th scope="row"><label for="initial_colour"><?php esc_html_e( 'Initial colour', 'chess-army-knife' ); ?></label></th>
 					<td>
 						<select id="initial_colour" name="initial_colour">
 							<option value="white"><?php esc_html_e( 'White', 'chess-army-knife' ); ?></option>
 							<option value="black"><?php esc_html_e( 'Black', 'chess-army-knife' ); ?></option>
 						</select>
-						<p class="description"><?php esc_html_e( 'Swiss only. The colour given to the top seed of the first pairing (FIDE 5.2.5); later colours alternate from there. Draw it by lot if your rules require.', 'chess-army-knife' ); ?></p>
+						<p class="description"><?php esc_html_e( 'The colour given to the top seed of the first pairing (FIDE 5.2.5); later colours alternate from there. Draw it by lot if your rules require.', 'chess-army-knife' ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -396,25 +427,33 @@ class Chess_Army_Knife_Tournaments_Page {
 						</select>
 					</td>
 				</tr>
-				<tr>
+				<tr data-cak-formats="round-robin">
 					<th scope="row"><?php esc_html_e( 'Double round-robin', 'chess-army-knife' ); ?></th>
 					<td><label><input type="checkbox" name="double_round" value="1" /> <?php esc_html_e( 'Everyone plays everyone twice, once with each colour', 'chess-army-knife' ); ?></label></td>
 				</tr>
-				<tr>
+				<tr data-cak-formats="round-robin">
 					<th scope="row"><label for="groups"><?php esc_html_e( 'Groups', 'chess-army-knife' ); ?></label></th>
 					<td>
 						<input type="number" id="groups" name="groups" min="1" max="16" value="1" class="small-text" />
-						<p class="description"><?php esc_html_e( 'Round-robin only. Split the players into this many groups, dealt out by seed so each group has a similar mix of strengths.', 'chess-army-knife' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Split the players into this many groups, dealt out by seed so each group has a similar mix of strengths.', 'chess-army-knife' ); ?></p>
 					</td>
 				</tr>
-				<tr>
-					<th scope="row"><label for="advance"><?php esc_html_e( 'Players advancing to a knockout stage', 'chess-army-knife' ); ?></label></th>
+				<tr data-cak-formats="round-robin">
+					<th scope="row"><?php esc_html_e( 'Knockout stage', 'chess-army-knife' ); ?></th>
+					<td><label><input type="checkbox" id="knockout_stage" name="knockout_stage" value="1" /> <?php esc_html_e( 'Send the best players from each group into a knockout stage', 'chess-army-knife' ); ?></label></td>
+				</tr>
+				<tr data-cak-formats="round-robin" data-cak-needs-knockout>
+					<th scope="row"><label for="advance"><?php esc_html_e( 'Players advancing to the knockout stage', 'chess-army-knife' ); ?></label></th>
 					<td>
-						<input type="number" id="advance" name="advance" min="0" value="0" class="small-text" />
-						<p class="description"><?php esc_html_e( 'Round-robin only. How many players from each group go into a knockout stage (0 for none). For example, 4 groups with 2 advancing gives an 8-player knockout. Knockout tournaments ignore the group settings.', 'chess-army-knife' ); ?></p>
+						<input type="number" id="advance" name="advance" min="1" value="2" class="small-text" />
+						<p class="description"><?php esc_html_e( 'How many players from each group go into the knockout stage. For example, 4 groups with 2 advancing gives an 8-player knockout.', 'chess-army-knife' ); ?></p>
 					</td>
 				</tr>
 			</table>
+
+			<h3><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h3>
+			<?php Chess_Army_Knife_Player_Selector::render( Chess_Army_Knife_Tournament_Store::get_players() ); ?>
+
 			<?php submit_button( __( 'Create tournament', 'chess-army-knife' ) ); ?>
 		</form>
 		<?php
@@ -475,6 +514,8 @@ class Chess_Army_Knife_Tournaments_Page {
 			><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
 		</p>
 
+		<?php self::render_page_section( $tournament ); ?>
+
 		<h2><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h2>
 		<table class="wp-list-table widefat fixed striped">
 			<thead>
@@ -484,13 +525,14 @@ class Chess_Army_Knife_Tournaments_Page {
 						<th style="width:90px;"><?php esc_html_e( 'Group', 'chess-army-knife' ); ?></th>
 					<?php endif; ?>
 					<th><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'ECF code', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Rating at start', 'chess-army-knife' ); ?></th>
 					<th style="width:120px;"></th>
 				</tr>
 			</thead>
 			<tbody>
 				<?php if ( empty( $entries ) ) : ?>
-					<tr><td colspan="4"><?php esc_html_e( 'No players entered yet.', 'chess-army-knife' ); ?></td></tr>
+					<tr><td colspan="5"><?php esc_html_e( 'No players entered yet.', 'chess-army-knife' ); ?></td></tr>
 				<?php endif; ?>
 				<?php foreach ( $entries as $entry ) : ?>
 					<tr>
@@ -504,6 +546,7 @@ class Chess_Army_Knife_Tournaments_Page {
 								<em>(<?php esc_html_e( 'withdrawn', 'chess-army-knife' ); ?>)</em>
 							<?php endif; ?>
 						</td>
+						<td><?php echo '' === $entry['ecf_code'] ? '&mdash;' : esc_html( $entry['ecf_code'] ); ?></td>
 						<td>
 							<?php
 							if ( $draft ) {
@@ -565,6 +608,38 @@ class Chess_Army_Knife_Tournaments_Page {
 	}
 
 	/**
+	 * Link to the tournament's own page, or a button to create one.
+	 *
+	 * @param array $tournament Tournament row.
+	 */
+	protected static function render_page_section( array $tournament ) {
+		$page = Chess_Army_Knife_Tournaments::get_page( $tournament );
+		?>
+		<p>
+			<strong><?php esc_html_e( 'Tournament page:', 'chess-army-knife' ); ?></strong>
+			<?php if ( $page ) : ?>
+				<a href="<?php echo esc_url( get_edit_post_link( $page->ID ) ); ?>"><?php esc_html_e( 'Edit page', 'chess-army-knife' ); ?></a>
+				<?php if ( 'publish' === $page->post_status ) : ?>
+					&middot; <a href="<?php echo esc_url( get_permalink( $page ) ); ?>"><?php esc_html_e( 'View page', 'chess-army-knife' ); ?></a>
+				<?php else : ?>
+					<em>(<?php esc_html_e( 'not published yet', 'chess-army-knife' ); ?>)</em>
+				<?php endif; ?>
+			<?php else : ?>
+				<span class="description"><?php esc_html_e( 'A page listing the tournament\'s status, players with their ratings, and games still to play, for everyone at the event.', 'chess-army-knife' ); ?></span>
+			<?php endif; ?>
+		</p>
+		<?php if ( ! $page ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="chess_army_knife_tournament_create_page" />
+				<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
+				<?php wp_nonce_field( 'chess_army_knife_tournament_create_page' ); ?>
+				<?php submit_button( __( 'Create a page for this tournament', 'chess-army-knife' ), 'secondary', 'submit', false ); ?>
+			</form>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
 	 * Controls shown before a tournament starts: add players, start.
 	 *
 	 * @param array   $tournament Tournament row.
@@ -572,32 +647,23 @@ class Chess_Army_Knife_Tournaments_Page {
 	 */
 	protected static function render_draft_controls( array $tournament, array $entries ) {
 		$entered   = array_column( $entries, 'player_id' );
-		$available = array_filter(
-			Chess_Army_Knife_Tournament_Store::get_players(),
-			function ( $player ) use ( $entered ) {
-				return ! in_array( $player['id'], $entered, true );
-			}
+		$available = array_values(
+			array_filter(
+				Chess_Army_Knife_Tournament_Store::get_players(),
+				function ( $player ) use ( $entered ) {
+					return ! in_array( $player['id'], $entered, true );
+				}
+			)
 		);
 		?>
-		<h2><?php esc_html_e( 'Add a player', 'chess-army-knife' ); ?></h2>
-		<?php if ( empty( $available ) ) : ?>
-			<p>
-				<?php esc_html_e( 'No more saved players to add.', 'chess-army-knife' ); ?>
-				<a href="<?php echo esc_url( add_query_arg( array( 'page' => Chess_Army_Knife_Players_Page::SLUG ), admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'Manage players', 'chess-army-knife' ); ?></a>
-			</p>
-		<?php else : ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="chess_army_knife_tournament_add_player" />
-				<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
-				<?php wp_nonce_field( 'chess_army_knife_tournament_add_player' ); ?>
-				<select name="player_id">
-					<?php foreach ( $available as $player ) : ?>
-						<option value="<?php echo esc_attr( $player['id'] ); ?>"><?php echo esc_html( $player['name'] ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<?php submit_button( __( 'Add player', 'chess-army-knife' ), 'secondary', 'submit', false ); ?>
-			</form>
-		<?php endif; ?>
+		<h2><?php esc_html_e( 'Add players', 'chess-army-knife' ); ?></h2>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="chess_army_knife_tournament_add_player" />
+			<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
+			<?php wp_nonce_field( 'chess_army_knife_tournament_add_player' ); ?>
+			<?php Chess_Army_Knife_Player_Selector::render( $available ); ?>
+			<?php submit_button( __( 'Add selected players', 'chess-army-knife' ), 'secondary', 'submit', false ); ?>
+		</form>
 
 		<h2><?php esc_html_e( 'Start the tournament', 'chess-army-knife' ); ?></h2>
 		<p class="description"><?php esc_html_e( 'Starting fetches each player\'s current ECF rating (or uses their manual rating), seeds the players and generates the pairings. Later rating changes do not affect seeding. Players can no longer be added or removed afterwards.', 'chess-army-knife' ); ?></p>
