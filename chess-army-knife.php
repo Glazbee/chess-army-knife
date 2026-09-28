@@ -37,6 +37,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-tournaments.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-players-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournaments-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-tournament-summary.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-admin-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 

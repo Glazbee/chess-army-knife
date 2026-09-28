@@ -12,7 +12,7 @@ Three Gutenberg blocks for English chess clubs: ECF rating history charts, club 
 
 == Description ==
 
-This plugin adds six blocks to the WordPress block editor, pulling live data from:
+This plugin adds nine blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -26,6 +26,9 @@ This plugin adds six blocks to the WordPress block editor, pulling live data fro
 5. **ECF Biggest Rating Gainers** — showcase the club members whose rating has risen the most over a recent period.
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
+7. **Tournament Status** — where a tournament stands: status, format, players, current round (Swiss), games played and the winner.
+8. **Tournament Games to Play** — the games in a tournament that still have no result, grouped by round.
+9. **Tournament Past Winners** — the winners of completed tournaments, most recent first.
 
 **Global defaults**
 
@@ -67,6 +70,7 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: Tournament Status, Tournament Games to Play and Tournament Past Winners blocks for showing tournaments on the site. All three support templates (styling only).
 * Added: Swiss tournaments using the FIDE (Dutch) system, C.04.3 (2026 edition). Rounds are paired one at a time from the results so far, with the top half of each score group playing the bottom half, moved-down players, floaters, colour allocation, the bye and criteria C1-C21. Rankings use points, then Buchholz, Sonneborn-Berger and wins. A round can be paired again while it has no results, and a player who withdraws forfeits their unplayed game. Forfeit results (+/-) are available for Swiss and round-robin games.
 * Known limitation: the pairing engine was checked against an independent implementation on about 1,600 random rounds of up to 24 players and matched every one. Rounds in much larger fields (roughly 30 players and above) can be slow to pair in some cases; this has not been investigated yet.
 * Added: Knockout tournaments. Standard seeding (in an 8-player draw: 1v8, 4v5, 2v7, 3v6, so the top two seeds can only meet in the final), with first-round byes for the top seeds when the field isn't a power of two. A drawn game creates a tie-break game (colours reversed) until one player wins; winners move on automatically, and withdrawn players forfeit their next game.

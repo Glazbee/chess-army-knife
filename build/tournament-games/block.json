@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "chess-army-knife/tournament-games",
+  "title": "Tournament Games to Play",
+  "category": "widgets",
+  "icon": "list-view",
+  "description": "List the games in a tournament that still have to be played.",
+  "keywords": [
+    "chess",
+    "tournament",
+    "fixtures",
+    "games"
+  ],
+  "version": "0.0.1",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "tournamentId": {
+      "type": "number",
+      "default": 0
+    },
+    "templateId": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}
