@@ -377,7 +377,7 @@ class Chess_Army_Knife_Tournament_Store {
 		global $wpdb;
 		$table = self::table( 'games' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE tournament_id = %d ORDER BY round ASC, board ASC, id ASC", (int) $tournament_id ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE tournament_id = %d ORDER BY CASE WHEN stage = 'knockout' THEN 1 ELSE 0 END ASC, round ASC, group_no ASC, board ASC, id ASC", (int) $tournament_id ), ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_game' ), (array) $rows );
 	}
 
@@ -406,6 +406,48 @@ class Chess_Army_Knife_Tournament_Store {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert( self::table( 'games' ), $data );
 		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Update fields on a game (e.g. the players once a bracket slot is filled).
+	 *
+	 * @param int   $id   Game id.
+	 * @param array $data Column => value; null values are stored as NULL.
+	 */
+	public static function update_game( $id, array $data ) {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update( self::table( 'games' ), $data, array( 'id' => (int) $id ) );
+	}
+
+	/**
+	 * Delete one game.
+	 *
+	 * @param int $id Game id.
+	 */
+	public static function delete_game( $id ) {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete( self::table( 'games' ), array( 'id' => (int) $id ), array( '%d' ) );
+	}
+
+	/**
+	 * Delete every game of one stage in a tournament.
+	 *
+	 * @param int    $tournament_id Tournament id.
+	 * @param string $stage         Stage, e.g. 'knockout'.
+	 */
+	public static function delete_stage_games( $tournament_id, $stage ) {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete(
+			self::table( 'games' ),
+			array(
+				'tournament_id' => (int) $tournament_id,
+				'stage'         => $stage,
+			),
+			array( '%d', '%s' )
+		);
 	}
 
 	/**

@@ -81,6 +81,9 @@ class Chess_Army_Knife_Tournament_REST {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public static function set_result( WP_REST_Request $request ) {
+		$before = Chess_Army_Knife_Tournament_Store::get_game( (int) $request['id'] );
+		$count  = $before ? count( Chess_Army_Knife_Tournament_Store::get_games( $before['tournament_id'] ) ) : 0;
+
 		$game = Chess_Army_Knife_Tournaments::record_result( (int) $request['id'], $request['result'] );
 
 		if ( is_wp_error( $game ) ) {
@@ -90,11 +93,16 @@ class Chess_Army_Knife_Tournament_REST {
 
 		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $game['tournament_id'] );
 
+		// Knockout results move players between games and a draw adds a tie-break game, and
+		// the last group game creates the bracket: the page should reload to show that.
+		$reload = 'knockout' === $game['stage'] || count( Chess_Army_Knife_Tournament_Store::get_games( $game['tournament_id'] ) ) !== $count;
+
 		return rest_ensure_response(
 			array(
 				'id'                => $game['id'],
 				'result'            => $game['result'],
 				'tournament_status' => $tournament ? $tournament['status'] : '',
+				'reload'            => $reload,
 			)
 		);
 	}

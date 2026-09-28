@@ -67,6 +67,8 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: Knockout tournaments. Standard seeding (in an 8-player draw: 1v8, 4v5, 2v7, 3v6, so the top two seeds can only meet in the final), with first-round byes for the top seeds when the field isn't a power of two. A drawn game creates a tie-break game (colours reversed) until one player wins; winners move on automatically, and withdrawn players forfeit their next game.
+* Added: Round-robin groups with an optional knockout stage. Split players into groups (dealt out by seed), and send the top N from each group into a knockout that is created automatically when the last group game is played. Qualifiers are cross-seeded so group winners meet other groups' runners-up and players from the same group are kept apart for as long as possible.
 * Added: Tournaments (ECF & LMS → Tournaments) and saved player profiles (ECF & LMS → Players). Phase 1 supports round-robin (Berger tables from the FIDE General Regulations, single or double round). Players with an ECF rating code have their rating fetched when the tournament starts and used for seeding; later rating changes don't affect seeding. Players without a code use a manual rating.
 * Added: Tournament Results Entry block — an admin-only block for recording game results from the front end (visitors see nothing).
 * Added: Settings option to also delete tournaments and players when the plugin is deleted. Off by default, so tournament history is kept.
