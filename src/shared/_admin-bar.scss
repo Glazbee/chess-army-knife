@@ -1,0 +1,29 @@
+.chess-army-knife-admin-bar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5em;
+	margin: 0 0 1em;
+	padding: 0.4em 0.7em;
+	font-size: 0.8em;
+	color: #555;
+	background: #fff8e5;
+	border: 1px dashed #e0b83d;
+	border-radius: 4px;
+
+	&__badge {
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		font-weight: 700;
+		font-size: 0.75em;
+		color: #8a6d1a;
+	}
+
+	&__label {
+		font-weight: 600;
+	}
+
+	a {
+		font-weight: 600;
+	}
+}

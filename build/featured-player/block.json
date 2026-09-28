@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "ecf-lms/featured-player",
+  "title": "ECF Featured Player",
+  "category": "widgets",
+  "icon": "star-filled",
+  "description": "Spotlight a player with their ECF rating, a photo, a short blurb on why they're featured, and links to their chess.com and Lichess profiles.",
+  "keywords": [
+    "chess",
+    "ecf",
+    "player",
+    "featured",
+    "spotlight",
+    "lichess",
+    "chess.com"
+  ],
+  "version": "1.0.0",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "templateId": {
+      "type": "string",
+      "default": ""
+    },
+    "playerCode": {
+      "type": "string",
+      "default": ""
+    },
+    "playerName": {
+      "type": "string",
+      "default": ""
+    },
+    "heading": {
+      "type": "string",
+      "default": ""
+    },
+    "blurb": {
+      "type": "string",
+      "default": ""
+    },
+    "imageId": {
+      "type": "number",
+      "default": 0
+    },
+    "imageUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "chessComUser": {
+      "type": "string",
+      "default": ""
+    },
+    "lichessUser": {
+      "type": "string",
+      "default": ""
+    },
+    "domain": {
+      "type": "string",
+      "default": ""
+    },
+    "showRating": {
+      "type": "boolean",
+      "default": true
+    },
+    "showClub": {
+      "type": "boolean",
+      "default": true
+    },
+    "showLinks": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

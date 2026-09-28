@@ -1,0 +1,68 @@
+@use "../shared/admin-bar";
+
+.wp-block-chess-army-knife-club-results {
+	margin-bottom: 1.5em;
+
+	.ecf-club-results__title {
+		margin: 0 0 0.5em;
+		font-size: 1.1em;
+		font-weight: 600;
+	}
+
+	.ecf-club-results__table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.95em;
+
+		th,
+		td {
+			text-align: left;
+			padding: 0.4em 0.6em;
+			border-bottom: 1px solid #e2e2e2;
+			vertical-align: top;
+		}
+
+		th {
+			font-weight: 600;
+			border-bottom: 2px solid var(--ecf-accent, #c3c4c7);
+		}
+
+		tr:last-child td {
+			border-bottom: none;
+		}
+	}
+
+	.ecf-result-win {
+		color: #1a7f37;
+		font-weight: 600;
+	}
+
+	.ecf-result-loss {
+		color: #cf222e;
+		font-weight: 600;
+	}
+
+	.ecf-result-draw {
+		color: #9a6700;
+		font-weight: 600;
+	}
+
+	.chess-army-knife-notice {
+		padding: 0.75em 1em;
+		border-left: 4px solid #d63638;
+		background: #fcf0f1;
+		font-size: 0.9em;
+	}
+
+	.chess-army-knife-empty {
+		padding: 0.75em 1em;
+		border-left: 4px solid #dcdcde;
+		background: #f6f7f7;
+		font-size: 0.9em;
+	}
+}
+
+// Template colours (set via ECF & LMS → Templates).
+.wp-block-chess-army-knife-club-results .ecf-club-results__title {
+	color: var(--ecf-accent, inherit);
+}

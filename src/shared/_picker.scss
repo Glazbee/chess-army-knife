@@ -1,0 +1,38 @@
+.chess-army-knife-picker {
+	margin-bottom: 12px;
+	position: relative;
+
+	&__results {
+		list-style: none;
+		margin: 4px 0 0;
+		padding: 0;
+		max-height: 220px;
+		overflow-y: auto;
+		border: 1px solid #ddd;
+		border-radius: 2px;
+		background: #fff;
+
+		li {
+			margin: 0;
+			border-bottom: 1px solid #f0f0f0;
+
+			&:last-child {
+				border-bottom: none;
+			}
+
+			.components-button {
+				width: 100%;
+				justify-content: flex-start;
+				text-align: left;
+				height: auto;
+				padding: 6px 8px;
+				white-space: normal;
+			}
+		}
+	}
+
+	&__current {
+		margin-top: 8px;
+		font-size: 12px;
+	}
+}

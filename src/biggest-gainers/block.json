@@ -1,0 +1,72 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "ecf-lms/biggest-gainers",
+	"title": "ECF Biggest Rating Gainers",
+	"category": "widgets",
+	"icon": "chart-bar",
+	"description": "Showcase the club members whose ECF rating has risen the most over a recent period.",
+	"keywords": [
+		"chess",
+		"ecf",
+		"club",
+		"rating",
+		"gainers",
+		"improvers"
+	],
+	"version": "1.0.0",
+	"textdomain": "chess-army-knife",
+	"attributes": {
+		"clubCode": {
+			"type": "string",
+			"default": ""
+		},
+		"clubName": {
+			"type": "string",
+			"default": ""
+		},
+		"domain": {
+			"type": "string",
+			"default": ""
+		},
+		"daysBack": {
+			"type": "number",
+			"default": 0
+		},
+		"maxPlayers": {
+			"type": "number",
+			"default": 0
+		},
+		"topCount": {
+			"type": "number",
+			"default": 5
+		},
+		"minGames": {
+			"type": "number",
+			"default": 2
+		},
+		"title": {
+			"type": "string",
+			"default": ""
+		},
+		"templateId": {
+			"type": "string",
+			"default": ""
+		},
+		"showDetail": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

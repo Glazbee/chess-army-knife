@@ -1,0 +1,60 @@
+@use "../shared/admin-bar";
+
+.wp-block-chess-army-knife-rating-chart {
+	margin-bottom: 1.5em;
+
+	.ecf-rating-chart__title {
+		margin: 0 0 0.5em;
+		font-size: 1.1em;
+		font-weight: 600;
+	}
+
+	.ecf-rating-chart__canvas-wrap {
+		position: relative;
+		width: 100%;
+	}
+
+	.ecf-rating-chart__stats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5em;
+		margin-top: 0.75em;
+		font-size: 0.9em;
+
+		div {
+			min-width: 90px;
+		}
+
+		strong {
+			display: block;
+			font-size: 1.2em;
+		}
+
+		.is-up {
+			color: #1a7f37;
+		}
+
+		.is-down {
+			color: #cf222e;
+		}
+	}
+
+	.chess-army-knife-notice {
+		padding: 0.75em 1em;
+		border-left: 4px solid #d63638;
+		background: #fcf0f1;
+		font-size: 0.9em;
+	}
+
+	.chess-army-knife-empty {
+		padding: 0.75em 1em;
+		border-left: 4px solid #dcdcde;
+		background: #f6f7f7;
+		font-size: 0.9em;
+	}
+}
+
+// Template colours (set via ECF & LMS → Templates).
+.wp-block-chess-army-knife-rating-chart .ecf-rating-chart__title {
+	color: var(--ecf-accent, inherit);
+}

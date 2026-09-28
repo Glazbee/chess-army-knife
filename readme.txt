@@ -1,0 +1,110 @@
+=== Chess Army Knife ===
+Contributors: yourclub
+Tags: chess, ecf, ratings, league, blocks
+Requires at least: 6.3
+Tested up to: 6.7
+Requires PHP: 7.4
+Stable tag: 1.5.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Three Gutenberg blocks for English chess clubs: ECF rating history charts, club results, and LMS league tables/matchups.
+
+== Description ==
+
+This plugin adds six blocks to the WordPress block editor, pulling live data from:
+
+* The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
+* The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
+
+**Blocks included**
+
+1. **ECF Rating Chart** — search for a player and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
+2. **ECF Club Results** — pick a club and show a merged feed of recent rated results across its members (win/draw/loss, opponent, event).
+3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
+4. **ECF Team Fixtures Carousel** — a rotating carousel showing each team's last result and next fixture. Teams are read automatically from the league table, or you can supply your own list.
+5. **ECF Biggest Rating Gainers** — showcase the club members whose rating has risen the most over a recent period.
+
+6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
+
+**Global defaults**
+
+Set a default club code, LMS organisation ID, event name and rating list once under **Settings → Chess Army Knife**. Any block field left blank will use that default automatically, and can still be overridden individually per block.
+
+All API responses are cached in a dedicated database table (so cached data survives object-cache evictions on shared hosting) — durations are configurable under **Settings → Chess Army Knife**, where you can also switch back to plain WordPress transients if you prefer.
+
+= A note on the LMS API =
+
+The ECF itself describes the LMS API as "experimental," and its response fields aren't formally documented. The League Standings & Matchups and Team Fixtures Carousel blocks parse this data defensively. The League Standings block includes a "Show raw API data (debug)" toggle in its sidebar so you can see exactly what your league's LMS instance returns if a table or matchup doesn't look right.
+
+The ECF's own API documentation page currently points requests at a legacy host (`ecflms.org.uk`) that no longer resolves for most networks. This plugin defaults to the live host (`lms.englishchess.org.uk`) instead, with an automatic fallback and a settings-page override in case the ECF changes it again.
+
+== Installation ==
+
+1. Upload the `chess-army-knife` folder to `/wp-content/plugins/`, or install the zip via **Plugins → Add New → Upload Plugin**.
+2. Activate the plugin.
+3. Visit **ECF & LMS → Settings** in the admin menu to (optionally) set a default club code and LMS organisation ID, and **ECF & LMS → Club Teams** to list your club's teams across any divisions/organisations.
+4. Add the blocks from the inserter — search for "ECF" or "LMS".
+
+**Finding your ECF club code**: search for your club at https://rating.englishchess.org.uk/clubs — the code is shown next to the club name (e.g. `9BAJ`). You can also just start typing your club's name directly into the block's picker in the editor.
+
+**Finding your LMS organisation ID**: go to your league's LMS homepage — the URL looks like `https://lms.englishchess.org.uk/lms/organisation/613`. The number at the end (`613`) is your organisation ID. The event/division name must match exactly what's shown in LMS (e.g. `Division 1`), including capitalisation and spacing.
+
+== Frequently Asked Questions ==
+
+= Why don't I see any data? =
+
+Double-check the codes/names you entered. For the League Standings & Matchups block, turn on "Show raw API data (debug)" in the sidebar to see the League Management System's raw response and confirm the organisation ID and event name are correct.
+
+= Does this slow my site down? =
+
+All ECF/LMS lookups are cached (6 hours by default for ratings data, 30 minutes for league data), so only the first visitor after the cache expires triggers a live API call.
+
+= Can I show more than one player/club/league on a page? =
+
+Yes — add as many blocks as you like, each configured independently.
+
+== Changelog ==
+
+= 1.5.0 =
+* Added: ECF Featured Player block — spotlight a player with an optional photo, a blurb on why they're featured, their current ECF rating and club (when an ECF code is given), and links to their chess.com and/or Lichess profiles. Works for players without an ECF code too. Supports templates.
+
+= 1.4.0 =
+* Added: Templates (ECF & LMS → Templates). Reusable presets per block type covering settings (rating list, days back, matchups shown, show match location, show event column...) and appearance (accent, background and text colours, corner radius, custom CSS). Choose a template in any block's sidebar; template values override the block, so editing a template updates every block using it.
+* Added: "Show match location / venue" option for League Standings and the Team Carousel (displays only when the LMS supplies a venue).
+* Added: "Show event column" (Club Results) and "Show from → to detail" (Biggest Gainers) options.
+
+= 1.3.1 =
+* Fixed: an `{"error": ...}` reply from the LMS was treated as valid league data and cached for the full cache period. It is now reported as an error and only cached briefly; entries cached by earlier versions are ignored.
+* Fixed: saving the Settings page could discard team entries from the old free-text field before they were migrated to Club Teams.
+* Added: League Standings & Matchups automatically highlights any team listed under Club Teams for that organisation and division.
+* Added: uninstall now removes the Club Teams list and drops the cache table.
+
+= 1.3.0 =
+* Fixed: LMS requests failing with `{"error":"invalid type table.json"}` — the service treats everything after `league/` as a literal resource type, so the URL must use the bare type name (`table`, `match`, `event`, `club`) with no `.json` suffix.
+* Added: a dedicated top-level "ECF & LMS" admin menu, replacing the single page under Settings.
+* Added: a proper "Club Teams" admin page (add/remove rows in a table) replacing the old free-text "org | event | team" per-line field. Existing free-text entries are migrated automatically the first time this page loads.
+
+= 1.2.1 =
+* Fixed: LMS requests failing with HTTP 415 (Unsupported Media Type) on POST — this LMS instance (Drupal 10) requires a JSON request body with `Content-Type: application/json`, not WordPress's default form-urlencoded POST. The client now tries POST+JSON first, then POST+form, then GET, stopping at the first accepted shape.
+
+= 1.2.0 =
+* Fixed: "Biggest Rating Gainers" no longer shows players whose rating fell or stayed flat.
+* Fixed: LMS requests failing with HTTP 405 — the LMS API expects POST, not GET; the client now tries POST first with an automatic GET fallback.
+* Fixed: the debug panel on League Standings now shows the actual HTTP status/response body on failure, not just a blank panel.
+* Added: "Your club's teams" global list (org | event | team, one per line) so a club with teams across several divisions — and sometimes more than one team per division — only has to maintain the list once.
+* Added: ECF Team Fixtures Carousel can now read directly from "Your club's teams", spanning any number of organisations/events with one match.json call per division.
+* Added: ECF League Standings & Matchups now accepts multiple event/division names (one per line) under the same organisation, each getting its own table and matchups section.
+* Added: match-day fast cache — automatically drops LMS cache duration to 5 minutes from 30 minutes before a configurable kick-off time until midnight, then reverts automatically.
+* Added: an admin-only "Last refreshed X ago · Refresh now" control on every block's output, so a logged-in admin can force a fresh fetch for just that block without clearing the whole cache.
+
+= 1.1.0 =
+* Fixed: rating chart wasn't rendering in the block editor preview (only worked on the live site).
+* Fixed: LMS requests failing with "Could not resolve host: ecflms.org.uk" — switched to the live lms.englishchess.org.uk host, with fallback and a settings override.
+* Added: global default settings (club code, org ID, event name, rating list) that any block can inherit or override.
+* Added: persistent local-database cache option (instead of transients only).
+* Added: ECF Team Fixtures Carousel block.
+* Added: ECF Biggest Rating Gainers block.
+
+= 1.0.0 =
+* Initial release: Rating Chart, Club Results, and League Standings & Matchups blocks.

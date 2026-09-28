@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "ecf-lms/league-table",
+  "title": "ECF League Standings & Matchups",
+  "category": "widgets",
+  "icon": "list-view",
+  "description": "Show a league table and recent/upcoming matchups from the ECF League Management System (LMS).",
+  "keywords": [
+    "chess",
+    "ecf",
+    "lms",
+    "league",
+    "standings",
+    "fixtures"
+  ],
+  "version": "1.0.0",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "orgId": {
+      "type": "string",
+      "default": ""
+    },
+    "eventName": {
+      "type": "string",
+      "default": ""
+    },
+    "displayMode": {
+      "type": "string",
+      "default": "both"
+    },
+    "maxMatches": {
+      "type": "number",
+      "default": 6
+    },
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "highlightTeam": {
+      "type": "string",
+      "default": ""
+    },
+    "debug": {
+      "type": "boolean",
+      "default": false
+    },
+    "templateId": {
+      "type": "string",
+      "default": ""
+    },
+    "showLocation": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

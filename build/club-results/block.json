@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "ecf-lms/club-results",
+  "title": "ECF Club Results",
+  "category": "widgets",
+  "icon": "groups",
+  "description": "Show recent rated results for players registered at an ECF club.",
+  "keywords": [
+    "chess",
+    "ecf",
+    "club",
+    "results"
+  ],
+  "version": "1.0.0",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "clubCode": {
+      "type": "string",
+      "default": ""
+    },
+    "clubName": {
+      "type": "string",
+      "default": ""
+    },
+    "domain": {
+      "type": "string",
+      "default": ""
+    },
+    "maxPlayers": {
+      "type": "number",
+      "default": 0
+    },
+    "gamesPerPlayer": {
+      "type": "number",
+      "default": 5
+    },
+    "daysBack": {
+      "type": "number",
+      "default": 0
+    },
+    "maxResults": {
+      "type": "number",
+      "default": 20
+    },
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "showOpponentRating": {
+      "type": "boolean",
+      "default": true
+    },
+    "templateId": {
+      "type": "string",
+      "default": ""
+    },
+    "showEvent": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

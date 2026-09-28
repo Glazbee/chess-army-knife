@@ -1,0 +1,16 @@
+{
+  "name": "chess-army-knife",
+  "version": "1.0.0",
+  "description": "WordPress blocks for ECF ratings and ECF LMS league data",
+  "private": true,
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.0.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.4"
+  }
+}

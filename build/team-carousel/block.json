@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "ecf-lms/team-carousel",
+  "title": "ECF Team Fixtures Carousel",
+  "category": "widgets",
+  "icon": "slides",
+  "description": "A carousel that scrolls through a league's teams, showing each one's last result and next fixture.",
+  "keywords": [
+    "chess",
+    "ecf",
+    "lms",
+    "fixtures",
+    "carousel",
+    "teams"
+  ],
+  "version": "1.0.0",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "orgId": {
+      "type": "string",
+      "default": ""
+    },
+    "eventName": {
+      "type": "string",
+      "default": ""
+    },
+    "teamSource": {
+      "type": "string",
+      "default": "club-teams"
+    },
+    "manualTeams": {
+      "type": "string",
+      "default": ""
+    },
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "autoAdvance": {
+      "type": "boolean",
+      "default": true
+    },
+    "intervalSeconds": {
+      "type": "number",
+      "default": 6
+    },
+    "highlightTeam": {
+      "type": "string",
+      "default": ""
+    },
+    "templateId": {
+      "type": "string",
+      "default": ""
+    },
+    "showLocation": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php",
+  "viewScript": "file:./view.js"
+}

@@ -1,0 +1,67 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "ecf-lms/rating-chart",
+	"title": "ECF Rating Chart",
+	"category": "widgets",
+	"icon": "chart-line",
+	"description": "Show how an ECF player's rating has changed over time, drawn from their recent rated games.",
+	"keywords": [
+		"chess",
+		"ecf",
+		"rating",
+		"elo"
+	],
+	"version": "1.0.0",
+	"textdomain": "chess-army-knife",
+	"attributes": {
+		"playerCode": {
+			"type": "string",
+			"default": ""
+		},
+		"playerName": {
+			"type": "string",
+			"default": ""
+		},
+		"domain": {
+			"type": "string",
+			"default": ""
+		},
+		"gamesLimit": {
+			"type": "number",
+			"default": 100
+		},
+		"title": {
+			"type": "string",
+			"default": ""
+		},
+		"height": {
+			"type": "number",
+			"default": 320
+		},
+		"showStats": {
+			"type": "boolean",
+			"default": true
+		},
+		"lineColor": {
+			"type": "string",
+			"default": "#1e3a5f"
+		},
+		"templateId": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}
