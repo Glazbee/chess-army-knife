@@ -6,7 +6,9 @@
  */
 function initCarousel( root ) {
 	const track = root.querySelector( '.ecf-carousel__track' );
-	const slides = Array.from( root.querySelectorAll( '.ecf-carousel__slide' ) );
+	const slides = Array.from(
+		root.querySelectorAll( '.ecf-carousel__slide' )
+	);
 	const dots = Array.from( root.querySelectorAll( '.ecf-carousel__dot' ) );
 	const prevBtn = root.querySelector( '.ecf-carousel__prev' );
 	const nextBtn = root.querySelector( '.ecf-carousel__next' );
@@ -15,19 +17,26 @@ function initCarousel( root ) {
 		return; // Nothing to scroll through.
 	}
 
-	let index = slides.findIndex( ( s ) => s.classList.contains( 'is-active' ) );
+	let index = slides.findIndex( ( s ) =>
+		s.classList.contains( 'is-active' )
+	);
 	if ( index < 0 ) {
 		index = 0;
 	}
 
 	const autoAdvance = root.dataset.autoAdvance === '1';
-	const intervalMs = Math.max( 3, parseInt( root.dataset.interval, 10 ) || 6 ) * 1000;
+	const intervalMs =
+		Math.max( 3, parseInt( root.dataset.interval, 10 ) || 6 ) * 1000;
 	let timer = null;
 
 	function show( newIndex ) {
 		index = ( newIndex + slides.length ) % slides.length;
-		slides.forEach( ( slide, i ) => slide.classList.toggle( 'is-active', i === index ) );
-		dots.forEach( ( dot, i ) => dot.classList.toggle( 'is-active', i === index ) );
+		slides.forEach( ( slide, i ) =>
+			slide.classList.toggle( 'is-active', i === index )
+		);
+		dots.forEach( ( dot, i ) =>
+			dot.classList.toggle( 'is-active', i === index )
+		);
 	}
 
 	function next() {
@@ -51,14 +60,16 @@ function initCarousel( root ) {
 		}
 	}
 
-	prevBtn && prevBtn.addEventListener( 'click', () => {
-		prev();
-		startTimer();
-	} );
-	nextBtn && nextBtn.addEventListener( 'click', () => {
-		next();
-		startTimer();
-	} );
+	prevBtn &&
+		prevBtn.addEventListener( 'click', () => {
+			prev();
+			startTimer();
+		} );
+	nextBtn &&
+		nextBtn.addEventListener( 'click', () => {
+			next();
+			startTimer();
+		} );
 	dots.forEach( ( dot, i ) => {
 		dot.addEventListener( 'click', () => {
 			show( i );

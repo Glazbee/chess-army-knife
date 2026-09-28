@@ -27,7 +27,9 @@ export default function ClubPicker( { value, label, onSelect } ) {
 		debounceRef.current = setTimeout( () => {
 			setIsSearching( true );
 			apiFetch( {
-				path: `/ecf-lms/v1/clubs?search=${ encodeURIComponent( query.trim() ) }`,
+				path: `/ecf-lms/v1/clubs?search=${ encodeURIComponent(
+					query.trim()
+				) }`,
 			} )
 				.then( ( items ) => {
 					setResults( items || [] );
@@ -45,7 +47,10 @@ export default function ClubPicker( { value, label, onSelect } ) {
 			<TextControl
 				label={ label || __( 'Find club by name', 'chess-army-knife' ) }
 				value={ query }
-				placeholder={ __( 'Start typing a club name…', 'chess-army-knife' ) }
+				placeholder={ __(
+					'Start typing a club name…',
+					'chess-army-knife'
+				) }
 				onChange={ setQuery }
 				onFocus={ () => results.length && setIsOpen( true ) }
 			/>
@@ -72,7 +77,8 @@ export default function ClubPicker( { value, label, onSelect } ) {
 			{ value?.code && (
 				<p className="chess-army-knife-picker__current">
 					{ __( 'Selected:', 'chess-army-knife' ) }{ ' ' }
-					<strong>{ value.name || value.code }</strong> <code>{ value.code }</code>
+					<strong>{ value.name || value.code }</strong>{ ' ' }
+					<code>{ value.code }</code>
 				</p>
 			) }
 		</div>

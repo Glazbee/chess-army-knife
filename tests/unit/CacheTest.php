@@ -19,7 +19,7 @@ class CacheTest extends Chess_Army_Knife_TestCase {
 	public function test_remember_generates_once_then_serves_from_cache() {
 		$calls     = 0;
 		$generator = function () use ( &$calls ) {
-			$calls++;
+			++$calls;
 			return array( 'value' => $calls );
 		};
 
@@ -32,25 +32,37 @@ class CacheTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_remember_uses_requested_ttl_for_success() {
-		Chess_Army_Knife_Cache::remember( 'k', 600, function () {
-			return 'ok';
-		} );
+		Chess_Army_Knife_Cache::remember(
+			'k',
+			600,
+			function () {
+				return 'ok';
+			}
+		);
 
 		$this->assertSame( array( 600 ), array_column( $this->transients, 'ttl' ) );
 	}
 
 	public function test_errors_are_cached_for_at_most_two_minutes() {
-		Chess_Army_Knife_Cache::remember( 'k', 6 * HOUR_IN_SECONDS, function () {
-			return new WP_Error( 'boom', 'failed' );
-		} );
+		Chess_Army_Knife_Cache::remember(
+			'k',
+			6 * HOUR_IN_SECONDS,
+			function () {
+				return new WP_Error( 'boom', 'failed' );
+			}
+		);
 
 		$this->assertSame( array( 120 ), array_column( $this->transients, 'ttl' ) );
 	}
 
 	public function test_forget_removes_entry() {
-		Chess_Army_Knife_Cache::remember( 'k', 600, function () {
-			return 'ok';
-		} );
+		Chess_Army_Knife_Cache::remember(
+			'k',
+			600,
+			function () {
+				return 'ok';
+			}
+		);
 		Chess_Army_Knife_Cache::forget( 'k' );
 
 		$this->assertSame( array(), $this->transients );

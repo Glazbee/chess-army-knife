@@ -45,7 +45,12 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_get_cache_minutes_uses_bucket_prefix() {
-		$this->set_settings( array( 'cache_ecf_minutes' => 100, 'cache_lms_minutes' => 20 ) );
+		$this->set_settings(
+			array(
+				'cache_ecf_minutes' => 100,
+				'cache_lms_minutes' => 20,
+			)
+		);
 
 		$this->assertSame( 100, Chess_Army_Knife_Settings::get_cache_minutes( 'ecf_games', 1 ) );
 		$this->assertSame( 20, Chess_Army_Knife_Settings::get_cache_minutes( 'lms_table', 1 ) );

@@ -64,7 +64,15 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 				),
 				\Mockery::type( 'array' )
 			)
-			->andReturn( $this->response( 200, array( 'success' => true, 'data' => array( 'games' => array( array( 'id' => 1 ) ) ) ) ) );
+			->andReturn(
+				$this->response(
+					200,
+					array(
+						'success' => true,
+						'data'    => array( 'games' => array( array( 'id' => 1 ) ) ),
+					)
+				)
+			);
 
 		// Limit above the cap is clamped to 500.
 		$this->assertSame( array( array( 'id' => 1 ) ), ECF_Client::get_games( '120787J', 'r', 9999 ) );
@@ -73,7 +81,15 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 	public function test_successful_response_is_cached() {
 		Functions\expect( 'wp_remote_get' )
 			->once()
-			->andReturn( $this->response( 200, array( 'success' => true, 'data' => array( 'games' => array() ) ) ) );
+			->andReturn(
+				$this->response(
+					200,
+					array(
+						'success' => true,
+						'data'    => array( 'games' => array() ),
+					)
+				)
+			);
 
 		ECF_Client::get_games( '120787' );
 		ECF_Client::get_games( '120787' );
@@ -120,7 +136,15 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_api_failure_uses_service_message() {
-		Functions\when( 'wp_remote_get' )->justReturn( $this->response( 200, array( 'success' => false, 'message' => 'No such player' ) ) );
+		Functions\when( 'wp_remote_get' )->justReturn(
+			$this->response(
+				200,
+				array(
+					'success' => false,
+					'message' => 'No such player',
+				)
+			)
+		);
 
 		$result = ECF_Client::get_player_by_code( '120787' );
 
@@ -129,7 +153,15 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_http_error_status_is_an_error() {
-		Functions\when( 'wp_remote_get' )->justReturn( $this->response( 500, array( 'success' => true, 'data' => array() ) ) );
+		Functions\when( 'wp_remote_get' )->justReturn(
+			$this->response(
+				500,
+				array(
+					'success' => true,
+					'data'    => array(),
+				)
+			)
+		);
 
 		$result = ECF_Client::get_rating( '120787' );
 
@@ -138,14 +170,35 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_search_clubs_falls_back_to_raw_result_when_no_clubs_key() {
-		Functions\when( 'wp_remote_get' )->justReturn( $this->response( 200, array( 'success' => true, 'data' => array( 'x' => 1 ) ) ) );
+		Functions\when( 'wp_remote_get' )->justReturn(
+			$this->response(
+				200,
+				array(
+					'success' => true,
+					'data'    => array( 'x' => 1 ),
+				)
+			)
+		);
 
 		$this->assertSame( array( 'x' => 1 ), ECF_Client::search_clubs( 'chess' ) );
 	}
 
 	public function test_cache_ttl_follows_settings_with_one_minute_floor() {
-		$this->set_settings( array( 'use_local_cache' => 0, 'cache_ecf_minutes' => 90 ) );
-		Functions\when( 'wp_remote_get' )->justReturn( $this->response( 200, array( 'success' => true, 'data' => array( 'games' => array() ) ) ) );
+		$this->set_settings(
+			array(
+				'use_local_cache'   => 0,
+				'cache_ecf_minutes' => 90,
+			)
+		);
+		Functions\when( 'wp_remote_get' )->justReturn(
+			$this->response(
+				200,
+				array(
+					'success' => true,
+					'data'    => array( 'games' => array() ),
+				)
+			)
+		);
 
 		ECF_Client::get_games( '120787' );
 

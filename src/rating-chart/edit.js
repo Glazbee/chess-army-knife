@@ -81,9 +81,14 @@ export default function Edit( { attributes, setAttributes } ) {
 				<TemplatePicker
 					blockSlug="rating-chart"
 					value={ attributes.templateId }
-					onChange={ ( value ) => setAttributes( { templateId: value } ) }
+					onChange={ ( value ) =>
+						setAttributes( { templateId: value } )
+					}
 				/>
-				<PanelBody title={ __( 'Player', 'chess-army-knife' ) } initialOpen={ true }>
+				<PanelBody
+					title={ __( 'Player', 'chess-army-knife' ) }
+					initialOpen={ true }
+				>
 					<PlayerPicker
 						value={ { code: playerCode, name: playerName } }
 						onSelect={ ( player ) =>
@@ -94,52 +99,94 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<TextControl
-						label={ __( 'ECF rating code (manual override)', 'chess-army-knife' ) }
-						help={ __( 'e.g. 120787. You can type this directly if you already know it.', 'chess-army-knife' ) }
+						label={ __(
+							'ECF rating code (manual override)',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'e.g. 120787. You can type this directly if you already know it.',
+							'chess-army-knife'
+						) }
 						value={ playerCode }
-						onChange={ ( value ) => setAttributes( { playerCode: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { playerCode: value } )
+						}
 					/>
 				</PanelBody>
-				<PanelBody title={ __( 'Chart settings', 'chess-army-knife' ) } initialOpen={ true }>
+				<PanelBody
+					title={ __( 'Chart settings', 'chess-army-knife' ) }
+					initialOpen={ true }
+				>
 					<SelectControl
 						label={ __( 'Rating list', 'chess-army-knife' ) }
 						value={ domain }
 						options={ DOMAIN_OPTIONS }
-						onChange={ ( value ) => setAttributes( { domain: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { domain: value } )
+						}
 					/>
 					<RangeControl
 						label={ __( 'Games to include', 'chess-army-knife' ) }
-						help={ __( 'How many recent rated games to pull from the ECF API.', 'chess-army-knife' ) }
+						help={ __(
+							'How many recent rated games to pull from the ECF API.',
+							'chess-army-knife'
+						) }
 						value={ gamesLimit }
-						onChange={ ( value ) => setAttributes( { gamesLimit: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { gamesLimit: value } )
+						}
 						min={ 10 }
 						max={ 300 }
 						step={ 10 }
 					/>
 					<TextControl
-						label={ __( 'Custom title (optional)', 'chess-army-knife' ) }
+						label={ __(
+							'Custom title (optional)',
+							'chess-army-knife'
+						) }
 						value={ title }
-						onChange={ ( value ) => setAttributes( { title: value } ) }
-						placeholder={ playerName || __( 'Defaults to the player name', 'chess-army-knife' ) }
+						onChange={ ( value ) =>
+							setAttributes( { title: value } )
+						}
+						placeholder={
+							playerName ||
+							__(
+								'Defaults to the player name',
+								'chess-army-knife'
+							)
+						}
 					/>
 					<RangeControl
 						label={ __( 'Chart height (px)', 'chess-army-knife' ) }
 						value={ height }
-						onChange={ ( value ) => setAttributes( { height: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { height: value } )
+						}
 						min={ 180 }
 						max={ 600 }
 						step={ 10 }
 					/>
 					<ToggleControl
-						label={ __( 'Show summary stats (current, peak, change)', 'chess-army-knife' ) }
+						label={ __(
+							'Show summary stats (current, peak, change)',
+							'chess-army-knife'
+						) }
 						checked={ showStats }
-						onChange={ ( value ) => setAttributes( { showStats: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { showStats: value } )
+						}
 					/>
 					<div style={ { marginTop: '12px' } }>
-						<p style={ { marginBottom: '4px' } }>{ __( 'Line colour', 'chess-army-knife' ) }</p>
+						<p style={ { marginBottom: '4px' } }>
+							{ __( 'Line colour', 'chess-army-knife' ) }
+						</p>
 						<ColorPalette
 							value={ lineColor }
-							onChange={ ( value ) => setAttributes( { lineColor: value || '#1e3a5f' } ) }
+							onChange={ ( value ) =>
+								setAttributes( {
+									lineColor: value || '#1e3a5f',
+								} )
+							}
 						/>
 					</div>
 				</PanelBody>
@@ -149,7 +196,10 @@ export default function Edit( { attributes, setAttributes } ) {
 				<Placeholder
 					icon="chart-line"
 					label={ __( 'ECF Rating Chart', 'chess-army-knife' ) }
-					instructions={ __( 'Search for a player in the sidebar, or type their ECF rating code, to preview the chart.', 'chess-army-knife' ) }
+					instructions={ __(
+						'Search for a player in the sidebar, or type their ECF rating code, to preview the chart.',
+						'chess-army-knife'
+					) }
 				>
 					<PlayerPicker
 						value={ { code: playerCode, name: playerName } }

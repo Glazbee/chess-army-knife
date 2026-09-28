@@ -37,7 +37,10 @@ abstract class Chess_Army_Knife_TestCase extends PHPUnit\Framework\TestCase {
 		);
 		Functions\when( 'set_transient' )->alias(
 			function ( $key, $value, $ttl ) {
-				$this->transients[ $key ] = array( 'value' => $value, 'ttl' => $ttl );
+				$this->transients[ $key ] = array(
+					'value' => $value,
+					'ttl'   => $ttl,
+				);
 				return true;
 			}
 		);

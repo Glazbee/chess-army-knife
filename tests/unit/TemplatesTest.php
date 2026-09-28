@@ -37,7 +37,12 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 		$this->add_template( 't2', 'club-results', array() );
 
 		$this->assertSame(
-			array( array( 'id' => 't1', 'name' => 'Template t1' ) ),
+			array(
+				array(
+					'id'   => 't1',
+					'name' => 'Template t1',
+				),
+			),
 			Chess_Army_Knife_Templates::list_for_block( 'rating-chart' )
 		);
 	}
@@ -49,14 +54,20 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_apply_without_template_returns_attributes_unchanged() {
-		$attributes = array( 'templateId' => '', 'domain' => 'R' );
+		$attributes = array(
+			'templateId' => '',
+			'domain'     => 'R',
+		);
 
 		$this->assertSame( $attributes, Chess_Army_Knife_Templates::apply( 'rating-chart', $attributes ) );
 	}
 
 	public function test_apply_ignores_template_for_a_different_block() {
 		$this->add_template( 't1', 'club-results', array( 'domain' => 'B' ) );
-		$attributes = array( 'templateId' => 't1', 'domain' => 'R' );
+		$attributes = array(
+			'templateId' => 't1',
+			'domain'     => 'R',
+		);
 
 		$this->assertSame( $attributes, Chess_Army_Knife_Templates::apply( 'rating-chart', $attributes ) );
 	}
@@ -73,14 +84,23 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 
 		$this->add_template( 't1', 'featured-player', array( $settings_field => '0' ) );
 
-		$result = Chess_Army_Knife_Templates::apply( 'featured-player', array( 'templateId' => 't1', $settings_field => true ) );
+		$result = Chess_Army_Knife_Templates::apply(
+			'featured-player',
+			array(
+				'templateId'    => 't1',
+				$settings_field => true,
+			)
+		);
 
 		$this->assertFalse( $result[ $settings_field ] );
 	}
 
 	public function test_apply_skips_blank_template_values() {
 		$this->add_template( 't1', 'rating-chart', array( 'domain' => '' ) );
-		$attributes = array( 'templateId' => 't1', 'domain' => 'R' );
+		$attributes = array(
+			'templateId' => 't1',
+			'domain'     => 'R',
+		);
 
 		$this->assertSame( 'R', Chess_Army_Knife_Templates::apply( 'rating-chart', $attributes )['domain'] );
 	}
@@ -106,7 +126,15 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 			}
 		);
 		Functions\when( 'sanitize_html_class' )->returnArg();
-		$this->add_template( 't1', 'rating-chart', array( 'accent' => '#ff0000', 'bg' => 'red; evil', 'radius' => '8' ) );
+		$this->add_template(
+			't1',
+			'rating-chart',
+			array(
+				'accent' => '#ff0000',
+				'bg'     => 'red; evil',
+				'radius' => '8',
+			)
+		);
 
 		$captured = null;
 		Functions\when( 'get_block_wrapper_attributes' )->alias(

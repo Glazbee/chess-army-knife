@@ -5,12 +5,16 @@
   "private": true,
   "scripts": {
     "build": "wp-scripts build",
-    "start": "wp-scripts start"
+    "start": "wp-scripts start",
+    "format:js": "prettier --check \"src/**/*.{js,scss}\"",
+    "format:js:fix": "prettier --write \"src/**/*.{js,scss}\""
   },
   "devDependencies": {
-    "@wordpress/scripts": "^30.0.0"
+    "@wordpress/scripts": "^30.0.0",
+    "prettier": "3.0.3"
   },
   "dependencies": {
     "chart.js": "^4.4.4"
-  }
+  },
+  "prettier": "@wordpress/prettier-config"
 }

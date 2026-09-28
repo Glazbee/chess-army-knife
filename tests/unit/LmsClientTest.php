@@ -11,7 +11,12 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->set_settings( array( 'use_local_cache' => 0, 'fast_cache_enabled' => 0 ) );
+		$this->set_settings(
+			array(
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
 	}
 
 	/**
@@ -20,7 +25,10 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	private function queue_responses( array $responses, array &$calls = array() ) {
 		Functions\when( 'wp_remote_request' )->alias(
 			function ( $url, $args ) use ( &$responses, &$calls ) {
-				$calls[] = array( 'url' => $url, 'args' => $args );
+				$calls[] = array(
+					'url'  => $url,
+					'args' => $args,
+				);
 				return array_shift( $responses );
 			}
 		);
@@ -48,7 +56,13 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'https://lms.englishchess.org.uk/lms/lmsrest/league/table', $calls[0]['url'] );
 		$this->assertSame( 'POST', $calls[0]['args']['method'] );
 		$this->assertSame( 'application/json', $calls[0]['args']['headers']['Content-Type'] );
-		$this->assertSame( array( 'org' => '12', 'name' => 'Division 1' ), json_decode( $calls[0]['args']['body'], true ) );
+		$this->assertSame(
+			array(
+				'org'  => '12',
+				'name' => 'Division 1',
+			),
+			json_decode( $calls[0]['args']['body'], true )
+		);
 	}
 
 	public function test_media_type_and_method_errors_fall_through_to_next_shape() {
@@ -122,7 +136,13 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_configured_base_url_is_tried_first() {
-		$this->set_settings( array( 'use_local_cache' => 0, 'fast_cache_enabled' => 0, 'lms_base_url' => 'https://custom.test/league/' ) );
+		$this->set_settings(
+			array(
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+				'lms_base_url'       => 'https://custom.test/league/',
+			)
+		);
 		$calls = array();
 		$this->queue_responses( array( $this->response( 200, array( 'table' => array( array( 'team' => 'A' ) ) ) ) ), $calls );
 
@@ -142,7 +162,12 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_pick_returns_first_non_empty_candidate() {
-		$row = array( 'a' => '', 'b' => null, 'c' => 0, 'd' => 'x' );
+		$row = array(
+			'a' => '',
+			'b' => null,
+			'c' => 0,
+			'd' => 'x',
+		);
 
 		$this->assertSame( 0, LMS_Client::pick( $row, array( 'a', 'b', 'c', 'd' ) ) );
 		$this->assertSame( 'x', LMS_Client::pick( $row, array( 'a', 'd' ) ) );
@@ -169,11 +194,27 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 
 	public function test_normalise_table_row_flat() {
 		$row = LMS_Client::normalise_table_row(
-			array( 'pos' => 1, 'team' => 'Alpha', 'p' => 5, 'w' => 3, 'd' => 1, 'l' => 1, 'pts' => 7 )
+			array(
+				'pos'  => 1,
+				'team' => 'Alpha',
+				'p'    => 5,
+				'w'    => 3,
+				'd'    => 1,
+				'l'    => 1,
+				'pts'  => 7,
+			)
 		);
 
 		$this->assertSame(
-			array( 'position' => '1', 'team' => 'Alpha', 'played' => '5', 'won' => '3', 'drawn' => '1', 'lost' => '1', 'points' => '7' ),
+			array(
+				'position' => '1',
+				'team'     => 'Alpha',
+				'played'   => '5',
+				'won'      => '3',
+				'drawn'    => '1',
+				'lost'     => '1',
+				'points'   => '7',
+			),
 			$row
 		);
 	}
@@ -182,7 +223,11 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$row = LMS_Client::normalise_table_row(
 			array(
 				'position' => 2,
-				'entry'    => array( 'team' => array( 'name' => 'Beta' ), 'played' => 4, 'points' => 6 ),
+				'entry'    => array(
+					'team'   => array( 'name' => 'Beta' ),
+					'played' => 4,
+					'points' => 6,
+				),
 			)
 		);
 
@@ -225,7 +270,13 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_normalise_match_row_uses_result_text_fallback() {
-		$row = LMS_Client::normalise_match_row( array( 'home' => 'A', 'away' => 'B', 'result' => '3-1' ) );
+		$row = LMS_Client::normalise_match_row(
+			array(
+				'home'   => 'A',
+				'away'   => 'B',
+				'result' => '3-1',
+			)
+		);
 
 		$this->assertSame( '3-1', $row['result_text'] );
 		$this->assertSame( '', $row['home_score'] );

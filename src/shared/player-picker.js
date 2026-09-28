@@ -28,7 +28,9 @@ export default function PlayerPicker( { value, label, onSelect } ) {
 		debounceRef.current = setTimeout( () => {
 			setIsSearching( true );
 			apiFetch( {
-				path: `/ecf-lms/v1/players?search=${ encodeURIComponent( query.trim() ) }`,
+				path: `/ecf-lms/v1/players?search=${ encodeURIComponent(
+					query.trim()
+				) }`,
 			} )
 				.then( ( items ) => {
 					setResults( items || [] );
@@ -44,9 +46,14 @@ export default function PlayerPicker( { value, label, onSelect } ) {
 	return (
 		<div className="chess-army-knife-picker">
 			<TextControl
-				label={ label || __( 'Find player by name', 'chess-army-knife' ) }
+				label={
+					label || __( 'Find player by name', 'chess-army-knife' )
+				}
 				value={ query }
-				placeholder={ __( 'Start typing a surname…', 'chess-army-knife' ) }
+				placeholder={ __(
+					'Start typing a surname…',
+					'chess-army-knife'
+				) }
 				onChange={ setQuery }
 				onFocus={ () => results.length && setIsOpen( true ) }
 			/>
@@ -75,8 +82,7 @@ export default function PlayerPicker( { value, label, onSelect } ) {
 			{ value?.code && (
 				<p className="chess-army-knife-picker__current">
 					{ __( 'Selected:', 'chess-army-knife' ) }{ ' ' }
-					<strong>{ value.name || value.code }</strong>
-					{ ' ' }
+					<strong>{ value.name || value.code }</strong>{ ' ' }
 					<code>{ value.code }</code>
 				</p>
 			) }

@@ -111,12 +111,12 @@ if ( empty( $players ) ) {
 
 $cutoff = gmdate( 'Y-m-d', strtotime( '-' . $days_back . ' days' ) );
 
-$movers = array();
+$movers           = array();
 $admin_cache_keys = array( ECF_Client::cache_key_club_players( $club_code ) );
 
 foreach ( $players as $player ) {
 	$admin_cache_keys[] = ECF_Client::cache_key_games( $player['code'], $domain, $games_per_player );
-	$games = ECF_Client::get_games( $player['code'], $domain, $games_per_player );
+	$games              = ECF_Client::get_games( $player['code'], $domain, $games_per_player );
 
 	if ( is_wp_error( $games ) || empty( $games ) ) {
 		continue;
@@ -196,8 +196,12 @@ $heading = $title ? $title : sprintf(
 				<li class="ecf-gainers__item">
 					<span class="ecf-gainers__rank">#<?php echo (int) ( $i + 1 ); ?></span>
 					<span class="ecf-gainers__name"><?php echo esc_html( $mover['name'] ); ?></span>
-					<?php if ( $show_detail ) : ?><span class="ecf-gainers__detail">
+					<?php
+					if ( $show_detail ) :
+						?>
+						<span class="ecf-gainers__detail">
 						<?php echo esc_html( (int) $mover['from'] . ' → ' . (int) $mover['to'] ); ?>
+						<?php /* translators: %d: number of games */ ?>
 						(<?php echo esc_html( sprintf( _n( '%d game', '%d games', $mover['games'], 'chess-army-knife' ), $mover['games'] ) ); ?>)
 					</span><?php endif; ?>
 					<span class="ecf-gainers__change"><?php echo esc_html( ( $mover['gain'] >= 0 ? '+' : '' ) . (int) $mover['gain'] ); ?></span>
