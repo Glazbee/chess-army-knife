@@ -35,6 +35,10 @@ function saveResult( block, select ) {
 			}
 			select.dataset.saved = select.value;
 			setStatus( status, '✓', 'saved' );
+			if ( body.reload ) {
+				// The bracket changed (winner moved on, tie-break added, or knockout created).
+				window.location.reload();
+			}
 		} )
 		.catch( ( error ) => {
 			select.value = previous;
