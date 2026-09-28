@@ -1,0 +1,25 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "chess-army-knife/tournament-winners",
+	"title": "Tournament Past Winners",
+	"category": "widgets",
+	"icon": "awards",
+	"description": "List the winners of completed tournaments, most recent first.",
+	"keywords": [ "chess", "tournament", "winners", "champions" ],
+	"version": "0.0.1",
+	"textdomain": "chess-army-knife",
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"limit": { "type": "number", "default": 10 },
+		"templateId": { "type": "string", "default": "" }
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
