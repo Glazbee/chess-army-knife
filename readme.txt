@@ -1,10 +1,10 @@
 === Chess Army Knife ===
 Contributors: yourclub
 Tags: chess, ecf, ratings, league, blocks
-Requires at least: 6.3
-Tested up to: 6.7
+Requires at least: 7.1.2
+Tested up to: 7.1.2
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,12 @@ All ECF/LMS lookups are cached (6 hours by default for ratings data, 30 minutes 
 Yes — add as many blocks as you like, each configured independently.
 
 == Changelog ==
+
+= 0.0.1 =
+* Changed: version numbering reset to 0.0.1 ahead of a first stable 1.0 release. Earlier 1.x entries below are historical.
+* Changed: minimum WordPress version is now 7.1.2.
+* Fixed: cache class file renamed to match the plugin's rename (`class-chess-army-knife-cache.php`); the plugin previously required a file that didn't exist.
+* Added: PHPUnit test suite (run `composer install && composer test`).
 
 = 1.5.0 =
 * Added: ECF Featured Player block — spotlight a player with an optional photo, a blurb on why they're featured, their current ECF rating and club (when an ECF code is given), and links to their chess.com and/or Lichess profiles. Works for players without an ECF code too. Supports templates.
