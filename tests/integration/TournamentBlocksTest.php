@@ -54,7 +54,8 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 	}
 
 	private function render( $block, array $attributes = array() ) {
-		return do_blocks( '<!-- wp:chess-army-knife/' . $block . ' ' . wp_json_encode( $attributes ) . ' /-->' );
+		// Empty attributes must be an object ({}), not an array ([]), to parse as a block.
+		return do_blocks( '<!-- wp:chess-army-knife/' . $block . ' ' . wp_json_encode( (object) $attributes ) . ' /-->' );
 	}
 
 	public function test_status_of_a_draft_and_a_running_tournament() {
