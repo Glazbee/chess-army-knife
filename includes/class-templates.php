@@ -74,17 +74,66 @@ class Chess_Army_Knife_Templates {
 
 		switch ( $slug ) {
 			case 'rating-chart':
-				$s[] = array( 'key' => 'domain', 'label' => __( 'Rating list', 'chess-army-knife' ), 'type' => 'select', 'options' => $domain );
-				$s[] = array( 'key' => 'gamesLimit', 'label' => __( 'Games to include', 'chess-army-knife' ), 'type' => 'number', 'min' => 10, 'max' => 300 );
-				$s[] = array( 'key' => 'height', 'label' => __( 'Chart height (px)', 'chess-army-knife' ), 'type' => 'number', 'min' => 120, 'max' => 800 );
-				$s[] = array( 'key' => 'showStats', 'label' => __( 'Show summary stats', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
+				$s[] = array(
+					'key'     => 'domain',
+					'label'   => __( 'Rating list', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $domain,
+				);
+				$s[] = array(
+					'key'   => 'gamesLimit',
+					'label' => __( 'Games to include', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 10,
+					'max'   => 300,
+				);
+				$s[] = array(
+					'key'   => 'height',
+					'label' => __( 'Chart height (px)', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 120,
+					'max'   => 800,
+				);
+				$s[] = array(
+					'key'     => 'showStats',
+					'label'   => __( 'Show summary stats', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
 				break;
 			case 'club-results':
-				$s[] = array( 'key' => 'domain', 'label' => __( 'Rating list', 'chess-army-knife' ), 'type' => 'select', 'options' => array_slice( $domain, 0, 4, true ) );
-				$s[] = array( 'key' => 'daysBack', 'label' => __( 'Days to look back', 'chess-army-knife' ), 'type' => 'number', 'min' => 1, 'max' => 365 );
-				$s[] = array( 'key' => 'maxResults', 'label' => __( 'Max results shown', 'chess-army-knife' ), 'type' => 'number', 'min' => 1, 'max' => 100 );
-				$s[] = array( 'key' => 'showOpponentRating', 'label' => __( "Show opponents' ratings", 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
-				$s[] = array( 'key' => 'showEvent', 'label' => __( 'Show event column', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
+				$s[] = array(
+					'key'     => 'domain',
+					'label'   => __( 'Rating list', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => array_slice( $domain, 0, 4, true ),
+				);
+				$s[] = array(
+					'key'   => 'daysBack',
+					'label' => __( 'Days to look back', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 1,
+					'max'   => 365,
+				);
+				$s[] = array(
+					'key'   => 'maxResults',
+					'label' => __( 'Max results shown', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 1,
+					'max'   => 100,
+				);
+				$s[] = array(
+					'key'     => 'showOpponentRating',
+					'label'   => __( "Show opponents' ratings", 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'     => 'showEvent',
+					'label'   => __( 'Show event column', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
 				break;
 			case 'league-table':
 				$s[] = array(
@@ -98,29 +147,119 @@ class Chess_Army_Knife_Templates {
 						'matches' => __( 'Matchups only', 'chess-army-knife' ),
 					),
 				);
-				$s[] = array( 'key' => 'maxMatches', 'label' => __( 'Matchups to show', 'chess-army-knife' ), 'type' => 'number', 'min' => 1, 'max' => 50 );
-				$s[] = array( 'key' => 'showLocation', 'label' => __( 'Show match location/venue', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool, 'help' => __( 'Only shown when the LMS supplies a venue for the match.', 'chess-army-knife' ) );
-				$s[] = array( 'key' => 'highlightTeam', 'label' => __( 'Highlight team', 'chess-army-knife' ), 'type' => 'text' );
+				$s[] = array(
+					'key'   => 'maxMatches',
+					'label' => __( 'Matchups to show', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 1,
+					'max'   => 50,
+				);
+				$s[] = array(
+					'key'     => 'showLocation',
+					'label'   => __( 'Show match location/venue', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+					'help'    => __( 'Only shown when the LMS supplies a venue for the match.', 'chess-army-knife' ),
+				);
+				$s[] = array(
+					'key'   => 'highlightTeam',
+					'label' => __( 'Highlight team', 'chess-army-knife' ),
+					'type'  => 'text',
+				);
 				break;
 			case 'team-carousel':
-				$s[] = array( 'key' => 'autoAdvance', 'label' => __( 'Auto-advance', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
-				$s[] = array( 'key' => 'intervalSeconds', 'label' => __( 'Seconds per slide', 'chess-army-knife' ), 'type' => 'number', 'min' => 3, 'max' => 30 );
-				$s[] = array( 'key' => 'showLocation', 'label' => __( 'Show match location/venue', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool, 'help' => __( 'Only shown when the LMS supplies a venue for the match.', 'chess-army-knife' ) );
-				$s[] = array( 'key' => 'highlightTeam', 'label' => __( 'Highlight team', 'chess-army-knife' ), 'type' => 'text' );
+				$s[] = array(
+					'key'     => 'autoAdvance',
+					'label'   => __( 'Auto-advance', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'   => 'intervalSeconds',
+					'label' => __( 'Seconds per slide', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 3,
+					'max'   => 30,
+				);
+				$s[] = array(
+					'key'     => 'showLocation',
+					'label'   => __( 'Show match location/venue', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+					'help'    => __( 'Only shown when the LMS supplies a venue for the match.', 'chess-army-knife' ),
+				);
+				$s[] = array(
+					'key'   => 'highlightTeam',
+					'label' => __( 'Highlight team', 'chess-army-knife' ),
+					'type'  => 'text',
+				);
 				break;
 			case 'biggest-gainers':
-				$s[] = array( 'key' => 'domain', 'label' => __( 'Rating list', 'chess-army-knife' ), 'type' => 'select', 'options' => array_slice( $domain, 0, 4, true ) );
-				$s[] = array( 'key' => 'daysBack', 'label' => __( 'Days to look back', 'chess-army-knife' ), 'type' => 'number', 'min' => 1, 'max' => 365 );
-				$s[] = array( 'key' => 'topCount', 'label' => __( 'Players to show', 'chess-army-knife' ), 'type' => 'number', 'min' => 1, 'max' => 50 );
-				$s[] = array( 'key' => 'minGames', 'label' => __( 'Minimum games to qualify', 'chess-army-knife' ), 'type' => 'number', 'min' => 1, 'max' => 20 );
-				$s[] = array( 'key' => 'showDetail', 'label' => __( 'Show "from → to" rating detail', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
+				$s[] = array(
+					'key'     => 'domain',
+					'label'   => __( 'Rating list', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => array_slice( $domain, 0, 4, true ),
+				);
+				$s[] = array(
+					'key'   => 'daysBack',
+					'label' => __( 'Days to look back', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 1,
+					'max'   => 365,
+				);
+				$s[] = array(
+					'key'   => 'topCount',
+					'label' => __( 'Players to show', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 1,
+					'max'   => 50,
+				);
+				$s[] = array(
+					'key'   => 'minGames',
+					'label' => __( 'Minimum games to qualify', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 1,
+					'max'   => 20,
+				);
+				$s[] = array(
+					'key'     => 'showDetail',
+					'label'   => __( 'Show "from → to" rating detail', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
 				break;
 			case 'featured-player':
-				$s[] = array( 'key' => 'heading', 'label' => __( 'Heading', 'chess-army-knife' ), 'type' => 'text', 'help' => __( 'e.g. "Player of the month".', 'chess-army-knife' ) );
-				$s[] = array( 'key' => 'domain', 'label' => __( 'Rating list', 'chess-army-knife' ), 'type' => 'select', 'options' => $domain );
-				$s[] = array( 'key' => 'showRating', 'label' => __( 'Show current rating', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
-				$s[] = array( 'key' => 'showClub', 'label' => __( 'Show club', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
-				$s[] = array( 'key' => 'showLinks', 'label' => __( 'Show chess.com / Lichess links', 'chess-army-knife' ), 'type' => 'select', 'options' => $bool );
+				$s[] = array(
+					'key'   => 'heading',
+					'label' => __( 'Heading', 'chess-army-knife' ),
+					'type'  => 'text',
+					'help'  => __( 'e.g. "Player of the month".', 'chess-army-knife' ),
+				);
+				$s[] = array(
+					'key'     => 'domain',
+					'label'   => __( 'Rating list', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $domain,
+				);
+				$s[] = array(
+					'key'     => 'showRating',
+					'label'   => __( 'Show current rating', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'     => 'showClub',
+					'label'   => __( 'Show club', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'     => 'showLinks',
+					'label'   => __( 'Show chess.com / Lichess links', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
 				break;
 		}
 
@@ -130,11 +269,35 @@ class Chess_Army_Knife_Templates {
 		unset( $field );
 
 		$style = array(
-			array( 'key' => 'accent', 'label' => __( 'Accent colour', 'chess-army-knife' ), 'type' => 'color', 'help' => __( 'Titles, table highlights, carousel dots and chart lines.', 'chess-army-knife' ) ),
-			array( 'key' => 'bg', 'label' => __( 'Background colour', 'chess-army-knife' ), 'type' => 'color' ),
-			array( 'key' => 'text', 'label' => __( 'Text colour', 'chess-army-knife' ), 'type' => 'color' ),
-			array( 'key' => 'radius', 'label' => __( 'Corner radius (px)', 'chess-army-knife' ), 'type' => 'number', 'min' => 0, 'max' => 40 ),
-			array( 'key' => 'custom_css', 'label' => __( 'Custom CSS', 'chess-army-knife' ), 'type' => 'textarea', 'help' => __( 'Use {block} to target blocks using this template, e.g. {block} th { text-transform: uppercase; }', 'chess-army-knife' ) ),
+			array(
+				'key'   => 'accent',
+				'label' => __( 'Accent colour', 'chess-army-knife' ),
+				'type'  => 'color',
+				'help'  => __( 'Titles, table highlights, carousel dots and chart lines.', 'chess-army-knife' ),
+			),
+			array(
+				'key'   => 'bg',
+				'label' => __( 'Background colour', 'chess-army-knife' ),
+				'type'  => 'color',
+			),
+			array(
+				'key'   => 'text',
+				'label' => __( 'Text colour', 'chess-army-knife' ),
+				'type'  => 'color',
+			),
+			array(
+				'key'   => 'radius',
+				'label' => __( 'Corner radius (px)', 'chess-army-knife' ),
+				'type'  => 'number',
+				'min'   => 0,
+				'max'   => 40,
+			),
+			array(
+				'key'   => 'custom_css',
+				'label' => __( 'Custom CSS', 'chess-army-knife' ),
+				'type'  => 'textarea',
+				'help'  => __( 'Use {block} to target blocks using this template, e.g. {block} th { text-transform: uppercase; }', 'chess-army-knife' ),
+			),
 		);
 		foreach ( $style as &$field ) {
 			$field['group'] = 'style';
@@ -175,7 +338,10 @@ class Chess_Army_Knife_Templates {
 		$out = array();
 		foreach ( self::get_all() as $tpl ) {
 			if ( isset( $tpl['block'] ) && $tpl['block'] === $slug ) {
-				$out[] = array( 'id' => $tpl['id'], 'name' => $tpl['name'] );
+				$out[] = array(
+					'id'   => $tpl['id'],
+					'name' => $tpl['name'],
+				);
 			}
 		}
 		return $out;
@@ -311,7 +477,15 @@ class Chess_Army_Knife_Templates {
 		$id    = isset( $_POST['id'] ) ? sanitize_key( wp_unslash( $_POST['id'] ) ) : '';
 
 		if ( ! isset( $types[ $slug ] ) || '' === $name ) {
-			wp_safe_redirect( add_query_arg( array( 'page' => 'chess-army-knife-templates', 'ecf_lms_tpl_error' => '1' ), admin_url( 'admin.php' ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'page'              => 'chess-army-knife-templates',
+						'ecf_lms_tpl_error' => '1',
+					),
+					admin_url( 'admin.php' )
+				)
+			);
 			exit;
 		}
 
@@ -332,9 +506,9 @@ class Chess_Army_Knife_Templates {
 					}
 					break;
 				case 'number':
-					$n = (float) $val;
-					$n = isset( $field['min'] ) ? max( $field['min'], $n ) : $n;
-					$n = isset( $field['max'] ) ? min( $field['max'], $n ) : $n;
+					$n              = (float) $val;
+					$n              = isset( $field['min'] ) ? max( $field['min'], $n ) : $n;
+					$n              = isset( $field['max'] ) ? min( $field['max'], $n ) : $n;
 					$values[ $key ] = ( floor( $n ) === $n ) ? (int) $n : $n;
 					break;
 				case 'color':
@@ -344,9 +518,9 @@ class Chess_Army_Knife_Templates {
 					}
 					break;
 				case 'textarea':
-					$css = wp_strip_all_tags( $val );
-					$css = preg_replace( '/@import[^;]*;?/i', '', $css );
-					$css = preg_replace( '/expression\s*\(|javascript\s*:|behavior\s*:/i', '', $css );
+					$css            = wp_strip_all_tags( $val );
+					$css            = preg_replace( '/@import[^;]*;?/i', '', $css );
+					$css            = preg_replace( '/expression\s*\(|javascript\s*:|behavior\s*:/i', '', $css );
 					$values[ $key ] = mb_substr( $css, 0, 5000 );
 					break;
 				default:
@@ -366,7 +540,15 @@ class Chess_Army_Knife_Templates {
 		);
 		update_option( self::OPTION, $all );
 
-		wp_safe_redirect( add_query_arg( array( 'page' => 'chess-army-knife-templates', 'ecf_lms_tpl_saved' => '1' ), admin_url( 'admin.php' ) ) );
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'              => 'chess-army-knife-templates',
+					'ecf_lms_tpl_saved' => '1',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
 		exit;
 	}
 
@@ -383,7 +565,15 @@ class Chess_Army_Knife_Templates {
 		unset( $all[ $id ] );
 		update_option( self::OPTION, $all );
 
-		wp_safe_redirect( add_query_arg( array( 'page' => 'chess-army-knife-templates', 'ecf_lms_tpl_deleted' => '1' ), admin_url( 'admin.php' ) ) );
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'                => 'chess-army-knife-templates',
+					'ecf_lms_tpl_deleted' => '1',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
 		exit;
 	}
 
@@ -448,9 +638,37 @@ class Chess_Army_Knife_Templates {
 								<td><?php echo esc_html( isset( $types[ $tpl['block'] ] ) ? $types[ $tpl['block'] ] : $tpl['block'] ); ?></td>
 								<td><?php echo (int) count( $tpl['values'] ); ?></td>
 								<td>
-									<a href="<?php echo esc_url( add_query_arg( array( 'page' => 'chess-army-knife-templates', 'action' => 'edit', 'id' => $tpl['id'] ), admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></a> |
+									<a href="
+									<?php
+									echo esc_url(
+										add_query_arg(
+											array(
+												'page'   => 'chess-army-knife-templates',
+												'action' => 'edit',
+												'id'     => $tpl['id'],
+											),
+											admin_url( 'admin.php' )
+										)
+									);
+									?>
+												"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></a> |
 									<a
-										href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'ecf_lms_delete_template', 'id' => $tpl['id'] ), admin_url( 'admin-post.php' ) ), 'ecf_lms_delete_template' ) ); ?>"
+										href="
+										<?php
+										echo esc_url(
+											wp_nonce_url(
+												add_query_arg(
+													array(
+														'action' => 'ecf_lms_delete_template',
+														'id' => $tpl['id'],
+													),
+													admin_url( 'admin-post.php' )
+												),
+												'ecf_lms_delete_template'
+											)
+										);
+										?>
+												"
 										onclick="return confirm('<?php echo esc_js( __( 'Delete this template? Blocks using it will fall back to their own settings.', 'chess-army-knife' ) ); ?>');"
 									><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
 								</td>
@@ -502,24 +720,29 @@ class Chess_Army_Knife_Templates {
 					</tr>
 				</table>
 
-				<?php foreach ( array( 'settings' => __( 'Block settings', 'chess-army-knife' ), 'style' => __( 'Appearance', 'chess-army-knife' ) ) as $group => $heading ) : ?>
+				<?php
+				foreach ( array(
+					'settings' => __( 'Block settings', 'chess-army-knife' ),
+					'style'    => __( 'Appearance', 'chess-army-knife' ),
+				) as $group => $heading ) :
+					?>
 					<h2><?php echo esc_html( $heading ); ?></h2>
 					<table class="form-table" role="presentation">
-						<?php foreach ( $fields as $field ) : ?>
-							<?php
-							if ( $field['group'] !== $group ) {
-								continue;
-							}
-							$current = isset( $values[ $field['key'] ] ) ? $values[ $field['key'] ] : '';
-							$name    = 'values[' . $field['key'] . ']';
-							$id      = 'f_' . $field['key'];
-							?>
+																													<?php foreach ( $fields as $field ) : ?>
+																														<?php
+																														if ( $field['group'] !== $group ) {
+																															continue;
+																														}
+																														$current = isset( $values[ $field['key'] ] ) ? $values[ $field['key'] ] : '';
+																														$name    = 'values[' . $field['key'] . ']';
+																														$id      = 'f_' . $field['key'];
+																														?>
 							<tr>
 								<th scope="row"><label for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label></th>
 								<td>
-									<?php if ( 'select' === $field['type'] ) : ?>
+																														<?php if ( 'select' === $field['type'] ) : ?>
 										<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>">
-											<?php foreach ( $field['options'] as $val => $label ) : ?>
+																															<?php foreach ( $field['options'] as $val => $label ) : ?>
 												<option value="<?php echo esc_attr( $val ); ?>" <?php selected( (string) $current, (string) $val ); ?>><?php echo esc_html( $label ); ?></option>
 											<?php endforeach; ?>
 										</select>
@@ -533,7 +756,7 @@ class Chess_Army_Knife_Templates {
 									<?php else : ?>
 										<input type="text" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_attr( $current ); ?>" />
 									<?php endif; ?>
-									<?php if ( ! empty( $field['help'] ) ) : ?>
+																														<?php if ( ! empty( $field['help'] ) ) : ?>
 										<p class="description"><?php echo esc_html( $field['help'] ); ?></p>
 									<?php endif; ?>
 								</td>

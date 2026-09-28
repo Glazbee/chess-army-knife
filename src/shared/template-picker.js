@@ -12,7 +12,11 @@ export default function TemplatePicker( { blockSlug, value, onChange } ) {
 
 	useEffect( () => {
 		let cancelled = false;
-		apiFetch( { path: `/ecf-lms/v1/templates?block=${ encodeURIComponent( blockSlug ) }` } )
+		apiFetch( {
+			path: `/ecf-lms/v1/templates?block=${ encodeURIComponent(
+				blockSlug
+			) }`,
+		} )
 			.then( ( items ) => ! cancelled && setTemplates( items || [] ) )
 			.catch( () => ! cancelled && setTemplates( [] ) );
 		return () => {
@@ -21,12 +25,21 @@ export default function TemplatePicker( { blockSlug, value, onChange } ) {
 	}, [ blockSlug ] );
 
 	const options = [
-		{ label: __( '— None (use this block\'s own settings) —', 'chess-army-knife' ), value: '' },
+		{
+			label: __(
+				"— None (use this block's own settings) —",
+				'chess-army-knife'
+			),
+			value: '',
+		},
 		...templates.map( ( t ) => ( { label: t.name, value: t.id } ) ),
 	];
 
 	return (
-		<PanelBody title={ __( 'Template', 'chess-army-knife' ) } initialOpen={ !! value }>
+		<PanelBody
+			title={ __( 'Template', 'chess-army-knife' ) }
+			initialOpen={ !! value }
+		>
 			<SelectControl
 				label={ __( 'Template', 'chess-army-knife' ) }
 				value={ value || '' }

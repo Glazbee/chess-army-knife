@@ -268,8 +268,8 @@ class Chess_Army_Knife_Settings {
 		// The old free-text team list no longer has a field on this page;
 		// keep whatever was stored so the one-off migration into the Club
 		// Teams page still works if settings are saved first.
-		$existing               = self::get_options();
-		$clean['club_teams']    = $existing['club_teams'];
+		$existing                    = self::get_options();
+		$clean['club_teams']         = $existing['club_teams'];
 		$clean['fast_cache_enabled'] = ! empty( $input['fast_cache_enabled'] ) ? 1 : 0;
 		if ( isset( $input['match_time'] ) && preg_match( '/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $input['match_time'] ) ) {
 			$clean['match_time'] = $input['match_time'];

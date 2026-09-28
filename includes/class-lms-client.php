@@ -28,8 +28,8 @@ class LMS_Client {
 	 * host as a fallback in case DNS is restored, and let a site admin
 	 * override this entirely from Settings if the ECF moves things again.
 	 */
-	const BASE           = 'https://lms.englishchess.org.uk/lms/lmsrest/league';
-	const LEGACY_BASE    = 'https://ecflms.org.uk/lms/lmsrest/league';
+	const BASE        = 'https://lms.englishchess.org.uk/lms/lmsrest/league';
+	const LEGACY_BASE = 'https://ecflms.org.uk/lms/lmsrest/league';
 
 	/**
 	 * Fetch the league table (or knockout table / individual standings)
@@ -229,11 +229,11 @@ class LMS_Client {
 	/**
 	 * Issue a single HTTP request with a given method/body shape.
 	 *
-	 * @param string $method GET or POST.
+	 * @param string      $method GET or POST.
 	 * @param string|null $format 'json', 'form', or null (no body - GET).
-	 * @param string $url    Full endpoint URL (no query string for POST).
-	 * @param string $org    Numeric organisation id.
-	 * @param string $name   Event name or club code.
+	 * @param string      $url    Full endpoint URL (no query string for POST).
+	 * @param string      $org    Numeric organisation id.
+	 * @param string      $name   Event name or club code.
 	 * @return array|WP_Error
 	 */
 	protected static function attempt( $method, $format, $url, $org, $name ) {
@@ -282,7 +282,10 @@ class LMS_Client {
 					$url,
 					$response->get_error_message()
 				),
-				array( 'method' => $method, 'url' => $url )
+				array(
+					'method' => $method,
+					'url'    => $url,
+				)
 			);
 		}
 
@@ -363,7 +366,8 @@ class LMS_Client {
 		return $json;
 	}
 
-	/* ---------------------------------------------------------------
+	/*
+	---------------------------------------------------------------
 	 * Generic helpers for pulling values out of loosely-shaped LMS
 	 * JSON. LMS rows are typically associative arrays, but the exact
 	 * key names can vary by field/version, so each helper tries a
@@ -397,8 +401,8 @@ class LMS_Client {
 	 * "rows", "data", "entries", or - if the payload itself is already
 	 * a plain list - the payload itself).
 	 *
-	 * @param array  $payload Decoded JSON.
-	 * @param array  $keys    Candidate wrapper keys to look for first.
+	 * @param array $payload Decoded JSON.
+	 * @param array $keys    Candidate wrapper keys to look for first.
 	 * @return array List of row arrays (possibly empty).
 	 */
 	public static function find_rows( $payload, $keys = array() ) {

@@ -19,9 +19,9 @@ defined( 'ABSPATH' ) || exit;
 class Chess_Army_Knife_Admin_Refresh {
 
 	const QUERY_VAR       = 'ecf_lms_refresh';
-	const QUERY_VAR_KEYS   = 'ecf_lms_keys';
-	const QUERY_VAR_NONCE  = 'ecf_lms_refresh_nonce';
-	const NONCE_ACTION     = 'ecf_lms_refresh';
+	const QUERY_VAR_KEYS  = 'ecf_lms_keys';
+	const QUERY_VAR_NONCE = 'ecf_lms_refresh_nonce';
+	const NONCE_ACTION    = 'ecf_lms_refresh';
 
 	/**
 	 * Boot the early request-time handler.
@@ -78,9 +78,9 @@ class Chess_Army_Knife_Admin_Refresh {
 
 		$encoded_keys = strtr( base64_encode( implode( ',', $cache_keys ) ), '+/', '-_' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 
-		$host         = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
-		$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
-		$current_url  = ( is_ssl() ? 'https://' : 'http://' ) . $host . $request_uri;
+		$host        = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+		$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $host . $request_uri;
 
 		$refresh_url = add_query_arg(
 			array(

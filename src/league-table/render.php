@@ -17,14 +17,14 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'league-table', $attributes );
 
-$org_id          = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_org_id', $attributes['orgId'] ?? '' ) );
-$event_field     = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_event_name', $attributes['eventName'] ?? '' ) );
-$display_mode    = isset( $attributes['displayMode'] ) ? $attributes['displayMode'] : 'both';
-$max_matches     = isset( $attributes['maxMatches'] ) ? max( 1, (int) $attributes['maxMatches'] ) : 6;
-$title           = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$highlight_team  = isset( $attributes['highlightTeam'] ) ? trim( (string) $attributes['highlightTeam'] ) : '';
-$debug           = ! empty( $attributes['debug'] );
-$show_location   = ! empty( $attributes['showLocation'] );
+$org_id         = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_org_id', $attributes['orgId'] ?? '' ) );
+$event_field    = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_event_name', $attributes['eventName'] ?? '' ) );
+$display_mode   = isset( $attributes['displayMode'] ) ? $attributes['displayMode'] : 'both';
+$max_matches    = isset( $attributes['maxMatches'] ) ? max( 1, (int) $attributes['maxMatches'] ) : 6;
+$title          = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$highlight_team = isset( $attributes['highlightTeam'] ) ? trim( (string) $attributes['highlightTeam'] ) : '';
+$debug          = ! empty( $attributes['debug'] );
+$show_location  = ! empty( $attributes['showLocation'] );
 
 $show_table   = in_array( $display_mode, array( 'both', 'table' ), true );
 $show_matches = in_array( $display_mode, array( 'both', 'matches' ), true );

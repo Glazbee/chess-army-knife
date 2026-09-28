@@ -89,7 +89,12 @@ export function drawRatingCharts( root = document ) {
 				},
 				scales: {
 					x: {
-						ticks: { maxRotation: 45, minRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+						ticks: {
+							maxRotation: 45,
+							minRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 12,
+						},
 					},
 					y: {
 						ticks: { precision: 0 },

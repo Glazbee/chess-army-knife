@@ -95,7 +95,7 @@ class Chess_Army_Knife_Cache {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT cache_value, expires_at FROM " . self::table() . " WHERE cache_key = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'SELECT cache_value, expires_at FROM ' . self::table() . ' WHERE cache_key = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$cache_key
 			),
 			ARRAY_A
@@ -191,7 +191,7 @@ class Chess_Army_Knife_Cache {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$created_at = $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT created_at FROM ' . self::table() . ' WHERE cache_key = %s', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'SELECT created_at FROM ' . self::table() . ' WHERE cache_key = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$cache_key
 			)
 		);

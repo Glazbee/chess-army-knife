@@ -116,7 +116,11 @@ class Chess_Army_Knife_Club_Teams_Page {
 			$redirect_args['ecf_lms_team_error'] = '1';
 		} else {
 			$teams   = get_option( self::OPTION, array() );
-			$teams[] = array( 'org' => $org, 'event' => $event, 'team' => $team );
+			$teams[] = array(
+				'org'   => $org,
+				'event' => $event,
+				'team'  => $team,
+			);
 			update_option( self::OPTION, array_values( $teams ) );
 			$redirect_args['ecf_lms_team_added'] = '1';
 		}
@@ -143,7 +147,10 @@ class Chess_Army_Knife_Club_Teams_Page {
 
 		wp_safe_redirect(
 			add_query_arg(
-				array( 'page' => 'chess-army-knife-club-teams', 'ecf_lms_team_deleted' => '1' ),
+				array(
+					'page'                 => 'chess-army-knife-club-teams',
+					'ecf_lms_team_deleted' => '1',
+				),
 				admin_url( 'admin.php' )
 			)
 		);
@@ -194,7 +201,8 @@ class Chess_Army_Knife_Club_Teams_Page {
 								<td><?php echo esc_html( $team['team'] ); ?></td>
 								<td>
 									<a
-										href="<?php
+										href="
+										<?php
 										echo esc_url(
 											wp_nonce_url(
 												add_query_arg(
@@ -207,7 +215,8 @@ class Chess_Army_Knife_Club_Teams_Page {
 												'ecf_lms_delete_team'
 											)
 										);
-										?>"
+										?>
+										"
 										onclick="return confirm('<?php echo esc_js( __( 'Remove this team?', 'chess-army-knife' ) ); ?>');"
 									><?php esc_html_e( 'Remove', 'chess-army-knife' ); ?></a>
 								</td>
