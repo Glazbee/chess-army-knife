@@ -66,6 +66,12 @@ Yes — add as many blocks as you like, each configured independently.
 
 == Changelog ==
 
+= Unreleased =
+* Added: Tournaments (ECF & LMS → Tournaments) and saved player profiles (ECF & LMS → Players). Phase 1 supports round-robin (Berger tables from the FIDE General Regulations, single or double round). Players with an ECF rating code have their rating fetched when the tournament starts and used for seeding; later rating changes don't affect seeding. Players without a code use a manual rating.
+* Added: Tournament Results Entry block — an admin-only block for recording game results from the front end (visitors see nothing).
+* Added: Settings option to also delete tournaments and players when the plugin is deleted. Off by default, so tournament history is kept.
+* Changed: all blocks are now named `chess-army-knife/…` (previously `ecf-lms/…`), which also fixes block styles not applying. Existing pages using the old block names will need those blocks re-added.
+
 = 0.0.1 =
 * Changed: version numbering reset to 0.0.1 ahead of a first stable 1.0 release. Earlier 1.x entries below are historical.
 * Changed: minimum WordPress version is now 7.1.2.

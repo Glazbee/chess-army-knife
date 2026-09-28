@@ -145,6 +145,12 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 90, $clean['cache_lms_minutes'] );
 		$this->assertSame( 1, $clean['use_local_cache'] );
 		$this->assertSame( 0, $clean['fast_cache_enabled'] );
+		$this->assertSame( 0, $clean['delete_data_on_uninstall'] );
+	}
+
+	public function test_uninstall_data_deletion_is_opt_in() {
+		$this->assertSame( 0, Chess_Army_Knife_Settings::defaults()['delete_data_on_uninstall'] );
+		$this->assertSame( 1, Chess_Army_Knife_Settings::sanitize( array( 'delete_data_on_uninstall' => '1' ) )['delete_data_on_uninstall'] );
 	}
 
 	public function test_sanitize_keeps_legacy_club_teams_text() {

@@ -72,7 +72,11 @@ if ( 'club-teams' === $team_source ) {
 	foreach ( preg_split( '/[\r\n,]+/', $manual_teams_raw ) as $line ) {
 		$line = trim( $line );
 		if ( '' !== $line ) {
-			$team_specs[] = array( 'org' => $org_id, 'event' => $event_name, 'team' => $line );
+			$team_specs[] = array(
+				'org'   => $org_id,
+				'event' => $event_name,
+				'team'  => $line,
+			);
 		}
 	}
 } else { // 'auto'
@@ -84,7 +88,7 @@ if ( 'club-teams' === $team_source ) {
 		);
 		return;
 	}
-	$table_raw = LMS_Client::get_table( $org_id, $event_name );
+	$table_raw       = LMS_Client::get_table( $org_id, $event_name );
 	$table_cache_key = LMS_Client::cache_key( 'table', $org_id, $event_name );
 	if ( is_wp_error( $table_raw ) ) {
 		printf(
@@ -98,7 +102,11 @@ if ( 'club-teams' === $team_source ) {
 	foreach ( LMS_Client::find_rows( $table_raw, array( 'table' ) ) as $raw_row ) {
 		$normalised = LMS_Client::normalise_table_row( $raw_row );
 		if ( $normalised && '' !== $normalised['team'] ) {
-			$team_specs[] = array( 'org' => $org_id, 'event' => $event_name, 'team' => $normalised['team'] );
+			$team_specs[] = array(
+				'org'   => $org_id,
+				'event' => $event_name,
+				'team'  => $normalised['team'],
+			);
 		}
 	}
 }
@@ -230,8 +238,18 @@ foreach ( $team_specs as $spec ) {
 		}
 	}
 
-	usort( $results, function ( $a, $b ) { return strcmp( $b['date'], $a['date'] ); } );
-	usort( $fixtures, function ( $a, $b ) { return strcmp( $a['date'], $b['date'] ); } );
+	usort(
+		$results,
+		function ( $a, $b ) {
+			return strcmp( $b['date'], $a['date'] );
+		}
+	);
+	usort(
+		$fixtures,
+		function ( $a, $b ) {
+			return strcmp( $a['date'], $b['date'] );
+		}
+	);
 
 	$next_fixture = null;
 	foreach ( $fixtures as $f ) {
@@ -253,7 +271,7 @@ foreach ( $team_specs as $spec ) {
 	);
 }
 
-$heading = $title ? $title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
+$heading     = $title ? $title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
 $multi_event = count( array_unique( wp_list_pluck( $team_specs, 'event' ) ) ) > 1;
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "chess-army-knife/tournament-results",
+  "title": "Tournament Results Entry",
+  "category": "widgets",
+  "icon": "edit",
+  "description": "Admin-only: record game results for a tournament. Visitors who cannot manage tournaments see nothing.",
+  "keywords": [
+    "chess",
+    "tournament",
+    "results",
+    "round robin"
+  ],
+  "version": "0.0.1",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "tournamentId": {
+      "type": "number",
+      "default": 0
+    },
+    "showCompleted": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js",
+  "render": "file:./render.php"
+}

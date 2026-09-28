@@ -203,7 +203,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				</Placeholder>
 			) : (
 				<ServerSideRender
-					block="ecf-lms/biggest-gainers"
+					block="chess-army-knife/biggest-gainers"
 					attributes={ attributes }
 				/>
 			) }
