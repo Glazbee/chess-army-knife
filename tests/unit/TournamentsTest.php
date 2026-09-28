@@ -55,9 +55,10 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame(
 			array(
-				'groups'  => 1,
-				'advance' => 0,
-				'rounds'  => 6,
+				'groups'         => 1,
+				'advance'        => 0,
+				'rounds'         => 6,
+				'initial_colour' => 'white',
 			),
 			Chess_Army_Knife_Tournaments::config( $swiss )
 		);
@@ -99,9 +100,10 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 		);
 		$this->assertSame(
 			array(
-				'groups'  => 4,
-				'advance' => 2,
-				'rounds'  => 0,
+				'groups'         => 4,
+				'advance'        => 2,
+				'rounds'         => 0,
+				'initial_colour' => 'white',
 			),
 			Chess_Army_Knife_Tournaments::config( $round_robin )
 		);
@@ -113,9 +115,10 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 		);
 		$this->assertSame(
 			array(
-				'groups'  => 1,
-				'advance' => 0,
-				'rounds'  => 0,
+				'groups'         => 1,
+				'advance'        => 0,
+				'rounds'         => 0,
+				'initial_colour' => 'white',
 			),
 			Chess_Army_Knife_Tournaments::config( $plain )
 		);
@@ -130,9 +133,10 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 		);
 		$this->assertSame(
 			array(
-				'groups'  => 1,
-				'advance' => 0,
-				'rounds'  => 0,
+				'groups'         => 1,
+				'advance'        => 0,
+				'rounds'         => 0,
+				'initial_colour' => 'white',
 			),
 			Chess_Army_Knife_Tournaments::config( $knockout )
 		);

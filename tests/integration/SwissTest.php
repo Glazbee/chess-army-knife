@@ -21,14 +21,18 @@ class SwissTest extends WP_UnitTestCase {
 	/**
 	 * Create and start a Swiss with $count players (Player 1 is the top seed).
 	 *
+	 * @param array $args Extra arguments for Chess_Army_Knife_Tournaments::create().
 	 * @return int Tournament id.
 	 */
-	private function started( $count, $rounds ) {
+	private function started( $count, $rounds, array $args = array() ) {
 		$id = Chess_Army_Knife_Tournaments::create(
-			array(
-				'name'   => 'Open',
-				'format' => 'swiss',
-				'rounds' => $rounds,
+			array_merge(
+				array(
+					'name'   => 'Open',
+					'format' => 'swiss',
+					'rounds' => $rounds,
+				),
+				$args
 			)
 		);
 		$this->assertIsInt( $id, is_wp_error( $id ) ? $id->get_error_message() : '' );
@@ -319,5 +323,107 @@ class SwissTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 'swiss_only', Chess_Army_Knife_Tournaments::next_round( $id )->get_error_code() );
+	}
+
+	private function entry_named( $tournament_id, $name ) {
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament_id ) as $entry ) {
+			if ( $name === $entry['name'] ) {
+				return $entry;
+			}
+		}
+		return null;
+	}
+
+	public function test_the_initial_colour_decides_the_top_seeds_colour_in_round_one() {
+		$default = $this->started( 4, 2 );
+		$black   = $this->started( 4, 2, array( 'initial_colour' => 'black' ) );
+
+		$this->assertSame( 'white', Chess_Army_Knife_Tournaments::config( Chess_Army_Knife_Tournament_Store::get_tournament( $default ) )['initial_colour'] );
+		$this->assertSame( 'black', Chess_Army_Knife_Tournaments::config( Chess_Army_Knife_Tournament_Store::get_tournament( $black ) )['initial_colour'] );
+
+		$top_default = $this->entry_named( $default, 'Player 1' )['id'];
+		$top_black   = $this->entry_named( $black, 'Player 1' )['id'];
+		$this->assertSame( $top_default, $this->round_games( $default, 1 )[0]['white_entry_id'] );
+		$this->assertSame( $top_black, $this->round_games( $black, 1 )[0]['black_entry_id'] );
+	}
+
+	public function test_a_requested_bye_sits_the_player_out_and_scores_its_points() {
+		$id     = $this->started( 6, 3 );
+		$target = $this->entry_named( $id, 'Player 1' )['id'];
+
+		// Only rounds that are not paired yet, within the tournament, with a valid kind.
+		$this->assertWPError( Chess_Army_Knife_Tournaments::request_bye( $id, $target, 1, 'half' ) );
+		$this->assertWPError( Chess_Army_Knife_Tournaments::request_bye( $id, $target, 4, 'half' ) );
+		$this->assertWPError( Chess_Army_Knife_Tournaments::request_bye( $id, $target, 2, 'full' ) );
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::request_bye( $id, $target, 2, 'half' ) );
+		$this->assertTrue( Chess_Army_Knife_Tournaments::request_bye( $id, $target, 3, 'zero' ) );
+		$this->assertTrue( Chess_Army_Knife_Tournaments::cancel_bye( $id, $target, 3 ) );
+		$this->assertSame( array( 2 => array( $target => 'half' ) ), Chess_Army_Knife_Tournaments::requested_byes( Chess_Army_Knife_Tournament_Store::get_tournament( $id ) ) );
+
+		$this->play_round( $id, 1 );
+		$this->assertSame( 2, Chess_Army_Knife_Tournaments::next_round( $id ) );
+
+		$games = $this->round_games( $id, 2 );
+		$byes  = array_values(
+			array_filter(
+				$games,
+				function ( $game ) {
+					return $game['is_bye'];
+				}
+			)
+		);
+		$asked = array_values(
+			array_filter(
+				$byes,
+				function ( $game ) use ( $target ) {
+					return $game['white_entry_id'] === $target;
+				}
+			)
+		);
+		$this->assertCount( 1, $asked );
+		$this->assertSame( Chess_Army_Knife_Standings::HALF_POINT_BYE, $asked[0]['result'] );
+		foreach ( $games as $game ) {
+			if ( ! $game['is_bye'] ) {
+				$this->assertNotSame( $target, $game['white_entry_id'] );
+				$this->assertNotSame( $target, $game['black_entry_id'] );
+			}
+		}
+
+		// The player scored round 1 (a win as top seed) plus half a point for the bye.
+		$rows = array_column( Chess_Army_Knife_Tournaments::standings( $id, 0 ), null, 'entry_id' );
+		$this->assertSame( 1.5, $rows[ $target ]['points'] );
+	}
+
+	public function test_a_round_with_a_requested_bye_can_still_be_paired_again() {
+		$id     = $this->started( 6, 3 );
+		$target = $this->entry_named( $id, 'Player 2' )['id'];
+		Chess_Army_Knife_Tournaments::request_bye( $id, $target, 2, 'zero' );
+		$this->play_round( $id, 1 );
+		Chess_Army_Knife_Tournaments::next_round( $id );
+
+		$this->assertSame( 2, Chess_Army_Knife_Tournaments::redo_round( $id ) );
+
+		$asked = array_filter(
+			$this->round_games( $id, 2 ),
+			function ( $game ) use ( $target ) {
+				return $game['is_bye'] && $game['white_entry_id'] === $target;
+			}
+		);
+		$this->assertCount( 1, $asked );
+	}
+
+	public function test_a_withdrawn_player_no_longer_receives_a_requested_bye() {
+		$id     = $this->started( 6, 3 );
+		$target = $this->entry_named( $id, 'Player 6' )['id'];
+		Chess_Army_Knife_Tournaments::request_bye( $id, $target, 2, 'half' );
+		$this->play_round( $id, 1 );
+		Chess_Army_Knife_Tournaments::withdraw( $target );
+		Chess_Army_Knife_Tournaments::next_round( $id );
+
+		foreach ( $this->round_games( $id, 2 ) as $game ) {
+			$this->assertNotSame( $target, $game['white_entry_id'] );
+			$this->assertNotSame( $target, $game['black_entry_id'] );
+		}
 	}
 }

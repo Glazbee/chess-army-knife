@@ -36,29 +36,33 @@ class Chess_Army_Knife_Tournaments {
 	 * knockout tournament always has one group and no group stage.
 	 *
 	 * @param array $tournament Tournament row.
-	 * @return array { groups: int, advance: int, rounds: int } Rounds is only used by Swiss tournaments.
+	 * @return array { groups: int, advance: int, rounds: int, initial_colour: string } Rounds and initial_colour
+	 *               ('white' or 'black', the colour drawn for the first pairing rule) are only used by Swiss tournaments.
 	 */
 	public static function config( array $tournament ) {
 		$settings = isset( $tournament['settings'] ) && is_array( $tournament['settings'] ) ? $tournament['settings'] : array();
 
 		if ( 'swiss' === $tournament['format'] ) {
 			return array(
-				'groups'  => 1,
-				'advance' => 0,
-				'rounds'  => max( 1, isset( $settings['rounds'] ) ? (int) $settings['rounds'] : 5 ),
+				'groups'         => 1,
+				'advance'        => 0,
+				'rounds'         => max( 1, isset( $settings['rounds'] ) ? (int) $settings['rounds'] : 5 ),
+				'initial_colour' => isset( $settings['initial_colour'] ) && 'black' === $settings['initial_colour'] ? 'black' : 'white',
 			);
 		}
 		if ( 'round-robin' !== $tournament['format'] ) {
 			return array(
-				'groups'  => 1,
-				'advance' => 0,
-				'rounds'  => 0,
+				'groups'         => 1,
+				'advance'        => 0,
+				'rounds'         => 0,
+				'initial_colour' => 'white',
 			);
 		}
 		return array(
-			'groups'  => max( 1, isset( $settings['groups'] ) ? (int) $settings['groups'] : 1 ),
-			'advance' => max( 0, isset( $settings['advance'] ) ? (int) $settings['advance'] : 0 ),
-			'rounds'  => 0,
+			'groups'         => max( 1, isset( $settings['groups'] ) ? (int) $settings['groups'] : 1 ),
+			'advance'        => max( 0, isset( $settings['advance'] ) ? (int) $settings['advance'] : 0 ),
+			'rounds'         => 0,
+			'initial_colour' => 'white',
 		);
 	}
 
@@ -128,7 +132,7 @@ class Chess_Army_Knife_Tournaments {
 	/**
 	 * Create a tournament in draft status.
 	 *
-	 * @param array $args name, format, rating_domain, double_round.
+	 * @param array $args name, format, rating_domain, double_round, and for Swiss rounds and initial_colour.
 	 * @return int|WP_Error Tournament id.
 	 */
 	public static function create( array $args ) {
@@ -145,7 +149,9 @@ class Chess_Army_Knife_Tournaments {
 		$groups  = 1;
 		$advance = 0;
 		$rounds  = 0;
+		$colour  = 'white';
 		if ( 'swiss' === $format ) {
+			$colour = isset( $args['initial_colour'] ) && 'black' === $args['initial_colour'] ? 'black' : 'white';
 			$rounds = isset( $args['rounds'] ) ? (int) $args['rounds'] : 0;
 			if ( $rounds < 1 || $rounds > 30 ) {
 				return new WP_Error( 'tournament_rounds', __( 'The number of rounds must be between 1 and 30.', 'chess-army-knife' ) );
@@ -170,9 +176,10 @@ class Chess_Army_Knife_Tournaments {
 				'rating_domain' => ECF_Client::normalise_domain( isset( $args['rating_domain'] ) ? $args['rating_domain'] : 'S' ),
 				'double_round'  => ( 'round-robin' === $format && ! empty( $args['double_round'] ) ) ? 1 : 0,
 				'settings'      => array(
-					'groups'  => $groups,
-					'advance' => $advance,
-					'rounds'  => $rounds,
+					'groups'         => $groups,
+					'advance'        => $advance,
+					'rounds'         => $rounds,
+					'initial_colour' => $colour,
 				),
 			)
 		);
@@ -954,6 +961,7 @@ class Chess_Army_Knife_Tournaments {
 				array(
 					'swiss'      => true,
 					'bye_points' => 1.0,
+					'rounds'     => self::config( $tournament )['rounds'],
 				)
 			);
 		}
@@ -1022,7 +1030,7 @@ class Chess_Army_Knife_Tournaments {
 		$games = array();
 		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament_id ) as $game ) {
 			if ( 'main' === $game['stage'] && $game['round'] === $round ) {
-				if ( null !== $game['result'] ) {
+				if ( ! $game['is_bye'] && null !== $game['result'] ) {
 					return new WP_Error( 'swiss_round_started', __( 'This round already has results, so it cannot be paired again.', 'chess-army-knife' ) );
 				}
 				$games[] = $game;
@@ -1047,16 +1055,24 @@ class Chess_Army_Knife_Tournaments {
 	protected static function generate_swiss_round( array $tournament, $round ) {
 		$config = self::config( $tournament );
 
-		$ids    = array();
-		$active = array();
+		$requested = self::requested_byes( $tournament, $round );
+		$ids       = array();
+		$active    = array();
+		$asked     = array();
 		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament['id'] ) as $entry ) {
 			$ids[] = $entry['id'];
-			if ( 'withdrawn' !== $entry['status'] ) {
+			if ( 'withdrawn' === $entry['status'] ) {
+				continue;
+			}
+			if ( isset( $requested[ $entry['id'] ] ) ) {
+				$asked[ $entry['id'] ] = $requested[ $entry['id'] ];
+			} else {
 				$active[] = $entry['id'];
 			}
 		}
 
-		$result = Chess_Army_Knife_Swiss_Dutch::pair( $ids, $active, self::swiss_history( $tournament['id'], $round ), $config['rounds'] );
+		$options = array( 'initial_white' => 'black' !== $config['initial_colour'] );
+		$result  = Chess_Army_Knife_Swiss_Dutch::pair( $ids, $active, self::swiss_history( $tournament['id'], $round ), $config['rounds'], $options );
 		if ( null !== $result['error'] ) {
 			return new WP_Error( 'swiss_pairing', __( 'No valid pairing exists for this round: the remaining players have all met, or cannot receive the bye. Withdraw a player or end the tournament early.', 'chess-army-knife' ) );
 		}
@@ -1090,7 +1106,120 @@ class Chess_Army_Knife_Tournaments {
 				)
 			);
 		}
+		// A bye a player asked for scores less than the bye the pairing gives, so it is stored with its own result.
+		foreach ( $asked as $entry_id => $kind ) {
+			Chess_Army_Knife_Tournament_Store::add_game(
+				array(
+					'tournament_id'  => $tournament['id'],
+					'stage'          => 'main',
+					'group_no'       => 0,
+					'round'          => $round,
+					'board'          => ++$board,
+					'white_entry_id' => $entry_id,
+					'black_entry_id' => null,
+					'is_bye'         => 1,
+					'result'         => 'half' === $kind ? Chess_Army_Knife_Standings::HALF_POINT_BYE : Chess_Army_Knife_Standings::ZERO_POINT_BYE,
+				)
+			);
+		}
 
+		return true;
+	}
+
+	/**
+	 * Byes players have asked for, by round.
+	 *
+	 * @param array    $tournament Tournament row.
+	 * @param int|null $round      One round, or null for every round.
+	 * @return array Entry id => 'half'|'zero' for one round; round => entry id => kind for all.
+	 */
+	public static function requested_byes( array $tournament, $round = null ) {
+		$all = isset( $tournament['settings']['requested_byes'] ) && is_array( $tournament['settings']['requested_byes'] ) ? $tournament['settings']['requested_byes'] : array();
+		if ( null === $round ) {
+			return $all;
+		}
+		return isset( $all[ $round ] ) && is_array( $all[ $round ] ) ? $all[ $round ] : array();
+	}
+
+	/**
+	 * Ask for a bye in a round of a Swiss tournament that has not been paired yet.
+	 * A half-point bye scores 1/2, a zero-point bye scores nothing; the player sits the round out.
+	 *
+	 * @param int    $tournament_id Tournament id.
+	 * @param int    $entry_id      Entry id.
+	 * @param int    $round         Round to miss.
+	 * @param string $kind          'half' or 'zero'.
+	 * @return true|WP_Error
+	 */
+	public static function request_bye( $tournament_id, $entry_id, $round, $kind ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		$entry      = Chess_Army_Knife_Tournament_Store::get_entry( $entry_id );
+		if ( ! $tournament || 'swiss' !== $tournament['format'] || self::STATUS_COMPLETE === $tournament['status'] ) {
+			return new WP_Error( 'bye_swiss_only', __( 'Byes can only be requested in a Swiss tournament that has not finished.', 'chess-army-knife' ) );
+		}
+		if ( ! $entry || $entry['tournament_id'] !== $tournament['id'] || 'withdrawn' === $entry['status'] ) {
+			return new WP_Error( 'bye_player', __( 'Choose a player who is in the tournament.', 'chess-army-knife' ) );
+		}
+		if ( ! in_array( $kind, array( 'half', 'zero' ), true ) ) {
+			return new WP_Error( 'bye_kind', __( 'Choose a half-point or zero-point bye.', 'chess-army-knife' ) );
+		}
+
+		$config = self::config( $tournament );
+		$round  = (int) $round;
+		if ( $round < 1 || $round > $config['rounds'] || $round <= self::current_round( $tournament['id'] ) ) {
+			return new WP_Error( 'bye_round', __( 'A bye can only be requested for a round that has not been paired yet.', 'chess-army-knife' ) );
+		}
+
+		$byes                              = self::requested_byes( $tournament );
+		$byes[ $round ][ (int) $entry_id ] = $kind;
+		ksort( $byes );
+
+		return self::save_requested_byes( $tournament, $byes );
+	}
+
+	/**
+	 * Cancel a requested bye that has not been paired yet.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @param int $entry_id      Entry id.
+	 * @param int $round         Round.
+	 * @return true|WP_Error
+	 */
+	public static function cancel_bye( $tournament_id, $entry_id, $round ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		if ( ! $tournament || 'swiss' !== $tournament['format'] ) {
+			return new WP_Error( 'bye_swiss_only', __( 'Byes can only be requested in a Swiss tournament that has not finished.', 'chess-army-knife' ) );
+		}
+		$round = (int) $round;
+		if ( $round <= self::current_round( $tournament['id'] ) ) {
+			return new WP_Error( 'bye_round', __( 'That round has already been paired.', 'chess-army-knife' ) );
+		}
+
+		$byes = self::requested_byes( $tournament );
+		unset( $byes[ $round ][ (int) $entry_id ] );
+		if ( isset( $byes[ $round ] ) && empty( $byes[ $round ] ) ) {
+			unset( $byes[ $round ] );
+		}
+
+		return self::save_requested_byes( $tournament, $byes );
+	}
+
+	/**
+	 * Store the requested byes in the tournament settings.
+	 *
+	 * @param array $tournament Tournament row.
+	 * @param array $byes       Round => entry id => kind.
+	 * @return true
+	 */
+	protected static function save_requested_byes( array $tournament, array $byes ) {
+		$settings                   = $tournament['settings'];
+		$settings['requested_byes'] = $byes;
+		Chess_Army_Knife_Tournament_Store::save_tournament(
+			array(
+				'id'       => $tournament['id'],
+				'settings' => $settings,
+			)
+		);
 		return true;
 	}
 
@@ -1117,9 +1246,13 @@ class Chess_Army_Knife_Tournaments {
 			$index = $game['round'] - 1;
 
 			if ( $game['is_bye'] ) {
+				$kinds                       = array(
+					Chess_Army_Knife_Standings::HALF_POINT_BYE => 'half',
+					Chess_Army_Knife_Standings::ZERO_POINT_BYE => 'zero',
+				);
 				$history[ $index ]['byes'][] = array(
 					'player' => $game['white_entry_id'],
-					'kind'   => 'pairing',
+					'kind'   => isset( $kinds[ $game['result'] ] ) ? $kinds[ $game['result'] ] : 'pairing',
 				);
 				continue;
 			}
