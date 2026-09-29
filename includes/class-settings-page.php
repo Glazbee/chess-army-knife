@@ -158,18 +158,12 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
-	 * Whether "match-day fast cache" should currently be active: from 30
-	 * minutes before the configured usual match kick-off time through to
-	 * midnight, every day. Outside that window (including entirely, if
-	 * the feature is switched off) normal cache durations apply.
+	 * Whether "match-day fast cache" is active: from 30 minutes before the
+	 * configured usual kick-off time until midnight, every day.
 	 *
-	 * This is intentionally a simple time-of-day rule rather than one
-	 * that checks actual fixtures first - checking fixtures would itself
-	 * require an uncached API call, defeating the purpose. In exchange
-	 * for that simplicity, the fast window applies every evening rather
-	 * than only on real match nights; since it only shortens the cache
-	 * duration (not the number of page views), the extra API load is
-	 * small and bounded, and it needs zero day-to-day admin attention.
+	 * A plain time-of-day rule, because checking real fixtures would itself need
+	 * an uncached API call. It only shortens cache durations, so the extra API
+	 * load is small and bounded.
 	 *
 	 * @return bool
 	 */

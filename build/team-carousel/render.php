@@ -2,19 +2,10 @@
 /**
  * Server-side render for the ECF Team Fixtures Carousel block.
  *
- * Three ways to decide which teams get a slide:
- * - "auto"        every team currently in one event's league table.
- * - "manual"      a typed list of team names, all within one event.
- * - "club-teams"  the site-wide "Your club's teams" list from Settings,
- *                 which can span any number of organisations/events -
- *                 the natural fit for a club with teams in several
- *                 divisions (and sometimes more than one team per
- *                 division).
- *
- * Whichever source is used, matches are fetched once per unique
- * (org, event) pair and then sliced per team, so a club-teams carousel
- * covering four divisions only makes four match.json calls, however
- * many teams are configured within them.
+ * Teams come from "auto" (every team in one event's league table), "manual"
+ * (typed team names within one event) or "club-teams" (the Settings list,
+ * which can span several organisations and events). Matches are fetched once
+ * per unique (org, event) pair and sliced per team.
  *
  * @package Chess_Army_Knife
  *
