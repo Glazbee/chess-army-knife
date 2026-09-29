@@ -46,6 +46,7 @@ class Chess_Army_Knife_Templates {
 			'tournament-players'   => __( 'Tournament Players', 'chess-army-knife' ),
 			'tournament-games'     => __( 'Tournament Games to Play', 'chess-army-knife' ),
 			'tournament-winners'   => __( 'Tournament Past Winners', 'chess-army-knife' ),
+			'lichess-live'         => __( 'Lichess Live Games', 'chess-army-knife' ),
 		);
 	}
 
@@ -170,6 +171,27 @@ class Chess_Army_Knife_Templates {
 					'key'   => 'highlightTeam',
 					'label' => __( 'Highlight team', 'chess-army-knife' ),
 					'type'  => 'text',
+				);
+				break;
+			case 'lichess-live':
+				$s[] = array(
+					'key'     => 'showBoard',
+					'label'   => __( 'Show live boards', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'     => 'autoAdvance',
+					'label'   => __( 'Auto-advance', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'   => 'intervalSeconds',
+					'label' => __( 'Seconds per game', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 3,
+					'max'   => 30,
 				);
 				break;
 			case 'team-carousel':

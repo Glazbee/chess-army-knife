@@ -24,6 +24,7 @@ define( 'Chess_Army_Knife_URL', plugin_dir_url( __FILE__ ) );
 require_once Chess_Army_Knife_DIR . 'includes/class-chess-army-knife-cache.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-ecf-client.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-lms-client.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-lichess-client.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-settings-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-club-teams-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-templates.php';
@@ -40,6 +41,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-player-selector.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournaments-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-summary.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-admin-refresh.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-lichess-live.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
 /**
