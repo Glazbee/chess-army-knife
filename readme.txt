@@ -8,11 +8,11 @@ Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Three Gutenberg blocks for English chess clubs: ECF rating history charts, club results, and LMS league tables/matchups.
+Gutenberg blocks for English chess clubs: ECF ratings and league data, club tournaments and club events.
 
 == Description ==
 
-This plugin adds eleven blocks to the WordPress block editor, pulling live data from:
+This plugin adds thirteen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -31,6 +31,8 @@ This plugin adds eleven blocks to the WordPress block editor, pulling live data 
 9. **Tournament Standings** — a cross-table with each player's points in every round and their total, in rank order.
 10. **Tournament Past Winners** — the winners of completed tournaments, most recent first.
 11. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
+12. **Club Event Calendar** — upcoming club events by date, as a list or a month grid, optionally only those with chosen tags.
+13. **Next Club Event** — the next club event, optionally only one with a chosen tag.
 
 **Global defaults**
 

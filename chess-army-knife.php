@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Chess Army Knife
  * Plugin URI:        https://example.com/chess-army-knife
- * Description:       Gutenberg blocks that pull live data from the English Chess Federation ratings API and the ECF League Management System (LMS): rating history charts, club results, and league tables/matchups.
+ * Description:       Gutenberg blocks for chess clubs: English Chess Federation (ECF) ratings and League Management System (LMS) data, club tournaments and club events.
  * Version:           0.0.1
  * Requires at least: 7.1.2
  * Requires PHP:      7.4
