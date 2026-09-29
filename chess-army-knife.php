@@ -40,6 +40,8 @@ require_once Chess_Army_Knife_DIR . 'includes/class-player-selector.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournaments-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-summary.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-admin-refresh.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-events.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-events-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
 /**
@@ -49,6 +51,10 @@ require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Cache::install_table();
 	Chess_Army_Knife_Tournament_Store::install_tables();
+
+	// The event post type needs its URLs registered before they are flushed.
+	Chess_Army_Knife_Events::register();
+	flush_rewrite_rules();
 
 	if ( ! wp_next_scheduled( 'Chess_Army_Knife_cleanup_cache' ) ) {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'Chess_Army_Knife_cleanup_cache' );
@@ -63,6 +69,7 @@ register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
  */
 function Chess_Army_Knife_deactivate() {
 	Chess_Army_Knife_Cache::flush_all();
+	flush_rewrite_rules();
 	wp_clear_scheduled_hook( 'Chess_Army_Knife_cleanup_cache' );
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );

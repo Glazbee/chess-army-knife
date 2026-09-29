@@ -1,0 +1,106 @@
+<?php
+/**
+ * Tests for the pure helpers of Chess_Army_Knife_Events.
+ *
+ * @package Chess_Army_Knife
+ */
+
+use Brain\Monkey\Functions;
+
+class EventsTest extends Chess_Army_Knife_TestCase {
+
+	public function test_combine_datetime_joins_a_valid_date_and_time() {
+		$this->assertSame( '2026-10-05 19:30:00', Chess_Army_Knife_Events::combine_datetime( '2026-10-05', '19:30' ) );
+		$this->assertSame( '2026-02-28 00:00:00', Chess_Army_Knife_Events::combine_datetime( '2026-02-28', '00:00' ) );
+	}
+
+	/**
+	 * @dataProvider invalid_datetimes
+	 */
+	public function test_combine_datetime_rejects_invalid_input( $date, $time ) {
+		$this->assertSame( '', Chess_Army_Knife_Events::combine_datetime( $date, $time ) );
+	}
+
+	public function invalid_datetimes() {
+		return array(
+			'empty date'          => array( '', '19:30' ),
+			'empty time'          => array( '2026-10-05', '' ),
+			'not a date'          => array( 'tomorrow', '19:30' ),
+			'impossible date'     => array( '2026-02-30', '19:30' ),
+			'wrong date format'   => array( '05/10/2026', '19:30' ),
+			'hour out of range'   => array( '2026-10-05', '24:00' ),
+			'minute out of range' => array( '2026-10-05', '19:60' ),
+			'with seconds'        => array( '2026-10-05', '19:30:00' ),
+			'not a time'          => array( '2026-10-05', 'noon' ),
+		);
+	}
+
+	public function test_to_timestamp_uses_the_site_timezone() {
+		Functions\when( 'wp_timezone' )->justReturn( new DateTimeZone( 'Europe/London' ) );
+
+		// BST (UTC+1) in October before the clocks change; GMT in December.
+		$this->assertSame( gmmktime( 18, 30, 0, 10, 5, 2026 ), Chess_Army_Knife_Events::to_timestamp( '2026-10-05 19:30:00' ) );
+		$this->assertSame( gmmktime( 19, 30, 0, 12, 5, 2026 ), Chess_Army_Knife_Events::to_timestamp( '2026-12-05 19:30:00' ) );
+	}
+
+	public function test_to_timestamp_returns_null_for_garbage() {
+		Functions\when( 'wp_timezone' )->justReturn( new DateTimeZone( 'UTC' ) );
+
+		$this->assertNull( Chess_Army_Knife_Events::to_timestamp( '' ) );
+		$this->assertNull( Chess_Army_Knife_Events::to_timestamp( 'soon' ) );
+	}
+
+	public function test_league_references_round_trip() {
+		$ref = Chess_Army_Knife_Events::league_ref( ' 613 ', ' Division 1 ' );
+
+		$this->assertSame( '613|Division 1', $ref );
+		$this->assertSame(
+			array(
+				'org'   => '613',
+				'event' => 'Division 1',
+			),
+			Chess_Army_Knife_Events::parse_league_ref( $ref )
+		);
+	}
+
+	public function test_league_reference_keeps_a_pipe_in_the_event_name() {
+		$this->assertSame(
+			array(
+				'org'   => '7',
+				'event' => 'Open | Section A',
+			),
+			Chess_Army_Knife_Events::parse_league_ref( '7|Open | Section A' )
+		);
+	}
+
+	/**
+	 * @dataProvider invalid_league_refs
+	 */
+	public function test_invalid_league_references_are_rejected( $ref ) {
+		$this->assertNull( Chess_Army_Knife_Events::parse_league_ref( $ref ) );
+	}
+
+	public function invalid_league_refs() {
+		return array(
+			'no separator'  => array( '613 Division 1' ),
+			'no org'        => array( '|Division 1' ),
+			'non numeric'   => array( 'abc|Division 1' ),
+			'no event name' => array( '613|' ),
+			'blank'         => array( '' ),
+		);
+	}
+
+	public function test_default_location_comes_from_settings() {
+		$this->set_settings( array( 'default_event_location' => 'The Village Hall' ) );
+
+		$this->assertSame( 'The Village Hall', Chess_Army_Knife_Events::default_location() );
+	}
+
+	public function test_default_location_is_empty_until_set() {
+		$this->assertSame( '', Chess_Army_Knife_Events::default_location() );
+	}
+
+	public function test_default_time_is_filterable_but_starts_at_seven() {
+		$this->assertSame( '19:00', Chess_Army_Knife_Events::default_time() );
+	}
+}

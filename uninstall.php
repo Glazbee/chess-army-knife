@@ -41,6 +41,27 @@ foreach ( $timeout_options as $option_name ) {
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_cache" );
 
+// Club events and their tags are user data too: only removed if the admin opted in.
+if ( $chess_army_knife_delete_data ) {
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$chess_army_knife_event_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s", 'chess_army_event' ) );
+	foreach ( $chess_army_knife_event_ids as $chess_army_knife_event_id ) {
+		wp_delete_post( (int) $chess_army_knife_event_id, true );
+	}
+
+	register_taxonomy( 'chess_army_event_tag', 'chess_army_event' );
+	$chess_army_knife_tag_ids = get_terms(
+		array(
+			'taxonomy'   => 'chess_army_event_tag',
+			'hide_empty' => false,
+			'fields'     => 'ids',
+		)
+	);
+	foreach ( is_array( $chess_army_knife_tag_ids ) ? $chess_army_knife_tag_ids : array() as $chess_army_knife_tag_id ) {
+		wp_delete_term( (int) $chess_army_knife_tag_id, 'chess_army_event_tag' );
+	}
+}
+
 // Tournament history is user data: only drop it if the admin opted in on the Settings page.
 if ( $chess_army_knife_delete_data ) {
 	foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $chess_army_knife_table ) {
