@@ -140,7 +140,7 @@ function Chess_Army_Knife_rest_get_defaults() {
  * @return WP_REST_Response|WP_Error
  */
 function Chess_Army_Knife_rest_search_players( WP_REST_Request $request ) {
-	$results = ECF_Client::search_players( $request->get_param( 'search' ) );
+	$results = Chess_Army_Knife_ECF_Client::search_players( $request->get_param( 'search' ) );
 
 	if ( is_wp_error( $results ) ) {
 		return $results;
@@ -173,7 +173,7 @@ function Chess_Army_Knife_rest_search_players( WP_REST_Request $request ) {
  * @return WP_REST_Response|WP_Error
  */
 function Chess_Army_Knife_rest_search_clubs( WP_REST_Request $request ) {
-	$results = ECF_Client::search_clubs( $request->get_param( 'search' ) );
+	$results = Chess_Army_Knife_ECF_Client::search_clubs( $request->get_param( 'search' ) );
 
 	if ( is_wp_error( $results ) ) {
 		return $results;
@@ -181,8 +181,8 @@ function Chess_Army_Knife_rest_search_clubs( WP_REST_Request $request ) {
 
 	$suggestions = array();
 	foreach ( (array) $results as $club ) {
-		$code = LMS_Client::pick( $club, array( 'club_code', 'code' ) );
-		$name = LMS_Client::pick( $club, array( 'club_name', 'name' ) );
+		$code = Chess_Army_Knife_LMS_Client::pick( $club, array( 'club_code', 'code' ) );
+		$name = Chess_Army_Knife_LMS_Client::pick( $club, array( 'club_name', 'name' ) );
 
 		if ( '' === $code || '' === $name ) {
 			continue;

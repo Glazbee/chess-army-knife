@@ -193,7 +193,7 @@ class TournamentTest extends WP_UnitTestCase {
 		// Alice's ECF rating jumps past Bob's after the tournament has started.
 		remove_all_filters( 'pre_http_request' );
 		$this->mock_ratings( array( '100001' => 2500 ) );
-		Chess_Army_Knife_Cache::forget( ECF_Client::cache_key_rating( '100001', 'S' ) );
+		Chess_Army_Knife_Cache::forget( Chess_Army_Knife_ECF_Client::cache_key_rating( '100001', 'S' ) );
 
 		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $id );
 		$this->assertSame( 'Bob', $entries[0]['name'] );

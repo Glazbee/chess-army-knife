@@ -18,7 +18,7 @@ $attributes = Chess_Army_Knife_Templates::apply( 'club-results', $attributes );
 
 $club_code            = strtoupper( trim( Chess_Army_Knife_Settings::resolve( 'default_club_code', $attributes['clubCode'] ?? '' ) ) );
 $club_name            = isset( $attributes['clubName'] ) ? $attributes['clubName'] : '';
-$domain               = ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$domain               = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
 $max_players          = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_max_players', empty( $attributes['maxPlayers'] ) ? '' : $attributes['maxPlayers'], 12 ) );
 $games_per_player     = isset( $attributes['gamesPerPlayer'] ) ? max( 1, (int) $attributes['gamesPerPlayer'] ) : 5;
 $days_back            = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
@@ -38,7 +38,7 @@ if ( '' === $club_code ) {
 	return;
 }
 
-$roster = ECF_Client::get_club_players( $club_code );
+$roster = Chess_Army_Knife_ECF_Client::get_club_players( $club_code );
 
 if ( is_wp_error( $roster ) ) {
 	printf(
@@ -118,11 +118,11 @@ $result_labels = array(
 );
 
 $results          = array();
-$admin_cache_keys = array( ECF_Client::cache_key_club_players( $club_code ) );
+$admin_cache_keys = array( Chess_Army_Knife_ECF_Client::cache_key_club_players( $club_code ) );
 
 foreach ( $players as $player ) {
-	$admin_cache_keys[] = ECF_Client::cache_key_games( $player['code'], $domain, $games_per_player );
-	$games              = ECF_Client::get_games( $player['code'], $domain, $games_per_player );
+	$admin_cache_keys[] = Chess_Army_Knife_ECF_Client::cache_key_games( $player['code'], $domain, $games_per_player );
+	$games              = Chess_Army_Knife_ECF_Client::get_games( $player['code'], $domain, $games_per_player );
 
 	if ( is_wp_error( $games ) || empty( $games ) ) {
 		continue;

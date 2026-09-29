@@ -17,13 +17,13 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'featured-player', $attributes );
 
-$player_code = ECF_Client::normalise_code( $attributes['playerCode'] ?? '' );
+$player_code = Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ?? '' );
 $name        = trim( (string) ( $attributes['playerName'] ?? '' ) );
 $heading     = trim( (string) ( $attributes['heading'] ?? '' ) );
 $blurb       = trim( (string) ( $attributes['blurb'] ?? '' ) );
 $image_id    = (int) ( $attributes['imageId'] ?? 0 );
 $image_url   = (string) ( $attributes['imageUrl'] ?? '' );
-$domain      = ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$domain      = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
 $show_rating = ! isset( $attributes['showRating'] ) || (bool) $attributes['showRating'];
 $show_club   = ! isset( $attributes['showClub'] ) || (bool) $attributes['showClub'];
 $show_links  = ! isset( $attributes['showLinks'] ) || (bool) $attributes['showLinks'];
@@ -67,8 +67,8 @@ $title      = '';
 $admin_keys = array();
 
 if ( '' !== $player_code ) {
-	$player       = ECF_Client::get_player_by_code( $player_code );
-	$admin_keys[] = ECF_Client::cache_key_player( $player_code );
+	$player       = Chess_Army_Knife_ECF_Client::get_player_by_code( $player_code );
+	$admin_keys[] = Chess_Army_Knife_ECF_Client::cache_key_player( $player_code );
 
 	if ( ! is_wp_error( $player ) && is_array( $player ) ) {
 		if ( '' === $name && ! empty( $player['full_name'] ) ) {
@@ -80,8 +80,8 @@ if ( '' !== $player_code ) {
 	}
 
 	if ( $show_rating ) {
-		$rating_data  = ECF_Client::get_rating( $player_code, $domain );
-		$admin_keys[] = ECF_Client::cache_key_rating( $player_code, $domain );
+		$rating_data  = Chess_Army_Knife_ECF_Client::get_rating( $player_code, $domain );
+		$admin_keys[] = Chess_Army_Knife_ECF_Client::cache_key_rating( $player_code, $domain );
 		if ( ! is_wp_error( $rating_data ) && is_array( $rating_data ) ) {
 			$value = $rating_data['revised_rating'] ?? ( $rating_data['original_rating'] ?? '' );
 			if ( '' !== $value && null !== $value ) {

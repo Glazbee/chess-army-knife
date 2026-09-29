@@ -79,8 +79,8 @@ if ( 'club-teams' === $team_source ) {
 		);
 		return;
 	}
-	$table_raw       = LMS_Client::get_table( $org_id, $event_name );
-	$table_cache_key = LMS_Client::cache_key( 'table', $org_id, $event_name );
+	$table_raw       = Chess_Army_Knife_LMS_Client::get_table( $org_id, $event_name );
+	$table_cache_key = Chess_Army_Knife_LMS_Client::cache_key( 'table', $org_id, $event_name );
 	if ( is_wp_error( $table_raw ) ) {
 		printf(
 			'<div %1$s><div class="chess-army-knife-notice">%2$s %3$s</div></div>',
@@ -90,8 +90,8 @@ if ( 'club-teams' === $team_source ) {
 		);
 		return;
 	}
-	foreach ( LMS_Client::find_rows( $table_raw, array( 'table' ) ) as $raw_row ) {
-		$normalised = LMS_Client::normalise_table_row( $raw_row );
+	foreach ( Chess_Army_Knife_LMS_Client::find_rows( $table_raw, array( 'table' ) ) as $raw_row ) {
+		$normalised = Chess_Army_Knife_LMS_Client::normalise_table_row( $raw_row );
 		if ( $normalised && '' !== $normalised['team'] ) {
 			$team_specs[] = array(
 				'org'   => $org_id,
@@ -132,15 +132,15 @@ if ( $table_cache_key ) {
 }
 
 foreach ( $groups as $group_key => &$group ) {
-	$group['raw']       = LMS_Client::get_matches( $group['org'], $group['event'] );
-	$admin_cache_keys[] = LMS_Client::cache_key( 'match', $group['org'], $group['event'] );
+	$group['raw']       = Chess_Army_Knife_LMS_Client::get_matches( $group['org'], $group['event'] );
+	$admin_cache_keys[] = Chess_Army_Knife_LMS_Client::cache_key( 'match', $group['org'], $group['event'] );
 
 	if ( is_wp_error( $group['raw'] ) ) {
 		$group['error'] = $group['raw'];
 		continue;
 	}
-	foreach ( LMS_Client::find_rows( $group['raw'], array( 'matches' ) ) as $raw_row ) {
-		$normalised = LMS_Client::normalise_match_row( $raw_row );
+	foreach ( Chess_Army_Knife_LMS_Client::find_rows( $group['raw'], array( 'matches' ) ) as $raw_row ) {
+		$normalised = Chess_Army_Knife_LMS_Client::normalise_match_row( $raw_row );
 		if ( $normalised && ( '' !== $normalised['home'] || '' !== $normalised['away'] ) ) {
 			$group['rows'][] = $normalised;
 		}

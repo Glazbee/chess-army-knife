@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for ECF_Client.
+ * Tests for Chess_Army_Knife_ECF_Client.
  *
  * @package Chess_Army_Knife
  */
@@ -16,38 +16,38 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_normalise_code_keeps_digits_only() {
-		$this->assertSame( '120787', ECF_Client::normalise_code( ' 120787J ' ) );
-		$this->assertSame( '', ECF_Client::normalise_code( 'abc' ) );
+		$this->assertSame( '120787', Chess_Army_Knife_ECF_Client::normalise_code( ' 120787J ' ) );
+		$this->assertSame( '', Chess_Army_Knife_ECF_Client::normalise_code( 'abc' ) );
 	}
 
 	public function test_normalise_domain_accepts_valid_and_defaults_to_standard() {
-		$this->assertSame( 'RW', ECF_Client::normalise_domain( ' rw ' ) );
-		$this->assertSame( 'S', ECF_Client::normalise_domain( 'nonsense' ) );
-		$this->assertSame( 'S', ECF_Client::normalise_domain( '' ) );
+		$this->assertSame( 'RW', Chess_Army_Knife_ECF_Client::normalise_domain( ' rw ' ) );
+		$this->assertSame( 'S', Chess_Army_Knife_ECF_Client::normalise_domain( 'nonsense' ) );
+		$this->assertSame( 'S', Chess_Army_Knife_ECF_Client::normalise_domain( '' ) );
 	}
 
 	public function test_cache_keys_are_normalised() {
-		$this->assertSame( 'ecf_games_120787_R_100', ECF_Client::cache_key_games( '120787J', 'r', 100 ) );
-		$this->assertSame( 'ecf_player_120787', ECF_Client::cache_key_player( '120787J' ) );
-		$this->assertSame( 'ecf_rating_120787_S', ECF_Client::cache_key_rating( '120787J', 'bogus' ) );
-		$this->assertSame( 'ecf_club_players_9BAJ', ECF_Client::cache_key_club_players( ' 9baj ' ) );
+		$this->assertSame( 'ecf_games_120787_R_100', Chess_Army_Knife_ECF_Client::cache_key_games( '120787J', 'r', 100 ) );
+		$this->assertSame( 'ecf_player_120787', Chess_Army_Knife_ECF_Client::cache_key_player( '120787J' ) );
+		$this->assertSame( 'ecf_rating_120787_S', Chess_Army_Knife_ECF_Client::cache_key_rating( '120787J', 'bogus' ) );
+		$this->assertSame( 'ecf_club_players_9BAJ', Chess_Army_Knife_ECF_Client::cache_key_club_players( ' 9baj ' ) );
 	}
 
 	public function test_missing_identifiers_return_errors_without_http() {
 		Functions\expect( 'wp_remote_get' )->never();
 
-		$this->assertSame( 'ecf_bad_code', ECF_Client::get_rating( '' )->get_error_code() );
-		$this->assertSame( 'ecf_bad_code', ECF_Client::get_player_by_code( 'xyz' )->get_error_code() );
-		$this->assertSame( 'ecf_bad_code', ECF_Client::get_games( '' )->get_error_code() );
-		$this->assertSame( 'ecf_bad_club', ECF_Client::get_club_players( '  ' )->get_error_code() );
-		$this->assertSame( 'ecf_bad_club', ECF_Client::get_club_info( '' )->get_error_code() );
+		$this->assertSame( 'ecf_bad_code', Chess_Army_Knife_ECF_Client::get_rating( '' )->get_error_code() );
+		$this->assertSame( 'ecf_bad_code', Chess_Army_Knife_ECF_Client::get_player_by_code( 'xyz' )->get_error_code() );
+		$this->assertSame( 'ecf_bad_code', Chess_Army_Knife_ECF_Client::get_games( '' )->get_error_code() );
+		$this->assertSame( 'ecf_bad_club', Chess_Army_Knife_ECF_Client::get_club_players( '  ' )->get_error_code() );
+		$this->assertSame( 'ecf_bad_club', Chess_Army_Knife_ECF_Client::get_club_info( '' )->get_error_code() );
 	}
 
 	public function test_short_searches_return_empty_without_http() {
 		Functions\expect( 'wp_remote_get' )->never();
 
-		$this->assertSame( array(), ECF_Client::search_players( 'ab' ) );
-		$this->assertSame( array(), ECF_Client::search_clubs( ' a ' ) );
+		$this->assertSame( array(), Chess_Army_Knife_ECF_Client::search_players( 'ab' ) );
+		$this->assertSame( array(), Chess_Army_Knife_ECF_Client::search_clubs( ' a ' ) );
 	}
 
 	public function test_get_games_unwraps_envelope_and_sends_normalised_query() {
@@ -75,7 +75,7 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 			);
 
 		// Limit above the cap is clamped to 500.
-		$this->assertSame( array( array( 'id' => 1 ) ), ECF_Client::get_games( '120787J', 'r', 9999 ) );
+		$this->assertSame( array( array( 'id' => 1 ) ), Chess_Army_Knife_ECF_Client::get_games( '120787J', 'r', 9999 ) );
 	}
 
 	public function test_successful_response_is_cached() {
@@ -91,8 +91,8 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 				)
 			);
 
-		ECF_Client::get_games( '120787' );
-		ECF_Client::get_games( '120787' );
+		Chess_Army_Knife_ECF_Client::get_games( '120787' );
+		Chess_Army_Knife_ECF_Client::get_games( '120787' );
 		$this->assertTrue( true ); // The once() expectation is the assertion.
 	}
 
@@ -115,14 +115,14 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 				'columns' => array( 'name', 'rating' ),
 				'players' => array( array( 'A', 1500 ) ),
 			),
-			ECF_Client::get_club_players( '9BAJ' )
+			Chess_Army_Knife_ECF_Client::get_club_players( '9BAJ' )
 		);
 	}
 
 	public function test_transport_error_is_returned_and_cached_briefly() {
 		Functions\when( 'wp_remote_get' )->justReturn( new WP_Error( 'http_request_failed', 'timeout' ) );
 
-		$result = ECF_Client::get_club_info( '9BAJ' );
+		$result = Chess_Army_Knife_ECF_Client::get_club_info( '9BAJ' );
 
 		$this->assertSame( 'http_request_failed', $result->get_error_code() );
 		$ttls = array_column( $this->transients, 'ttl' );
@@ -132,7 +132,7 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 	public function test_unparseable_body_is_an_error() {
 		Functions\when( 'wp_remote_get' )->justReturn( $this->response( 200, '<html>oops' ) );
 
-		$this->assertSame( 'ecf_bad_response', ECF_Client::get_player_by_code( '120787' )->get_error_code() );
+		$this->assertSame( 'ecf_bad_response', Chess_Army_Knife_ECF_Client::get_player_by_code( '120787' )->get_error_code() );
 	}
 
 	public function test_api_failure_uses_service_message() {
@@ -146,7 +146,7 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 			)
 		);
 
-		$result = ECF_Client::get_player_by_code( '120787' );
+		$result = Chess_Army_Knife_ECF_Client::get_player_by_code( '120787' );
 
 		$this->assertSame( 'ecf_api_error', $result->get_error_code() );
 		$this->assertSame( 'No such player', $result->get_error_message() );
@@ -163,7 +163,7 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 			)
 		);
 
-		$result = ECF_Client::get_rating( '120787' );
+		$result = Chess_Army_Knife_ECF_Client::get_rating( '120787' );
 
 		$this->assertSame( 'ecf_api_error', $result->get_error_code() );
 		$this->assertSame( array( 'status' => 500 ), $result->get_error_data() );
@@ -180,7 +180,7 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 			)
 		);
 
-		$this->assertSame( array( 'x' => 1 ), ECF_Client::search_clubs( 'chess' ) );
+		$this->assertSame( array( 'x' => 1 ), Chess_Army_Knife_ECF_Client::search_clubs( 'chess' ) );
 	}
 
 	public function test_cache_ttl_follows_settings_with_one_minute_floor() {
@@ -200,7 +200,7 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 			)
 		);
 
-		ECF_Client::get_games( '120787' );
+		Chess_Army_Knife_ECF_Client::get_games( '120787' );
 
 		$this->assertSame( array( 90 * MINUTE_IN_SECONDS ), array_column( $this->transients, 'ttl' ) );
 	}

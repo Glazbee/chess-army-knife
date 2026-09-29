@@ -14,9 +14,9 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'rating-chart', $attributes );
 
-$player_code = isset( $attributes['playerCode'] ) ? ECF_Client::normalise_code( $attributes['playerCode'] ) : '';
+$player_code = isset( $attributes['playerCode'] ) ? Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ) : '';
 $player_name = isset( $attributes['playerName'] ) ? $attributes['playerName'] : '';
-$domain      = ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$domain      = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
 $games_limit = isset( $attributes['gamesLimit'] ) ? (int) $attributes['gamesLimit'] : 100;
 $title       = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $height      = isset( $attributes['height'] ) ? max( 120, (int) $attributes['height'] ) : 320;
@@ -34,7 +34,7 @@ if ( '' === $player_code ) {
 	return;
 }
 
-$games = ECF_Client::get_games( $player_code, $domain, $games_limit );
+$games = Chess_Army_Knife_ECF_Client::get_games( $player_code, $domain, $games_limit );
 
 if ( is_wp_error( $games ) ) {
 	printf(
@@ -116,7 +116,7 @@ $chart_payload = array(
 );
 
 $canvas_id       = 'ecf-rating-chart-' . wp_unique_id();
-$admin_cache_key = ECF_Client::cache_key_games( $player_code, $domain, $games_limit );
+$admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $domain, $games_limit );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>

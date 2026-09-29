@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-class LMS_Client {
+class Chess_Army_Knife_LMS_Client {
 
 	/**
 	 * The ECF's own API docs (lms.englishchess.org.uk/lms/node/34) point

@@ -250,7 +250,7 @@ class Chess_Army_Knife_Settings {
 			$clean['default_event_name'] = sanitize_text_field( $input['default_event_name'] );
 		}
 		if ( isset( $input['default_domain'] ) ) {
-			$clean['default_domain'] = ECF_Client::normalise_domain( $input['default_domain'] );
+			$clean['default_domain'] = Chess_Army_Knife_ECF_Client::normalise_domain( $input['default_domain'] );
 		}
 		if ( isset( $input['default_days_back'] ) ) {
 			$clean['default_days_back'] = max( 1, (int) $input['default_days_back'] );

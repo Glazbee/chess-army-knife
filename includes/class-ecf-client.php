@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-class ECF_Client {
+class Chess_Army_Knife_ECF_Client {
 
 	const BASE = 'https://rating.englishchess.org.uk/api';
 

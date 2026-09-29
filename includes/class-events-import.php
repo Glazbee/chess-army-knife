@@ -186,8 +186,8 @@ class Chess_Army_Knife_Events_Import {
 			}
 
 			// An import is a manual refresh, so don't use the cached copy.
-			Chess_Army_Knife_Cache::forget( LMS_Client::cache_key( 'match', $team['org'], $team['event'] ) );
-			$raw = LMS_Client::get_matches( $team['org'], $team['event'] );
+			Chess_Army_Knife_Cache::forget( Chess_Army_Knife_LMS_Client::cache_key( 'match', $team['org'], $team['event'] ) );
+			$raw = Chess_Army_Knife_LMS_Client::get_matches( $team['org'], $team['event'] );
 
 			$by_league[ $group ] = array();
 			if ( is_wp_error( $raw ) ) {
@@ -196,8 +196,8 @@ class Chess_Army_Knife_Events_Import {
 				continue;
 			}
 
-			foreach ( LMS_Client::find_rows( $raw, array( 'matches' ) ) as $row ) {
-				$match = LMS_Client::normalise_match_row( $row );
+			foreach ( Chess_Army_Knife_LMS_Client::find_rows( $raw, array( 'matches' ) ) as $row ) {
+				$match = Chess_Army_Knife_LMS_Client::normalise_match_row( $row );
 				if ( $match && ( '' !== $match['home'] || '' !== $match['away'] ) ) {
 					$by_league[ $group ][] = $match;
 				}
