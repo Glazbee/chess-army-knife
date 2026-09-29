@@ -1,15 +1,10 @@
 <?php
 /**
- * A small, admin-only control that blocks can render alongside their
- * data: "Last refreshed X ago · Refresh now". Lets an admin who
- * suspects something is stale force a fresh fetch for that specific
- * block without waiting for the cache to expire or clearing the whole
- * site-wide cache from Settings.
+ * Admin-only "Last refreshed X ago · Refresh now" control for blocks.
  *
- * The "Refresh now" link works without JavaScript: it's a normal link
- * back to the current page carrying the specific cache keys to forget
- * plus a nonce; template_redirect() clears just those keys and then
- * redirects to a clean URL, so the very next render fetches fresh data.
+ * The link works without JavaScript: it returns to the current page with the
+ * cache keys to forget plus a nonce; template_redirect() clears just those
+ * keys and redirects to a clean URL.
  *
  * @package Chess_Army_Knife
  */
@@ -36,7 +31,7 @@ class Chess_Army_Knife_Admin_Refresh {
 	 * redirect to the clean URL so the next render fetches fresh data.
 	 */
 	public static function maybe_handle_refresh() {
-		if ( empty( $_GET[ self::QUERY_VAR ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET[ self::QUERY_VAR ] ) ) {
 			return;
 		}
 
