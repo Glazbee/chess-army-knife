@@ -3,7 +3,7 @@
 This is a PHP 7.4 Wordpress plugin for doing chess-related things. The plugin should follow WordPress conventions and integrate cleanly with the WordPress ecosystem. Keep the implementation simple, maintainable and easy to extend.
 
 # Code Style
-- Use 2-space indentation
+- Use tabs for indentation (required by WordPress Coding Standards and enforced by PHPCS and Prettier)
 - Follow WordPress Coding Standards
 - Use meaningful, descriptive names for functions, classes and variables
 - Prefer explicit, readable code over clever solutions
