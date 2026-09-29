@@ -275,7 +275,7 @@ class Chess_Army_Knife_Events {
 	 *     @type string   $end                 Site-local "Y-m-d H:i:s", or ''.
 	 *     @type string   $location            The event's own location, or the default.
 	 *     @type array[]  $tags                Each { name, slug, url }.
-	 *     @type array[]  $tournaments         Each { id, name, url } (url '' if it has no page).
+	 *     @type array[]  $tournaments         Each { id, name, url } (url '' unless it has a published page).
 	 *     @type array[]  $leagues             Each { org, event }.
 	 * }
 	 */
@@ -305,7 +305,8 @@ class Chess_Army_Knife_Events {
 			$tournaments[] = array(
 				'id'   => (int) $tournament['id'],
 				'name' => $tournament['name'],
-				'url'  => $page ? get_permalink( $page ) : '',
+				// A draft page would only give visitors a 404.
+				'url'  => ( $page && 'publish' === $page->post_status ) ? get_permalink( $page ) : '',
 			);
 		}
 

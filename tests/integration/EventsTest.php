@@ -192,14 +192,25 @@ class EventsTest extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_a_tournament_with_a_page_links_to_it() {
+	public function test_a_tournament_links_to_its_page_only_once_published() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$id      = Chess_Army_Knife_Tournaments::create( array( 'name' => 'Club Championship' ) );
 		$page_id = Chess_Army_Knife_Tournaments::create_page( $id );
+		$this->assertIsInt( $page_id );
 		$this->event( 'Night', '2099-01-01 19:00:00', array( Chess_Army_Knife_Events::META_TOURNAMENTS => array( $id ) ) );
 
-		$event = Chess_Army_Knife_Events::query()[0];
+		$draft = Chess_Army_Knife_Events::query()[0];
+		$this->assertSame( '', $draft['tournaments'][0]['url'], 'A draft page is not linked.' );
 
-		$this->assertSame( get_permalink( $page_id ), $event['tournaments'][0]['url'] );
+		wp_update_post(
+			array(
+				'ID'          => $page_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$published = Chess_Army_Knife_Events::query()[0];
+		$this->assertSame( get_permalink( $page_id ), $published['tournaments'][0]['url'] );
 	}
 
 	/**
