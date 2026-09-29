@@ -12,7 +12,7 @@ Three Gutenberg blocks for English chess clubs: ECF rating history charts, club 
 
 == Description ==
 
-This plugin adds ten blocks to the WordPress block editor, pulling live data from:
+This plugin adds eleven blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -27,9 +27,10 @@ This plugin adds ten blocks to the WordPress block editor, pulling live data fro
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
 7. **Tournament Status** — where a tournament stands: status, format, players, current round (Swiss), games played and the winner.
-8. **Tournament Games to Play** — the games in a tournament that still have no result, grouped by round.
-9. **Tournament Past Winners** — the winners of completed tournaments, most recent first.
-10. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
+8. **Tournament Games to Play** — the games in a tournament that still have no result, grouped by round. Administrators also get a pair of score selectors per game and a Save button.
+9. **Tournament Standings** — a cross-table with each player's points in every round and their total, in rank order.
+10. **Tournament Past Winners** — the winners of completed tournaments, most recent first.
+11. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
 
 **Global defaults**
 
@@ -71,6 +72,10 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: Tournament Standings block, a cross-table of each player's points in every round and their total.
+* Changed: results are now entered in the Tournament Games to Play block. Everyone sees the games; administrators also get two score selectors per game (choosing 1 for one player gives the other 0, and ½ gives ½ to both) and one Save button at the top. Games are saved together, so a wrong score is not recorded by accident. Forfeits and corrections are still made on the Tournaments admin page.
+* Removed: the Tournament Results Entry block, replaced by the above. Pages that used it need the Tournament Games to Play block instead.
+* Changed: a tournament's own page now also includes the standings (except for a knockout), and lists the games to play before the players.
 * Added: choosing players for a tournament is much quicker. A scrolling, filterable list of saved players lets you tick several at once; a search of the ECF list by name fills in the ECF code and saves the player as you go; players without a code can be added by hand. The same control is on the create-tournament form, so players can be added when the tournament is created. The Players page also searches the ECF list to fill in the name and code.
 * Added: "Create a page for this tournament" on a tournament. It makes a draft page showing the tournament status, its players with their ratings, and the games still to play, for everyone at the event. New Tournament Players block for the list of players.
 * Changed: the create-tournament form only shows the settings that apply to the chosen format (rounds and initial colour for Swiss; double round-robin, groups and the knockout stage for round-robin), and the players advancing setting only appears once the knockout stage is switched on.
@@ -84,7 +89,7 @@ Yes — add as many blocks as you like, each configured independently.
 * Added: Knockout tournaments. Standard seeding (in an 8-player draw: 1v8, 4v5, 2v7, 3v6, so the top two seeds can only meet in the final), with first-round byes for the top seeds when the field isn't a power of two. A drawn game creates a tie-break game (colours reversed) until one player wins; winners move on automatically, and withdrawn players forfeit their next game.
 * Added: Round-robin groups with an optional knockout stage. Split players into groups (dealt out by seed), and send the top N from each group into a knockout that is created automatically when the last group game is played. Qualifiers are cross-seeded so group winners meet other groups' runners-up and players from the same group are kept apart for as long as possible.
 * Added: Tournaments (ECF & LMS → Tournaments) and saved player profiles (ECF & LMS → Players). Phase 1 supports round-robin (Berger tables from the FIDE General Regulations, single or double round). Players with an ECF rating code have their rating fetched when the tournament starts and used for seeding; later rating changes don't affect seeding. Players without a code use a manual rating.
-* Added: Tournament Results Entry block — an admin-only block for recording game results from the front end (visitors see nothing).
+* Added: Tournament Results Entry block — an admin-only block for recording game results from the front end (visitors see nothing). Replaced later by the Tournament Games to Play block.
 * Added: Settings option to also delete tournaments and players when the plugin is deleted. Off by default, so tournament history is kept.
 * Changed: all blocks are now named `chess-army-knife/…` (previously `ecf-lms/…`), which also fixes block styles not applying. Existing pages using the old block names will need those blocks re-added.
 

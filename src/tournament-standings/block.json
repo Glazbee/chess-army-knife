@@ -1,17 +1,17 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "chess-army-knife/tournament-results",
-	"title": "Tournament Results Entry",
+	"name": "chess-army-knife/tournament-standings",
+	"title": "Tournament Standings",
 	"category": "widgets",
-	"icon": "edit",
-	"description": "Admin-only: record game results for a tournament. Visitors who cannot manage tournaments see nothing.",
-	"keywords": [ "chess", "tournament", "results", "round robin" ],
+	"icon": "editor-ol",
+	"description": "A cross-table of a tournament: each player's points in every round and their total, in rank order.",
+	"keywords": [ "chess", "tournament", "standings", "table", "crosstable" ],
 	"version": "0.0.1",
 	"textdomain": "chess-army-knife",
 	"attributes": {
 		"tournamentId": { "type": "number", "default": 0 },
-		"showCompleted": { "type": "boolean", "default": true }
+		"templateId": { "type": "string", "default": "" }
 	},
 	"supports": {
 		"html": false,
@@ -20,6 +20,5 @@
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
-	"viewScript": "file:./view.js",
 	"render": "file:./render.php"
 }

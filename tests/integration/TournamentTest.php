@@ -293,27 +293,77 @@ class TournamentTest extends WP_UnitTestCase {
 		$this->assertSame( 404, rest_do_request( $missing )->get_status() );
 	}
 
-	public function test_results_block_is_only_visible_to_managers() {
+	public function test_games_block_lets_only_managers_enter_scores() {
 		$id = $this->four_player_tournament();
 		Chess_Army_Knife_Tournaments::start( $id );
-		$block = '<!-- wp:chess-army-knife/tournament-results {"tournamentId":' . $id . '} /-->';
+		$block = '<!-- wp:chess-army-knife/tournament-games {"tournamentId":' . $id . '} /-->';
 
-		$this->assertSame( '', trim( do_blocks( $block ) ) );
-
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		// Everyone sees the games, but only as text.
 		$html = do_blocks( $block );
 		$this->assertStringContainsString( 'Club Championship', $html );
-		$this->assertStringContainsString( 'cak-results__select', $html );
+		$this->assertStringContainsString( 'Round 1', $html );
+		$this->assertStringNotContainsString( '<select', $html );
+		$this->assertStringNotContainsString( 'cak-games__save', $html );
+		$this->assertStringNotContainsString( 'data-nonce', $html );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertStringNotContainsString( '<select', do_blocks( $block ) );
+
+		// Administrators get two score selectors per game and one Save button.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$html = do_blocks( $block );
+		$this->assertSame( 12, substr_count( $html, 'data-side=' ) ); // Six games, two selectors each.
+		$this->assertSame( 1, substr_count( $html, 'class="cak-games__save' ) );
 		$this->assertStringContainsString( 'data-nonce', $html );
+		$this->assertStringContainsString( '/games/results', $html );
 	}
 
-	public function test_results_block_explains_unstarted_and_unconfigured_states() {
+	public function test_games_block_explains_unstarted_and_unconfigured_states() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
-		$this->assertStringContainsString( 'choose a tournament', do_blocks( '<!-- wp:chess-army-knife/tournament-results /-->' ) );
+		$this->assertStringContainsString( 'choose a tournament', do_blocks( '<!-- wp:chess-army-knife/tournament-games /-->' ) );
 
-		$id = $this->create_tournament();
-		$this->assertStringContainsString( 'not started', do_blocks( '<!-- wp:chess-army-knife/tournament-results {"tournamentId":' . $id . '} /-->' ) );
+		$id   = $this->create_tournament();
+		$html = do_blocks( '<!-- wp:chess-army-knife/tournament-games {"tournamentId":' . $id . '} /-->' );
+		$this->assertStringContainsString( 'not started', $html );
+		$this->assertStringNotContainsString( 'cak-games__save', $html );
+	}
+
+	public function test_several_results_can_be_saved_in_one_request() {
+		$id = $this->four_player_tournament();
+		Chess_Army_Knife_Tournaments::start( $id );
+		$games = Chess_Army_Knife_Tournaments::games_to_play( $id );
+
+		$request = new WP_REST_Request( 'POST', '/chess-army-knife/v1/games/results' );
+		$request->set_param(
+			'results',
+			array(
+				$games[0]['id'] => '1-0',
+				$games[1]['id'] => '1/2-1/2',
+				$games[2]['id'] => 'nonsense',
+				999999          => '1-0',
+			)
+		);
+
+		// Logged out and subscribers are refused.
+		$this->assertContains( rest_do_request( $request )->get_status(), array( 401, 403 ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( 403, rest_do_request( $request )->get_status() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$response = rest_do_request( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertEqualsCanonicalizing( array( $games[0]['id'], $games[1]['id'] ), $data['saved'] );
+		$this->assertCount( 2, (array) $data['errors'] ); // The bad result and the missing game.
+		$this->assertArrayHasKey( $games[2]['id'], (array) $data['errors'] );
+		$this->assertCount( 4, Chess_Army_Knife_Tournaments::games_to_play( $id ) );
+		$this->assertSame( '1-0', Chess_Army_Knife_Tournament_Store::get_game( $games[0]['id'] )['result'] );
+
+		$empty = new WP_REST_Request( 'POST', '/chess-army-knife/v1/games/results' );
+		$empty->set_param( 'results', array() );
+		$this->assertSame( 400, rest_do_request( $empty )->get_status() );
 	}
 
 	public function test_deleting_a_tournament_removes_its_entries_and_games() {

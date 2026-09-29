@@ -297,12 +297,35 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array(), Chess_Army_Knife_Player_Selector::parse_new_players( 'nonsense' )['players'] );
 	}
 
-	public function test_a_tournament_page_shows_status_players_and_games() {
-		$content = Chess_Army_Knife_Tournaments::page_content( 7 );
+	public function test_a_tournament_page_shows_status_standings_games_and_players() {
+		$content = Chess_Army_Knife_Tournaments::page_content(
+			array(
+				'id'     => 7,
+				'format' => 'swiss',
+			)
+		);
 
-		foreach ( array( 'tournament-status', 'tournament-players', 'tournament-games' ) as $block ) {
-			$this->assertStringContainsString( '<!-- wp:chess-army-knife/' . $block . ' {"tournamentId":7} /-->', $content );
+		$order = array();
+		foreach ( array( 'tournament-status', 'tournament-standings', 'tournament-games', 'tournament-players' ) as $block ) {
+			$marker = '<!-- wp:chess-army-knife/' . $block . ' {"tournamentId":7} /-->';
+			$this->assertStringContainsString( $marker, $content );
+			$order[] = strpos( $content, $marker );
 		}
+		$sorted = $order;
+		sort( $sorted );
+		$this->assertSame( $sorted, $order );
+	}
+
+	public function test_a_knockout_tournament_page_has_no_standings() {
+		$content = Chess_Army_Knife_Tournaments::page_content(
+			array(
+				'id'     => 7,
+				'format' => 'knockout',
+			)
+		);
+
+		$this->assertStringNotContainsString( 'tournament-standings', $content );
+		$this->assertStringContainsString( 'tournament-games', $content );
 	}
 
 	public function test_rating_from_data_picks_the_first_usable_rating() {

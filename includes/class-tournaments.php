@@ -186,15 +186,21 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
-	 * Block markup for a tournament's own page: status, players and games to play.
+	 * Block markup for a tournament's own page: status, standings (not for a knockout,
+	 * which has no table), games still to play and the players.
 	 *
-	 * @param int $tournament_id Tournament id.
+	 * @param array $tournament Tournament row.
 	 * @return string
 	 */
-	public static function page_content( $tournament_id ) {
-		$attributes = wp_json_encode( array( 'tournamentId' => (int) $tournament_id ) );
-		$blocks     = array();
-		foreach ( array( 'tournament-status', 'tournament-players', 'tournament-games' ) as $block ) {
+	public static function page_content( array $tournament ) {
+		$attributes = wp_json_encode( array( 'tournamentId' => (int) $tournament['id'] ) );
+		$names      = array( 'tournament-status', 'tournament-standings', 'tournament-games', 'tournament-players' );
+		if ( 'knockout' === $tournament['format'] ) {
+			$names = array_diff( $names, array( 'tournament-standings' ) );
+		}
+
+		$blocks = array();
+		foreach ( $names as $block ) {
 			$blocks[] = '<!-- wp:chess-army-knife/' . $block . ' ' . $attributes . ' /-->';
 		}
 		return implode( "\n\n", $blocks );
@@ -213,7 +219,7 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
-	 * Create a draft page for a tournament that shows its status, players and games to play,
+	 * Create a draft page for a tournament that shows its status, standings, games to play and players,
 	 * for everyone at the event to refer to.
 	 *
 	 * @param int $tournament_id Tournament id.
@@ -237,7 +243,7 @@ class Chess_Army_Knife_Tournaments {
 					'post_type'    => 'page',
 					'post_status'  => 'draft',
 					'post_title'   => $tournament['name'],
-					'post_content' => self::page_content( $tournament['id'] ),
+					'post_content' => self::page_content( $tournament ),
 				)
 			),
 			true

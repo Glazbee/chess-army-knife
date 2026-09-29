@@ -35,16 +35,17 @@ class Chess_Army_Knife_Templates {
 	 */
 	public static function block_types() {
 		return array(
-			'rating-chart'       => __( 'ECF Rating Chart', 'chess-army-knife' ),
-			'club-results'       => __( 'ECF Club Results', 'chess-army-knife' ),
-			'league-table'       => __( 'ECF League Standings & Matchups', 'chess-army-knife' ),
-			'team-carousel'      => __( 'ECF Team Fixtures Carousel', 'chess-army-knife' ),
-			'biggest-gainers'    => __( 'ECF Biggest Rating Gainers', 'chess-army-knife' ),
-			'featured-player'    => __( 'ECF Featured Player', 'chess-army-knife' ),
-			'tournament-status'  => __( 'Tournament Status', 'chess-army-knife' ),
-			'tournament-players' => __( 'Tournament Players', 'chess-army-knife' ),
-			'tournament-games'   => __( 'Tournament Games to Play', 'chess-army-knife' ),
-			'tournament-winners' => __( 'Tournament Past Winners', 'chess-army-knife' ),
+			'rating-chart'         => __( 'ECF Rating Chart', 'chess-army-knife' ),
+			'club-results'         => __( 'ECF Club Results', 'chess-army-knife' ),
+			'league-table'         => __( 'ECF League Standings & Matchups', 'chess-army-knife' ),
+			'team-carousel'        => __( 'ECF Team Fixtures Carousel', 'chess-army-knife' ),
+			'biggest-gainers'      => __( 'ECF Biggest Rating Gainers', 'chess-army-knife' ),
+			'featured-player'      => __( 'ECF Featured Player', 'chess-army-knife' ),
+			'tournament-status'    => __( 'Tournament Status', 'chess-army-knife' ),
+			'tournament-standings' => __( 'Tournament Standings', 'chess-army-knife' ),
+			'tournament-players'   => __( 'Tournament Players', 'chess-army-knife' ),
+			'tournament-games'     => __( 'Tournament Games to Play', 'chess-army-knife' ),
+			'tournament-winners'   => __( 'Tournament Past Winners', 'chess-army-knife' ),
 		);
 	}
 

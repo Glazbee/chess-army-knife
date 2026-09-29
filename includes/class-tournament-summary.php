@@ -101,7 +101,7 @@ class Chess_Army_Knife_Tournament_Summary {
 	 * Games still to be played, grouped under a round label.
 	 *
 	 * @param int $tournament_id Tournament id.
-	 * @return array[] Label => list of { white, black } names.
+	 * @return array[] Label => list of { id, white, black } (game id and player names).
 	 */
 	public static function games_to_play( $tournament_id ) {
 		$names = array();
@@ -126,11 +126,72 @@ class Chess_Army_Knife_Tournament_Summary {
 					. sprintf( __( 'Round %d', 'chess-army-knife' ), $game['round'] );
 			}
 			$sections[ $label ][] = array(
+				'id'    => $game['id'],
 				'white' => isset( $names[ $game['white_entry_id'] ] ) ? $names[ $game['white_entry_id'] ] : '—',
 				'black' => isset( $names[ $game['black_entry_id'] ] ) ? $names[ $game['black_entry_id'] ] : '—',
 			);
 		}
 		return $sections;
+	}
+
+	/**
+	 * A cross-table of the main stage: one row per player in rank order, with
+	 * the points scored in each round and the total.
+	 *
+	 * @param array    $tournament Tournament row.
+	 * @param int|null $group_no   One group (0 for an ungrouped tournament); null for everyone.
+	 * @return array { rounds: int[], rows: array[] } Each row: rank, name, withdrawn, total, scores (round => points, or null when not played yet).
+	 */
+	public static function crosstable( array $tournament, $group_no = null ) {
+		$swiss  = 'swiss' === $tournament['format'];
+		$scores = array();
+		$rounds = array();
+
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament['id'] ) as $game ) {
+			if ( 'main' !== $game['stage'] || ( null !== $group_no && $game['group_no'] !== (int) $group_no ) ) {
+				continue;
+			}
+			$rounds[ $game['round'] ] = $game['round'];
+
+			if ( $game['is_bye'] ) {
+				// A Swiss bye scores a point, or less if the player asked for it; a round-robin bye scores nothing.
+				if ( $swiss && $game['white_entry_id'] ) {
+					$byes = array(
+						Chess_Army_Knife_Standings::HALF_POINT_BYE => 0.5,
+						Chess_Army_Knife_Standings::ZERO_POINT_BYE => 0.0,
+					);
+					$scores[ $game['white_entry_id'] ][ $game['round'] ] = isset( $byes[ $game['result'] ] ) ? $byes[ $game['result'] ] : 1.0;
+				}
+				continue;
+			}
+
+			$points = null === $game['result'] ? null : Chess_Army_Knife_Standings::points_for( $game['result'] );
+			if ( null !== $points ) {
+				$scores[ $game['white_entry_id'] ][ $game['round'] ] = $points[0];
+				$scores[ $game['black_entry_id'] ][ $game['round'] ] = $points[1];
+			}
+		}
+		sort( $rounds );
+
+		$rows = array();
+		foreach ( Chess_Army_Knife_Tournaments::standings( $tournament['id'], $group_no ) as $standing ) {
+			$cells = array();
+			foreach ( $rounds as $round ) {
+				$cells[ $round ] = isset( $scores[ $standing['entry_id'] ][ $round ] ) ? $scores[ $standing['entry_id'] ][ $round ] : null;
+			}
+			$rows[] = array(
+				'rank'      => $standing['rank'],
+				'name'      => $standing['name'],
+				'withdrawn' => $standing['withdrawn'],
+				'total'     => $standing['points'],
+				'scores'    => $cells,
+			);
+		}
+
+		return array(
+			'rounds' => $rounds,
+			'rows'   => $rows,
+		);
 	}
 
 	/**
