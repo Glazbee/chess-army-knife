@@ -41,7 +41,7 @@ $score_options = array(
 	'0'   => '0',
 );
 ?>
-<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>
 	<?php if ( $can_edit ) : ?>
 		data-rest-url="<?php echo esc_url( rest_url( Chess_Army_Knife_Tournament_REST::NAMESPACE_V1 . '/games/results' ) ); ?>"

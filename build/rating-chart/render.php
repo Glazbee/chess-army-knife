@@ -14,14 +14,14 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'rating-chart', $attributes );
 
-$player_code = isset( $attributes['playerCode'] ) ? Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ) : '';
-$player_name = isset( $attributes['playerName'] ) ? $attributes['playerName'] : '';
-$domain      = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
-$games_limit = isset( $attributes['gamesLimit'] ) ? (int) $attributes['gamesLimit'] : 100;
-$title       = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$height      = isset( $attributes['height'] ) ? max( 120, (int) $attributes['height'] ) : 320;
-$show_stats  = ! isset( $attributes['showStats'] ) || (bool) $attributes['showStats'];
-$line_color  = ! empty( $attributes['lineColor'] ) ? $attributes['lineColor'] : '#1e3a5f';
+$player_code   = isset( $attributes['playerCode'] ) ? Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ) : '';
+$player_name   = isset( $attributes['playerName'] ) ? $attributes['playerName'] : '';
+$rating_domain = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$games_limit   = isset( $attributes['gamesLimit'] ) ? (int) $attributes['gamesLimit'] : 100;
+$block_title   = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$height        = isset( $attributes['height'] ) ? max( 120, (int) $attributes['height'] ) : 320;
+$show_stats    = ! isset( $attributes['showStats'] ) || (bool) $attributes['showStats'];
+$line_color    = ! empty( $attributes['lineColor'] ) ? $attributes['lineColor'] : '#1e3a5f';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'rating-chart', $attributes );
 
@@ -34,7 +34,7 @@ if ( '' === $player_code ) {
 	return;
 }
 
-$games = Chess_Army_Knife_ECF_Client::get_games( $player_code, $domain, $games_limit );
+$games = Chess_Army_Knife_ECF_Client::get_games( $player_code, $rating_domain, $games_limit );
 
 if ( is_wp_error( $games ) ) {
 	printf(
@@ -101,28 +101,28 @@ $domain_labels = array(
 	'BW' => __( 'Online Blitz', 'chess-army-knife' ),
 );
 
-$heading = $title ? $title : sprintf(
+$heading = $block_title ? $block_title : sprintf(
 	/* translators: 1: player name, 2: rating list e.g. Standard */
 	__( '%1$s — %2$s rating', 'chess-army-knife' ),
 	$player_name ? $player_name : $player_code,
-	isset( $domain_labels[ $domain ] ) ? $domain_labels[ $domain ] : $domain
+	isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : $rating_domain
 );
 
 $chart_payload = array(
 	'labels'       => $labels,
 	'values'       => $values,
 	'color'        => $line_color,
-	'unratedLabel' => isset( $domain_labels[ $domain ] ) ? $domain_labels[ $domain ] : __( 'Rating', 'chess-army-knife' ),
+	'unratedLabel' => isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : __( 'Rating', 'chess-army-knife' ),
 );
 
 $canvas_id       = 'ecf-rating-chart-' . wp_unique_id();
-$admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $domain, $games_limit );
+$admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $rating_domain, $games_limit );
 ?>
-<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<p class="ecf-rating-chart__title"><?php echo esc_html( $heading ); ?></p>
 
-	<?php echo Chess_Army_Knife_Admin_Refresh::bar( array( $admin_cache_key ), __( 'Games data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<?php echo Chess_Army_Knife_Admin_Refresh::bar( array( $admin_cache_key ), __( 'Games data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<div class="ecf-rating-chart__canvas-wrap" data-ecf-rating-chart style="height: <?php echo (int) $height; ?>px;">
 		<canvas id="<?php echo esc_attr( $canvas_id ); ?>"></canvas>

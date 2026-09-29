@@ -17,16 +17,16 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'featured-player', $attributes );
 
-$player_code = Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ?? '' );
-$name        = trim( (string) ( $attributes['playerName'] ?? '' ) );
-$heading     = trim( (string) ( $attributes['heading'] ?? '' ) );
-$blurb       = trim( (string) ( $attributes['blurb'] ?? '' ) );
-$image_id    = (int) ( $attributes['imageId'] ?? 0 );
-$image_url   = (string) ( $attributes['imageUrl'] ?? '' );
-$domain      = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
-$show_rating = ! isset( $attributes['showRating'] ) || (bool) $attributes['showRating'];
-$show_club   = ! isset( $attributes['showClub'] ) || (bool) $attributes['showClub'];
-$show_links  = ! isset( $attributes['showLinks'] ) || (bool) $attributes['showLinks'];
+$player_code   = Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ?? '' );
+$name          = trim( (string) ( $attributes['playerName'] ?? '' ) );
+$heading       = trim( (string) ( $attributes['heading'] ?? '' ) );
+$blurb         = trim( (string) ( $attributes['blurb'] ?? '' ) );
+$image_id      = (int) ( $attributes['imageId'] ?? 0 );
+$image_url     = (string) ( $attributes['imageUrl'] ?? '' );
+$rating_domain = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$show_rating   = ! isset( $attributes['showRating'] ) || (bool) $attributes['showRating'];
+$show_club     = ! isset( $attributes['showClub'] ) || (bool) $attributes['showClub'];
+$show_links    = ! isset( $attributes['showLinks'] ) || (bool) $attributes['showLinks'];
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'featured-player', $attributes );
 
@@ -61,10 +61,10 @@ $chess_com = $clean_username( $attributes['chessComUser'] ?? '' );
 $lichess   = $clean_username( $attributes['lichessUser'] ?? '' );
 
 // ECF details (best effort: the block still renders without them).
-$rating     = '';
-$club       = '';
-$title      = '';
-$admin_keys = array();
+$rating       = '';
+$club         = '';
+$player_title = '';
+$admin_keys   = array();
 
 if ( '' !== $player_code ) {
 	$player       = Chess_Army_Knife_ECF_Client::get_player_by_code( $player_code );
@@ -75,13 +75,13 @@ if ( '' !== $player_code ) {
 			// The ECF returns "Surname, Forename".
 			$name = implode( ' ', array_reverse( array_map( 'trim', explode( ',', $player['full_name'], 2 ) ) ) );
 		}
-		$club  = isset( $player['club_name'] ) ? (string) $player['club_name'] : '';
-		$title = isset( $player['title'] ) ? (string) $player['title'] : '';
+		$club         = isset( $player['club_name'] ) ? (string) $player['club_name'] : '';
+		$player_title = isset( $player['title'] ) ? (string) $player['title'] : '';
 	}
 
 	if ( $show_rating ) {
-		$rating_data  = Chess_Army_Knife_ECF_Client::get_rating( $player_code, $domain );
-		$admin_keys[] = Chess_Army_Knife_ECF_Client::cache_key_rating( $player_code, $domain );
+		$rating_data  = Chess_Army_Knife_ECF_Client::get_rating( $player_code, $rating_domain );
+		$admin_keys[] = Chess_Army_Knife_ECF_Client::cache_key_rating( $player_code, $rating_domain );
 		if ( ! is_wp_error( $rating_data ) && is_array( $rating_data ) ) {
 			$value = $rating_data['revised_rating'] ?? ( $rating_data['original_rating'] ?? '' );
 			if ( '' !== $value && null !== $value ) {
@@ -106,13 +106,13 @@ $domain_labels = array(
 
 $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 ?>
-<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<?php if ( '' !== $heading ) : ?>
 		<p class="ecf-featured__heading"><?php echo esc_html( $heading ); ?></p>
 	<?php endif; ?>
 
-	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_keys, __( 'Player data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_keys, __( 'Player data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<div class="ecf-featured">
 		<?php if ( $image_id || '' !== $image_url ) : ?>
@@ -128,13 +128,13 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 		<?php endif; ?>
 
 		<div class="ecf-featured__body">
-			<p class="ecf-featured__name"><?php echo esc_html( trim( $title . ' ' . $name ) ); ?></p>
+			<p class="ecf-featured__name"><?php echo esc_html( trim( $player_title . ' ' . $name ) ); ?></p>
 
 			<?php if ( '' !== $rating || ( $show_club && '' !== $club ) ) : ?>
 				<p class="ecf-featured__meta">
 					<?php if ( '' !== $rating ) : ?>
 						<span class="ecf-featured__rating"><?php echo esc_html( $rating ); ?></span>
-						<?php echo esc_html( isset( $domain_labels[ $domain ] ) ? $domain_labels[ $domain ] : '' ); ?>
+						<?php echo esc_html( isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : '' ); ?>
 					<?php endif; ?>
 					<?php
 					if ( '' !== $rating && $show_club && '' !== $club ) :

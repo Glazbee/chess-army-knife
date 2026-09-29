@@ -21,7 +21,7 @@ $org_id           = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_
 $event_name       = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_event_name', $attributes['eventName'] ?? '' ) );
 $team_source      = isset( $attributes['teamSource'] ) ? $attributes['teamSource'] : 'club-teams';
 $manual_teams_raw = isset( $attributes['manualTeams'] ) ? (string) $attributes['manualTeams'] : '';
-$title            = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $auto_advance     = ! isset( $attributes['autoAdvance'] ) || (bool) $attributes['autoAdvance'];
 $interval_seconds = isset( $attributes['intervalSeconds'] ) ? max( 3, (int) $attributes['intervalSeconds'] ) : 6;
 $show_location    = ! empty( $attributes['showLocation'] );
@@ -161,8 +161,8 @@ $find_team_matches = function ( $matches, $team ) {
 	$exact = array_values(
 		array_filter(
 			$matches,
-			function ( $m ) use ( $team ) {
-				return 0 === strcasecmp( $m['home'], $team ) || 0 === strcasecmp( $m['away'], $team );
+			function ( $team_match ) use ( $team ) {
+				return 0 === strcasecmp( $team_match['home'], $team ) || 0 === strcasecmp( $team_match['away'], $team );
 			}
 		)
 	);
@@ -172,8 +172,8 @@ $find_team_matches = function ( $matches, $team ) {
 	return array_values(
 		array_filter(
 			$matches,
-			function ( $m ) use ( $team ) {
-				return false !== stripos( $m['home'], $team ) || false !== stripos( $m['away'], $team );
+			function ( $team_match ) use ( $team ) {
+				return false !== stripos( $team_match['home'], $team ) || false !== stripos( $team_match['away'], $team );
 			}
 		)
 	);
@@ -220,12 +220,12 @@ foreach ( $team_specs as $spec ) {
 
 	$results  = array();
 	$fixtures = array();
-	foreach ( $team_matches as $m ) {
-		$has_score = '' !== $m['home_score'] || '' !== $m['away_score'] || '' !== $m['result_text'];
+	foreach ( $team_matches as $team_match ) {
+		$has_score = '' !== $team_match['home_score'] || '' !== $team_match['away_score'] || '' !== $team_match['result_text'];
 		if ( $has_score ) {
-			$results[] = $m;
+			$results[] = $team_match;
 		} else {
-			$fixtures[] = $m;
+			$fixtures[] = $team_match;
 		}
 	}
 
@@ -262,14 +262,14 @@ foreach ( $team_specs as $spec ) {
 	);
 }
 
-$heading     = $title ? $title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
+$heading     = $block_title ? $block_title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
 $multi_event = count( array_unique( wp_list_pluck( $team_specs, 'event' ) ) ) > 1;
 ?>
-<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<p class="ecf-carousel__title"><?php echo esc_html( $heading ); ?></p>
 
-	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<div
 		class="ecf-carousel"
