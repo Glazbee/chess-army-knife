@@ -1,0 +1,55 @@
+.wp-block-chess-army-knife-next-club-event {
+	margin-bottom: 1.5em;
+
+	.cak-event__heading {
+		margin: 0 0 0.5em;
+		font-size: 1.1em;
+		font-weight: 600;
+		color: var(--ecf-accent, inherit);
+	}
+
+	.cak-event {
+		padding: 0.75em 1em;
+		border: 1px solid #e2e2e2;
+		border-left: 4px solid var(--ecf-accent, #1e3a5f);
+		border-radius: 4px;
+	}
+
+	.cak-event p {
+		margin: 0.2em 0;
+	}
+
+	.cak-event__when {
+		font-weight: 600;
+	}
+
+	.cak-event__time {
+		margin-left: 0.5em;
+	}
+
+	.cak-event__title {
+		font-size: 1.15em;
+		font-weight: 700;
+	}
+
+	.cak-event__location,
+	.cak-event__links {
+		font-size: 0.9em;
+		color: #555;
+	}
+
+	.cak-event__tag {
+		display: inline-block;
+		padding: 0.05em 0.6em;
+		border-radius: 1em;
+		background: var(--ecf-accent-soft, #e8eef5);
+		font-size: 0.8em;
+	}
+
+	.chess-army-knife-empty {
+		padding: 0.75em 1em;
+		border-left: 4px solid #dcdcde;
+		background: #f6f7f7;
+		font-size: 0.9em;
+	}
+}
