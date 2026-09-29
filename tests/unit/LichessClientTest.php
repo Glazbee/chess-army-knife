@@ -331,7 +331,7 @@ class LichessClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '', Lichess_Client::format_clock( array() ) );
 	}
 
-	public function test_slide_html_escapes_and_lazy_loads_the_board() {
+	public function test_slide_html_escapes_and_renders_a_board_placeholder() {
 		$game = array(
 			'id'           => 'abcd1234',
 			'url'          => 'https://lichess.org/abcd1234',
@@ -354,9 +354,11 @@ class LichessClientTest extends Chess_Army_Knife_TestCase {
 		$with_board = Chess_Army_Knife_Lichess_Live::slide_html( $game, true );
 		$text_only  = Chess_Army_Knife_Lichess_Live::slide_html( $game, false );
 
-		$this->assertStringContainsString( 'data-src="https://lichess.org/embed/game/abcd1234"', $with_board );
-		$this->assertStringNotContainsString( ' src=', $with_board );
-		$this->assertStringNotContainsString( '<iframe', $text_only );
+		$this->assertStringContainsString( 'class="ecf-lichess__board"', $with_board );
+		$this->assertStringContainsString( 'data-game-id="abcd1234"', $with_board );
+		$this->assertStringContainsString( 'data-embed="https://lichess.org/embed/game/abcd1234"', $with_board );
+		$this->assertStringNotContainsString( '<iframe', $with_board );
+		$this->assertStringNotContainsString( 'ecf-lichess__board', $text_only );
 		$this->assertStringNotContainsString( '<b>Alice</b>', $with_board );
 		$this->assertStringContainsString( 'Anonymous', $with_board );
 		$this->assertStringContainsString( '10+5 · Rapid · Rated', $with_board );
@@ -443,6 +445,128 @@ class LichessClientTest extends Chess_Army_Knife_TestCase {
 		);
 
 		$this->assertSame( 'chess_army_knife_lichess_unavailable', $result->get_error_code() );
+		$this->assertSame( array( 'status' => 503 ), $result->get_error_data() );
+	}
+
+	private function position_body( array $overrides = array() ) {
+		return $this->response(
+			200,
+			array_merge(
+				array(
+					'status'  => 'started',
+					'lastFen' => 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+				),
+				$overrides
+			)
+		);
+	}
+
+	private function live_game_status( $game_id = 'abcd1234' ) {
+		return $this->status_body(
+			array(
+				array(
+					'id'        => 'alice',
+					'name'      => 'Alice',
+					'playingId' => $game_id,
+				),
+			)
+		);
+	}
+
+	private function position_request( array $args = array() ) {
+		return new ArrayObject(
+			array_merge(
+				array(
+					'users' => 'alice',
+					'board' => '1',
+					'game'  => 'abcd1234',
+					'sig'   => Chess_Army_Knife_Lichess_Live::sign( array( 'alice' ), true ),
+				),
+				$args
+			)
+		);
+	}
+
+	public function test_position_returns_piece_placement_only() {
+		$this->queue_responses( array( $this->position_body() ) );
+
+		$position = Lichess_Client::get_position( 'abcd1234' );
+
+		$this->assertSame( 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR', $position['fen'] );
+		$this->assertFalse( $position['finished'] );
+		$this->assertStringContainsString( 'lastFen=true', $this->urls[0] );
+	}
+
+	public function test_position_flags_a_finished_game() {
+		$this->queue_responses( array( $this->position_body( array( 'status' => 'resign' ) ) ) );
+
+		$this->assertTrue( Lichess_Client::get_position( 'abcd1234' )['finished'] );
+	}
+
+	public function test_position_is_cached_so_viewers_share_one_request() {
+		$this->queue_responses( array( $this->position_body() ) );
+
+		for ( $viewer = 0; $viewer < 50; $viewer++ ) {
+			Lichess_Client::get_position( 'abcd1234' );
+		}
+
+		$this->assertCount( 1, $this->urls );
+		$this->assertSame( Lichess_Client::POSITION_CACHE_SECONDS, reset( $this->transients )['ttl'] );
+	}
+
+	public function test_position_rejects_bad_game_ids_without_a_request() {
+		Functions\expect( 'wp_remote_get' )->never();
+
+		$this->assertSame( 'lichess_bad_game_id', Lichess_Client::get_position( '../secret' )->get_error_code() );
+	}
+
+	public function test_position_errors_when_fen_is_missing_or_malformed() {
+		$this->queue_responses( array( $this->position_body( array( 'lastFen' => 'not a fen' ) ) ) );
+
+		$this->assertSame( 'lichess_no_position', Lichess_Client::get_position( 'abcd1234' )->get_error_code() );
+	}
+
+	public function test_position_errors_on_timeout() {
+		$this->queue_responses( array( new WP_Error( 'http_request_failed', 'cURL error 28' ) ) );
+
+		$this->assertSame( 'lichess_connection_error', Lichess_Client::get_position( 'abcd1234' )->get_error_code() );
+	}
+
+	public function test_rest_position_returns_position_for_a_live_game() {
+		Functions\when( 'wp_list_pluck' )->alias( 'array_column' );
+		$this->queue_responses( array( $this->live_game_status(), $this->response( 500, '' ), $this->position_body() ) );
+
+		$response = Chess_Army_Knife_Lichess_Live::rest_position( $this->position_request() );
+
+		$this->assertSame( 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR', $response->data['fen'] );
+		$this->assertSame( 'public, max-age=5', $response->headers['Cache-Control'] );
+	}
+
+	public function test_rest_position_refuses_games_that_are_not_live_for_the_list() {
+		Functions\when( 'wp_list_pluck' )->alias( 'array_column' );
+		$this->queue_responses( array( $this->live_game_status( 'zzzz9999' ), $this->response( 500, '' ) ) );
+
+		$result = Chess_Army_Knife_Lichess_Live::rest_position( $this->position_request() );
+
+		$this->assertSame( 'chess_army_knife_game_not_live', $result->get_error_code() );
+		$this->assertSame( array( 'status' => 404 ), $result->get_error_data() );
+		$this->assertCount( 2, $this->urls, 'No position request is made for a game outside the list.' );
+	}
+
+	public function test_rest_position_rejects_a_bad_signature_without_calling_lichess() {
+		Functions\expect( 'wp_remote_get' )->never();
+
+		$result = Chess_Army_Knife_Lichess_Live::rest_position( $this->position_request( array( 'sig' => 'forged' ) ) );
+
+		$this->assertSame( 'chess_army_knife_bad_signature', $result->get_error_code() );
+	}
+
+	public function test_rest_position_reports_unavailable_when_lichess_fails() {
+		Functions\when( 'wp_list_pluck' )->alias( 'array_column' );
+		$this->queue_responses( array( $this->live_game_status(), $this->response( 500, '' ), new WP_Error( 'http_request_failed', 'timeout' ) ) );
+
+		$result = Chess_Army_Knife_Lichess_Live::rest_position( $this->position_request() );
+
 		$this->assertSame( array( 'status' => 503 ), $result->get_error_data() );
 	}
 }

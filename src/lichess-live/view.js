@@ -1,8 +1,13 @@
 /**
  * Drives every Lichess live-games block: a scroll-snap carousel whose
- * cards are refreshed from the signed REST route, with boards loaded
- * only once their card scrolls into view.
+ * cards are refreshed from the signed REST route, with each board
+ * following its game live while its card is on screen.
  */
+import { startLiveBoard } from './live-board';
+
+// Stop refreshing after this long without any interaction.
+const IDLE_LIMIT_MS = 5 * 60 * 1000;
+
 function initBlock( root ) {
 	const carousel = root.querySelector( '.ecf-lichess__carousel' );
 	const track = root.querySelector( '.ecf-lichess__track' );
@@ -14,30 +19,71 @@ function initBlock( root ) {
 	const autoAdvance = root.dataset.autoAdvance === '1';
 	const advanceMs =
 		Math.max( 3, parseInt( root.dataset.interval, 10 ) || 8 ) * 1000;
+	const positionPollMs =
+		Math.max( 4, parseInt( root.dataset.positionPoll, 10 ) || 6 ) * 1000;
 	let advanceTimer = null;
+
+	// Only talk to the server while someone is actively watching: tab
+	// visible, block on screen, and some activity in the last few minutes.
+	let lastActivity = Date.now();
+	let blockOnScreen = true;
+	function isActive() {
+		return (
+			! document.hidden &&
+			blockOnScreen &&
+			Date.now() - lastActivity < IDLE_LIMIT_MS
+		);
+	}
 
 	if ( ! track ) {
 		return;
 	}
 
-	// Load a card's board the first time it is (nearly) visible.
+	// Follow a game live only while its card is (nearly) on screen.
+	const streams = new Map();
+
+	function startBoard( slide ) {
+		const board = slide.querySelector( '.ecf-lichess__board' );
+		if ( board && ! streams.has( slide ) ) {
+			streams.set(
+				slide,
+				startLiveBoard( board, {
+					intervalMs: positionPollMs,
+					isActive,
+					buildUrl: ( gameId ) => {
+						const url = new URL(
+							root.dataset.positionEndpoint,
+							window.location.href
+						);
+						url.searchParams.set( 'users', root.dataset.users );
+						url.searchParams.set( 'board', root.dataset.board );
+						url.searchParams.set( 'sig', root.dataset.sig );
+						url.searchParams.set( 'game', gameId );
+						return url.toString();
+					},
+				} )
+			);
+		}
+	}
+
+	function stopBoard( slide ) {
+		const stop = streams.get( slide );
+		if ( stop ) {
+			stop();
+			streams.delete( slide );
+		}
+	}
+
 	const observer =
 		'IntersectionObserver' in window
 			? new window.IntersectionObserver(
 					( entries ) => {
 						entries.forEach( ( entry ) => {
-							if ( ! entry.isIntersecting ) {
-								return;
+							if ( entry.isIntersecting ) {
+								startBoard( entry.target );
+							} else {
+								stopBoard( entry.target );
 							}
-							const frame =
-								entry.target.querySelector(
-									'iframe[data-src]'
-								);
-							if ( frame ) {
-								frame.src = frame.dataset.src;
-								frame.removeAttribute( 'data-src' );
-							}
-							observer.unobserve( entry.target );
 						} );
 					},
 					{ root: track, rootMargin: '0px 100px' }
@@ -49,11 +95,7 @@ function initBlock( root ) {
 			if ( observer ) {
 				observer.observe( slide );
 			} else {
-				const frame = slide.querySelector( 'iframe[data-src]' );
-				if ( frame ) {
-					frame.src = frame.dataset.src;
-					frame.removeAttribute( 'data-src' );
-				}
+				startBoard( slide );
 			}
 		} );
 	}
@@ -125,8 +167,14 @@ function initBlock( root ) {
 			}
 		} );
 
-		// Removing a card that still has a pending board is harmless.
 		track.replaceChildren( fragment );
+
+		// Games that have ended no longer need polling.
+		streams.forEach( ( stop, slide ) => {
+			if ( ! track.contains( slide ) ) {
+				stopBoard( slide );
+			}
+		} );
 
 		const hasGames = slides.length > 0;
 		if ( carousel ) {
@@ -139,7 +187,7 @@ function initBlock( root ) {
 	}
 
 	function refresh() {
-		if ( document.hidden ) {
+		if ( ! isActive() ) {
 			return;
 		}
 		const url = new URL( root.dataset.endpoint, window.location.href );
@@ -162,11 +210,33 @@ function initBlock( root ) {
 	watchSlides();
 	startAdvance();
 	window.setInterval( refresh, pollMs );
-	document.addEventListener( 'visibilitychange', () => {
-		if ( ! document.hidden ) {
+
+	// Note activity; coming back after being idle refreshes straight away.
+	function noteActivity() {
+		const wasIdle = ! isActive();
+		lastActivity = Date.now();
+		if ( wasIdle && isActive() ) {
 			refresh();
 		}
-	} );
+	}
+	[ 'pointermove', 'pointerdown', 'keydown', 'scroll', 'touchstart' ].forEach(
+		( type ) =>
+			window.addEventListener( type, noteActivity, {
+				passive: true,
+			} )
+	);
+	document.addEventListener( 'visibilitychange', noteActivity );
+
+	if ( 'IntersectionObserver' in window ) {
+		new window.IntersectionObserver( ( entries ) => {
+			const visible = entries.some( ( entry ) => entry.isIntersecting );
+			const wasHidden = ! blockOnScreen;
+			blockOnScreen = visible;
+			if ( visible && wasHidden ) {
+				refresh();
+			}
+		} ).observe( root );
+	}
 }
 
 function initAll() {

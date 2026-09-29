@@ -32,6 +32,11 @@ class Lichess_Client {
 	/** Most live games returned. */
 	const MAX_GAMES = 12;
 
+	/** Default seconds a game's current position is cached for. */
+	const POSITION_CACHE_SECONDS = 5;
+
+	const GAME_ID_PATTERN = '/^[A-Za-z0-9]{8,12}$/';
+
 	const BACKOFF_KEY = 'chess_army_knife_lichess_backoff';
 
 	/**
@@ -64,6 +69,68 @@ class Lichess_Client {
 	 */
 	public static function cache_seconds() {
 		return max( 15, (int) apply_filters( 'chess_army_knife_lichess_cache_seconds', self::CACHE_SECONDS ) );
+	}
+
+	/**
+	 * Seconds a game's position is cached for (never below 3). Every
+	 * viewer of a game shares one upstream fetch per this many seconds.
+	 *
+	 * @return int
+	 */
+	public static function position_cache_seconds() {
+		return max( 3, (int) apply_filters( 'chess_army_knife_lichess_position_seconds', self::POSITION_CACHE_SECONDS ) );
+	}
+
+	/**
+	 * Get a game's current board position.
+	 *
+	 * @param string $game_id Lichess game id.
+	 * @return array|WP_Error { fen: piece placement only, finished: bool }
+	 */
+	public static function get_position( $game_id ) {
+		if ( ! is_string( $game_id ) || ! preg_match( self::GAME_ID_PATTERN, $game_id ) ) {
+			return new WP_Error( 'lichess_bad_game_id', __( 'Invalid game.', 'chess-army-knife' ) );
+		}
+
+		return Chess_Army_Knife_Cache::remember(
+			'lichess_position_' . $game_id,
+			self::position_cache_seconds(),
+			function () use ( $game_id ) {
+				return self::fetch_position( $game_id );
+			}
+		);
+	}
+
+	/**
+	 * Uncached fetch of one game's position.
+	 *
+	 * @param string $game_id Lichess game id.
+	 * @return array|WP_Error
+	 */
+	protected static function fetch_position( $game_id ) {
+		$raw = self::request(
+			'/game/export/' . rawurlencode( $game_id ),
+			array(
+				'moves'   => 'false',
+				'lastFen' => 'true',
+			)
+		);
+
+		if ( is_wp_error( $raw ) ) {
+			return $raw;
+		}
+
+		// Only the piece placement is wanted (the first FEN field).
+		$placement = isset( $raw['lastFen'] ) && is_string( $raw['lastFen'] ) ? explode( ' ', $raw['lastFen'] )[0] : '';
+
+		if ( ! preg_match( '#^([pnbrqkPNBRQK1-8]+/){7}[pnbrqkPNBRQK1-8]+$#', $placement ) ) {
+			return new WP_Error( 'lichess_no_position', __( 'Lichess did not return the position of this game.', 'chess-army-knife' ) );
+		}
+
+		return array(
+			'fen'      => $placement,
+			'finished' => isset( $raw['status'] ) && ! in_array( $raw['status'], array( 'created', 'started' ), true ),
+		);
 	}
 
 	/**
@@ -128,7 +195,7 @@ class Lichess_Client {
 					continue;
 				}
 				$game_id = $status['playingId'];
-				if ( ! preg_match( '/^[A-Za-z0-9]{8,12}$/', $game_id ) ) {
+				if ( ! preg_match( self::GAME_ID_PATTERN, $game_id ) ) {
 					continue;
 				}
 				$name                  = isset( $status['name'] ) ? (string) $status['name'] : (string) ( $status['id'] ?? '' );
