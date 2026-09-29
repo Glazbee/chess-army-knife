@@ -53,6 +53,37 @@ class Chess_Army_Knife_Lichess_Live {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE_V1,
+			'/lichess-position',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'rest_position' ),
+				'permission_callback' => '__return_true', // Public data; the signature guards the input.
+				'args'                => array(
+					'users' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'board' => array(
+						'type'    => 'string',
+						'default' => '1',
+					),
+					'game'  => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'sig'   => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -101,6 +132,44 @@ class Chess_Army_Knife_Lichess_Live {
 	}
 
 	/**
+	 * REST callback: the current position of one game, which must be one
+	 * of the games currently live for a signed username list (so the
+	 * route can't be used to look up arbitrary games).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function rest_position( $request ) {
+		$usernames  = Lichess_Client::parse_usernames( str_replace( ',', ' ', (string) $request['users'] ) );
+		$show_board = '0' !== (string) $request['board'];
+
+		if ( empty( $usernames ) || ! hash_equals( self::sign( $usernames, $show_board ), (string) $request['sig'] ) ) {
+			return new WP_Error( 'chess_army_knife_bad_signature', __( 'Invalid request.', 'chess-army-knife' ), array( 'status' => 403 ) );
+		}
+
+		$games = Lichess_Client::get_live_games( $usernames );
+
+		if ( is_wp_error( $games ) ) {
+			return new WP_Error( 'chess_army_knife_lichess_unavailable', $games->get_error_message(), array( 'status' => 503 ) );
+		}
+
+		if ( ! in_array( (string) $request['game'], wp_list_pluck( $games, 'id' ), true ) ) {
+			return new WP_Error( 'chess_army_knife_game_not_live', __( 'That game is not being played.', 'chess-army-knife' ), array( 'status' => 404 ) );
+		}
+
+		$position = Lichess_Client::get_position( (string) $request['game'] );
+
+		if ( is_wp_error( $position ) ) {
+			return new WP_Error( 'chess_army_knife_lichess_unavailable', $position->get_error_message(), array( 'status' => 503 ) );
+		}
+
+		$response = new WP_REST_Response( $position );
+		$response->header( 'Cache-Control', 'public, max-age=' . Lichess_Client::position_cache_seconds() );
+
+		return $response;
+	}
+
+	/**
 	 * Markup for one game's carousel card.
 	 *
 	 * @param array $game       Normalised game from Lichess_Client.
@@ -120,14 +189,14 @@ class Chess_Army_Knife_Lichess_Live {
 		?>
 		<div class="ecf-lichess__slide" data-game-id="<?php echo esc_attr( $game['id'] ); ?>">
 			<?php if ( $show_board ) : ?>
-				<iframe
+				<div
 					class="ecf-lichess__board"
-					data-src="<?php echo esc_url( $game['embed_url'] ); ?>"
-					title="<?php esc_attr_e( 'Live Lichess game', 'chess-army-knife' ); ?>"
-					sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-					referrerpolicy="no-referrer"
-					loading="lazy"
-				></iframe>
+					data-game-id="<?php echo esc_attr( $game['id'] ); ?>"
+					data-embed="<?php echo esc_url( $game['embed_url'] ); ?>"
+					data-title="<?php esc_attr_e( 'Live Lichess game', 'chess-army-knife' ); ?>"
+					role="img"
+					aria-label="<?php esc_attr_e( 'Live chess board', 'chess-army-knife' ); ?>"
+				></div>
 			<?php endif; ?>
 			<p class="ecf-lichess__players">
 				<?php if ( '' === $game['white']['name'] && '' === $game['black']['name'] && $game['members'] ) : ?>

@@ -63,7 +63,9 @@ if ( is_wp_error( $games ) ) {
 		data-users="<?php echo esc_attr( implode( ',', $usernames ) ); ?>"
 		data-board="<?php echo $show_board ? '1' : '0'; ?>"
 		data-sig="<?php echo esc_attr( Chess_Army_Knife_Lichess_Live::sign( $usernames, $show_board ) ); ?>"
+		data-position-endpoint="<?php echo esc_url( rest_url( Chess_Army_Knife_Lichess_Live::NAMESPACE_V1 . '/lichess-position' ) ); ?>"
 		data-poll="<?php echo (int) ( Lichess_Client::cache_seconds() + 15 ); ?>"
+		data-position-poll="<?php echo (int) ( Lichess_Client::position_cache_seconds() + 1 ); ?>"
 		data-auto-advance="<?php echo $auto_advance ? '1' : '0'; ?>"
 		data-interval="<?php echo (int) $interval_seconds; ?>"
 	>
