@@ -173,6 +173,11 @@ class Chess_Army_Knife_Events_Admin {
 			$end = '';
 		}
 
+		// An imported event that is edited by hand is no longer overwritten by imports.
+		if ( '' !== (string) get_post_meta( $post_id, Chess_Army_Knife_Events_Import::META_LMS_KEY, true ) ) {
+			update_post_meta( $post_id, Chess_Army_Knife_Events_Import::META_EDITED, 1 );
+		}
+
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_START, $start );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_END, $end );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_LOCATION, isset( $_POST['chess_army_event_location'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_event_location'] ) ) : '' );

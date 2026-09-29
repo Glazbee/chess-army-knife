@@ -259,6 +259,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 			array(
 				'venue'       => 'Town Hall',
 				'date'        => '2026-01-15',
+				'time'        => '',
 				'home'        => 'Alpha',
 				'away'        => 'Beta',
 				'home_score'  => '2.5',
