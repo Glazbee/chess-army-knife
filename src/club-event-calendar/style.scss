@@ -83,4 +83,114 @@
 			grid-column: 1;
 		}
 	}
+
+	.cak-month__nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.5em;
+	}
+
+	.cak-month__label {
+		font-size: 1.05em;
+		font-weight: 700;
+		flex: 1;
+		text-align: center;
+	}
+
+	.cak-month__prev,
+	.cak-month__next {
+		width: 2.2em;
+		height: 2.2em;
+		border: 1px solid #ccc;
+		border-radius: 50%;
+		background: #fff;
+		line-height: 1;
+		cursor: pointer;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.cak-month__table {
+		width: 100%;
+		table-layout: fixed;
+		border-collapse: collapse;
+
+		th {
+			padding: 0.3em;
+			font-size: 0.85em;
+			text-align: center;
+			border-bottom: 2px solid var(--ecf-accent, #1e3a5f);
+		}
+	}
+
+	.cak-month__day {
+		height: 5.5em;
+		padding: 0.25em;
+		border: 1px solid #e2e2e2;
+		vertical-align: top;
+		font-size: 0.85em;
+
+		&.is-outside {
+			background: #f6f7f7;
+		}
+
+		&.is-today {
+			background: var(--ecf-accent-soft, #e8eef5);
+		}
+	}
+
+	.cak-month__daynum {
+		display: block;
+		font-weight: 700;
+		color: #555;
+	}
+
+	.cak-month__events {
+		margin: 0.15em 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.cak-month__event {
+		margin: 0 0 0.2em;
+		line-height: 1.25;
+		overflow-wrap: anywhere;
+	}
+
+	.cak-month__time {
+		font-weight: 600;
+	}
+
+	// On a phone, list just the days that have events.
+	@media (max-width: 600px) {
+		.cak-month__table,
+		.cak-month__table tbody,
+		.cak-month__table tr,
+		.cak-month__table td {
+			display: block;
+			width: auto;
+		}
+
+		.cak-month__table thead {
+			position: absolute;
+			left: -9999px;
+		}
+
+		.cak-month__day {
+			height: auto;
+			border-width: 0 0 1px;
+
+			&:not(.has-events) {
+				display: none;
+			}
+		}
+
+		.cak-month__daynum {
+			display: inline;
+			margin-right: 0.5em;
+		}
+	}
 }

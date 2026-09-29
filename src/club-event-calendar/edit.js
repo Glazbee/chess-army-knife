@@ -5,6 +5,7 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	RangeControl,
+	SelectControl,
 	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
@@ -14,6 +15,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const {
 		title,
 		tags,
+		layout,
 		count,
 		showLocation,
 		showTags,
@@ -55,15 +57,37 @@ export default function Edit( { attributes, setAttributes } ) {
 							'chess-army-knife'
 						) }
 					/>
-					<RangeControl
-						label={ __( 'Events to show', 'chess-army-knife' ) }
-						value={ count }
+					<SelectControl
+						label={ __( 'Layout', 'chess-army-knife' ) }
+						value={ layout }
+						options={ [
+							{
+								label: __(
+									'Agenda (list by date)',
+									'chess-army-knife'
+								),
+								value: 'agenda',
+							},
+							{
+								label: __( 'Month grid', 'chess-army-knife' ),
+								value: 'month',
+							},
+						] }
 						onChange={ ( value ) =>
-							setAttributes( { count: value } )
+							setAttributes( { layout: value } )
 						}
-						min={ 1 }
-						max={ 50 }
 					/>
+					{ layout !== 'month' && (
+						<RangeControl
+							label={ __( 'Events to show', 'chess-army-knife' ) }
+							value={ count }
+							onChange={ ( value ) =>
+								setAttributes( { count: value } )
+							}
+							min={ 1 }
+							max={ 50 }
+						/>
+					) }
 					<TextControl
 						label={ __(
 							'Message when there are no events',

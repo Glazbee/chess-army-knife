@@ -105,4 +105,138 @@ class Chess_Army_Knife_Events_Display {
 			'show_links'    => ! isset( $attributes['showLinks'] ) || $attributes['showLinks'],
 		);
 	}
+
+	/**
+	 * Read a "YYYY-MM" month.
+	 *
+	 * @param string $month Month text.
+	 * @return int[]|null { year, month }, or null if it isn't a real month.
+	 */
+	public static function parse_month( $month ) {
+		if ( ! preg_match( '/^(\d{4})-(0[1-9]|1[0-2])$/', (string) $month, $m ) ) {
+			return null;
+		}
+
+		return array( (int) $m[1], (int) $m[2] );
+	}
+
+	/**
+	 * The month a number of months away from another.
+	 *
+	 * @param int $year   Year.
+	 * @param int $month  Month, 1-12.
+	 * @param int $offset Months to move (negative for earlier).
+	 * @return string "YYYY-MM".
+	 */
+	public static function shift_month( $year, $month, $offset ) {
+		$index = $year * 12 + ( $month - 1 ) + $offset;
+
+		return sprintf( '%04d-%02d', intdiv( $index, 12 ), $index % 12 + 1 );
+	}
+
+	/**
+	 * The weeks of a month for a calendar grid.
+	 *
+	 * @param int $year          Year.
+	 * @param int $month         Month, 1-12.
+	 * @param int $start_of_week First day of the week, 0 (Sunday) to 6 (Saturday).
+	 * @return array[] Each week is seven entries: a day number, or null outside the month.
+	 */
+	public static function month_weeks( $year, $month, $start_of_week ) {
+		$days   = (int) gmdate( 't', gmmktime( 0, 0, 0, $month, 1, $year ) );
+		$offset = ( (int) gmdate( 'w', gmmktime( 0, 0, 0, $month, 1, $year ) ) - $start_of_week + 7 ) % 7;
+
+		$cells = array_merge( array_fill( 0, $offset, null ), range( 1, $days ) );
+		$cells = array_pad( $cells, (int) ceil( count( $cells ) / 7 ) * 7, null );
+
+		return array_chunk( $cells, 7 );
+	}
+
+	/**
+	 * The month grid: a table of weeks with each day's events.
+	 *
+	 * @param int     $year    Year.
+	 * @param int     $month   Month, 1-12.
+	 * @param array[] $events  Events starting in the month (see Chess_Army_Knife_Events::data()).
+	 * @param array   $options show_location flag (adds the location as a tooltip).
+	 * @return string Escaped HTML.
+	 */
+	public static function month_html( $year, $month, array $events, array $options ) {
+		$start_of_week = (int) get_option( 'start_of_week', 1 ) % 7;
+		$today         = current_time( 'Y-m-d' );
+
+		$by_day = array();
+		foreach ( $events as $event ) {
+			$by_day[ substr( $event['start'], 0, 10 ) ][] = $event;
+		}
+
+		$label = self::month_label( $year, $month );
+
+		$html = '<table class="cak-month__table"><caption class="screen-reader-text">' . esc_html( $label ) . '</caption><thead><tr>';
+		for ( $i = 0; $i < 7; $i++ ) {
+			// 2024-01-07 was a Sunday.
+			$weekday = wp_date( 'D', gmmktime( 12, 0, 0, 1, 7 + ( ( $start_of_week + $i ) % 7 ), 2024 ), new DateTimeZone( 'UTC' ) );
+			$html   .= '<th scope="col">' . esc_html( $weekday ) . '</th>';
+		}
+		$html .= '</tr></thead><tbody>';
+
+		foreach ( self::month_weeks( $year, $month, $start_of_week ) as $week ) {
+			$html .= '<tr>';
+			foreach ( $week as $day ) {
+				if ( null === $day ) {
+					$html .= '<td class="cak-month__day is-outside"></td>';
+					continue;
+				}
+
+				$date       = sprintf( '%04d-%02d-%02d', $year, $month, $day );
+				$day_events = isset( $by_day[ $date ] ) ? $by_day[ $date ] : array();
+				$classes    = 'cak-month__day' . ( $day_events ? ' has-events' : '' ) . ( $date === $today ? ' is-today' : '' );
+
+				$html .= '<td class="' . esc_attr( $classes ) . '"><span class="cak-month__daynum">' . (int) $day . '</span>';
+				if ( $day_events ) {
+					$html .= '<ul class="cak-month__events">';
+					foreach ( $day_events as $event ) {
+						$tooltip = ! empty( $options['show_location'] ) && '' !== $event['location'] ? ' title="' . esc_attr( $event['location'] ) . '"' : '';
+						$html   .= '<li class="cak-month__event"><span class="cak-month__time">' . esc_html( self::time_label( $event ) ) . '</span> '
+							. '<a href="' . esc_url( $event['url'] ) . '"' . $tooltip . '>' . esc_html( $event['title'] ) . '</a></li>';
+					}
+					$html .= '</ul>';
+				}
+				$html .= '</td>';
+			}
+			$html .= '</tr>';
+		}
+
+		return $html . '</tbody></table>';
+	}
+
+	/**
+	 * The events of a month, ready for month_html().
+	 *
+	 * @param int      $year  Year.
+	 * @param int      $month Month, 1-12.
+	 * @param string[] $tags  Tag slugs.
+	 * @return array[]
+	 */
+	public static function month_events( $year, $month, array $tags ) {
+		return Chess_Army_Knife_Events::query(
+			array(
+				'after'  => sprintf( '%04d-%02d-01 00:00:00', $year, $month ),
+				'before' => self::shift_month( $year, $month, 1 ) . '-01 00:00:00',
+				'tags'   => $tags,
+				'limit'  => 0,
+			)
+		);
+	}
+
+	/**
+	 * The month's label, e.g. "October 2026".
+	 *
+	 * @param int $year  Year.
+	 * @param int $month Month, 1-12.
+	 * @return string
+	 */
+	public static function month_label( $year, $month ) {
+		return wp_date( 'F Y', gmmktime( 12, 0, 0, $month, 1, $year ), new DateTimeZone( 'UTC' ) );
+	}
 }
