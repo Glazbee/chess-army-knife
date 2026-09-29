@@ -867,8 +867,9 @@ class Chess_Army_Knife_Tournaments {
 	protected static function group_qualifiers( array $tournament, $advance ) {
 		$config     = self::config( $tournament );
 		$qualifiers = array();
+		$group_max  = max( 1, $config['groups'] );
 
-		for ( $group = 1; $group <= max( 1, $config['groups'] ); $group++ ) {
+		for ( $group = 1; $group <= $group_max; $group++ ) {
 			$group_no = ( 1 === $config['groups'] ) ? 0 : $group;
 			$place    = 0;
 

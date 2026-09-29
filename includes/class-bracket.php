@@ -49,14 +49,16 @@ class Chess_Army_Knife_Bracket {
 	 */
 	public static function order( $size ) {
 		$order = array( 1, 2 );
-		while ( count( $order ) < $size ) {
-			$next = count( $order ) * 2;
+		$count = 2;
+		while ( $count < $size ) {
+			$next = $count * 2;
 			$new  = array();
 			foreach ( $order as $seed ) {
 				$new[] = $seed;
 				$new[] = $next + 1 - $seed;
 			}
 			$order = $new;
+			$count = $next;
 		}
 		return $order;
 	}
