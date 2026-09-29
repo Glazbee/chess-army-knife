@@ -34,6 +34,12 @@ class Chess_Army_Knife_Swiss_Dutch {
 	/** Partial pairings one round may score, over all its brackets, before the search settles for the best found. */
 	const SEARCH_LIMIT = 60000;
 
+	/** Partial pairings one bracket spends aiming for the colour lower bound before trying something else. */
+	const AIM_LIMIT = 15000;
+
+	/** Largest bracket the exact optimisation is still tried on, as a fallback (it takes 2^n steps). */
+	const FALLBACK_OPTIMISE_LIMIT = 19;
+
 	/** Radix used to pack the additive criteria into one integer. */
 	const RADIX = 64;
 
@@ -840,12 +846,37 @@ class Chess_Army_Knife_Swiss_Dutch {
 		}
 
 		if ( null === $optimum ) {
-			// No exact optimum. First look for a candidate that meets the colour lower bound, which is
-			// then the best there is and the first in FIDE order; failing that, settle for the best found.
-			$target = array_merge( array( 0, 0 ), $this->colour_bound( array(), array_merge( $residents, $mdps ), $k ) );
-			$best   = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, $target, null );
-			if ( null === $best ) {
-				$best = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, null, null );
+			// No exact optimum yet. First aim for a candidate that meets the colour lower bound, which
+			// is then the best there is and the first in FIDE order.
+			$target       = array_merge( array( 0, 0 ), $this->colour_bound( array(), array_merge( $residents, $mdps ), $k ) );
+			$was_cut      = $this->truncated;
+			$total        = $this->budget;
+			$this->budget = min( $total, self::AIM_LIMIT );
+			$best         = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, $target, null );
+			$this->budget = $total - ( min( $total, self::AIM_LIMIT ) - $this->budget );
+			$settled      = null !== $best && ! $this->truncated;
+
+			// That did not settle it (the bound cannot be reached, or the search ran out): a bracket
+			// small enough is optimised exactly after all.
+			if ( ! $settled && PHP_INT_SIZE >= 8 && count( $residents ) <= self::FALLBACK_OPTIMISE_LIMIT ) {
+				$this->truncated = $was_cut;
+				$plan            = $this->optimisation_plan( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width );
+				if ( null !== $plan ) {
+					$exact = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, $plan['optimum'], $plan );
+					if ( null !== $exact ) {
+						$best    = $exact;
+						$settled = ! $this->truncated;
+					}
+				}
+			}
+
+			// Otherwise settle for the best found: what the aim found, or failing that the best of a plain search.
+			if ( ! $settled && null === $best ) {
+				$this->truncated = $was_cut;
+				$best            = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, null, null );
+			}
+			if ( ! $settled ) {
+				$this->truncated = true;
 			}
 		} else {
 			$best = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, $optimum, $plan );
