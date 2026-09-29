@@ -21,7 +21,7 @@ class Chess_Army_Knife_Events_Admin {
 	 */
 	public static function init() {
 		add_action( 'add_meta_boxes_' . Chess_Army_Knife_Events::POST_TYPE, array( __CLASS__, 'add_meta_box' ) );
-		add_action( 'save_post_' . Chess_Army_Knife_Events::POST_TYPE, array( __CLASS__, 'save' ), 10, 2 );
+		add_action( 'save_post_' . Chess_Army_Knife_Events::POST_TYPE, array( __CLASS__, 'save' ) );
 		add_filter( 'manage_' . Chess_Army_Knife_Events::POST_TYPE . '_posts_columns', array( __CLASS__, 'columns' ) );
 		add_action( 'manage_' . Chess_Army_Knife_Events::POST_TYPE . '_posts_custom_column', array( __CLASS__, 'render_column' ), 10, 2 );
 		add_filter( 'manage_edit-' . Chess_Army_Knife_Events::POST_TYPE . '_sortable_columns', array( __CLASS__, 'sortable_columns' ) );
@@ -150,10 +150,9 @@ class Chess_Army_Knife_Events_Admin {
 	/**
 	 * Save the details box.
 	 *
-	 * @param int     $post_id Event id.
-	 * @param WP_Post $post    Event.
+	 * @param int $post_id Event id.
 	 */
-	public static function save( $post_id, $post ) {
+	public static function save( $post_id ) {
 		if ( ! isset( $_POST[ self::NONCE_FIELD ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ self::NONCE_FIELD ] ) ), self::NONCE_ACTION ) ) {
 			return;
 		}
@@ -186,10 +185,9 @@ class Chess_Army_Knife_Events_Admin {
 		$tournament_ids = array();
 		$known_ids      = wp_list_pluck( Chess_Army_Knife_Tournament_Store::get_tournaments(), 'id' );
 		$known_ids      = array_map( 'intval', $known_ids );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
-		foreach ( isset( $_POST['chess_army_event_tournaments'] ) ? (array) wp_unslash( $_POST['chess_army_event_tournaments'] ) : array() as $tournament_id ) {
-			if ( in_array( (int) $tournament_id, $known_ids, true ) ) {
-				$tournament_ids[] = (int) $tournament_id;
+		foreach ( isset( $_POST['chess_army_event_tournaments'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['chess_army_event_tournaments'] ) ) : array() as $tournament_id ) {
+			if ( in_array( $tournament_id, $known_ids, true ) ) {
+				$tournament_ids[] = $tournament_id;
 			}
 		}
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_TOURNAMENTS, array_values( array_unique( $tournament_ids ) ) );
@@ -197,8 +195,7 @@ class Chess_Army_Knife_Events_Admin {
 		// Only leagues among the club's teams can be attached.
 		$allowed_leagues = wp_list_pluck( self::available_leagues(), 'ref' );
 		$leagues         = array();
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
-		foreach ( isset( $_POST['chess_army_event_leagues'] ) ? (array) wp_unslash( $_POST['chess_army_event_leagues'] ) : array() as $ref ) {
+		foreach ( isset( $_POST['chess_army_event_leagues'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['chess_army_event_leagues'] ) ) : array() as $ref ) {
 			if ( in_array( $ref, $allowed_leagues, true ) ) {
 				$leagues[] = $ref;
 			}

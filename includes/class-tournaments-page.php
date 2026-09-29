@@ -41,12 +41,12 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * Check permission and nonce for a handler.
+	 * Stop the request unless the user may manage tournaments.
 	 *
-	 * @param string $action Short action name (also the nonce action suffix).
+	 * Each handler then verifies its own nonce with check_admin_referer().
 	 */
-	protected static function authorise( $action ) {
-		if ( ! Chess_Army_Knife_Tournaments::user_can_manage() || ! check_admin_referer( 'chess_army_knife_tournament_' . $action ) ) {
+	protected static function authorise() {
+		if ( ! Chess_Army_Knife_Tournaments::user_can_manage() ) {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 	}
@@ -81,7 +81,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Create a tournament.
 	 */
 	public static function handle_create() {
-		self::authorise( 'create' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_create' );
 
 		$result = Chess_Army_Knife_Tournaments::create(
 			array(
@@ -117,7 +118,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Add the players chosen in the selector to a tournament.
 	 */
 	public static function handle_add_player() {
-		self::authorise( 'add_player' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_add_player' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 		$entered       = Chess_Army_Knife_Player_Selector::enter_players( $tournament_id, wp_unslash( $_POST ) );
@@ -135,7 +137,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Remove a player from a draft tournament.
 	 */
 	public static function handle_remove_player() {
-		self::authorise( 'remove_player' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_remove_player' );
 
 		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
@@ -147,7 +150,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Start a tournament.
 	 */
 	public static function handle_start() {
-		self::authorise( 'start' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_start' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 
@@ -158,19 +162,19 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Save every result submitted for a round.
 	 */
 	public static function handle_save_results() {
-		self::authorise( 'save_results' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_save_results' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
-		$results       = isset( $_POST['results'] ) && is_array( $_POST['results'] ) ? wp_unslash( $_POST['results'] ) : array();
+		$results       = isset( $_POST['results'] ) && is_array( $_POST['results'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['results'] ) ) : array();
 		$outcome       = true;
 
 		foreach ( $results as $game_id => $result ) {
 			$game = Chess_Army_Knife_Tournament_Store::get_game( (int) $game_id );
-			$new  = sanitize_text_field( $result );
-			if ( ! $game || $game['tournament_id'] !== $tournament_id || (string) $game['result'] === $new ) {
+			if ( ! $game || $game['tournament_id'] !== $tournament_id || (string) $game['result'] === $result ) {
 				continue;
 			}
-			$saved = Chess_Army_Knife_Tournaments::record_result( $game['id'], $new );
+			$saved = Chess_Army_Knife_Tournaments::record_result( $game['id'], $result );
 			if ( is_wp_error( $saved ) ) {
 				$outcome = $saved;
 				break;
@@ -184,7 +188,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Withdraw a player from a running tournament.
 	 */
 	public static function handle_withdraw() {
-		self::authorise( 'withdraw' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_withdraw' );
 
 		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
@@ -196,7 +201,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Pair the next round of a Swiss tournament.
 	 */
 	public static function handle_next_round() {
-		self::authorise( 'next_round' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_next_round' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 		$round         = Chess_Army_Knife_Tournaments::next_round( $tournament_id );
@@ -209,7 +215,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Pair the latest Swiss round again.
 	 */
 	public static function handle_redo_round() {
-		self::authorise( 'redo_round' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_redo_round' );
 
 		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
 		$round         = Chess_Army_Knife_Tournaments::redo_round( $tournament_id );
@@ -222,7 +229,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Ask for a half-point or zero-point bye in a Swiss round.
 	 */
 	public static function handle_request_bye() {
-		self::authorise( 'request_bye' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_request_bye' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 		$entry_id      = isset( $_POST['entry_id'] ) ? (int) $_POST['entry_id'] : 0;
@@ -236,7 +244,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Cancel a requested bye.
 	 */
 	public static function handle_cancel_bye() {
-		self::authorise( 'cancel_bye' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_cancel_bye' );
 
 		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
@@ -249,7 +258,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Create the tournament's own page.
 	 */
 	public static function handle_create_page() {
-		self::authorise( 'create_page' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_create_page' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 
@@ -260,7 +270,8 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Delete a tournament.
 	 */
 	public static function handle_delete() {
-		self::authorise( 'delete' );
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_delete' );
 
 		Chess_Army_Knife_Tournament_Store::delete_tournament( isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0 );
 
@@ -326,7 +337,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		echo '<div class="wrap">';
 		self::render_notice();
 
-		$tournament = isset( $_GET['tournament'] ) ? Chess_Army_Knife_Tournament_Store::get_tournament( (int) $_GET['tournament'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$tournament = isset( $_GET['tournament'] ) ? Chess_Army_Knife_Tournament_Store::get_tournament( (int) $_GET['tournament'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		if ( $tournament ) {
 			self::render_tournament( $tournament );
 		} else {

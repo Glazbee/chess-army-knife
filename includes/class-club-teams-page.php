@@ -106,7 +106,7 @@ class Chess_Army_Knife_Club_Teams_Page {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 
-		$org   = isset( $_POST['org'] ) ? preg_replace( '/[^0-9]/', '', wp_unslash( $_POST['org'] ) ) : '';
+		$org   = isset( $_POST['org'] ) ? preg_replace( '/[^0-9]/', '', sanitize_text_field( wp_unslash( $_POST['org'] ) ) ) : '';
 		$event = isset( $_POST['event'] ) ? sanitize_text_field( wp_unslash( $_POST['event'] ) ) : '';
 		$team  = isset( $_POST['team'] ) ? sanitize_text_field( wp_unslash( $_POST['team'] ) ) : '';
 
@@ -173,11 +173,11 @@ class Chess_Army_Knife_Club_Teams_Page {
 				<?php esc_html_e( 'List every team your club has entered, across any number of divisions or organisations - including more than one team in the same division. The Team Fixtures Carousel block can read this list directly, so it only has to be maintained here.', 'chess-army-knife' ); ?>
 			</p>
 
-			<?php if ( isset( $_GET['ecf_lms_team_added'] ) ) : ?>
+			<?php if ( isset( $_GET['ecf_lms_team_added'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only notice; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Team added.', 'chess-army-knife' ); ?></p></div>
-			<?php elseif ( isset( $_GET['ecf_lms_team_deleted'] ) ) : ?>
+			<?php elseif ( isset( $_GET['ecf_lms_team_deleted'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only notice; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Team removed.', 'chess-army-knife' ); ?></p></div>
-			<?php elseif ( isset( $_GET['ecf_lms_team_error'] ) ) : ?>
+			<?php elseif ( isset( $_GET['ecf_lms_team_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only notice; nothing is changed. ?>
 				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Please fill in organisation ID, event name and team name.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
 

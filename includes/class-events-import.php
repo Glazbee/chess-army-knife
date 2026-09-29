@@ -220,8 +220,8 @@ class Chess_Army_Knife_Events_Import {
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private', 'trash' ),
 				'posts_per_page' => 1,
 				'no_found_rows'  => true,
-				'meta_key'       => self::META_LMS_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				'meta_value'     => $key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'meta_key'       => self::META_LMS_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Finds the one imported event with this LMS key.
+				'meta_value'     => $key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Finds the one imported event with this LMS key.
 			)
 		);
 

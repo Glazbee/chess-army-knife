@@ -84,7 +84,7 @@ register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 function Chess_Army_Knife_cleanup_cache() {
 	global $wpdb;
 	$table = $wpdb->prefix . 'chess_army_knife_cache';
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Cleanup of the plugin-owned cache table; the table name is internal.
 	$wpdb->query( "DELETE FROM {$table} WHERE expires_at < UTC_TIMESTAMP()" );
 }
 add_action( 'Chess_Army_Knife_cleanup_cache', 'Chess_Army_Knife_cleanup_cache' );

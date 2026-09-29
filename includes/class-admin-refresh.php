@@ -45,7 +45,7 @@ class Chess_Army_Knife_Admin_Refresh {
 		}
 
 		$encoded = isset( $_GET[ self::QUERY_VAR_KEYS ] ) ? sanitize_text_field( wp_unslash( $_GET[ self::QUERY_VAR_KEYS ] ) ) : '';
-		$keys    = array_filter( explode( ',', base64_decode( strtr( $encoded, '-_', '+/' ) ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		$keys    = array_filter( explode( ',', base64_decode( strtr( $encoded, '-_', '+/' ) ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Packs cache keys into a URL parameter; not obfuscation.
 
 		foreach ( $keys as $key ) {
 			Chess_Army_Knife_Cache::forget( $key );
@@ -71,7 +71,7 @@ class Chess_Army_Knife_Admin_Refresh {
 		$timestamps = array_filter( array_map( array( 'Chess_Army_Knife_Cache', 'get_created_at' ), $cache_keys ) );
 		$oldest     = ! empty( $timestamps ) ? min( $timestamps ) : null;
 
-		$encoded_keys = strtr( base64_encode( implode( ',', $cache_keys ) ), '+/', '-_' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		$encoded_keys = strtr( base64_encode( implode( ',', $cache_keys ) ), '+/', '-_' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Packs cache keys into a URL parameter; not obfuscation.
 
 		$host        = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
 		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';

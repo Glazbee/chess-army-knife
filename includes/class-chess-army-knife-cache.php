@@ -92,10 +92,10 @@ class Chess_Army_Knife_Cache {
 
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The cache table is the cache; the table name is internal and dynamic values are prepared.
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT cache_value, expires_at FROM ' . self::table() . ' WHERE cache_key = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				'SELECT cache_value, expires_at FROM ' . self::table() . ' WHERE cache_key = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The cache table is the cache; the table name is internal and dynamic values are prepared.
 				$cache_key
 			),
 			ARRAY_A
@@ -128,6 +128,7 @@ class Chess_Army_Knife_Cache {
 
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The cache table is the cache.
 		$wpdb->replace(
 			self::table(),
 			array(
@@ -156,7 +157,7 @@ class Chess_Army_Knife_Cache {
 		static $table_exists = null;
 
 		if ( null === $table_exists ) {
-			$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::table() ) ) === self::table() ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', self::table() ) ) === self::table() ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The cache table is the cache; the table name is internal and dynamic values are prepared.
 		}
 
 		return $table_exists;
@@ -188,10 +189,10 @@ class Chess_Army_Knife_Cache {
 		global $wpdb;
 		$cache_key = self::key( $key );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The cache table is the cache; the table name is internal and dynamic values are prepared.
 		$created_at = $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT created_at FROM ' . self::table() . ' WHERE cache_key = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				'SELECT created_at FROM ' . self::table() . ' WHERE cache_key = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The cache table is the cache; the table name is internal and dynamic values are prepared.
 				$cache_key
 			)
 		);
@@ -211,7 +212,7 @@ class Chess_Army_Knife_Cache {
 
 		if ( self::use_db() ) {
 			global $wpdb;
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The cache table is the cache; the table name is internal and dynamic values are prepared.
 			$wpdb->delete( self::table(), array( 'cache_key' => $cache_key ), array( '%s' ) );
 		}
 	}
@@ -226,7 +227,7 @@ class Chess_Army_Knife_Cache {
 
 		// Transients.
 		$like = $wpdb->esc_like( '_transient_' . self::PREFIX ) . '%';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- No WordPress API lists options by prefix.
 		$options = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like ) );
 		foreach ( $options as $option_name ) {
 			delete_transient( str_replace( '_transient_', '', $option_name ) );
@@ -234,8 +235,8 @@ class Chess_Army_Knife_Cache {
 
 		// Custom table.
 		if ( self::use_db() ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->query( 'TRUNCATE TABLE ' . self::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The cache table is the cache; the table name is internal and dynamic values are prepared.
+			$wpdb->query( 'TRUNCATE TABLE ' . self::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The cache table is the cache; the table name is internal and dynamic values are prepared.
 		}
 	}
 
@@ -249,8 +250,8 @@ class Chess_Army_Knife_Cache {
 		global $wpdb;
 
 		if ( self::use_db() ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$count = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table() . ' WHERE expires_at > UTC_TIMESTAMP()' ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- The cache table is the cache; the table name is internal and dynamic values are prepared.
+			$count = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table() . ' WHERE expires_at > UTC_TIMESTAMP()' );
 			return array(
 				'count'   => $count,
 				'backend' => __( 'local database table', 'chess-army-knife' ),
@@ -258,7 +259,7 @@ class Chess_Army_Knife_Cache {
 		}
 
 		$like = $wpdb->esc_like( '_transient_' . self::PREFIX ) . '%';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- No WordPress API lists options by prefix.
 		$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s", $like ) );
 
 		return array(

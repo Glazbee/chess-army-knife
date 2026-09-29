@@ -145,7 +145,7 @@ class Chess_Army_Knife_Players_Page {
 		}
 
 		$players = Chess_Army_Knife_Tournament_Store::get_players();
-		$editing = isset( $_GET['edit'] ) ? Chess_Army_Knife_Tournament_Store::get_player( (int) $_GET['edit'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$editing = isset( $_GET['edit'] ) ? Chess_Army_Knife_Tournament_Store::get_player( (int) $_GET['edit'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h1>
