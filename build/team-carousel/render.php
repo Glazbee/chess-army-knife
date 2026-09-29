@@ -2,19 +2,10 @@
 /**
  * Server-side render for the ECF Team Fixtures Carousel block.
  *
- * Three ways to decide which teams get a slide:
- * - "auto"        every team currently in one event's league table.
- * - "manual"      a typed list of team names, all within one event.
- * - "club-teams"  the site-wide "Your club's teams" list from Settings,
- *                 which can span any number of organisations/events -
- *                 the natural fit for a club with teams in several
- *                 divisions (and sometimes more than one team per
- *                 division).
- *
- * Whichever source is used, matches are fetched once per unique
- * (org, event) pair and then sliced per team, so a club-teams carousel
- * covering four divisions only makes four match.json calls, however
- * many teams are configured within them.
+ * Teams come from "auto" (every team in one event's league table), "manual"
+ * (typed team names within one event) or "club-teams" (the Settings list,
+ * which can span several organisations and events). Matches are fetched once
+ * per unique (org, event) pair and sliced per team.
  *
  * @package Chess_Army_Knife
  *
@@ -30,7 +21,7 @@ $org_id           = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_
 $event_name       = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_event_name', $attributes['eventName'] ?? '' ) );
 $team_source      = isset( $attributes['teamSource'] ) ? $attributes['teamSource'] : 'club-teams';
 $manual_teams_raw = isset( $attributes['manualTeams'] ) ? (string) $attributes['manualTeams'] : '';
-$title            = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $auto_advance     = ! isset( $attributes['autoAdvance'] ) || (bool) $attributes['autoAdvance'];
 $interval_seconds = isset( $attributes['intervalSeconds'] ) ? max( 3, (int) $attributes['intervalSeconds'] ) : 6;
 $show_location    = ! empty( $attributes['showLocation'] );
@@ -88,8 +79,8 @@ if ( 'club-teams' === $team_source ) {
 		);
 		return;
 	}
-	$table_raw       = LMS_Client::get_table( $org_id, $event_name );
-	$table_cache_key = LMS_Client::cache_key( 'table', $org_id, $event_name );
+	$table_raw       = Chess_Army_Knife_LMS_Client::get_table( $org_id, $event_name );
+	$table_cache_key = Chess_Army_Knife_LMS_Client::cache_key( 'table', $org_id, $event_name );
 	if ( is_wp_error( $table_raw ) ) {
 		printf(
 			'<div %1$s><div class="chess-army-knife-notice">%2$s %3$s</div></div>',
@@ -99,8 +90,8 @@ if ( 'club-teams' === $team_source ) {
 		);
 		return;
 	}
-	foreach ( LMS_Client::find_rows( $table_raw, array( 'table' ) ) as $raw_row ) {
-		$normalised = LMS_Client::normalise_table_row( $raw_row );
+	foreach ( Chess_Army_Knife_LMS_Client::find_rows( $table_raw, array( 'table' ) ) as $raw_row ) {
+		$normalised = Chess_Army_Knife_LMS_Client::normalise_table_row( $raw_row );
 		if ( $normalised && '' !== $normalised['team'] ) {
 			$team_specs[] = array(
 				'org'   => $org_id,
@@ -141,15 +132,15 @@ if ( $table_cache_key ) {
 }
 
 foreach ( $groups as $group_key => &$group ) {
-	$group['raw']       = LMS_Client::get_matches( $group['org'], $group['event'] );
-	$admin_cache_keys[] = LMS_Client::cache_key( 'match', $group['org'], $group['event'] );
+	$group['raw']       = Chess_Army_Knife_LMS_Client::get_matches( $group['org'], $group['event'] );
+	$admin_cache_keys[] = Chess_Army_Knife_LMS_Client::cache_key( 'match', $group['org'], $group['event'] );
 
 	if ( is_wp_error( $group['raw'] ) ) {
 		$group['error'] = $group['raw'];
 		continue;
 	}
-	foreach ( LMS_Client::find_rows( $group['raw'], array( 'matches' ) ) as $raw_row ) {
-		$normalised = LMS_Client::normalise_match_row( $raw_row );
+	foreach ( Chess_Army_Knife_LMS_Client::find_rows( $group['raw'], array( 'matches' ) ) as $raw_row ) {
+		$normalised = Chess_Army_Knife_LMS_Client::normalise_match_row( $raw_row );
 		if ( $normalised && ( '' !== $normalised['home'] || '' !== $normalised['away'] ) ) {
 			$group['rows'][] = $normalised;
 		}
@@ -170,8 +161,8 @@ $find_team_matches = function ( $matches, $team ) {
 	$exact = array_values(
 		array_filter(
 			$matches,
-			function ( $m ) use ( $team ) {
-				return 0 === strcasecmp( $m['home'], $team ) || 0 === strcasecmp( $m['away'], $team );
+			function ( $team_match ) use ( $team ) {
+				return 0 === strcasecmp( $team_match['home'], $team ) || 0 === strcasecmp( $team_match['away'], $team );
 			}
 		)
 	);
@@ -181,8 +172,8 @@ $find_team_matches = function ( $matches, $team ) {
 	return array_values(
 		array_filter(
 			$matches,
-			function ( $m ) use ( $team ) {
-				return false !== stripos( $m['home'], $team ) || false !== stripos( $m['away'], $team );
+			function ( $team_match ) use ( $team ) {
+				return false !== stripos( $team_match['home'], $team ) || false !== stripos( $team_match['away'], $team );
 			}
 		)
 	);
@@ -229,12 +220,12 @@ foreach ( $team_specs as $spec ) {
 
 	$results  = array();
 	$fixtures = array();
-	foreach ( $team_matches as $m ) {
-		$has_score = '' !== $m['home_score'] || '' !== $m['away_score'] || '' !== $m['result_text'];
+	foreach ( $team_matches as $team_match ) {
+		$has_score = '' !== $team_match['home_score'] || '' !== $team_match['away_score'] || '' !== $team_match['result_text'];
 		if ( $has_score ) {
-			$results[] = $m;
+			$results[] = $team_match;
 		} else {
-			$fixtures[] = $m;
+			$fixtures[] = $team_match;
 		}
 	}
 
@@ -271,14 +262,14 @@ foreach ( $team_specs as $spec ) {
 	);
 }
 
-$heading     = $title ? $title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
+$heading     = $block_title ? $block_title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
 $multi_event = count( array_unique( wp_list_pluck( $team_specs, 'event' ) ) ) > 1;
 ?>
-<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<p class="ecf-carousel__title"><?php echo esc_html( $heading ); ?></p>
 
-	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<div
 		class="ecf-carousel"

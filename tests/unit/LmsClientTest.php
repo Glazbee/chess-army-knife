@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for LMS_Client: request fallbacks, error handling and payload normalisation.
+ * Tests for Chess_Army_Knife_LMS_Client: request fallbacks, error handling and payload normalisation.
  *
  * @package Chess_Army_Knife
  */
@@ -35,21 +35,21 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_cache_key_is_normalised() {
-		$this->assertSame( 'lms2_table_12_division 1', LMS_Client::cache_key( 'table', ' 12 ', ' Division 1 ' ) );
+		$this->assertSame( 'lms2_table_12_division 1', Chess_Army_Knife_LMS_Client::cache_key( 'table', ' 12 ', ' Division 1 ' ) );
 	}
 
 	public function test_missing_params_return_error_without_http() {
 		Functions\expect( 'wp_remote_request' )->never();
 
-		$this->assertSame( 'lms_missing_params', LMS_Client::get_table( '', 'Div 1' )->get_error_code() );
-		$this->assertSame( 'lms_missing_params', LMS_Client::get_matches( '12', ' ' )->get_error_code() );
+		$this->assertSame( 'lms_missing_params', Chess_Army_Knife_LMS_Client::get_table( '', 'Div 1' )->get_error_code() );
+		$this->assertSame( 'lms_missing_params', Chess_Army_Knife_LMS_Client::get_matches( '12', ' ' )->get_error_code() );
 	}
 
 	public function test_first_attempt_is_json_post_to_bare_type_url() {
 		$calls = array();
 		$this->queue_responses( array( $this->response( 200, array( 'table' => array( array( 'team' => 'A' ) ) ) ) ), $calls );
 
-		$result = LMS_Client::get_table( '12', 'Division 1' );
+		$result = Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
 
 		$this->assertSame( array( 'table' => array( array( 'team' => 'A' ) ) ), $result );
 		$this->assertCount( 1, $calls );
@@ -76,7 +76,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 			$calls
 		);
 
-		$result = LMS_Client::get_events( '12', 'Division 1' );
+		$result = Chess_Army_Knife_LMS_Client::get_events( '12', 'Division 1' );
 
 		$this->assertSame( array( 'rows' => array( array( 'a' => 1 ) ) ), $result );
 		$this->assertCount( 3, $calls );
@@ -88,7 +88,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$calls = array();
 		$this->queue_responses( array( $this->response( 404, 'nope' ) ), $calls );
 
-		$result = LMS_Client::get_table( '12', 'Division 1' );
+		$result = Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
 
 		$this->assertSame( 'lms_http_error', $result->get_error_code() );
 		$this->assertSame( 404, $result->get_error_data()['status'] );
@@ -98,7 +98,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	public function test_error_reply_with_200_status_is_an_error() {
 		$this->queue_responses( array( $this->response( 200, array( 'error' => 'invalid type table.json' ) ) ) );
 
-		$result = LMS_Client::get_table( '12', 'Division 1' );
+		$result = Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
 
 		$this->assertSame( 'lms_api_error', $result->get_error_code() );
 		$this->assertStringContainsString( 'invalid type table.json', $result->get_error_message() );
@@ -106,11 +106,11 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 
 	public function test_unparseable_and_empty_bodies_are_errors() {
 		$this->queue_responses( array( $this->response( 200, 'not json' ) ) );
-		$this->assertSame( 'lms_bad_response', LMS_Client::get_table( '12', 'A' )->get_error_code() );
+		$this->assertSame( 'lms_bad_response', Chess_Army_Knife_LMS_Client::get_table( '12', 'A' )->get_error_code() );
 
 		$this->transients = array();
 		$this->queue_responses( array( $this->response( 200, array() ) ) );
-		$this->assertSame( 'lms_empty', LMS_Client::get_table( '12', 'B' )->get_error_code() );
+		$this->assertSame( 'lms_empty', Chess_Army_Knife_LMS_Client::get_table( '12', 'B' )->get_error_code() );
 	}
 
 	public function test_connection_failure_tries_every_shape_then_falls_back_to_legacy_host() {
@@ -122,7 +122,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 			$calls
 		);
 
-		$result = LMS_Client::get_table( '12', 'Division 1' );
+		$result = Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
 
 		$this->assertArrayHasKey( 'table', $result );
 		$this->assertCount( 4, $calls );
@@ -132,7 +132,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	public function test_all_hosts_failing_returns_connection_error() {
 		$this->queue_responses( array_fill( 0, 6, new WP_Error( 'http_request_failed', 'down' ) ) );
 
-		$this->assertSame( 'lms_connection_error', LMS_Client::get_table( '12', 'Division 1' )->get_error_code() );
+		$this->assertSame( 'lms_connection_error', Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' )->get_error_code() );
 	}
 
 	public function test_configured_base_url_is_tried_first() {
@@ -146,7 +146,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$calls = array();
 		$this->queue_responses( array( $this->response( 200, array( 'table' => array( array( 'team' => 'A' ) ) ) ) ), $calls );
 
-		LMS_Client::get_table( '12', 'Division 1' );
+		Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
 
 		$this->assertSame( 'https://custom.test/league/table', $calls[0]['url'] );
 	}
@@ -155,8 +155,8 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$calls = array();
 		$this->queue_responses( array( $this->response( 200, array( 'table' => array( array( 'team' => 'A' ) ) ) ) ), $calls );
 
-		LMS_Client::get_table( '12', 'Division 1' );
-		LMS_Client::get_table( '12', 'Division 1' );
+		Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
+		Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
 
 		$this->assertCount( 1, $calls );
 	}
@@ -169,31 +169,31 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 			'd' => 'x',
 		);
 
-		$this->assertSame( 0, LMS_Client::pick( $row, array( 'a', 'b', 'c', 'd' ) ) );
-		$this->assertSame( 'x', LMS_Client::pick( $row, array( 'a', 'd' ) ) );
-		$this->assertSame( 'fb', LMS_Client::pick( $row, array( 'a', 'zzz' ), 'fb' ) );
-		$this->assertSame( 'fb', LMS_Client::pick( 'not an array', array( 'a' ), 'fb' ) );
+		$this->assertSame( 0, Chess_Army_Knife_LMS_Client::pick( $row, array( 'a', 'b', 'c', 'd' ) ) );
+		$this->assertSame( 'x', Chess_Army_Knife_LMS_Client::pick( $row, array( 'a', 'd' ) ) );
+		$this->assertSame( 'fb', Chess_Army_Knife_LMS_Client::pick( $row, array( 'a', 'zzz' ), 'fb' ) );
+		$this->assertSame( 'fb', Chess_Army_Knife_LMS_Client::pick( 'not an array', array( 'a' ), 'fb' ) );
 	}
 
 	public function test_is_list() {
-		$this->assertTrue( LMS_Client::is_list( array( 'a', 'b' ) ) );
-		$this->assertFalse( LMS_Client::is_list( array( 'k' => 'v' ) ) );
-		$this->assertFalse( LMS_Client::is_list( 'str' ) );
+		$this->assertTrue( Chess_Army_Knife_LMS_Client::is_list( array( 'a', 'b' ) ) );
+		$this->assertFalse( Chess_Army_Knife_LMS_Client::is_list( array( 'k' => 'v' ) ) );
+		$this->assertFalse( Chess_Army_Knife_LMS_Client::is_list( 'str' ) );
 	}
 
 	public function test_find_rows_handles_wrapped_bare_and_nested_payloads() {
 		$rows = array( array( 'team' => 'A' ) );
 
-		$this->assertSame( $rows, LMS_Client::find_rows( array( 'table' => $rows ) ) );
-		$this->assertSame( $rows, LMS_Client::find_rows( array( 'custom' => $rows ), array( 'custom' ) ) );
-		$this->assertSame( $rows, LMS_Client::find_rows( $rows ) );
-		$this->assertSame( $rows, LMS_Client::find_rows( array( 'weird' => $rows ) ) );
-		$this->assertSame( array(), LMS_Client::find_rows( array( 'weird' => 'x' ) ) );
-		$this->assertSame( array(), LMS_Client::find_rows( 'nope' ) );
+		$this->assertSame( $rows, Chess_Army_Knife_LMS_Client::find_rows( array( 'table' => $rows ) ) );
+		$this->assertSame( $rows, Chess_Army_Knife_LMS_Client::find_rows( array( 'custom' => $rows ), array( 'custom' ) ) );
+		$this->assertSame( $rows, Chess_Army_Knife_LMS_Client::find_rows( $rows ) );
+		$this->assertSame( $rows, Chess_Army_Knife_LMS_Client::find_rows( array( 'weird' => $rows ) ) );
+		$this->assertSame( array(), Chess_Army_Knife_LMS_Client::find_rows( array( 'weird' => 'x' ) ) );
+		$this->assertSame( array(), Chess_Army_Knife_LMS_Client::find_rows( 'nope' ) );
 	}
 
 	public function test_normalise_table_row_flat() {
-		$row = LMS_Client::normalise_table_row(
+		$row = Chess_Army_Knife_LMS_Client::normalise_table_row(
 			array(
 				'pos'  => 1,
 				'team' => 'Alpha',
@@ -220,7 +220,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_normalise_table_row_nested_entry_with_team_object() {
-		$row = LMS_Client::normalise_table_row(
+		$row = Chess_Army_Knife_LMS_Client::normalise_table_row(
 			array(
 				'position' => 2,
 				'entry'    => array(
@@ -239,12 +239,12 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_normalise_rows_reject_non_arrays() {
-		$this->assertNull( LMS_Client::normalise_table_row( 'x' ) );
-		$this->assertNull( LMS_Client::normalise_match_row( 'x' ) );
+		$this->assertNull( Chess_Army_Knife_LMS_Client::normalise_table_row( 'x' ) );
+		$this->assertNull( Chess_Army_Knife_LMS_Client::normalise_match_row( 'x' ) );
 	}
 
 	public function test_normalise_match_row() {
-		$row = LMS_Client::normalise_match_row(
+		$row = Chess_Army_Knife_LMS_Client::normalise_match_row(
 			array(
 				'date'        => '2026-01-15',
 				'left'        => array( 'name' => 'Alpha' ),
@@ -271,7 +271,7 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_normalise_match_row_uses_result_text_fallback() {
-		$row = LMS_Client::normalise_match_row(
+		$row = Chess_Army_Knife_LMS_Client::normalise_match_row(
 			array(
 				'home'   => 'A',
 				'away'   => 'B',

@@ -1,15 +1,10 @@
 <?php
 /**
- * A small, admin-only control that blocks can render alongside their
- * data: "Last refreshed X ago · Refresh now". Lets an admin who
- * suspects something is stale force a fresh fetch for that specific
- * block without waiting for the cache to expire or clearing the whole
- * site-wide cache from Settings.
+ * Admin-only "Last refreshed X ago · Refresh now" control for blocks.
  *
- * The "Refresh now" link works without JavaScript: it's a normal link
- * back to the current page carrying the specific cache keys to forget
- * plus a nonce; template_redirect() clears just those keys and then
- * redirects to a clean URL, so the very next render fetches fresh data.
+ * The link works without JavaScript: it returns to the current page with the
+ * cache keys to forget plus a nonce; template_redirect() clears just those
+ * keys and redirects to a clean URL.
  *
  * @package Chess_Army_Knife
  */
@@ -36,7 +31,7 @@ class Chess_Army_Knife_Admin_Refresh {
 	 * redirect to the clean URL so the next render fetches fresh data.
 	 */
 	public static function maybe_handle_refresh() {
-		if ( empty( $_GET[ self::QUERY_VAR ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET[ self::QUERY_VAR ] ) ) {
 			return;
 		}
 
@@ -50,7 +45,7 @@ class Chess_Army_Knife_Admin_Refresh {
 		}
 
 		$encoded = isset( $_GET[ self::QUERY_VAR_KEYS ] ) ? sanitize_text_field( wp_unslash( $_GET[ self::QUERY_VAR_KEYS ] ) ) : '';
-		$keys    = array_filter( explode( ',', base64_decode( strtr( $encoded, '-_', '+/' ) ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		$keys    = array_filter( explode( ',', base64_decode( strtr( $encoded, '-_', '+/' ) ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Packs cache keys into a URL parameter; not obfuscation.
 
 		foreach ( $keys as $key ) {
 			Chess_Army_Knife_Cache::forget( $key );
@@ -76,7 +71,7 @@ class Chess_Army_Knife_Admin_Refresh {
 		$timestamps = array_filter( array_map( array( 'Chess_Army_Knife_Cache', 'get_created_at' ), $cache_keys ) );
 		$oldest     = ! empty( $timestamps ) ? min( $timestamps ) : null;
 
-		$encoded_keys = strtr( base64_encode( implode( ',', $cache_keys ) ), '+/', '-_' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		$encoded_keys = strtr( base64_encode( implode( ',', $cache_keys ) ), '+/', '-_' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Packs cache keys into a URL parameter; not obfuscation.
 
 		$host        = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
 		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
@@ -103,7 +98,7 @@ class Chess_Army_Knife_Admin_Refresh {
 				printf(
 					/* translators: %s: human-readable time difference, e.g. "4 minutes" */
 					esc_html__( 'Last refreshed %s ago.', 'chess-army-knife' ),
-					esc_html( human_time_diff( $oldest, current_time( 'timestamp' ) ) ) // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested
+					esc_html( human_time_diff( $oldest ) )
 				);
 				?>
 			<?php elseif ( Chess_Army_Knife_Settings::use_local_cache() ) : ?>

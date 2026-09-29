@@ -173,7 +173,7 @@ class Chess_Army_Knife_Tournaments {
 				'name'          => $name,
 				'format'        => $format,
 				'status'        => self::STATUS_DRAFT,
-				'rating_domain' => ECF_Client::normalise_domain( isset( $args['rating_domain'] ) ? $args['rating_domain'] : 'S' ),
+				'rating_domain' => Chess_Army_Knife_ECF_Client::normalise_domain( isset( $args['rating_domain'] ) ? $args['rating_domain'] : 'S' ),
 				'double_round'  => ( 'round-robin' === $format && ! empty( $args['double_round'] ) ) ? 1 : 0,
 				'settings'      => array(
 					'groups'         => $groups,
@@ -320,7 +320,7 @@ class Chess_Army_Knife_Tournaments {
 	/**
 	 * The rating in an ECF rating response, if it has a usable one.
 	 *
-	 * @param array|WP_Error $data Response from ECF_Client::get_rating().
+	 * @param array|WP_Error $data Response from Chess_Army_Knife_ECF_Client::get_rating().
 	 * @return int|null
 	 */
 	public static function rating_from_data( $data ) {
@@ -344,11 +344,11 @@ class Chess_Army_Knife_Tournaments {
 	 * @return array { rating: int|null, source: 'ecf'|'manual'|'none' }
 	 */
 	public static function lookup_rating( array $player, $domain ) {
-		$code = ECF_Client::normalise_code( $player['ecf_code'] );
+		$code = Chess_Army_Knife_ECF_Client::normalise_code( $player['ecf_code'] );
 
 		if ( '' !== $code ) {
-			Chess_Army_Knife_Cache::forget( ECF_Client::cache_key_rating( $code, $domain ) );
-			$rating = self::rating_from_data( ECF_Client::get_rating( $code, $domain ) );
+			Chess_Army_Knife_Cache::forget( Chess_Army_Knife_ECF_Client::cache_key_rating( $code, $domain ) );
+			$rating = self::rating_from_data( Chess_Army_Knife_ECF_Client::get_rating( $code, $domain ) );
 			if ( null !== $rating ) {
 				return array(
 					'rating' => $rating,
@@ -867,8 +867,9 @@ class Chess_Army_Knife_Tournaments {
 	protected static function group_qualifiers( array $tournament, $advance ) {
 		$config     = self::config( $tournament );
 		$qualifiers = array();
+		$group_max  = max( 1, $config['groups'] );
 
-		for ( $group = 1; $group <= max( 1, $config['groups'] ); $group++ ) {
+		for ( $group = 1; $group <= $group_max; $group++ ) {
 			$group_no = ( 1 === $config['groups'] ) ? 0 : $group;
 			$place    = 0;
 

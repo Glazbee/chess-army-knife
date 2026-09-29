@@ -236,7 +236,7 @@ class Chess_Army_Knife_Events {
 			'post_status'    => 'publish',
 			'posts_per_page' => $args['limit'] > 0 ? (int) $args['limit'] : -1,
 			'no_found_rows'  => true,
-			'meta_query'     => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_meta_query
+			'meta_query'     => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- No other API filters events by meta or tag; the post type is small.
 			'orderby'        => array(
 				'start_clause' => 'DESC' === strtoupper( $args['order'] ) ? 'DESC' : 'ASC',
 				'title'        => 'ASC',
@@ -245,7 +245,7 @@ class Chess_Army_Knife_Events {
 
 		$tags = array_filter( array_map( 'sanitize_title', (array) $args['tags'] ) );
 		if ( $tags ) {
-			$query_args['tax_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			$query_args['tax_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- No other API filters events by meta or tag; the post type is small.
 				array(
 					'taxonomy' => self::TAXONOMY,
 					'field'    => 'slug',

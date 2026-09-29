@@ -21,7 +21,7 @@ $org_id         = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_or
 $event_field    = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_event_name', $attributes['eventName'] ?? '' ) );
 $display_mode   = isset( $attributes['displayMode'] ) ? $attributes['displayMode'] : 'both';
 $max_matches    = isset( $attributes['maxMatches'] ) ? max( 1, (int) $attributes['maxMatches'] ) : 6;
-$title          = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$block_title    = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $highlight_team = isset( $attributes['highlightTeam'] ) ? trim( (string) $attributes['highlightTeam'] ) : '';
 $debug          = ! empty( $attributes['debug'] );
 $show_location  = ! empty( $attributes['showLocation'] );
@@ -51,7 +51,7 @@ if ( '' === $org_id || empty( $event_names ) ) {
 	return;
 }
 
-$heading = $title ? $title : ( 1 === count( $event_names ) ? $event_names[0] : sprintf(
+$heading = $block_title ? $block_title : ( 1 === count( $event_names ) ? $event_names[0] : sprintf(
 	/* translators: %d: number of events/divisions */
 	_n( '%d division', '%d divisions', count( $event_names ), 'chess-army-knife' ),
 	count( $event_names )
@@ -128,12 +128,12 @@ foreach ( $event_names as $event_name ) {
 	);
 
 	if ( $show_table ) {
-		$entry['table_raw'] = LMS_Client::get_table( $org_id, $event_name );
+		$entry['table_raw'] = Chess_Army_Knife_LMS_Client::get_table( $org_id, $event_name );
 		if ( is_wp_error( $entry['table_raw'] ) ) {
 			$entry['table_error'] = $entry['table_raw'];
 		} else {
-			foreach ( LMS_Client::find_rows( $entry['table_raw'], array( 'table' ) ) as $raw_row ) {
-				$normalised = LMS_Client::normalise_table_row( $raw_row );
+			foreach ( Chess_Army_Knife_LMS_Client::find_rows( $entry['table_raw'], array( 'table' ) ) as $raw_row ) {
+				$normalised = Chess_Army_Knife_LMS_Client::normalise_table_row( $raw_row );
 				if ( $normalised && '' !== $normalised['team'] ) {
 					$entry['table_rows'][] = $normalised;
 				}
@@ -142,12 +142,12 @@ foreach ( $event_names as $event_name ) {
 	}
 
 	if ( $show_matches ) {
-		$entry['match_raw'] = LMS_Client::get_matches( $org_id, $event_name );
+		$entry['match_raw'] = Chess_Army_Knife_LMS_Client::get_matches( $org_id, $event_name );
 		if ( is_wp_error( $entry['match_raw'] ) ) {
 			$entry['match_error'] = $entry['match_raw'];
 		} else {
-			foreach ( LMS_Client::find_rows( $entry['match_raw'], array( 'matches' ) ) as $raw_row ) {
-				$normalised = LMS_Client::normalise_match_row( $raw_row );
+			foreach ( Chess_Army_Knife_LMS_Client::find_rows( $entry['match_raw'], array( 'matches' ) ) as $raw_row ) {
+				$normalised = Chess_Army_Knife_LMS_Client::normalise_match_row( $raw_row );
 				if ( $normalised && ( '' !== $normalised['home'] || '' !== $normalised['away'] ) ) {
 					$entry['match_rows'][] = $normalised;
 				}
@@ -168,18 +168,18 @@ foreach ( $event_names as $event_name ) {
 $admin_cache_keys = array();
 foreach ( $event_names as $event_name ) {
 	if ( $show_table ) {
-		$admin_cache_keys[] = LMS_Client::cache_key( 'table', $org_id, $event_name );
+		$admin_cache_keys[] = Chess_Army_Knife_LMS_Client::cache_key( 'table', $org_id, $event_name );
 	}
 	if ( $show_matches ) {
-		$admin_cache_keys[] = LMS_Client::cache_key( 'match', $org_id, $event_name );
+		$admin_cache_keys[] = Chess_Army_Knife_LMS_Client::cache_key( 'match', $org_id, $event_name );
 	}
 }
 ?>
-<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<p class="ecf-league__title"><?php echo esc_html( $heading ); ?></p>
 
-	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'League data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'League data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<?php foreach ( $events as $event ) : ?>
 		<?php if ( count( $events ) > 1 ) : ?>

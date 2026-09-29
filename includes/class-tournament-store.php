@@ -100,18 +100,6 @@ class Chess_Army_Knife_Tournament_Store {
 		);
 	}
 
-	/**
-	 * Drop every tournament table (used by uninstall).
-	 */
-	public static function drop_tables() {
-		global $wpdb;
-		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
-			$table = self::table( $name );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
-		}
-	}
-
 	/* -------------------------------------------------------------
 	 * Players
 	 * ------------------------------------------------------------- */
@@ -124,7 +112,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_players() {
 		global $wpdb;
 		$table = self::table( 'players' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY name ASC", ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_player' ), (array) $rows );
 	}
@@ -138,7 +126,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_player( $id ) {
 		global $wpdb;
 		$table = self::table( 'players' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A );
 		return $row ? self::cast_player( $row ) : null;
 	}
@@ -152,7 +140,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function find_player_by_code( $code ) {
 		global $wpdb;
 		$table = self::table( 'players' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE ecf_code = %s ORDER BY id ASC LIMIT 1", (string) $code ), ARRAY_A );
 		return $row ? self::cast_player( $row ) : null;
 	}
@@ -172,13 +160,13 @@ class Chess_Army_Knife_Tournament_Store {
 		);
 
 		if ( ! empty( $data['id'] ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->update( self::table( 'players' ), $row, array( 'id' => (int) $data['id'] ) );
 			return (int) $data['id'];
 		}
 
 		$row['created_at'] = current_time( 'mysql', true );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table( 'players' ), $row );
 		return (int) $wpdb->insert_id;
 	}
@@ -190,7 +178,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function delete_player( $id ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table( 'players' ), array( 'id' => (int) $id ), array( '%d' ) );
 	}
 
@@ -218,7 +206,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_tournaments() {
 		global $wpdb;
 		$table = self::table( 'tournaments' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY id DESC", ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_tournament' ), (array) $rows );
 	}
@@ -232,7 +220,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_tournament( $id ) {
 		global $wpdb;
 		$table = self::table( 'tournaments' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A );
 		return $row ? self::cast_tournament( $row ) : null;
 	}
@@ -253,13 +241,13 @@ class Chess_Army_Knife_Tournament_Store {
 		if ( ! empty( $data['id'] ) ) {
 			$id = (int) $data['id'];
 			unset( $data['id'] );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->update( self::table( 'tournaments' ), $data, array( 'id' => $id ) );
 			return $id;
 		}
 
 		$data['created_at'] = current_time( 'mysql', true );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table( 'tournaments' ), $data );
 		return (int) $wpdb->insert_id;
 	}
@@ -272,10 +260,10 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function delete_tournament( $id ) {
 		global $wpdb;
 		foreach ( array( 'games', 'entries' ) as $name ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->delete( self::table( $name ), array( 'tournament_id' => (int) $id ), array( '%d' ) );
 		}
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table( 'tournaments' ), array( 'id' => (int) $id ), array( '%d' ) );
 	}
 
@@ -306,7 +294,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_entries( $tournament_id ) {
 		global $wpdb;
 		$table = self::table( 'entries' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE tournament_id = %d ORDER BY seed IS NULL, seed ASC, name ASC", (int) $tournament_id ), ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_entry' ), (array) $rows );
 	}
@@ -320,7 +308,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_entry( $id ) {
 		global $wpdb;
 		$table = self::table( 'entries' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A );
 		return $row ? self::cast_entry( $row ) : null;
 	}
@@ -333,7 +321,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function add_entry( array $data ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table( 'entries' ), $data );
 		return (int) $wpdb->insert_id;
 	}
@@ -346,7 +334,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function update_entry( $id, array $data ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->update( self::table( 'entries' ), $data, array( 'id' => (int) $id ) );
 	}
 
@@ -357,7 +345,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function delete_entry( $id ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table( 'entries' ), array( 'id' => (int) $id ), array( '%d' ) );
 	}
 
@@ -390,7 +378,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_games( $tournament_id ) {
 		global $wpdb;
 		$table = self::table( 'games' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE tournament_id = %d ORDER BY CASE WHEN stage = 'knockout' THEN 1 ELSE 0 END ASC, round ASC, group_no ASC, board ASC, id ASC", (int) $tournament_id ), ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_game' ), (array) $rows );
 	}
@@ -404,7 +392,7 @@ class Chess_Army_Knife_Tournament_Store {
 	public static function get_game( $id ) {
 		global $wpdb;
 		$table = self::table( 'games' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A );
 		return $row ? self::cast_game( $row ) : null;
 	}
@@ -417,7 +405,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function add_game( array $data ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table( 'games' ), $data );
 		return (int) $wpdb->insert_id;
 	}
@@ -430,7 +418,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function update_game( $id, array $data ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->update( self::table( 'games' ), $data, array( 'id' => (int) $id ) );
 	}
 
@@ -441,7 +429,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function delete_game( $id ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table( 'games' ), array( 'id' => (int) $id ), array( '%d' ) );
 	}
 
@@ -453,7 +441,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function delete_stage_games( $tournament_id, $stage ) {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete(
 			self::table( 'games' ),
 			array(
@@ -474,11 +462,11 @@ class Chess_Army_Knife_Tournament_Store {
 		global $wpdb;
 		$table = self::table( 'games' );
 		if ( null === $result ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET result = NULL WHERE id = %d", (int) $id ) );
 			return;
 		}
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->update( $table, array( 'result' => $result ), array( 'id' => (int) $id ) );
 	}
 

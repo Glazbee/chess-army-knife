@@ -158,18 +158,12 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
-	 * Whether "match-day fast cache" should currently be active: from 30
-	 * minutes before the configured usual match kick-off time through to
-	 * midnight, every day. Outside that window (including entirely, if
-	 * the feature is switched off) normal cache durations apply.
+	 * Whether "match-day fast cache" is active: from 30 minutes before the
+	 * configured usual kick-off time until midnight, every day.
 	 *
-	 * This is intentionally a simple time-of-day rule rather than one
-	 * that checks actual fixtures first - checking fixtures would itself
-	 * require an uncached API call, defeating the purpose. In exchange
-	 * for that simplicity, the fast window applies every evening rather
-	 * than only on real match nights; since it only shortens the cache
-	 * duration (not the number of page views), the extra API load is
-	 * small and bounded, and it needs zero day-to-day admin attention.
+	 * A plain time-of-day rule, because checking real fixtures would itself need
+	 * an uncached API call. It only shortens cache durations, so the extra API
+	 * load is small and bounded.
 	 *
 	 * @return bool
 	 */
@@ -187,7 +181,7 @@ class Chess_Army_Knife_Settings {
 
 		list( $hour, $minute ) = array_map( 'intval', explode( ':', $match_time ) );
 
-		$now          = (int) current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested
+		$now          = (int) current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- Compared with site-local wall-clock times built by mktime() below.
 		$window_start = mktime( $hour, $minute, 0, (int) current_time( 'n' ), (int) current_time( 'j' ), (int) current_time( 'Y' ) ) - ( 30 * MINUTE_IN_SECONDS );
 		$window_end   = mktime( 23, 59, 59, (int) current_time( 'n' ), (int) current_time( 'j' ), (int) current_time( 'Y' ) );
 
@@ -256,7 +250,7 @@ class Chess_Army_Knife_Settings {
 			$clean['default_event_name'] = sanitize_text_field( $input['default_event_name'] );
 		}
 		if ( isset( $input['default_domain'] ) ) {
-			$clean['default_domain'] = ECF_Client::normalise_domain( $input['default_domain'] );
+			$clean['default_domain'] = Chess_Army_Knife_ECF_Client::normalise_domain( $input['default_domain'] );
 		}
 		if ( isset( $input['default_days_back'] ) ) {
 			$clean['default_days_back'] = max( 1, (int) $input['default_days_back'] );
@@ -318,7 +312,7 @@ class Chess_Army_Knife_Settings {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Chess Army Knife', 'chess-army-knife' ); ?></h1>
 
-			<?php if ( isset( $_GET['chess_army_knife_cache_cleared'] ) ) : ?>
+			<?php if ( isset( $_GET['chess_army_knife_cache_cleared'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only notice; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible">
 					<p><?php esc_html_e( 'Cached ECF/LMS data has been cleared.', 'chess-army-knife' ); ?></p>
 				</div>

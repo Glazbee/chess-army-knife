@@ -145,16 +145,17 @@ class Chess_Army_Knife_Swiss_Dutch {
 		$mdps  = array();
 		$pairs = array();
 
+		$group_count = count( $groups );
 		foreach ( $groups as $g => $group ) {
 			$lower = array();
-			for ( $h = $g + 1; $h < count( $groups ); $h++ ) {
+			for ( $h = $g + 1; $h < $group_count; $h++ ) {
 				$lower = array_merge( $lower, $groups[ $h ] );
 			}
 
 			$next = null;
 			if ( isset( $groups[ $g + 1 ] ) ) {
 				$after = array();
-				for ( $h = $g + 2; $h < count( $groups ); $h++ ) {
+				for ( $h = $g + 2; $h < $group_count; $h++ ) {
 					$after = array_merge( $after, $groups[ $h ] );
 				}
 				$next = array(
@@ -1277,7 +1278,8 @@ class Chess_Army_Knife_Swiss_Dutch {
 
 		yield from $this->transpositions( $list, $s1, $s2, $forbid, $prune );
 
-		for ( $size = 1; $size <= min( $n1, count( $s2 ) ); $size++ ) {
+		$max_size = min( $n1, count( $s2 ) );
+		for ( $size = 1; $size <= $max_size; $size++ ) {
 			$exchanges = null === $aim ? $this->exchanges( $s1, $s2, $size ) : $this->reaching_exchanges( $list, $s1, $s2, $size, $aim );
 			foreach ( $exchanges as $exchange ) {
 				$new_s1 = array_merge( array_diff( $s1, $exchange['a'] ), $exchange['b'] );
@@ -1594,7 +1596,8 @@ class Chess_Army_Knife_Swiss_Dutch {
 	 * @return Generator
 	 */
 	protected function transposition_step( array $list, array $s1, array $s2, array $forbid, $prune, $i, array $pairs, array $used ) {
-		if ( count( $s1 ) === $i ) {
+		$s1_count = count( $s1 );
+		if ( $s1_count === $i ) {
 			$down = array();
 			foreach ( $s2 as $position ) {
 				if ( ! isset( $used[ $position ] ) ) {
@@ -1628,7 +1631,7 @@ class Chess_Army_Knife_Swiss_Dutch {
 				's1' => array(),
 				's2' => array(),
 			);
-			for ( $j = $i + 1; $j < count( $s1 ); $j++ ) {
+			for ( $j = $i + 1; $j < $s1_count; $j++ ) {
 				$rest['s1'][] = $list[ $s1[ $j ] ];
 			}
 			foreach ( $s2 as $other ) {

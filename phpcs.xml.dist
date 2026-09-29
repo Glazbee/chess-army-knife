@@ -10,7 +10,7 @@
   <arg name="colors"/>
   <arg value="ps"/>
 
-  <rule ref="WordPress-Core">
+  <rule ref="WordPress-Extra">
     <!-- Existing public names use a Chess_Army_Knife_ prefix and non-WP class file names. -->
     <exclude name="WordPress.NamingConventions.ValidFunctionName"/>
     <exclude name="WordPress.NamingConventions.ValidHookName"/>
@@ -21,6 +21,33 @@
     <exclude name="Generic.Commenting.DocComment"/>
     <exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames"/>
     <exclude name="Universal.Operators.DisallowShortTernary"/>
+  </rule>
+
+  <!-- Not part of WordPress-Extra, but CLAUDE.md requires sanitised input and careful database access (and the WordPress.org Plugin Check enforces them). -->
+  <rule ref="WordPress.DB.DirectDatabaseQuery">
+    <exclude-pattern>/tests/</exclude-pattern>
+  </rule>
+  <rule ref="WordPress.DB.SlowDBQuery"/>
+  <rule ref="WordPress.Security.ValidatedSanitizedInput"/>
+
+  <!-- Test code only: seeded mt_rand() keeps generated cases repeatable, fixtures are local files, and the unit and integration suites reuse class names. -->
+  <rule ref="WordPress.WP.AlternativeFunctions">
+    <exclude-pattern>/tests/</exclude-pattern>
+  </rule>
+  <rule ref="WordPress.PHP.DiscouragedPHPFunctions">
+    <exclude-pattern>/tests/</exclude-pattern>
+  </rule>
+  <rule ref="WordPress.WP.GlobalVariablesOverride">
+    <exclude-pattern>/tests/</exclude-pattern>
+  </rule>
+  <rule ref="Squiz.PHP.DisallowSizeFunctionsInLoops">
+    <exclude-pattern>/tests/</exclude-pattern>
+  </rule>
+  <rule ref="Generic.Classes.DuplicateClassName">
+    <exclude-pattern>/tests/</exclude-pattern>
+  </rule>
+  <rule ref="Universal.Files.SeparateFunctionsFromOO">
+    <exclude-pattern>/tests/</exclude-pattern>
   </rule>
 
   <rule ref="WordPress.WP.I18n">

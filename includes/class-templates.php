@@ -536,7 +536,7 @@ class Chess_Army_Knife_Templates {
 			exit;
 		}
 
-		$raw    = isset( $_POST['values'] ) && is_array( $_POST['values'] ) ? wp_unslash( $_POST['values'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$raw    = isset( $_POST['values'] ) && is_array( $_POST['values'] ) ? wp_unslash( $_POST['values'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each value is sanitised per field type below.
 		$values = array();
 
 		foreach ( self::fields( $slug ) as $field ) {
@@ -632,7 +632,7 @@ class Chess_Army_Knife_Templates {
 			return;
 		}
 
-		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		if ( 'edit' === $action || 'new' === $action ) {
 			self::render_form( $action );
 			return;
@@ -647,11 +647,11 @@ class Chess_Army_Knife_Templates {
 				<?php esc_html_e( 'A template is a reusable preset for a block type: its settings plus its look (colours, corner radius, custom CSS, whether match locations show). Pick a template in any block\'s sidebar; anything the template sets overrides that block, so editing a template updates every block using it.', 'chess-army-knife' ); ?>
 			</p>
 
-			<?php if ( isset( $_GET['ecf_lms_tpl_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php if ( isset( $_GET['ecf_lms_tpl_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Template saved.', 'chess-army-knife' ); ?></p></div>
-			<?php elseif ( isset( $_GET['ecf_lms_tpl_deleted'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php elseif ( isset( $_GET['ecf_lms_tpl_deleted'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Template deleted.', 'chess-army-knife' ); ?></p></div>
-			<?php elseif ( isset( $_GET['ecf_lms_tpl_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php elseif ( isset( $_GET['ecf_lms_tpl_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
 				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'A template needs a name and a block type.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
 
@@ -738,10 +738,10 @@ class Chess_Army_Knife_Templates {
 		$tpl   = null;
 
 		if ( 'edit' === $action ) {
-			$tpl = self::get( isset( $_GET['id'] ) ? sanitize_key( wp_unslash( $_GET['id'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$tpl = self::get( isset( $_GET['id'] ) ? sanitize_key( wp_unslash( $_GET['id'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		}
 
-		$slug = $tpl ? $tpl['block'] : ( isset( $_GET['block'] ) ? sanitize_key( wp_unslash( $_GET['block'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$slug = $tpl ? $tpl['block'] : ( isset( $_GET['block'] ) ? sanitize_key( wp_unslash( $_GET['block'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		if ( ! isset( $types[ $slug ] ) ) {
 			echo '<div class="wrap"><p>' . esc_html__( 'Unknown block type.', 'chess-army-knife' ) . '</p></div>';
 			return;

@@ -43,8 +43,8 @@ class PluginTest extends WP_UnitTestCase {
 
 	public function test_plugin_loads_its_classes_and_constants() {
 		$this->assertTrue( defined( 'Chess_Army_Knife_VERSION' ) );
-		$this->assertTrue( class_exists( 'ECF_Client' ) );
-		$this->assertTrue( class_exists( 'LMS_Client' ) );
+		$this->assertTrue( class_exists( 'Chess_Army_Knife_ECF_Client' ) );
+		$this->assertTrue( class_exists( 'Chess_Army_Knife_LMS_Client' ) );
 		$this->assertTrue( class_exists( 'Chess_Army_Knife_Cache' ) );
 	}
 
@@ -129,8 +129,8 @@ class PluginTest extends WP_UnitTestCase {
 			)
 		);
 
-		ECF_Client::get_games( '120787' );
-		$games = ECF_Client::get_games( '120787' );
+		Chess_Army_Knife_ECF_Client::get_games( '120787' );
+		$games = Chess_Army_Knife_ECF_Client::get_games( '120787' );
 
 		$this->assertSame( array( array( 'id' => 1 ) ), $games );
 		$this->assertCount( 1, $this->http_requests );
@@ -145,7 +145,7 @@ class PluginTest extends WP_UnitTestCase {
 			500
 		);
 
-		$result = ECF_Client::get_player_by_code( '120787' );
+		$result = Chess_Army_Knife_ECF_Client::get_player_by_code( '120787' );
 
 		$this->assertWPError( $result );
 		$this->assertSame( 'ecf_api_error', $result->get_error_code() );

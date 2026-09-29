@@ -93,7 +93,7 @@ class Chess_Army_Knife_Matching {
 		$used[ $root ] = true;
 		$queue         = array( $root );
 
-		for ( $head = 0; $head < count( $queue ); $head++ ) {
+		for ( $head = 0; isset( $queue[ $head ] ); $head++ ) {
 			$vertex = $queue[ $head ];
 
 			foreach ( $adjacency[ $vertex ] as $to ) {

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Chess Army Knife
  * Plugin URI:        https://example.com/chess-army-knife
- * Description:       Gutenberg blocks that pull live data from the English Chess Federation ratings API and the ECF League Management System (LMS): rating history charts, club results, and league tables/matchups.
+ * Description:       Gutenberg blocks for chess clubs: English Chess Federation (ECF) ratings and League Management System (LMS) data, club tournaments and club events.
  * Version:           0.0.1
  * Requires at least: 7.1.2
  * Requires PHP:      7.4
@@ -84,7 +84,7 @@ register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 function Chess_Army_Knife_cleanup_cache() {
 	global $wpdb;
 	$table = $wpdb->prefix . 'chess_army_knife_cache';
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Cleanup of the plugin-owned cache table; the table name is internal.
 	$wpdb->query( "DELETE FROM {$table} WHERE expires_at < UTC_TIMESTAMP()" );
 }
 add_action( 'Chess_Army_Knife_cleanup_cache', 'Chess_Army_Knife_cleanup_cache' );

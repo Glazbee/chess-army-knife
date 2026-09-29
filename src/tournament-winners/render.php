@@ -12,15 +12,15 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its styling is added to the wrapper.
 $attributes = Chess_Army_Knife_Templates::apply( 'tournament-winners', $attributes );
 
-$title = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$limit = isset( $attributes['limit'] ) ? max( 1, (int) $attributes['limit'] ) : 10;
-$rows  = Chess_Army_Knife_Tournament_Summary::winners( $limit );
+$block_title = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$limit       = isset( $attributes['limit'] ) ? max( 1, (int) $attributes['limit'] ) : 10;
+$rows        = Chess_Army_Knife_Tournament_Summary::winners( $limit );
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'tournament-winners', $attributes );
 ?>
-<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="cak-winners__title"><?php echo esc_html( '' !== $title ? $title : __( 'Past winners', 'chess-army-knife' ) ); ?></p>
+	<p class="cak-winners__title"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'Past winners', 'chess-army-knife' ) ); ?></p>
 
 	<?php if ( empty( $rows ) ) : ?>
 		<div class="chess-army-knife-empty"><?php esc_html_e( 'No tournaments have finished yet.', 'chess-army-knife' ); ?></div>
