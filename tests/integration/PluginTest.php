@@ -51,7 +51,7 @@ class PluginTest extends WP_UnitTestCase {
 	public function test_all_blocks_are_registered() {
 		$registry = WP_Block_Type_Registry::get_instance();
 
-		foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'lichess-live' ) as $block ) {
+		foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners' ) as $block ) {
 			$this->assertTrue( $registry->is_registered( "chess-army-knife/{$block}" ), $block );
 		}
 	}

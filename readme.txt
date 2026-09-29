@@ -31,7 +31,6 @@ This plugin adds eleven blocks to the WordPress block editor, pulling live data 
 9. **Tournament Standings** — a cross-table with each player's points in every round and their total, in rank order.
 10. **Tournament Past Winners** — the winners of completed tournaments, most recent first.
 11. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
-12. **Lichess Live Games** — a scrollable carousel of games being played on Lichess right now by a list of usernames (one per line in the block, or a shared list in Settings), with an optional live board, players, ratings, time control and a link to watch. Shows a "nobody is playing" message when nothing is live.
 
 **Global defaults**
 
@@ -96,7 +95,6 @@ Yes — add as many blocks as you like, each configured independently.
 * Changed: all blocks are now named `chess-army-knife/…` (previously `ecf-lms/…`), which also fixes block styles not applying. Existing pages using the old block names will need those blocks re-added.
 
 = 0.0.1 =
-* Added: Lichess Live Games block. Uses the public Lichess API (`users/status` and game export). Unlike other data in this plugin, live games are cached for only 30 seconds (one fetch shared by all visitors); the game list refreshes about every 45 seconds. Each board follows its game by polling this site about every 6 seconds; the browser never contacts Lichess, and the server caches each game's position for 5 seconds, so any number of viewers cost Lichess one request per game every 5 seconds. Nothing is polled unless someone is actively watching: the tab must be visible, the block on screen, and there must have been interaction in the last 5 minutes. After an HTTP 429 from Lichess, requests pause for a minute. The refresh route only serves username lists signed by the block, so it cannot be used to query arbitrary users. The `chess_army_knife_lichess_cache_seconds` filter changes the cache time (minimum 15 seconds); `chess_army_knife_lichess_position_seconds` does the same for board positions (minimum 3 seconds).
 * Changed: version numbering reset to 0.0.1 ahead of a first stable 1.0 release. Earlier 1.x entries below are historical.
 * Changed: minimum WordPress version is now 7.1.2.
 * Fixed: cache class file renamed to match the plugin's rename (`class-chess-army-knife-cache.php`); the plugin previously required a file that didn't exist.

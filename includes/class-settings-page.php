@@ -80,7 +80,6 @@ class Chess_Army_Knife_Settings {
 			'default_days_back'        => 60,
 			'default_max_players'      => 12,
 			'lms_base_url'             => '',
-			'lichess_usernames'        => '', // One Lichess username per line, for the Lichess Live Games block.
 			'club_teams'               => '',  // Raw textarea: one "org | event | team" per line.
 			'fast_cache_enabled'       => 1,
 			'match_time'               => '19:30',
@@ -264,9 +263,6 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['default_max_players'] ) ) {
 			$clean['default_max_players'] = max( 1, (int) $input['default_max_players'] );
 		}
-		if ( isset( $input['lichess_usernames'] ) ) {
-			$clean['lichess_usernames'] = implode( "\n", Lichess_Client::parse_usernames( $input['lichess_usernames'] ) );
-		}
 		if ( isset( $input['lms_base_url'] ) ) {
 			$clean['lms_base_url'] = esc_url_raw( trim( $input['lms_base_url'] ) );
 		}
@@ -400,13 +396,6 @@ class Chess_Army_Knife_Settings {
 						<th scope="row"><label for="default_max_players"><?php esc_html_e( 'Default "players checked from roster"', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="number" min="1" id="default_max_players" name="<?php echo esc_attr( self::OPTION ); ?>[default_max_players]" value="<?php echo esc_attr( $options['default_max_players'] ); ?>" class="small-text" />
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="lichess_usernames"><?php esc_html_e( 'Lichess usernames', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<textarea id="lichess_usernames" name="<?php echo esc_attr( self::OPTION ); ?>[lichess_usernames]" rows="5" class="large-text code" placeholder="magnuscarlsen"><?php echo esc_textarea( $options['lichess_usernames'] ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'One username per line. Used by the "Lichess Live Games" block when its own list is left blank.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>
