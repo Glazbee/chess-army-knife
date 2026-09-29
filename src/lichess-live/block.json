@@ -1,0 +1,60 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "chess-army-knife/lichess-live",
+	"title": "Lichess Live Games",
+	"category": "widgets",
+	"icon": "video-alt3",
+	"description": "A carousel of games being played on Lichess right now by a list of usernames, refreshed automatically.",
+	"keywords": [
+		"chess",
+		"lichess",
+		"live",
+		"games",
+		"carousel"
+	],
+	"version": "1.0.0",
+	"textdomain": "chess-army-knife",
+	"attributes": {
+		"usernames": {
+			"type": "string",
+			"default": ""
+		},
+		"title": {
+			"type": "string",
+			"default": ""
+		},
+		"showBoard": {
+			"type": "boolean",
+			"default": true
+		},
+		"autoAdvance": {
+			"type": "boolean",
+			"default": false
+		},
+		"intervalSeconds": {
+			"type": "number",
+			"default": 8
+		},
+		"emptyMessage": {
+			"type": "string",
+			"default": ""
+		},
+		"templateId": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}
