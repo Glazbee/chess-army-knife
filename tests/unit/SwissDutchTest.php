@@ -246,6 +246,33 @@ class SwissDutchTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( $case['bye'], $result['bye'], $case['id'] . ' bye' );
 	}
 
+	public function large_cases() {
+		$cases = json_decode( file_get_contents( dirname( __DIR__ ) . '/fixtures/swiss-dutch-large.json' ), true );
+		$out   = array();
+		foreach ( $cases as $case ) {
+			$out[ $case['id'] ] = array( $case );
+		}
+		return $out;
+	}
+
+	/**
+	 * Rounds in fields of 44 to 64 players with a score group of 17 to 19 players, larger than the
+	 * exact optimisation handles directly. The expected pairings come from the exact search. See
+	 * tests/fixtures/README.md.
+	 *
+	 * @dataProvider large_cases
+	 */
+	public function test_large_score_groups_are_paired_as_the_exact_search_pairs_them( array $case ) {
+		set_time_limit( 120 );
+
+		$result = Chess_Army_Knife_Swiss_Dutch::pair( $case['players'], $case['active'], $case['rounds'], $case['total_rounds'] );
+
+		$this->assertNull( $result['error'] );
+		$this->assertFalse( $result['truncated'], $case['id'] . ' was cut short' );
+		$this->assertSame( $case['pairings'], $this->labels( $result ), $case['id'] );
+		$this->assertSame( $case['bye'], $result['bye'], $case['id'] . ' bye' );
+	}
+
 	/**
 	 * Simulate whole tournaments and check the rules that must always hold.
 	 */

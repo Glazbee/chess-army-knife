@@ -15,6 +15,14 @@ The cases are regression tests: if a change to `Chess_Army_Knife_Swiss_Dutch` al
 either the change is wrong or the fixture needs to be re-checked against the FIDE text
 (C.04.3).
 
+## `swiss-dutch-large.json`
+
+12 Swiss pairing rounds in fields of 44 to 64 players (same layout as the golden file), each with a score
+group of 17 to 19 players. That is larger than the exact optimisation handles directly, so they cover the
+search that aims for the colour lower bound and the exact fallback. The expected pairings are those of the
+exact optimisation (dynamic programming over subsets) of the engine as it was before that search was
+added; the plugin's engine now gives the same pairings, colours and bye, and does not cut the search short.
+
 ## `berger-annex.php`
 
 The Berger tables from FIDE General Regulations for Competitions, Annex 1, for 4 to 16 players.
