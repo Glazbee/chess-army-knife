@@ -1,8 +1,9 @@
 <?php
 /**
- * Server-side render for the Club Event Calendar block: upcoming events
- * listed under a heading for each date. Several events on one night are
- * listed together, in start-time order.
+ * Server-side render for the Club Event Calendar block. Two layouts:
+ * an agenda of upcoming events under a heading for each date (several
+ * events on one night are listed together, in start-time order), or a
+ * month grid that view.js moves between months.
  *
  * @package Chess_Army_Knife
  *
@@ -18,9 +19,44 @@ $title         = isset( $attributes['title'] ) ? trim( (string) $attributes['tit
 $empty_message = isset( $attributes['emptyMessage'] ) ? trim( (string) $attributes['emptyMessage'] ) : '';
 $count         = isset( $attributes['count'] ) ? max( 1, min( 100, (int) $attributes['count'] ) ) : 10;
 $options       = Chess_Army_Knife_Events_Display::options( $attributes );
-$events        = Chess_Army_Knife_Events::query(
+$tag_slugs     = Chess_Army_Knife_Events_Display::tag_slugs( isset( $attributes['tags'] ) ? $attributes['tags'] : array() );
+$layout        = isset( $attributes['layout'] ) && 'month' === $attributes['layout'] ? 'month' : 'agenda';
+
+if ( 'month' === $layout ) {
+	list( $year, $month ) = Chess_Army_Knife_Events_Display::parse_month( current_time( 'Y-m' ) );
+
+	$wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-event-calendar', $attributes );
+	?>
+	<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
+		<?php if ( '' !== $title ) : ?>
+			<p class="cak-event__heading"><?php echo esc_html( $title ); ?></p>
+		<?php endif; ?>
+		<div
+			class="cak-month"
+			data-cak-month
+			data-endpoint="<?php echo esc_url( rest_url( Chess_Army_Knife_Events_REST::NAMESPACE_V1 . '/events-month' ) ); ?>"
+			data-month="<?php echo esc_attr( sprintf( '%04d-%02d', $year, $month ) ); ?>"
+			data-tags="<?php echo esc_attr( implode( ',', $tag_slugs ) ); ?>"
+			data-location="<?php echo $options['show_location'] ? '1' : '0'; ?>"
+		>
+			<div class="cak-month__nav">
+				<button type="button" class="cak-month__prev" hidden aria-label="<?php esc_attr_e( 'Previous month', 'chess-army-knife' ); ?>">‹</button>
+				<span class="cak-month__label" aria-live="polite"><?php echo esc_html( Chess_Army_Knife_Events_Display::month_label( $year, $month ) ); ?></span>
+				<button type="button" class="cak-month__next" hidden aria-label="<?php esc_attr_e( 'Next month', 'chess-army-knife' ); ?>">›</button>
+			</div>
+			<div class="cak-month__grid">
+				<?php echo Chess_Army_Knife_Events_Display::month_html( $year, $month, Chess_Army_Knife_Events_Display::month_events( $year, $month, $tag_slugs ), $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in month_html(). ?>
+			</div>
+		</div>
+	</div>
+	<?php
+	return;
+}
+
+$events = Chess_Army_Knife_Events::query(
 	array(
-		'tags'  => Chess_Army_Knife_Events_Display::tag_slugs( isset( $attributes['tags'] ) ? $attributes['tags'] : array() ),
+		'tags'  => $tag_slugs,
 		'limit' => $count,
 	)
 );

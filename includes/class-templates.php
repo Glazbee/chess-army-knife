@@ -178,6 +178,16 @@ class Chess_Army_Knife_Templates {
 			case 'club-event-calendar':
 				if ( 'club-event-calendar' === $slug ) {
 					$s[] = array(
+						'key'     => 'layout',
+						'label'   => __( 'Layout', 'chess-army-knife' ),
+						'type'    => 'select',
+						'options' => array(
+							''       => __( '— Use block setting —', 'chess-army-knife' ),
+							'agenda' => __( 'Agenda (list by date)', 'chess-army-knife' ),
+							'month'  => __( 'Month grid', 'chess-army-knife' ),
+						),
+					);
+					$s[] = array(
 						'key'   => 'count',
 						'label' => __( 'Events to show', 'chess-army-knife' ),
 						'type'  => 'number',

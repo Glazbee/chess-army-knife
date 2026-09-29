@@ -27,6 +27,10 @@
       },
       "default": []
     },
+    "layout": {
+      "type": "string",
+      "default": "agenda"
+    },
     "count": {
       "type": "number",
       "default": 10
@@ -62,5 +66,6 @@
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",
-  "render": "file:./render.php"
+  "render": "file:./render.php",
+  "viewScript": "file:./view.js"
 }
