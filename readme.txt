@@ -95,7 +95,7 @@ Yes — add as many blocks as you like, each configured independently.
 * Changed: all blocks are now named `chess-army-knife/…` (previously `ecf-lms/…`), which also fixes block styles not applying. Existing pages using the old block names will need those blocks re-added.
 
 = 0.0.1 =
-* Added: Club Events (ECF & LMS → Club Events). Add club nights and events with a date, start (and optional end) time and location, free-form tags, and any number of attached tournaments and leagues. Several events can share a night or even a start time. Set a default location under Settings; events without their own location use it. Blocks for showing events follow.
+* Added: Club Events (ECF & LMS → Club Events). Add club nights and events with a date, start (and optional end) time and location, free-form tags, and any number of attached tournaments and leagues. Several events can share a night or even a start time. Set a default location under Settings; events without their own location use it. Two blocks show them: **Next Club Event** and **Club Event Calendar** (upcoming events listed by date, several on one night together). Both can be limited to events with chosen tags, for example only in-house events, and support templates.
 * Changed: version numbering reset to 0.0.1 ahead of a first stable 1.0 release. Earlier 1.x entries below are historical.
 * Changed: minimum WordPress version is now 7.1.2.
 * Fixed: cache class file renamed to match the plugin's rename (`class-chess-army-knife-cache.php`); the plugin previously required a file that didn't exist.

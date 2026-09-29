@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "chess-army-knife/club-event-calendar",
+  "title": "Club Event Calendar",
+  "category": "widgets",
+  "icon": "calendar",
+  "description": "Lists upcoming club events by date, optionally only those with chosen tags.",
+  "keywords": [
+    "chess",
+    "club",
+    "events",
+    "calendar",
+    "upcoming"
+  ],
+  "version": "0.0.1",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "count": {
+      "type": "number",
+      "default": 10
+    },
+    "showLocation": {
+      "type": "boolean",
+      "default": true
+    },
+    "showTags": {
+      "type": "boolean",
+      "default": true
+    },
+    "showLinks": {
+      "type": "boolean",
+      "default": true
+    },
+    "emptyMessage": {
+      "type": "string",
+      "default": ""
+    },
+    "templateId": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

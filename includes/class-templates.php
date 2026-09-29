@@ -46,6 +46,8 @@ class Chess_Army_Knife_Templates {
 			'tournament-players'   => __( 'Tournament Players', 'chess-army-knife' ),
 			'tournament-games'     => __( 'Tournament Games to Play', 'chess-army-knife' ),
 			'tournament-winners'   => __( 'Tournament Past Winners', 'chess-army-knife' ),
+			'next-club-event'      => __( 'Next Club Event', 'chess-army-knife' ),
+			'club-event-calendar'  => __( 'Club Event Calendar', 'chess-army-knife' ),
 		);
 	}
 
@@ -170,6 +172,36 @@ class Chess_Army_Knife_Templates {
 					'key'   => 'highlightTeam',
 					'label' => __( 'Highlight team', 'chess-army-knife' ),
 					'type'  => 'text',
+				);
+				break;
+			case 'next-club-event':
+			case 'club-event-calendar':
+				if ( 'club-event-calendar' === $slug ) {
+					$s[] = array(
+						'key'   => 'count',
+						'label' => __( 'Events to show', 'chess-army-knife' ),
+						'type'  => 'number',
+						'min'   => 1,
+						'max'   => 100,
+					);
+				}
+				$s[] = array(
+					'key'     => 'showLocation',
+					'label'   => __( 'Show location', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'     => 'showLinks',
+					'label'   => __( 'Show tournaments and leagues', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'     => 'showTags',
+					'label'   => __( 'Show tags', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
 				);
 				break;
 			case 'team-carousel':

@@ -1,0 +1,86 @@
+.wp-block-chess-army-knife-club-event-calendar {
+	margin-bottom: 1.5em;
+
+	.cak-event__heading {
+		margin: 0 0 0.5em;
+		font-size: 1.1em;
+		font-weight: 600;
+		color: var(--ecf-accent, inherit);
+	}
+
+	.cak-calendar__day {
+		margin-bottom: 1em;
+	}
+
+	.cak-calendar__date {
+		margin: 0 0 0.35em;
+		padding-bottom: 0.2em;
+		border-bottom: 2px solid var(--ecf-accent, #1e3a5f);
+		font-size: 1em;
+		font-weight: 700;
+	}
+
+	.cak-calendar__events {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.cak-event {
+		display: grid;
+		grid-template-columns: 8em 1fr;
+		gap: 0 1em;
+		padding: 0.4em 0;
+	}
+
+	.cak-event p {
+		margin: 0.1em 0;
+		grid-column: 2;
+	}
+
+	.cak-event .cak-event__when {
+		grid-column: 1;
+		grid-row: 1 / span 4;
+		font-weight: 600;
+	}
+
+	.cak-event__title {
+		font-weight: 700;
+	}
+
+	.cak-event__location,
+	.cak-event__links {
+		font-size: 0.9em;
+		color: #555;
+	}
+
+	.cak-event__tag {
+		display: inline-block;
+		padding: 0.05em 0.6em;
+		border-radius: 1em;
+		background: var(--ecf-accent-soft, #e8eef5);
+		font-size: 0.8em;
+	}
+
+	.chess-army-knife-empty {
+		padding: 0.75em 1em;
+		border-left: 4px solid #dcdcde;
+		background: #f6f7f7;
+		font-size: 0.9em;
+	}
+
+	@media (max-width: 480px) {
+		.cak-event {
+			grid-template-columns: 1fr;
+		}
+
+		.cak-event .cak-event__when {
+			grid-column: 1;
+			grid-row: auto;
+		}
+
+		.cak-event p {
+			grid-column: 1;
+		}
+	}
+}
