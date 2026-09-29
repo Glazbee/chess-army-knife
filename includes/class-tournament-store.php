@@ -100,18 +100,6 @@ class Chess_Army_Knife_Tournament_Store {
 		);
 	}
 
-	/**
-	 * Drop every tournament table (used by uninstall).
-	 */
-	public static function drop_tables() {
-		global $wpdb;
-		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
-			$table = self::table( $name );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
-		}
-	}
-
 	/* -------------------------------------------------------------
 	 * Players
 	 * ------------------------------------------------------------- */
