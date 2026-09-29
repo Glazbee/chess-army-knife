@@ -1215,7 +1215,51 @@ class Chess_Army_Knife_Tournaments {
 			);
 		}
 
+		self::mark_round_approximate( $tournament['id'], $round, ! empty( $result['truncated'] ) );
+
 		return true;
+	}
+
+	/**
+	 * Whether a Swiss round was paired with a search cut short: in a very large score group
+	 * the colour balance may not be the best possible (the pairing itself is still valid).
+	 *
+	 * @param array $tournament Tournament row.
+	 * @param int   $round      Round.
+	 * @return bool
+	 */
+	public static function is_round_approximate( array $tournament, $round ) {
+		return isset( $tournament['settings']['approximate_rounds'] ) && in_array( (int) $round, array_map( 'intval', (array) $tournament['settings']['approximate_rounds'] ), true );
+	}
+
+	/**
+	 * Remember (or forget) that a round was paired approximately.
+	 *
+	 * @param int  $tournament_id Tournament id.
+	 * @param int  $round         Round.
+	 * @param bool $approximate   Whether the search was cut short.
+	 */
+	protected static function mark_round_approximate( $tournament_id, $round, $approximate ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		if ( ! $tournament || self::is_round_approximate( $tournament, $round ) === $approximate ) {
+			return;
+		}
+
+		$rounds = isset( $tournament['settings']['approximate_rounds'] ) ? array_map( 'intval', (array) $tournament['settings']['approximate_rounds'] ) : array();
+		$rounds = array_values( array_diff( $rounds, array( (int) $round ) ) );
+		if ( $approximate ) {
+			$rounds[] = (int) $round;
+			sort( $rounds );
+		}
+
+		$settings                       = $tournament['settings'];
+		$settings['approximate_rounds'] = $rounds;
+		Chess_Army_Knife_Tournament_Store::save_tournament(
+			array(
+				'id'       => $tournament_id,
+				'settings' => $settings,
+			)
+		);
 	}
 
 	/**

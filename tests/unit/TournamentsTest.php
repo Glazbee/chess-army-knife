@@ -349,4 +349,15 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '3', Chess_Army_Knife_Tournaments_Page::format_points( 3.0 ) );
 		$this->assertSame( '2½', Chess_Army_Knife_Tournaments_Page::format_points( 2.5 ) );
 	}
+
+	public function test_a_round_paired_with_a_cut_short_search_is_flagged() {
+		$tournament = array(
+			'settings' => array( 'approximate_rounds' => array( '3', 5 ) ),
+		);
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::is_round_approximate( $tournament, 3 ) );
+		$this->assertTrue( Chess_Army_Knife_Tournaments::is_round_approximate( $tournament, 5 ) );
+		$this->assertFalse( Chess_Army_Knife_Tournaments::is_round_approximate( $tournament, 4 ) );
+		$this->assertFalse( Chess_Army_Knife_Tournaments::is_round_approximate( array( 'settings' => array() ), 1 ) );
+	}
 }

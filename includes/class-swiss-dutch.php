@@ -28,8 +28,11 @@ class Chess_Army_Knife_Swiss_Dutch {
 	/** Largest number of exchanges considered per exchange size. */
 	const EXCHANGE_LIMIT = 20000;
 
-	/** Brackets with more residents than this skip the exact optimisation and rely on the candidate limit. */
+	/** Brackets with more residents than this skip the exact optimisation and rely on the search budget. */
 	const OPTIMISE_LIMIT = 16;
+
+	/** Partial pairings one round may score, over all its brackets, before the search settles for the best found. */
+	const SEARCH_LIMIT = 60000;
 
 	/** Radix used to pack the additive criteria into one integer. */
 	const RADIX = 64;
@@ -62,6 +65,7 @@ class Chess_Army_Knife_Swiss_Dutch {
 	protected $truncated     = false;
 	protected $pab_score     = null;
 	protected $plan          = null;
+	protected $budget        = 0;
 
 	/**
 	 * Pair the next round.
@@ -71,11 +75,13 @@ class Chess_Army_Knife_Swiss_Dutch {
 	 * @param array $rounds       Completed rounds. Each: games (white, black, result '1-0'|'0-1'|'1/2-1/2'|null,
 	 *                            forfeit null|'white'|'black'|'both') and byes (player, kind 'pairing'|'full'|'half'|'zero').
 	 * @param int   $total_rounds Number of rounds in the tournament (needed for the final-round rules).
-	 * @param array $options      initial_white (bool, default true): the colour drawn for the initial-colour rule.
+	 * @param array $options      initial_white (bool, default true): the colour drawn for the initial-colour rule;
+	 *                            search_limit (int): partial pairings to score before settling for the best found.
 	 * @return array pairings (list of [white id, black id]), bye (id or null), error (string or null), truncated (bool).
 	 */
 	public static function pair( array $all_ids, array $active_ids, array $rounds, $total_rounds, array $options = array() ) {
-		$engine = new self();
+		$engine         = new self();
+		$engine->budget = isset( $options['search_limit'] ) ? (int) $options['search_limit'] : self::SEARCH_LIMIT;
 		return $engine->run( $all_ids, $active_ids, $rounds, (int) $total_rounds, $options );
 	}
 
@@ -833,15 +839,73 @@ class Chess_Army_Knife_Swiss_Dutch {
 			$optimum = null === $plan ? null : $plan['optimum'];
 		}
 
+		if ( null === $optimum ) {
+			// No exact optimum. First look for a candidate that meets the colour lower bound, which is
+			// then the best there is and the first in FIDE order; failing that, settle for the best found.
+			$target = array_merge( array( 0, 0 ), $this->colour_bound( array(), array_merge( $residents, $mdps ), $k ) );
+			$best   = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, $target, null );
+			if ( null === $best ) {
+				$best = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, null, null );
+			}
+		} else {
+			$best = $this->search_candidates( $mdps, $residents, $k, $m, $allowed, $allowed_limbos, $forbid, $width, $optimum, $plan );
+		}
+
+		if ( null === $best ) {
+			return null;
+		}
+
+		return array(
+			'pairs' => $best['pairs'],
+			'down'  => $best['down'],
+		);
+	}
+
+	/**
+	 * Search a bracket's candidates in FIDE order for the best one.
+	 *
+	 * With an exact optimum the search stops at the first candidate that reaches
+	 * it. Without one it aims for the lower bound on the colour criteria (see
+	 * colour_bound()): candidates that reach it are kept while the later criteria
+	 * are improved on, and the search stops when nothing can beat what it has. A round has a fixed budget of partial pairings to
+	 * score: once it is spent the search settles for the best candidate found
+	 * (the first candidates in FIDE order are the ones tried first).
+	 *
+	 * @param int[]      $mdps           Moved-down players.
+	 * @param int[]      $residents      Residents.
+	 * @param int        $k              Number of pairs.
+	 * @param int        $m              Moved-down players paired.
+	 * @param array[]    $allowed        Allowed downfloater sets, by key.
+	 * @param array      $allowed_limbos Allowed limbo sets, by key.
+	 * @param array      $forbid         Players that must not be paired.
+	 * @param int        $width          Padding width for score-difference lists.
+	 * @param int[]|null $optimum        The exact best score, or a score to aim for (when there is no plan).
+	 * @param array|null $plan           Optimisation plan, if any.
+	 * @return array|null The best candidate.
+	 */
+	protected function search_candidates( array $mdps, array $residents, $k, $m, array $allowed, array $allowed_limbos, array $forbid, $width, $optimum, $plan ) {
 		$best       = null;
 		$best_score = null;
 		$evaluated  = 0;
 
-		// Bound: can a partial pairing still reach the optimum (or beat the best so far)?
-		$bound = function ( array $pairs, array $mdp_pairs, array $limbo, $resident_score, $remaining ) use ( &$best_score, $width, $optimum, $plan ) {
+		// Without an exact optimum, the best possible score is at least this (colour criteria C12 and C13 only).
+		$floor = array( 0, 0 );
+		if ( null === $optimum ) {
+			$floor = array_merge( $floor, $this->colour_bound( array(), array_merge( $residents, $mdps ), $k ) );
+		}
+
+		// Bound: can a partial pairing still reach the optimum (or beat the best so far)? $rest, when
+		// given, holds the players still to be paired in the current S1/S2 split.
+		$bound = function ( array $pairs, array $mdp_pairs, array $limbo, $resident_score, $remaining, $rest = null ) use ( &$best_score, &$evaluated, $width, $optimum, $plan, $residents, $mdps, $k ) {
 			if ( null === $optimum && null === $best_score ) {
 				return false;
 			}
+			// Out of budget: with something to fall back on, stop exploring. When aiming for a score
+			// nothing is being kept, so give up and let the caller settle for the first pairing.
+			if ( $this->budget <= 0 && ( null !== $best_score || ( null !== $optimum && null === $plan ) ) ) {
+				throw new RuntimeException( 'Swiss search budget spent' );
+			}
+			--$this->budget;
 			$partial = $this->evaluate(
 				array(
 					'pairs'          => $pairs,
@@ -855,43 +919,171 @@ class Chess_Army_Knife_Swiss_Dutch {
 			if ( null !== $optimum ) {
 				if ( null !== $remaining ) {
 					$partial = $this->add_parts( $partial, $this->completion_bound( $limbo, $remaining ) );
+				} elseif ( null === $plan ) {
+					// Aiming for the colour lower bound: the later criteria only have to beat the best found.
+					$colour      = null === $rest ? $this->colour_bound( $pairs, array_merge( $residents, array_diff( $mdps, $limbo ) ), $k ) : $this->split_colour_bound( $rest['s1'], $rest['s2'] );
+					$partial[2] += $colour[0];
+					$partial[3] += $colour[1];
+					if ( $this->compare_vectors( array_slice( $partial, 0, 4 ), $optimum ) > 0 ) {
+						return true;
+					}
+					return null !== $best_score && $this->compare_vectors( $partial, $best_score ) >= 0;
 				}
 				return $this->compare_vectors( $partial, $optimum ) > 0;
 			}
+			$colour      = null === $rest ? $this->colour_bound( $pairs, array_merge( $residents, array_diff( $mdps, $limbo ) ), $k ) : $this->split_colour_bound( $rest['s1'], $rest['s2'] );
+			$partial[2] += $colour[0];
+			$partial[3] += $colour[1];
 			return $this->compare_vectors( $partial, $best_score ) >= 0;
 		};
 
-		foreach ( $this->candidates( $mdps, $residents, $k, $m, $allowed_limbos, $forbid, $bound, $plan ) as $candidate ) {
-			if ( ! isset( $allowed[ implode( ',', $candidate['down'] ) ] ) ) {
+		// With a score to aim for and no plan, only splits of the bracket that could reach it are tried.
+		$aim = null !== $optimum && null === $plan ? array( $optimum[2], $optimum[3] ) : null;
+
+		try {
+			foreach ( $this->candidates( $mdps, $residents, $k, $m, $allowed_limbos, $forbid, $bound, $plan, $aim ) as $candidate ) {
+				if ( ! isset( $allowed[ implode( ',', $candidate['down'] ) ] ) ) {
+					continue;
+				}
+
+				$vector = $this->evaluate( $candidate, $width );
+				if ( null === $best_score || $this->compare_vectors( $vector, $best_score ) < 0 ) {
+					$best       = $candidate;
+					$best_score = $vector;
+					if ( 0 === array_sum( $vector ) ) {
+						break; // Perfect: every colour and float criterion is met.
+					}
+					if ( null !== $optimum && 0 === $this->compare_vectors( $vector, $optimum ) ) {
+						break; // The earliest candidate in the sequence that reaches the optimum.
+					}
+					if ( null === $optimum && 0 === $this->compare_vectors( $vector, $floor ) ) {
+						break; // No candidate can score better.
+					}
+				}
+
+				if ( ++$evaluated >= self::CANDIDATE_LIMIT ) {
+					$this->truncated = true;
+					break;
+				}
+			}
+		} catch ( RuntimeException $spent ) {
+			$this->truncated = true;
+		}
+
+		return $best;
+	}
+
+	/**
+	 * Lower bounds on the colour criteria C12 (players not given the colour they
+	 * are due) and C13 (those of them with a strong preference) for the residents
+	 * still unpaired after some pairs.
+	 *
+	 * A player due White paired with one due Black, or with one with no
+	 * preference, gets the colour due; two players due the same colour cannot
+	 * both. So the bound counts the surplus of one colour among those left to
+	 * pair, less those who will not be paired at all and those who have no
+	 * preference to absorb it, and every two of the rest cost a violation.
+	 *
+	 * @param array $pairs   Pairs chosen so far (players in them are used up).
+	 * @param int[] $players The residents and the moved-down players not left in limbo.
+	 * @param int   $k       Number of pairs the bracket makes.
+	 * @return int[] Bounds for C12 and C13.
+	 */
+	protected function colour_bound( array $pairs, array $players, $k ) {
+		$used = array();
+		foreach ( $pairs as $pair ) {
+			$used[ $pair[0] ] = true;
+			$used[ $pair[1] ] = true;
+		}
+
+		$white  = 0;
+		$black  = 0;
+		$none   = 0;
+		$left   = 0;
+		$others = 0; // Players with a preference that is not a strong one.
+		foreach ( $players as $player ) {
+			if ( isset( $used[ $player ] ) ) {
 				continue;
 			}
-
-			$vector = $this->evaluate( $candidate, $width );
-			if ( null === $best_score || $this->compare_vectors( $vector, $best_score ) < 0 ) {
-				$best       = $candidate;
-				$best_score = $vector;
-				if ( 0 === array_sum( $vector ) ) {
-					break; // Perfect: every colour and float criterion is met.
-				}
-				if ( null !== $optimum && 0 === $this->compare_vectors( $vector, $optimum ) ) {
-					break; // The earliest candidate in the sequence that reaches the optimum.
-				}
+			++$left;
+			if ( 'W' === $this->pref[ $player ] ) {
+				++$white;
+			} elseif ( 'B' === $this->pref[ $player ] ) {
+				++$black;
+			} else {
+				++$none;
+				continue;
 			}
-
-			if ( ++$evaluated >= self::CANDIDATE_LIMIT ) {
-				$this->truncated = true;
-				break;
+			if ( self::STRONG !== $this->strength[ $player ] ) {
+				++$others;
 			}
 		}
 
-		if ( null === $best ) {
-			return null;
-		}
+		$unpaired = $left - 2 * ( $k - count( $pairs ) ); // Players that end up unpaired.
+		$surplus  = abs( $white - $black ) - $unpaired - $none;
+		$c12      = $surplus > 0 ? intdiv( $surplus + 1, 2 ) : 0;
+		return array( $c12, max( 0, $c12 - $others ) );
+	}
 
-		return array(
-			'pairs' => $best['pairs'],
-			'down'  => $best['down'],
+	/**
+	 * The fewest colour violations for a split, from how many players of S1 and of S2
+	 * are due White, due Black or have no preference (every player of S1 gets a partner
+	 * from S2).
+	 *
+	 * @param int[] $one Counts for S1, keyed 'W', 'B' and ''.
+	 * @param int[] $two Counts for S2.
+	 * @return int
+	 */
+	protected function split_violations( array $one, array $two ) {
+		$short_white = max( 0, $one['W'] - $two['B'] );
+		$short_black = max( 0, $one['B'] - $two['W'] );
+		$free        = min( $two[''], $short_white + $short_black );
+		$fine        = min( $one['W'], $two['B'] ) + min( $one['B'], $two['W'] ) + $free + $one[''];
+		return $one['W'] + $one['B'] + $one[''] - $fine;
+	}
+
+	/**
+	 * The same bounds for a search inside one S1/S2 split, where every player of S1
+	 * still to be paired takes a partner from S2 (and the rest of S2 downfloats).
+	 *
+	 * The most pairs that can go without a violation are found by matching the
+	 * players of S1 due White with those of S2 due Black, and the reverse, and
+	 * letting those of S2 with no preference stand in for whoever is short.
+	 *
+	 * @param int[] $s1 Players of S1 still to be paired.
+	 * @param int[] $s2 Players of S2 still available.
+	 * @return int[] Bounds for C12 and C13.
+	 */
+	protected function split_colour_bound( array $s1, array $s2 ) {
+		$count  = array(
+			1 => array(
+				'W' => 0,
+				'B' => 0,
+				''  => 0,
+			),
+			2 => array(
+				'W' => 0,
+				'B' => 0,
+				''  => 0,
+			),
 		);
+		$others = 0;
+		foreach ( array(
+			1 => $s1,
+			2 => $s2,
+		) as $side => $players ) {
+			foreach ( $players as $player ) {
+				$pref = null === $this->pref[ $player ] ? '' : $this->pref[ $player ];
+				++$count[ $side ][ $pref ];
+				if ( '' !== $pref && self::STRONG !== $this->strength[ $player ] ) {
+					++$others;
+				}
+			}
+		}
+
+		$c12 = $this->split_violations( $count[1], $count[2] );
+
+		return array( $c12, max( 0, $c12 - $others ) );
 	}
 
 	/**
@@ -906,14 +1098,15 @@ class Chess_Army_Knife_Swiss_Dutch {
 	 * @param array      $forbid         Players that must not be paired.
 	 * @param callable   $bound          Returns true if a partial pairing cannot win.
 	 * @param array|null $plan           Optimisation plan (see optimisation_plan()), if any.
+	 * @param int[]|null $aim            C12 and C13 to aim for: splits that cannot reach them are skipped.
 	 * @return Generator
 	 */
-	protected function candidates( array $mdps, array $residents, $k, $m, array $allowed_limbos, array $forbid, $bound, $plan ) {
+	protected function candidates( array $mdps, array $residents, $k, $m, array $allowed_limbos, array $forbid, $bound, $plan, $aim = null ) {
 		if ( empty( $mdps ) ) {
-			$prune = function ( array $pairs ) use ( $bound, $plan, $residents ) {
-				return $bound( $pairs, array(), array(), 0, null === $plan ? null : $this->remaining_mask( $pairs, array() ) );
+			$prune = function ( array $pairs, $rest = null ) use ( $bound, $plan ) {
+				return $bound( $pairs, array(), array(), 0, null === $plan ? null : $this->remaining_mask( $pairs, array() ), $rest );
 			};
-			foreach ( $this->homogeneous( $residents, $k, $forbid, $prune ) as $found ) {
+			foreach ( $this->homogeneous( $residents, $k, $forbid, $prune, $aim ) as $found ) {
 				yield array(
 					'pairs'     => $found['pairs'],
 					'mdp_pairs' => array(),
@@ -940,12 +1133,25 @@ class Chess_Army_Knife_Swiss_Dutch {
 			foreach ( $this->moved_down_pairings( $s1, $residents, $forbid, $prune_prefix ) as $prefix ) {
 				$remainder = array_values( array_diff( $residents, $prefix['used'] ) );
 
-				$prune = function ( array $pairs ) use ( $bound, $prefix, $limbo, $resident_score, $plan ) {
+				$prune = function ( array $pairs, $rest = null ) use ( $bound, $prefix, $limbo, $resident_score, $plan ) {
 					$remaining = null === $plan ? null : $this->remaining_mask( $pairs, $prefix['pairs'] );
-					return $bound( array_merge( $prefix['pairs'], $pairs ), $prefix['pairs'], $limbo, $resident_score, $remaining );
+					return $bound( array_merge( $prefix['pairs'], $pairs ), $prefix['pairs'], $limbo, $resident_score, $remaining, $rest );
 				};
 
-				foreach ( $this->homogeneous( $remainder, $k - $m, $forbid, $prune ) as $found ) {
+				// What the remainder may still cost in colour criteria, once the moved-down pairs have taken theirs.
+				$remainder_aim = $aim;
+				if ( null !== $aim ) {
+					foreach ( $prefix['pairs'] as $pair ) {
+						$parts             = $this->pair_components( $pair[0], $pair[1] );
+						$remainder_aim[0] -= $parts[2];
+						$remainder_aim[1] -= $parts[3];
+					}
+					if ( $remainder_aim[0] < 0 || $remainder_aim[1] < 0 ) {
+						continue;
+					}
+				}
+
+				foreach ( $this->homogeneous( $remainder, $k - $m, $forbid, $prune, $remainder_aim ) as $found ) {
 					$down = array_merge( $limbo, $found['down'] );
 					usort( $down, array( $this, 'compare_rank' ) );
 					yield array(
@@ -1025,7 +1231,7 @@ class Chess_Army_Knife_Swiss_Dutch {
 	 * @param callable $prune  Returns true if a partial list of pairs cannot win.
 	 * @return Generator Yields pairs and down.
 	 */
-	protected function homogeneous( array $list, $n1, array $forbid, $prune ) {
+	protected function homogeneous( array $list, $n1, array $forbid, $prune, $aim = null ) {
 		if ( 0 === $n1 ) {
 			yield array(
 				'pairs' => array(),
@@ -1041,7 +1247,8 @@ class Chess_Army_Knife_Swiss_Dutch {
 		yield from $this->transpositions( $list, $s1, $s2, $forbid, $prune );
 
 		for ( $size = 1; $size <= min( $n1, count( $s2 ) ); $size++ ) {
-			foreach ( $this->exchanges( $s1, $s2, $size ) as $exchange ) {
+			$exchanges = null === $aim ? $this->exchanges( $s1, $s2, $size ) : $this->reaching_exchanges( $list, $s1, $s2, $size, $aim );
+			foreach ( $exchanges as $exchange ) {
 				$new_s1 = array_merge( array_diff( $s1, $exchange['a'] ), $exchange['b'] );
 				$new_s2 = array_merge( array_diff( $s2, $exchange['b'] ), $exchange['a'] );
 				sort( $new_s1 );
@@ -1049,6 +1256,165 @@ class Chess_Army_Knife_Swiss_Dutch {
 				yield from $this->transpositions( $list, $new_s1, $new_s2, $forbid, $prune );
 			}
 		}
+	}
+
+	/**
+	 * The exchanges of a given size, in the same order as exchanges(), that leave
+	 * a split of the bracket whose colour lower bounds do not exceed an aim.
+	 *
+	 * Only how many players due White, due Black and with no preference move each
+	 * way matters for the bound, so those combinations are tried first and only
+	 * the exchanges of the ones that pass are listed.
+	 *
+	 * @param int[] $list Players in rank order.
+	 * @param int[] $s1   Positions in S1.
+	 * @param int[] $s2   Positions in S2.
+	 * @param int   $size Number of players swapped each way.
+	 * @param int[] $aim  Largest C12 and C13 bounds allowed.
+	 * @return array[] Each: a (moved from S1), b (moved from S2).
+	 */
+	protected function reaching_exchanges( array $list, array $s1, array $s2, $size, array $aim ) {
+		$kinds = array( 'W', 'B', '' );
+
+		$group  = array(
+			1 => array(
+				'W' => array(),
+				'B' => array(),
+				''  => array(),
+			),
+			2 => array(
+				'W' => array(),
+				'B' => array(),
+				''  => array(),
+			),
+		);
+		$others = 0;
+		foreach ( array(
+			1 => $s1,
+			2 => $s2,
+		) as $side => $positions ) {
+			foreach ( $positions as $position ) {
+				$player                    = $list[ $position ];
+				$pref                      = null === $this->pref[ $player ] ? '' : $this->pref[ $player ];
+				$group[ $side ][ $pref ][] = $position;
+				if ( '' !== $pref && self::STRONG !== $this->strength[ $player ] ) {
+					++$others;
+				}
+			}
+		}
+
+		$found = array();
+		// How many of each kind leave S1 (out) and S2 (in).
+		foreach ( $this->splits_of( $size, array( count( $group[1]['W'] ), count( $group[1]['B'] ), count( $group[1][''] ) ) ) as $out ) {
+			foreach ( $this->splits_of( $size, array( count( $group[2]['W'] ), count( $group[2]['B'] ), count( $group[2][''] ) ) ) as $in ) {
+				$after = array(
+					1 => array(),
+					2 => array(),
+				);
+				foreach ( $kinds as $i => $kind ) {
+					$after[1][ $kind ] = count( $group[1][ $kind ] ) - $out[ $i ] + $in[ $i ];
+					$after[2][ $kind ] = count( $group[2][ $kind ] ) - $in[ $i ] + $out[ $i ];
+				}
+				$c12 = $this->split_violations( $after[1], $after[2] );
+				if ( $c12 > $aim[0] || max( 0, $c12 - $others ) > $aim[1] ) {
+					continue;
+				}
+
+				// Every choice of players for this combination.
+				$sets_out = array( array() );
+				$sets_in  = array( array() );
+				foreach ( $kinds as $i => $kind ) {
+					$sets_out = $this->extend_sets( $sets_out, $group[1][ $kind ], $out[ $i ] );
+					$sets_in  = $this->extend_sets( $sets_in, $group[2][ $kind ], $in[ $i ] );
+				}
+				foreach ( $sets_out as $a ) {
+					foreach ( $sets_in as $b ) {
+						sort( $a );
+						sort( $b );
+						$found[] = array(
+							'a'   => $a,
+							'b'   => $b,
+							'gap' => array_sum( $b ) - array_sum( $a ),
+						);
+						if ( count( $found ) > self::EXCHANGE_LIMIT ) {
+							$this->truncated = true;
+							break 4;
+						}
+					}
+				}
+			}
+		}
+
+		usort( $found, array( $this, 'compare_exchanges' ) );
+		return $found;
+	}
+
+	/**
+	 * The ways to take a number of players from three groups.
+	 *
+	 * @param int   $size Players to take in all.
+	 * @param int[] $room How many each group has.
+	 * @return int[][] Counts to take from each group.
+	 */
+	protected function splits_of( $size, array $room ) {
+		$splits = array();
+		for ( $x = min( $size, $room[0] ); $x >= 0; $x-- ) {
+			for ( $y = min( $size - $x, $room[1] ); $y >= 0; $y-- ) {
+				$z = $size - $x - $y;
+				if ( $z <= $room[2] ) {
+					$splits[] = array( $x, $y, $z );
+				}
+			}
+		}
+		return $splits;
+	}
+
+	/**
+	 * Every way of adding a choice of $size players from a group to each set.
+	 *
+	 * @param array[] $sets  Sets so far.
+	 * @param int[]   $group Positions to choose from.
+	 * @param int     $size  How many to choose.
+	 * @return array[]
+	 */
+	protected function extend_sets( array $sets, array $group, $size ) {
+		if ( 0 === $size ) {
+			return $sets;
+		}
+		$extended = array();
+		foreach ( $sets as $set ) {
+			foreach ( $this->combinations( $group, $size ) as $choice ) {
+				$extended[] = array_merge( $set, $choice );
+			}
+		}
+		return $extended;
+	}
+
+	/**
+	 * Order of two exchanges (Article 4.3.2): the smaller difference between the
+	 * numbers of the players swapped, then the last players of S1 to move.
+	 *
+	 * @param array $x Exchange with a, b and gap.
+	 * @param array $y Exchange with a, b and gap.
+	 * @return int
+	 */
+	protected function compare_exchanges( $x, $y ) {
+		if ( $x['gap'] !== $y['gap'] ) {
+			return $x['gap'] <=> $y['gap'];
+		}
+		$xa = array_reverse( $x['a'] );
+		$ya = array_reverse( $y['a'] );
+		foreach ( $xa as $i => $value ) {
+			if ( $value !== $ya[ $i ] ) {
+				return $ya[ $i ] <=> $value;
+			}
+		}
+		foreach ( $x['b'] as $i => $value ) {
+			if ( $value !== $y['b'][ $i ] ) {
+				return $value <=> $y['b'][ $i ];
+			}
+		}
+		return 0;
 	}
 
 	/**
@@ -1080,27 +1446,7 @@ class Chess_Army_Knife_Swiss_Dutch {
 			}
 		}
 
-		usort(
-			$found,
-			function ( $x, $y ) {
-				if ( $x['gap'] !== $y['gap'] ) {
-					return $x['gap'] <=> $y['gap'];
-				}
-				$xa = array_reverse( $x['a'] );
-				$ya = array_reverse( $y['a'] );
-				foreach ( $xa as $i => $value ) {
-					if ( $value !== $ya[ $i ] ) {
-						return $ya[ $i ] <=> $value;
-					}
-				}
-				foreach ( $x['b'] as $i => $value ) {
-					if ( $value !== $y['b'][ $i ] ) {
-						return $value <=> $y['b'][ $i ];
-					}
-				}
-				return 0;
-			}
-		);
+		usort( $found, array( $this, 'compare_exchanges' ) );
 
 		$this->memo['exchange'][ $memo_key ] = $found;
 		return $found;
@@ -1123,7 +1469,84 @@ class Chess_Army_Knife_Swiss_Dutch {
 				return;
 			}
 		}
+
+		// Can anything in this S1/S2 split still win?
+		$rest = array(
+			's1' => array(),
+			's2' => array(),
+		);
+		foreach ( $s1 as $position ) {
+			$rest['s1'][] = $list[ $position ];
+		}
+		foreach ( $s2 as $position ) {
+			$rest['s2'][] = $list[ $position ];
+		}
+		if ( ! $this->can_fill( $rest['s1'], $rest['s2'], $forbid ) || $prune( array(), $rest ) ) {
+			return;
+		}
+
 		yield from $this->transposition_step( $list, $s1, $s2, $forbid, $prune, 0, array(), array() );
+	}
+
+	/**
+	 * Whether every one of some players can be given a different partner from
+	 * another list, with nobody meeting an opponent they have played (a bipartite
+	 * matching, found by augmenting paths).
+	 *
+	 * @param int[] $left   Players to be given a partner.
+	 * @param int[] $right  Possible partners.
+	 * @param array $forbid Players that must not be paired.
+	 * @return bool
+	 */
+	protected function can_fill( array $left, array $right, array $forbid ) {
+		if ( count( $left ) > count( $right ) ) {
+			return false;
+		}
+
+		$options = array();
+		foreach ( $left as $i => $player ) {
+			$options[ $i ] = array();
+			foreach ( $right as $j => $partner ) {
+				if ( ! isset( $forbid[ $partner ] ) && $this->can_pair( $player, $partner ) ) {
+					$options[ $i ][] = $j;
+				}
+			}
+			if ( empty( $options[ $i ] ) ) {
+				return false;
+			}
+		}
+
+		$taken = array(); // Partner index => the index in $left holding it.
+		foreach ( array_keys( $left ) as $i ) {
+			$seen = array();
+			if ( ! $this->augment( $i, $options, $taken, $seen ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Find a partner for one player, moving those already matched if need be.
+	 *
+	 * @param int   $i       Index of the player to match.
+	 * @param array $options Partner indexes each player may have.
+	 * @param array $taken   Partner index => player index holding it (by reference).
+	 * @param array $seen    Partners already tried in this search (by reference).
+	 * @return bool
+	 */
+	protected function augment( $i, array $options, array &$taken, array &$seen ) {
+		foreach ( $options[ $i ] as $j ) {
+			if ( isset( $seen[ $j ] ) ) {
+				continue;
+			}
+			$seen[ $j ] = true;
+			if ( ! isset( $taken[ $j ] ) || $this->augment( $taken[ $j ], $options, $taken, $seen ) ) {
+				$taken[ $j ] = $i;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1165,11 +1588,27 @@ class Chess_Army_Knife_Swiss_Dutch {
 			}
 			$pairs_next   = $pairs;
 			$pairs_next[] = array( $player, $partner );
-			if ( $prune( $pairs_next ) ) {
-				continue;
-			}
+
 			$used_next              = $used;
 			$used_next[ $position ] = true;
+
+			// The players of S1 and S2 that are left once this pair is made.
+			$rest = array(
+				's1' => array(),
+				's2' => array(),
+			);
+			for ( $j = $i + 1; $j < count( $s1 ); $j++ ) {
+				$rest['s1'][] = $list[ $s1[ $j ] ];
+			}
+			foreach ( $s2 as $other ) {
+				if ( ! isset( $used_next[ $other ] ) ) {
+					$rest['s2'][] = $list[ $other ];
+				}
+			}
+			// Prune on the score, and on whether the rest of S1 can still all be given a partner.
+			if ( $prune( $pairs_next, $rest ) || ! $this->can_fill( $rest['s1'], $rest['s2'], $forbid ) ) {
+				continue;
+			}
 			yield from $this->transposition_step( $list, $s1, $s2, $forbid, $prune, $i + 1, $pairs_next, $used_next );
 		}
 	}

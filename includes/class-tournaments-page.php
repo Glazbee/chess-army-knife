@@ -699,6 +699,14 @@ class Chess_Army_Knife_Tournaments_Page {
 		}
 		?>
 		<h2><?php esc_html_e( 'Rounds', 'chess-army-knife' ); ?></h2>
+		<?php if ( $current > 0 && Chess_Army_Knife_Tournaments::is_round_approximate( $tournament, $current ) ) : ?>
+			<p class="description">
+				<?php
+				/* translators: %d: round number */
+				echo esc_html( sprintf( __( 'Round %d has a very large score group, so the search for the best colour balance was cut short. The pairings are valid, but a few players may not get the colour they were due.', 'chess-army-knife' ), $current ) );
+				?>
+			</p>
+		<?php endif; ?>
 		<?php if ( $has_next ) : ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-right:1em;">
 				<input type="hidden" name="action" value="chess_army_knife_tournament_next_round" />
