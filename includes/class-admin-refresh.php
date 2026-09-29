@@ -98,7 +98,7 @@ class Chess_Army_Knife_Admin_Refresh {
 				printf(
 					/* translators: %s: human-readable time difference, e.g. "4 minutes" */
 					esc_html__( 'Last refreshed %s ago.', 'chess-army-knife' ),
-					esc_html( human_time_diff( $oldest, current_time( 'timestamp' ) ) ) // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested
+					esc_html( human_time_diff( $oldest ) )
 				);
 				?>
 			<?php elseif ( Chess_Army_Knife_Settings::use_local_cache() ) : ?>
