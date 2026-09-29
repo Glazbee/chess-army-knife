@@ -43,6 +43,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-admin-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-display.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-events-import.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
 /**

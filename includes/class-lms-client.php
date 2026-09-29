@@ -524,6 +524,7 @@ class LMS_Client {
 		return array(
 			'venue'       => (string) $venue,
 			'date'        => (string) $date,
+			'time'        => (string) self::pick( $row, array( 'time', 'start_time', 'kick_off', 'kickoff', 'match_time' ), '' ),
 			'home'        => (string) $home,
 			'away'        => (string) $away,
 			'home_score'  => (string) self::pick( $row, array( 'left_score', 'home_score', 'score1', 'left_points' ), '' ),
