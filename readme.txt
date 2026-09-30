@@ -52,6 +52,18 @@ Members' details are personal, so the Memberships menu is only for people with t
 * **Juniors (under 18)**: the form asks for the junior's date of birth and a parent or guardian's name, email and phone, and writes to the parent rather than the junior. The junior's own email and phone are only kept if the parent ticks that the club may contact the junior directly. Someone whose date of birth is under 18 is treated as a junior even if they do not tick the box. An adult's date of birth is not kept. The parent or guardian gives the consent for a junior.
 * It also limits how often one visitor can apply.
 
+**Players who are not members**
+
+Tournament guests and other people the club holds details for can be recorded as **Not a member** (choose that status when adding someone on the Members screen; players typed into the tournament screens are added this way automatically). They are kept in the same table, so the club can find everything it holds about someone, but they are left out of the member lists and counts, appear under their own **Not members** view, and can still be chosen as tournament players and tagged in photos. Guests are deleted with the same retention period, counted from when they were last used.
+
+**Choosing players**
+
+The player pickers in the block editor and on the Tournaments and Players screens search the club's own list: current members with an ECF rating code, and guests. The ECF's database is no longer searched, so the club only handles people it holds a record for. (Club search and the ECF rating fetched for a chosen code are unchanged.)
+
+**Photos**
+
+Anyone who can manage members sees a **Members in this photo** checklist in a photo's details (in the upload dialog and on the Edit Media screen). Tick the members and guests who appear. Tags hold the member's id, not their name, and are only visible to people who manage members. Find a person's photos from the **Photos** link on the Members screen, the thumbnails on their record, or the Media Library's member filter (list view). Photo tags are included when a person's data is exported. Erasing a person does not delete photos, because they may show other people: their record is kept without personal details, so the tagged photos can still be found and reviewed by hand.
+
 **Data protection (GDPR)**
 
 * Members are covered by WordPress's own **Tools → Export Personal Data** and **Erase Personal Data**, found by email address. A junior is found by their parent or guardian's email address as well as their own. Exporting includes everything held, including your notes. Erasing deletes the record; if a payment was recorded on it, the record is kept for your accounts with all personal details removed.
@@ -101,6 +113,9 @@ Yes — add as many blocks as you like, each configured independently.
 = Unreleased =
 * Added: club memberships. Membership Types (name, description, price, length), a Members screen with pending applications, current, expired and cancelled members, and manual adding, editing and payment recording. New Club Memberships and Membership Application Form blocks, and a payment instructions field under Settings.
 * Added: data protection for members: personal data export and erase, recorded consent, automatic deletion of old records after a retention period, suggested privacy policy wording and a public Club Data Policy block.
+* Added: the player pickers search the club's own members (and guests) instead of the ECF's player database.
+* Added: people who are not members (such as tournament guests) can be recorded with a "Not a member" flag and are left out of member lists and counts.
+* Added: tag members in photos from the Media Library, find a member's photos, and include them in personal data exports.
 * Added: junior members (under 18) are handled through a parent or guardian, and the newsletter and WhatsApp groups are separate, recorded, optional consents.
 * Added: a separate "manage members" permission for the Memberships screens, set per user on their profile rather than given to all administrators.
 * Added: Tournament Standings block, a cross-table of each player's points in every round and their total.

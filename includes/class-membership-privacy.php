@@ -105,6 +105,32 @@ class Chess_Army_Knife_Membership_Privacy {
 			);
 		}
 
+		// The photos they are tagged in, once each even if two of their records are tagged in the same photo.
+		$seen = array();
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Member_Photos::photo_ids( $member['id'] ) as $photo_id ) {
+				if ( isset( $seen[ $photo_id ] ) ) {
+					continue;
+				}
+				$seen[ $photo_id ] = true;
+				$items[]           = array(
+					'group_id'    => 'chess-army-knife-photos',
+					'group_label' => __( 'Club photos you are tagged in', 'chess-army-knife' ),
+					'item_id'     => 'photo-' . $photo_id,
+					'data'        => array(
+						array(
+							'name'  => __( 'Photo', 'chess-army-knife' ),
+							'value' => (string) wp_get_attachment_url( $photo_id ),
+						),
+						array(
+							'name'  => __( 'Title', 'chess-army-knife' ),
+							'value' => get_the_title( $photo_id ),
+						),
+					),
+				);
+			}
+		}
+
 		return array(
 			'data' => $items,
 			'done' => true,
@@ -120,10 +146,21 @@ class Chess_Army_Knife_Membership_Privacy {
 	public static function erase( $email ) {
 		$removed  = false;
 		$retained = false;
+		$messages = array();
 
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			$photos = count( Chess_Army_Knife_Member_Photos::photo_ids( $member['id'] ) );
+			$paid   = '' !== $member['paid_on'];
+
 			if ( 'anonymised' === Chess_Army_Knife_Membership_Store::erase_member( $member['id'] ) ) {
 				$retained = true;
+				if ( $paid ) {
+					$messages[] = __( 'A payment record was kept for the club\'s accounts, without any personal details.', 'chess-army-knife' );
+				}
+				if ( $photos ) {
+					/* translators: 1: number of photos, 2: member record number */
+					$messages[] = sprintf( _n( '%1$d photo tagged with this person was not deleted, because photos can show other people. It needs reviewing by hand: in the Media Library, filter by the record "Erased member" (record %2$d).', '%1$d photos tagged with this person were not deleted, because photos can show other people. They need reviewing by hand: in the Media Library, filter by the record "Erased member" (record %2$d).', $photos, 'chess-army-knife' ), $photos, $member['id'] );
+				}
 			}
 			$removed = true;
 		}
@@ -131,7 +168,7 @@ class Chess_Army_Knife_Membership_Privacy {
 		return array(
 			'items_removed'  => $removed,
 			'items_retained' => $retained,
-			'messages'       => $retained ? array( __( 'A payment record was kept for the club\'s accounts, without any personal details.', 'chess-army-knife' ) ) : array(),
+			'messages'       => $messages,
 			'done'           => true,
 		);
 	}
@@ -192,6 +229,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				'heading'    => __( 'What we collect', 'chess-army-knife' ),
 				'paragraphs' => array(
 					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
+					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, marked as not being members. They are left out of our membership lists.', 'chess-army-knife' ),
 					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),
 				),
 			),
@@ -211,6 +249,12 @@ class Chess_Army_Knife_Membership_Privacy {
 				'heading'    => __( 'Newsletters and WhatsApp groups', 'chess-army-knife' ),
 				'paragraphs' => array(
 					__( 'We only send you the club newsletter, or add you to a WhatsApp group for a club team, if you have said yes. These are separate choices and you can say no to either and still be a member. If you are added to a WhatsApp group, the other members of the group can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added to a group with their parent or guardian\'s agreement, using the parent or guardian\'s number unless they say otherwise. You can change your mind at any time and we will stop.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Photos', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'When we take photos at club events, a club officer may tag each photo with the names of the members in it, so that we can find every photo of a person if they ask to see them, or ask us to delete them. The tags can only be seen by club officers. You can ask us to remove a tag or delete a photo of you.', 'chess-army-knife' ),
 				),
 			),
 			array(

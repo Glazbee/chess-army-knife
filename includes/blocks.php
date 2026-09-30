@@ -150,9 +150,9 @@ function Chess_Army_Knife_rest_member_search_permission() {
 
 /**
  * REST callback: search the club's own members by name, for the editor's
- * player picker and the tournament screens. Only current members with an ECF
- * rating code are offered, as {code, name, club} suggestions (the club is
- * always blank: everyone listed is a member here). The ECF's own database is
+ * player picker and the tournament screens. Current members, and guests recorded as not being members, with an ECF
+ * rating code are offered, as {code, name, club} suggestions (the club field
+ * says "not a club member" for a guest and is blank for a member). The ECF's own database is
  * deliberately not searched, so the club only ever handles people it holds a
  * record for and can account for in a subject access request.
  *
@@ -165,7 +165,7 @@ function Chess_Army_Knife_rest_search_players( WP_REST_Request $request ) {
 		$suggestions[] = array(
 			'code' => $member['ecf_code'],
 			'name' => $member['name'],
-			'club' => '',
+			'club' => Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER === $member['status'] ? __( 'not a club member', 'chess-army-knife' ) : '',
 		);
 	}
 

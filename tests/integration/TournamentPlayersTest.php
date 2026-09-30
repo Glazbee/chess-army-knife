@@ -16,6 +16,8 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Tournament_Store::install_tables();
+		$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Membership_Store::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		Chess_Army_Knife_Membership_Store::install_table();
 	}
 
 	private function tournament() {
@@ -32,6 +34,53 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 				'manual_rating' => $rating,
 			)
 		);
+	}
+
+	public function test_a_new_tournament_player_who_is_not_a_member_gets_a_record_marked_as_such() {
+		$outcome = Chess_Army_Knife_Player_Selector::enter_players(
+			$this->tournament(),
+			array(
+				'new_players' => array(
+					array(
+						'name'     => 'Guest Player',
+						'ecf_code' => '555555k',
+					),
+					array( 'name' => 'Nocode Guest' ),
+				),
+			)
+		);
+
+		$this->assertSame( 2, $outcome['added'] );
+		$guests = Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'nonmember' ) );
+		$this->assertSame( array( 'Guest Player', 'Nocode Guest' ), wp_list_pluck( $guests, 'name' ) );
+		$this->assertSame( '555555K', $guests[0]['ecf_code'] );
+		$this->assertSame( 'manual', $guests[0]['source'] );
+		$this->assertSame( array(), Chess_Army_Knife_Membership_Store::get_members(), 'Guests are not in the member list.' );
+	}
+
+	public function test_a_tournament_player_who_is_already_a_member_does_not_get_a_second_record() {
+		$member = Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => 'Alice Member',
+				'ecf_code' => '120787J',
+				'status'   => 'active',
+			)
+		);
+
+		Chess_Army_Knife_Player_Selector::enter_players(
+			$this->tournament(),
+			array(
+				'new_players' => array(
+					array(
+						'name'     => 'Alice Member',
+						'ecf_code' => '120787J',
+					),
+				),
+			)
+		);
+
+		$this->assertSame( array( $member ), wp_list_pluck( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'people' ) ), 'id' ) );
+		$this->assertSame( 'active', Chess_Army_Knife_Membership_Store::get_member( $member )['status'], 'A member stays a member.' );
 	}
 
 	public function test_a_profile_can_be_found_by_its_ecf_code() {

@@ -18,7 +18,7 @@ require_once __DIR__ . '/stubs.php';
 
 // Class files register hooks at load time, so Brain Monkey must be active.
 Brain\Monkey\setUp();
-foreach ( array( 'cache', 'ecf-client', 'lms-client', 'settings-page', 'club-teams-page', 'templates', 'admin-refresh', 'events', 'events-display', 'events-import', 'events-rest', 'berger', 'standings', 'bracket', 'matching', 'swiss-dutch', 'tournament-store', 'tournaments', 'players-page', 'player-selector', 'tournaments-page', 'memberships', 'membership-store', 'membership-form' ) as $file ) {
+foreach ( array( 'cache', 'ecf-client', 'lms-client', 'settings-page', 'club-teams-page', 'templates', 'admin-refresh', 'events', 'events-display', 'events-import', 'events-rest', 'berger', 'standings', 'bracket', 'matching', 'swiss-dutch', 'tournament-store', 'tournaments', 'players-page', 'player-selector', 'tournaments-page', 'memberships', 'membership-store', 'member-photos', 'membership-form' ) as $file ) {
 	$name = 'cache' === $file ? 'chess-army-knife-cache' : $file;
 	require_once dirname( __DIR__ ) . "/includes/class-{$name}.php";
 }

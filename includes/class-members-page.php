@@ -240,6 +240,7 @@ class Chess_Army_Knife_Members_Page {
 			)
 		);
 		$today   = current_time( 'Y-m-d' );
+		$photos  = Chess_Army_Knife_Member_Photos::counts();
 		$labels  = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
 		$methods = Chess_Army_Knife_Memberships::payment_methods();
 		?>
@@ -303,6 +304,14 @@ class Chess_Army_Knife_Members_Page {
 										<a href="<?php echo esc_url( self::action_url( 'member_status', $member['id'], array( 'status' => Chess_Army_Knife_Membership_Store::STATUS_REJECTED ) ) ); ?>"><?php esc_html_e( 'Decline', 'chess-army-knife' ); ?></a> |
 									<?php endif; ?>
 									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></a> |
+									<?php if ( ! empty( $photos[ $member['id'] ] ) ) : ?>
+										<a href="<?php echo esc_url( Chess_Army_Knife_Member_Photos::library_url( $member['id'] ) ); ?>">
+											<?php
+											/* translators: %d: number of photos the member is tagged in */
+											echo esc_html( sprintf( _n( 'Photos (%d)', 'Photos (%d)', $photos[ $member['id'] ], 'chess-army-knife' ), $photos[ $member['id'] ] ) );
+											?>
+										</a> |
+									<?php endif; ?>
 									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this member and their details?', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
 								</div>
 							</td>
@@ -439,6 +448,7 @@ class Chess_Army_Knife_Members_Page {
 									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $member['status'], $key ); ?>><?php echo esc_html( $label ); ?></option>
 								<?php endforeach; ?>
 							</select>
+							<p class="description"><?php esc_html_e( 'Use "Not a member" for people the club holds details for who have not joined, such as tournament guests. They can be chosen as tournament players and tagged in photos, but are left out of the member lists and counts.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -509,6 +519,32 @@ class Chess_Army_Knife_Members_Page {
 						</td>
 					</tr>
 				</table>
+				<?php if ( $editing ) : ?>
+					<?php $photo_ids = Chess_Army_Knife_Member_Photos::photo_ids( $member['id'] ); ?>
+					<h2><?php esc_html_e( 'Photos', 'chess-army-knife' ); ?></h2>
+					<?php if ( empty( $photo_ids ) ) : ?>
+						<p class="description"><?php esc_html_e( 'Not tagged in any photos. Tag members in a photo\'s details in the Media Library.', 'chess-army-knife' ); ?></p>
+					<?php else : ?>
+						<p>
+							<?php
+							/* translators: %d: number of photos */
+							echo esc_html( sprintf( _n( 'Tagged in %d photo. Photos may show other people, so check before sharing or deleting.', 'Tagged in %d photos. Photos may show other people, so check before sharing or deleting.', count( $photo_ids ), 'chess-army-knife' ), count( $photo_ids ) ) );
+							?>
+							<a href="<?php echo esc_url( Chess_Army_Knife_Member_Photos::library_url( $member['id'] ) ); ?>"><?php esc_html_e( 'View in the Media Library', 'chess-army-knife' ); ?></a>
+						</p>
+						<p class="cak-member-photos">
+							<?php foreach ( $photo_ids as $photo_id ) : ?>
+								<?php $photo_link = get_edit_post_link( $photo_id ); ?>
+								<a href="<?php echo esc_url( $photo_link ? $photo_link : '' ); ?>" aria-label="<?php echo esc_attr( get_the_title( $photo_id ) ); ?>" style="display:inline-block;margin:0 8px 8px 0">
+									<?php
+									$thumbnail = wp_get_attachment_image( $photo_id, array( 100, 100 ) );
+									echo $thumbnail ? wp_kses_post( $thumbnail ) : esc_html( get_the_title( $photo_id ) );
+									?>
+								</a>
+							<?php endforeach; ?>
+						</p>
+					<?php endif; ?>
+				<?php endif; ?>
 				<?php submit_button( $editing ? __( 'Save member', 'chess-army-knife' ) : __( 'Add member', 'chess-army-knife' ) ); ?>
 				<a href="<?php echo esc_url( self::url() ); ?>"><?php esc_html_e( 'Back to members', 'chess-army-knife' ); ?></a>
 			</form>

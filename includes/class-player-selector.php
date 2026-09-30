@@ -122,6 +122,10 @@ class Chess_Army_Knife_Player_Selector {
 		foreach ( $new['players'] as $player ) {
 			$existing     = '' !== $player['ecf_code'] ? Chess_Army_Knife_Tournament_Store::find_player_by_code( $player['ecf_code'] ) : null;
 			$player_ids[] = $existing ? $existing['id'] : Chess_Army_Knife_Tournament_Store::save_player( $player );
+			if ( ! $existing ) {
+				// Someone who is not a member still needs a record the club can find, for subject access requests.
+				Chess_Army_Knife_Membership_Store::ensure_person( $player['name'], $player['ecf_code'] );
+			}
 		}
 		$outcome['errors'] = $new['errors'];
 

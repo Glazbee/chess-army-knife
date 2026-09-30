@@ -107,6 +107,10 @@ class Chess_Army_Knife_Players_Page {
 		} else {
 			$clean['id'] = isset( $_POST['player_id'] ) ? (int) $_POST['player_id'] : 0;
 			Chess_Army_Knife_Tournament_Store::save_player( $clean );
+			// Someone who is not a member still needs a record the club can find, for subject access requests.
+			if ( empty( $clean['id'] ) ) {
+				Chess_Army_Knife_Membership_Store::ensure_person( $clean['name'], $clean['ecf_code'] );
+			}
 			$args['saved'] = '1';
 		}
 

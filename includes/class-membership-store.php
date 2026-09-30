@@ -20,6 +20,9 @@ class Chess_Army_Knife_Membership_Store {
 	const STATUS_REJECTED  = 'rejected';
 	const STATUS_CANCELLED = 'cancelled';
 
+	/** Someone the club holds details for who is not a member, such as a tournament guest. */
+	const STATUS_NONMEMBER = 'nonmember';
+
 	/** Shown for an active member whose expiry date has passed. */
 	const STATUS_EXPIRED = 'expired';
 
@@ -91,6 +94,7 @@ class Chess_Army_Knife_Membership_Store {
 			self::STATUS_ACTIVE    => __( 'Active', 'chess-army-knife' ),
 			self::STATUS_REJECTED  => __( 'Declined', 'chess-army-knife' ),
 			self::STATUS_CANCELLED => __( 'Cancelled', 'chess-army-knife' ),
+			self::STATUS_NONMEMBER => __( 'Not a member', 'chess-army-knife' ),
 		);
 	}
 
@@ -279,11 +283,12 @@ class Chess_Army_Knife_Membership_Store {
 	 */
 	public static function view_labels() {
 		return array(
-			'all'     => __( 'All', 'chess-army-knife' ),
-			'active'  => __( 'Current members', 'chess-army-knife' ),
-			'pending' => __( 'Pending applications', 'chess-army-knife' ),
-			'expired' => __( 'Expired', 'chess-army-knife' ),
-			'closed'  => __( 'Declined or cancelled', 'chess-army-knife' ),
+			'all'       => __( 'All members and applications', 'chess-army-knife' ),
+			'active'    => __( 'Current members', 'chess-army-knife' ),
+			'pending'   => __( 'Pending applications', 'chess-army-knife' ),
+			'expired'   => __( 'Expired', 'chess-army-knife' ),
+			'closed'    => __( 'Declined or cancelled', 'chess-army-knife' ),
+			'nonmember' => __( 'Not members', 'chess-army-knife' ),
 		);
 	}
 
@@ -304,8 +309,13 @@ class Chess_Army_Knife_Membership_Store {
 				return array( "status = 'active' AND expiry_date < %s", array( $today ) );
 			case 'closed':
 				return array( "status IN ( 'rejected', 'cancelled' )", array() );
+			case 'nonmember':
+				return array( "status = 'nonmember'", array() );
+			case 'people':
+				return array( '1 = 1', array() ); // Everyone held, members or not; not a list an admin picks.
 		}
-		return array( '1 = 1', array() );
+		// Members and applications: people who are not members stay out of the club's lists and counts.
+		return array( "status <> 'nonmember'", array() );
 	}
 
 	/**
@@ -387,7 +397,8 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
-	 * Current members with an ECF rating code whose name contains some text.
+	 * Current members, and people held as not being members (tournament
+	 * guests), who have an ECF rating code and whose name contains some text.
 	 * This is the club's own list of players for the block and tournament
 	 * pickers, in place of searching the ECF's whole database.
 	 *
@@ -407,7 +418,7 @@ class Chess_Army_Knife_Membership_Store {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE ecf_code <> '' AND name LIKE %s AND status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) ORDER BY name ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
+				"SELECT * FROM {$table} WHERE ecf_code <> '' AND name LIKE %s AND ( status = 'nonmember' OR ( status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) ) ) ORDER BY name ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
 				'%' . $wpdb->esc_like( $term ) . '%',
 				current_time( 'Y-m-d' ),
 				max( 1, (int) $limit )
@@ -415,6 +426,53 @@ class Chess_Army_Knife_Membership_Store {
 			ARRAY_A
 		);
 		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
+	 * Make sure the club has a record for someone who takes part in something
+	 * but may not be a member, such as a tournament guest: the person's existing
+	 * record if there is one (found by ECF code, or by name when there is no
+	 * code), otherwise a new one marked as not a member. A guest's record is
+	 * touched so it is not deleted as old while they are still being used.
+	 *
+	 * @param string $name     Name.
+	 * @param string $ecf_code ECF rating code, or ''.
+	 * @return int Member id, or 0 if there was no name.
+	 */
+	public static function ensure_person( $name, $ecf_code ) {
+		global $wpdb;
+
+		$name     = trim( (string) $name );
+		$ecf_code = strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', (string) $ecf_code ) );
+		if ( '' === $name ) {
+			return 0;
+		}
+
+		$table = self::table();
+		if ( '' !== $ecf_code ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE ecf_code = %s ORDER BY id ASC LIMIT 1", $ecf_code ), ARRAY_A );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE name = %s ORDER BY id ASC LIMIT 1", $name ), ARRAY_A );
+		}
+
+		if ( $row ) {
+			$member = self::cast_member( $row );
+			if ( self::STATUS_NONMEMBER === $member['status'] ) {
+				self::save_member( array( 'id' => $member['id'] ) ); // Only refreshes when it was last changed.
+			}
+			return $member['id'];
+		}
+
+		return self::save_member(
+			array(
+				'name'     => $name,
+				'ecf_code' => $ecf_code,
+				'status'   => self::STATUS_NONMEMBER,
+				'source'   => self::SOURCE_MANUAL,
+			)
+		);
 	}
 
 	/**
@@ -453,7 +511,7 @@ class Chess_Army_Knife_Membership_Store {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE name <> %s AND ( ( status IN ( 'pending', 'rejected', 'cancelled' ) AND updated_at < %s ) OR ( status = 'active' AND expiry_date IS NOT NULL AND expiry_date < %s ) ) ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
+				"SELECT * FROM {$table} WHERE name <> %s AND ( ( status IN ( 'pending', 'rejected', 'cancelled', 'nonmember' ) AND updated_at < %s ) OR ( status = 'active' AND expiry_date IS NOT NULL AND expiry_date < %s ) ) ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
 				self::erased_name(),
 				$cutoff_utc,
 				$cutoff_date
@@ -553,8 +611,9 @@ class Chess_Army_Knife_Membership_Store {
 
 	/**
 	 * Erase a person's details. A record with a payment on it is kept without
-	 * the person's details, because the club may need to keep its accounts;
-	 * any other record is deleted.
+	 * the person's details, because the club may need to keep its accounts, and
+	 * so is one tagged in photos, so those photos can still be found and
+	 * reviewed; any other record is deleted.
 	 *
 	 * @param int $id Member id.
 	 * @return string 'deleted', 'anonymised', or '' if there is no such member.
@@ -565,7 +624,9 @@ class Chess_Army_Knife_Membership_Store {
 			return '';
 		}
 
-		if ( '' === $member['paid_on'] ) {
+		// A record is kept, without personal details, while it has a payment on it or is tagged
+		// in photos: the photos may show other people, so someone has to review them by hand.
+		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
 		}
@@ -597,6 +658,7 @@ class Chess_Army_Knife_Membership_Store {
 	 */
 	public static function delete_member( $id ) {
 		global $wpdb;
+		Chess_Army_Knife_Member_Photos::remove_member( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table(), array( 'id' => (int) $id ), array( '%d' ) );
 	}
