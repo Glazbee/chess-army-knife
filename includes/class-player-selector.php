@@ -2,7 +2,7 @@
 /**
  * The "choose players" control shared by the create-tournament form and a
  * draft tournament: a searchable checklist of saved players, a search of the
- * ECF list by name (which fills in the rating code), and a manual entry for
+ * club's members by name (which fills in the rating code), and a manual entry for
  * players without a code. The behaviour lives in assets/admin.js.
  *
  * @package Chess_Army_Knife
@@ -53,8 +53,8 @@ class Chess_Army_Knife_Player_Selector {
 					'select'      => __( 'Select', 'chess-army-knife' ),
 					'saved'       => __( 'already saved', 'chess-army-knife' ),
 					'remove'      => __( 'Remove', 'chess-army-knife' ),
-					'noResults'   => __( 'No matching players found.', 'chess-army-knife' ),
-					'searchError' => __( 'The ECF search is not available right now.', 'chess-army-knife' ),
+					'noResults'   => __( 'No matching members found. Only current members with an ECF code are listed.', 'chess-army-knife' ),
+					'searchError' => __( 'The member search is not available right now.', 'chess-army-knife' ),
 					'needName'    => __( 'Please enter a name.', 'chess-army-knife' ),
 					/* translators: %d: lowest manual rating */
 					'needRating'  => sprintf( __( 'A manual rating must be %d or higher.', 'chess-army-knife' ), Chess_Army_Knife_Players_Page::MIN_MANUAL_RATING ),
@@ -103,7 +103,7 @@ class Chess_Army_Knife_Player_Selector {
 
 	/**
 	 * Enter the players chosen in the selector in a draft tournament. Players
-	 * found on the ECF list or typed in are saved as profiles first (reusing
+	 * found among the members or typed in are saved as profiles first (reusing
 	 * the profile that already has the same ECF code).
 	 *
 	 * @param int   $tournament_id Tournament id.
@@ -158,7 +158,7 @@ class Chess_Army_Knife_Player_Selector {
 		?>
 		<div class="cak-selector" data-cak-selector>
 			<?php if ( empty( $players ) ) : ?>
-				<p class="description"><?php esc_html_e( 'No saved players yet. Find players on the ECF list below, or add one without an ECF code.', 'chess-army-knife' ); ?></p>
+				<p class="description"><?php esc_html_e( 'No saved players yet. Find club members below, or add one without an ECF code.', 'chess-army-knife' ); ?></p>
 			<?php else : ?>
 				<p>
 					<label for="cak-filter"><strong><?php esc_html_e( 'Saved players', 'chess-army-knife' ); ?></strong></label><br />
@@ -191,8 +191,8 @@ class Chess_Army_Knife_Player_Selector {
 			<?php endif; ?>
 
 			<p>
-				<label for="cak-ecf-search"><strong><?php esc_html_e( 'Find a player on the ECF list', 'chess-army-knife' ); ?></strong></label><br />
-				<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a surname…', 'chess-army-knife' ); ?>" />
+				<label for="cak-ecf-search"><strong><?php esc_html_e( 'Find a club member', 'chess-army-knife' ); ?></strong></label><br />
+				<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a name…', 'chess-army-knife' ); ?>" />
 				<span class="spinner" data-cak-spinner></span>
 			</p>
 			<ul class="cak-selector__results" data-cak-results></ul>

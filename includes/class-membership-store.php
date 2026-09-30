@@ -387,6 +387,37 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
+	 * Current members with an ECF rating code whose name contains some text.
+	 * This is the club's own list of players for the block and tournament
+	 * pickers, in place of searching the ECF's whole database.
+	 *
+	 * @param string $term  Part of a name.
+	 * @param int    $limit Most members to return.
+	 * @return array[] Each member row (see get_members()), by name.
+	 */
+	public static function search_players( $term, $limit = 20 ) {
+		global $wpdb;
+
+		$term = trim( (string) $term );
+		if ( strlen( $term ) < 2 ) {
+			return array();
+		}
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE ecf_code <> '' AND name LIKE %s AND status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) ORDER BY name ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
+				'%' . $wpdb->esc_like( $term ) . '%',
+				current_time( 'Y-m-d' ),
+				max( 1, (int) $limit )
+			),
+			ARRAY_A
+		);
+		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
 	 * Everything held under an email address, for the privacy tools. A junior's record is found by their parent or guardian's address as well as their own.
 	 *
 	 * @param string $email Email address.

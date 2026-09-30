@@ -118,34 +118,6 @@ class Chess_Army_Knife_ECF_Client {
 	}
 
 	/**
-	 * Search players by name (sound-alike search). Used to power the
-	 * "find a player" control in the block editor.
-	 *
-	 * @param string $name Name or partial name.
-	 * @return array|WP_Error List of matching players.
-	 */
-	public static function search_players( $name ) {
-		$name = trim( (string) $name );
-		if ( strlen( $name ) < 3 ) {
-			return array();
-		}
-
-		$ttl = self::ttl( 'player_search', HOUR_IN_SECONDS );
-
-		return Chess_Army_Knife_Cache::remember(
-			'ecf_search_' . strtolower( $name ),
-			$ttl,
-			function () use ( $name ) {
-				$result = self::request( '/players/fuzzy-names', array( 'name' => $name ) );
-				if ( is_wp_error( $result ) ) {
-					return $result;
-				}
-				return isset( $result['players'] ) ? $result['players'] : array();
-			}
-		);
-	}
-
-	/**
 	 * Fetch a player's rated games (used to build a rating-over-time
 	 * chart, since the ECF API doesn't expose a direct "rating history"
 	 * endpoint - each game record carries the player's rating at the time).

@@ -86,23 +86,27 @@ class PluginTest extends WP_UnitTestCase {
 		$this->assertSame( '9BAJ', $response->get_data()['clubCode'] );
 	}
 
-	public function test_rest_player_search_returns_normalised_suggestions() {
+	public function test_rest_player_search_lists_only_current_members_with_an_ecf_code() {
+		global $wpdb;
+		$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Membership_Store::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		Chess_Army_Knife_Membership_Store::install_table();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
-		$this->mock_http(
-			array(
-				'success' => true,
-				'data'    => array(
-					'players' => array(
-						array(
-							'ECF_code'  => '120787J',
-							'full_name' => 'Test Player',
-							'club_name' => 'Test Club',
-						),
-						array( 'full_name' => 'No Code' ),
-					),
-				),
-			)
-		);
+
+		$save = function ( $name, array $extra = array() ) {
+			Chess_Army_Knife_Membership_Store::save_member(
+				$extra + array(
+					'name'     => $name,
+					'status'   => 'active',
+					'ecf_code' => '120787J',
+				)
+			);
+		};
+		$save( 'Test Player' );
+		$save( 'Test Nocode', array( 'ecf_code' => '' ) );
+		$save( 'Test Expired', array( 'expiry_date' => '2020-01-01' ) );
+		$save( 'Test Pending', array( 'status' => 'pending' ) );
+		$save( 'Test Declined', array( 'status' => 'rejected' ) );
+		$save( 'Someone Else', array( 'ecf_code' => '999999A' ) );
 
 		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
 		$request->set_param( 'search', 'Test' );
@@ -114,11 +118,63 @@ class PluginTest extends WP_UnitTestCase {
 				array(
 					'code' => '120787J',
 					'name' => 'Test Player',
-					'club' => 'Test Club',
+					'club' => '',
 				),
 			),
 			$response->get_data()
 		);
+	}
+
+	public function test_rest_player_search_never_contacts_the_ecf() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$contacted = array();
+		add_filter(
+			'pre_http_request',
+			function ( $pre, $args, $url ) use ( &$contacted ) {
+				$contacted[] = $url;
+				return new WP_Error( 'blocked', 'No requests expected.' );
+			},
+			10,
+			3
+		);
+
+		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request->set_param( 'search', 'Smith' );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( array(), $contacted );
+		$this->assertFalse( method_exists( 'Chess_Army_Knife_ECF_Client', 'search_players' ), 'The ECF player search is gone, so it cannot be wired back in by accident.' );
+	}
+
+	public function test_rest_player_search_needs_a_logged_in_editor_and_a_reasonable_term() {
+		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request->set_param( 'search', 'Test' );
+
+		wp_set_current_user( 0 );
+		$this->assertContains( rest_do_request( $request )->get_status(), array( 401, 403 ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( 403, rest_do_request( $request )->get_status() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$one_letter = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$one_letter->set_param( 'search', 'T' );
+		$this->assertSame( array(), rest_do_request( $one_letter )->get_data() );
+	}
+
+	public function test_the_member_search_permission_can_be_narrowed_to_membership_officers() {
+		add_filter(
+			'Chess_Army_Knife_member_search_capability',
+			function () {
+				return Chess_Army_Knife_Memberships::CAPABILITY;
+			}
+		);
+		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request->set_param( 'search', 'Test' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertSame( 403, rest_do_request( $request )->get_status() );
 	}
 
 	public function test_ecf_client_caches_real_http_responses() {

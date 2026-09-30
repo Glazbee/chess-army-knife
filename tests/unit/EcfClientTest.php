@@ -46,7 +46,6 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 	public function test_short_searches_return_empty_without_http() {
 		Functions\expect( 'wp_remote_get' )->never();
 
-		$this->assertSame( array(), Chess_Army_Knife_ECF_Client::search_players( 'ab' ) );
 		$this->assertSame( array(), Chess_Army_Knife_ECF_Client::search_clubs( ' a ' ) );
 	}
 

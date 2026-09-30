@@ -228,12 +228,12 @@ class Chess_Army_Knife_Players_Page {
 				<?php wp_nonce_field( 'chess_army_knife_save_player' ); ?>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="cak-ecf-search"><?php esc_html_e( 'Find on the ECF list', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="cak-ecf-search"><?php esc_html_e( 'Find a club member', 'chess-army-knife' ); ?></label></th>
 						<td data-cak-fill>
-							<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a surname…', 'chess-army-knife' ); ?>" />
+							<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a name…', 'chess-army-knife' ); ?>" />
 							<span class="spinner" data-cak-spinner></span>
 							<ul class="cak-selector__results" data-cak-results></ul>
-							<p class="description"><?php esc_html_e( 'Choose a player to fill in their name and ECF rating code.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Choose a current club member to fill in their name and ECF rating code.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

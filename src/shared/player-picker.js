@@ -1,7 +1,7 @@
 /**
- * A small search-as-you-type control for finding an ECF player and
- * picking up their rating code, backed by the plugin's own REST proxy
- * (which in turn calls the ECF fuzzy-name search endpoint).
+ * A small search-as-you-type control for finding a club member and
+ * picking up their ECF rating code, backed by the plugin's own REST
+ * route, which searches the club's member list (not the ECF's).
  */
 import { __ } from '@wordpress/i18n';
 import { TextControl, Spinner, Button } from '@wordpress/components';
@@ -47,11 +47,12 @@ export default function PlayerPicker( { value, label, onSelect } ) {
 		<div className="chess-army-knife-picker">
 			<TextControl
 				label={
-					label || __( 'Find player by name', 'chess-army-knife' )
+					label || __( 'Find member by name', 'chess-army-knife' )
 				}
 				value={ query }
-				placeholder={ __(
-					'Start typing a surname…',
+				placeholder={ __( 'Start typing a name…', 'chess-army-knife' ) }
+				help={ __(
+					'Current club members with an ECF code.',
 					'chess-army-knife'
 				) }
 				onChange={ setQuery }

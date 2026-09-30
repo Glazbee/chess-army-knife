@@ -197,7 +197,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					icon="chart-line"
 					label={ __( 'ECF Rating Chart', 'chess-army-knife' ) }
 					instructions={ __(
-						'Search for a player in the sidebar, or type their ECF rating code, to preview the chart.',
+						'Choose a club member in the sidebar, or type their ECF rating code, to preview the chart.',
 						'chess-army-knife'
 					) }
 				>

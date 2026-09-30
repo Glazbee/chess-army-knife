@@ -1,7 +1,7 @@
 <?php
 /**
  * Registers the compiled blocks and a couple of small REST endpoints
- * that back the "search for a player/club" controls in the editor.
+ * that back the "find a member/club" controls in the editor.
  *
  * @package Chess_Army_Knife
  */
@@ -24,9 +24,9 @@ function Chess_Army_Knife_register() {
 add_action( 'init', 'Chess_Army_Knife_register' );
 
 /**
- * Register a small proxy REST API so the block editor can search ECF
- * players/clubs without needing direct browser-to-ECF requests (which
- * may be blocked by CORS) and without exposing raw API internals.
+ * Register the small REST API behind the editor's search controls: the
+ * club's own members (players) and, through a proxy that avoids browser CORS
+ * problems and hides raw API internals, ECF clubs.
  */
 function Chess_Army_Knife_register_rest_routes() {
 	register_rest_route(
@@ -35,7 +35,7 @@ function Chess_Army_Knife_register_rest_routes() {
 		array(
 			'methods'             => 'GET',
 			'callback'            => 'Chess_Army_Knife_rest_search_players',
-			'permission_callback' => 'Chess_Army_Knife_rest_editor_permission',
+			'permission_callback' => 'Chess_Army_Knife_rest_member_search_permission',
 			'args'                => array(
 				'search' => array(
 					'required' => true,
@@ -133,33 +133,39 @@ function Chess_Army_Knife_rest_get_defaults() {
 }
 
 /**
- * REST callback: player name search, normalised into a flat list of
- * {code, name, club} suggestions for the editor's autocomplete control.
+ * Who may search the club's members from the editor and the tournament
+ * screens. The default matches the other editor helpers; a club that wants
+ * only its membership officers to do this can return their permission.
+ *
+ * @return bool
+ */
+function Chess_Army_Knife_rest_member_search_permission() {
+	/**
+	 * Filter the capability needed to search club members by name.
+	 *
+	 * @param string $capability Capability name, edit_posts by default.
+	 */
+	return current_user_can( (string) apply_filters( 'Chess_Army_Knife_member_search_capability', 'edit_posts' ) );
+}
+
+/**
+ * REST callback: search the club's own members by name, for the editor's
+ * player picker and the tournament screens. Only current members with an ECF
+ * rating code are offered, as {code, name, club} suggestions (the club is
+ * always blank: everyone listed is a member here). The ECF's own database is
+ * deliberately not searched, so the club only ever handles people it holds a
+ * record for and can account for in a subject access request.
  *
  * @param WP_REST_Request $request Request.
- * @return WP_REST_Response|WP_Error
+ * @return WP_REST_Response
  */
 function Chess_Army_Knife_rest_search_players( WP_REST_Request $request ) {
-	$results = Chess_Army_Knife_ECF_Client::search_players( $request->get_param( 'search' ) );
-
-	if ( is_wp_error( $results ) ) {
-		return $results;
-	}
-
 	$suggestions = array();
-	foreach ( (array) $results as $player ) {
-		$code = isset( $player['ECF_code'] ) ? $player['ECF_code'] : ( isset( $player['player_no'] ) ? $player['player_no'] : '' );
-		$name = isset( $player['full_name'] ) ? $player['full_name'] : ( isset( $player['name'] ) ? $player['name'] : '' );
-		$club = isset( $player['club_name'] ) ? $player['club_name'] : '';
-
-		if ( '' === $code || '' === $name ) {
-			continue;
-		}
-
+	foreach ( Chess_Army_Knife_Membership_Store::search_players( (string) $request->get_param( 'search' ) ) as $member ) {
 		$suggestions[] = array(
-			'code' => (string) $code,
-			'name' => (string) $name,
-			'club' => (string) $club,
+			'code' => $member['ecf_code'],
+			'name' => $member['name'],
+			'club' => '',
 		);
 	}
 

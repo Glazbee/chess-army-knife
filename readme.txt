@@ -19,7 +19,7 @@ This plugin adds sixteen blocks to the WordPress block editor, pulling live data
 
 **Blocks included**
 
-1. **ECF Rating Chart** — search for a player and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
+1. **ECF Rating Chart** — choose a club member and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
 2. **ECF Club Results** — pick a club and show a merged feed of recent rated results across its members (win/draw/loss, opponent, event).
 3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
 4. **ECF Team Fixtures Carousel** — a rotating carousel showing each team's last result and next fixture. Teams are read automatically from the league table, or you can supply your own list.

@@ -1,7 +1,7 @@
 /**
  * Admin behaviour for the Tournaments and Players pages:
- * - the player selector (filter saved players, search the ECF list, add players by hand),
- * - filling a player's name and ECF code from an ECF search,
+ * - the player selector (filter saved players, search club members, add players by hand),
+ * - filling a player's name and ECF code from a member search,
  * - showing only the create-form fields that apply to the chosen format.
  */
 ( function () {
@@ -11,19 +11,19 @@
 	var i18n = settings.i18n;
 
 	/**
-	 * Search the ECF list through the plugin's REST proxy.
+	 * Search the club's members (current members with an ECF code).
 	 *
 	 * @param {string} term Text typed so far.
 	 * @return {Promise<Array>} Players: code, name, club.
 	 */
-	function searchEcf( term ) {
+	function searchMembers( term ) {
 		return window.wp.apiFetch( {
 			path: '/ecf-lms/v1/players?search=' + encodeURIComponent( term ),
 		} );
 	}
 
 	/**
-	 * Wire an ECF search box to a results list.
+	 * Wire a member search box to a results list.
 	 *
 	 * @param {Element}  root     Element holding the search box, spinner and results list.
 	 * @param {Function} render   Called with (player, listItem) to fill each result's row.
@@ -59,7 +59,7 @@
 				if ( spinner ) {
 					spinner.classList.add( 'is-active' );
 				}
-				searchEcf( term )
+				searchMembers( term )
 					.then( function ( players ) {
 						if ( request !== latest ) {
 							return;
@@ -289,7 +289,7 @@
 	}
 
 	/**
-	 * On the Players page: choosing an ECF result fills in the name and code fields.
+	 * On the Players page: choosing a member fills in the name and code fields.
 	 *
 	 * @param {Element} root The [data-cak-fill] element.
 	 */
