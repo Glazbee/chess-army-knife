@@ -24,6 +24,8 @@ class Chess_Army_Knife_Events {
 	const META_LOCATION    = '_chess_army_event_location';
 	const META_TOURNAMENTS = '_chess_army_event_tournaments';
 	const META_LEAGUES     = '_chess_army_event_leagues';
+	const META_TEAM        = '_chess_army_event_team'; // One row per club team playing in the fixture.
+	const META_SIDES       = '_chess_army_event_sides'; // Team id => 'home' or 'away'.
 
 	/**
 	 * Hook up registration.
@@ -177,6 +179,7 @@ class Chess_Army_Knife_Events {
 	 *                            An event already under way at that time (its end is later) is included.
 	 *     @type string   $before Only events starting before this site-local "Y-m-d H:i:s".
 	 *     @type string[] $tags   Tag slugs; an event with any of them matches.
+	 *     @type int[]    $teams  Team ids; a fixture of any of these teams matches.
 	 *     @type int      $limit  Maximum events (0 for all).
 	 *     @type string   $order  ASC or DESC by start time.
 	 * }
@@ -189,6 +192,7 @@ class Chess_Army_Knife_Events {
 				'after'  => 'now',
 				'before' => '',
 				'tags'   => array(),
+				'teams'  => array(),
 				'limit'  => 10,
 				'order'  => 'ASC',
 			)
@@ -228,6 +232,16 @@ class Chess_Army_Knife_Events {
 				'value'   => $args['before'],
 				'compare' => '<',
 				'type'    => 'DATETIME',
+			);
+		}
+
+		$team_ids = array_values( array_filter( array_map( 'absint', (array) $args['teams'] ) ) );
+		if ( $team_ids ) {
+			$meta_query[] = array(
+				'key'     => self::META_TEAM,
+				'value'   => $team_ids,
+				'compare' => 'IN',
+				'type'    => 'NUMERIC',
 			);
 		}
 
@@ -277,6 +291,7 @@ class Chess_Army_Knife_Events {
 	 *     @type array[]  $tags                Each { name, slug, url }.
 	 *     @type array[]  $tournaments         Each { id, name, url } (url '' unless it has a published page).
 	 *     @type array[]  $leagues             Each { org, event }.
+	 *     @type array[]  $teams               The club teams playing, each { id, name, colour, side }.
 	 * }
 	 */
 	public static function data( $post ) {
@@ -318,6 +333,20 @@ class Chess_Army_Knife_Events {
 			}
 		}
 
+		$teams = array();
+		$sides = (array) get_post_meta( $id, self::META_SIDES, true );
+		foreach ( get_post_meta( $id, self::META_TEAM, false ) as $team_id ) {
+			$team = Chess_Army_Knife_Teams::get( (int) $team_id );
+			if ( $team ) {
+				$teams[] = array(
+					'id'     => $team['id'],
+					'name'   => $team['name'],
+					'colour' => $team['colour'],
+					'side'   => isset( $sides[ $team['id'] ] ) ? (string) $sides[ $team['id'] ] : '',
+				);
+			}
+		}
+
 		return array(
 			'id'          => $id,
 			'title'       => get_the_title( $post ),
@@ -329,6 +358,7 @@ class Chess_Army_Knife_Events {
 			'tags'        => $tags,
 			'tournaments' => $tournaments,
 			'leagues'     => $leagues,
+			'teams'       => $teams,
 		);
 	}
 }

@@ -44,6 +44,27 @@
 		font-weight: 600;
 	}
 
+	.cak-event[style*="--cak-team-colour"] {
+		border-left: 4px solid var(--cak-team-colour);
+		padding-left: 0.6em;
+	}
+
+	.cak-month__event[style*="--cak-team-colour"] {
+		border-left: 3px solid var(--cak-team-colour);
+		padding-left: 0.3em;
+	}
+
+	.cak-event__team,
+	.cak-month__team {
+		font-size: 0.85em;
+		color: #555;
+	}
+
+	.cak-event__subscribe {
+		margin: 0.8em 0 0;
+		font-size: 0.9em;
+	}
+
 	.cak-event__title {
 		font-weight: 700;
 	}

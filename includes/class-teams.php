@@ -25,6 +25,7 @@ class Chess_Army_Knife_Teams {
 	const META_VENUE   = '_chess_army_team_venue';
 	const META_CAPTAIN = '_chess_army_team_captain';
 	const META_SEASONS = '_chess_army_team_seasons';
+	const META_COLOUR  = '_chess_army_team_colour';
 
 	/**
 	 * Hook up registration and cleanup.
@@ -142,6 +143,7 @@ class Chess_Army_Knife_Teams {
 			'description' => (string) $post->post_excerpt,
 			'venue'       => (string) get_post_meta( $post->ID, self::META_VENUE, true ),
 			'captain_id'  => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
+			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
 			'seasons'     => is_array( $seasons ) ? array_values( array_map( 'strval', $seasons ) ) : array(),
 		);
 	}
@@ -167,6 +169,21 @@ class Chess_Army_Knife_Teams {
 	 */
 	public static function season_key( array $club_team ) {
 		return $club_team['org'] . '|' . $club_team['event'] . '|' . $club_team['team'];
+	}
+
+	/**
+	 * The team that plays a season (an entry of the Club Teams list).
+	 *
+	 * @param string $season_key Key from season_key().
+	 * @return array|null The team (see all()), or null if no team has that season.
+	 */
+	public static function team_for_season( $season_key ) {
+		foreach ( self::all() as $team ) {
+			if ( in_array( $season_key, $team['seasons'], true ) ) {
+				return $team;
+			}
+		}
+		return null;
 	}
 
 	/**

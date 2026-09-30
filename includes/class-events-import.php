@@ -112,6 +112,23 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
+	 * Which side of a fixture a team is on.
+	 *
+	 * @param array  $match Normalised match row.
+	 * @param string $team  Team name, as matched by team_matches().
+	 * @return string 'home' or 'away'.
+	 */
+	public static function side_of( array $match, $team ) {
+		if ( 0 === strcasecmp( $match['home'], $team ) ) {
+			return 'home';
+		}
+		if ( 0 === strcasecmp( $match['away'], $team ) ) {
+			return 'away';
+		}
+		return '' !== $team && false !== stripos( $match['home'], $team ) ? 'home' : 'away';
+	}
+
+	/**
 	 * Work out the events to create from the club's teams and their fixtures.
 	 *
 	 * @param array[] $teams              Club teams, each { org, event, team }.
@@ -119,7 +136,7 @@ class Chess_Army_Knife_Events_Import {
 	 * @param string  $today              Today, "Y-m-d" (earlier fixtures are ignored).
 	 * @param string  $default_time       Start time for a fixture with none, "HH:MM".
 	 * @return array {
-	 *     @type array[] $candidates Each { key, title, start, location, league }.
+	 *     @type array[] $candidates Each { key, title, start, location, league, club_teams }, where club_teams maps a Club Teams entry key to 'home' or 'away'.
 	 *     @type int     $skipped    Fixtures ignored because their date couldn't be read.
 	 * }
 	 */
@@ -153,12 +170,16 @@ class Chess_Army_Knife_Events_Import {
 				// Two of the club's own teams meeting is one fixture, however many teams find it.
 				$key = self::match_key( $team['org'], $team['event'], $match['home'], $match['away'], $date );
 
+				$club_teams = isset( $candidates[ $key ] ) ? $candidates[ $key ]['club_teams'] : array();
+				$club_teams[ Chess_Army_Knife_Teams::season_key( $team ) ] = self::side_of( $match, $team['team'] );
+
 				$candidates[ $key ] = array(
-					'key'      => $key,
-					'title'    => $match['home'] . ' v ' . $match['away'],
-					'start'    => $start,
-					'location' => $match['venue'],
-					'league'   => Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ),
+					'key'        => $key,
+					'title'      => $match['home'] . ' v ' . $match['away'],
+					'start'      => $start,
+					'location'   => $match['venue'],
+					'league'     => Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ),
+					'club_teams' => $club_teams,
 				);
 			}
 		}
@@ -205,6 +226,38 @@ class Chess_Army_Knife_Events_Import {
 		}
 
 		return $by_league;
+	}
+
+	/**
+	 * Link an event to the club teams playing in it, and record which side each is on.
+	 *
+	 * @param int      $post_id    Event id.
+	 * @param string[] $club_teams Club Teams entry key => 'home' or 'away'.
+	 * @return bool Whether anything changed.
+	 */
+	protected static function sync_teams( $post_id, array $club_teams ) {
+		$sides = array();
+		foreach ( $club_teams as $season_key => $side ) {
+			$team = Chess_Army_Knife_Teams::team_for_season( $season_key );
+			if ( $team ) {
+				$sides[ $team['id'] ] = $side;
+			}
+		}
+		ksort( $sides );
+
+		$current = array_map( 'intval', get_post_meta( $post_id, Chess_Army_Knife_Events::META_TEAM, false ) );
+		sort( $current );
+		$stored_sides = (array) get_post_meta( $post_id, Chess_Army_Knife_Events::META_SIDES, true );
+		if ( array_keys( $sides ) === $current && $stored_sides === $sides ) {
+			return false;
+		}
+
+		delete_post_meta( $post_id, Chess_Army_Knife_Events::META_TEAM );
+		foreach ( array_keys( $sides ) as $team_id ) {
+			add_post_meta( $post_id, Chess_Army_Knife_Events::META_TEAM, $team_id );
+		}
+		update_post_meta( $post_id, Chess_Army_Knife_Events::META_SIDES, $sides );
+		return true;
 	}
 
 	/**
@@ -284,6 +337,7 @@ class Chess_Army_Knife_Events_Import {
 				);
 				if ( ! is_wp_error( $post_id ) ) {
 					wp_set_object_terms( $post_id, array( self::TAG ), Chess_Army_Knife_Events::TAXONOMY );
+					self::sync_teams( $post_id, $candidate['club_teams'] );
 					++$summary['created'];
 				}
 				continue;
@@ -294,7 +348,7 @@ class Chess_Army_Knife_Events_Import {
 				continue;
 			}
 
-			$changed = false;
+			$changed = self::sync_teams( $existing->ID, $candidate['club_teams'] );
 			if ( get_post_meta( $existing->ID, Chess_Army_Knife_Events::META_START, true ) !== $candidate['start'] ) {
 				update_post_meta( $existing->ID, Chess_Army_Knife_Events::META_START, $candidate['start'] );
 				$changed = true;

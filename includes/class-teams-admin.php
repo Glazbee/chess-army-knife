@@ -63,6 +63,7 @@ class Chess_Army_Knife_Teams_Admin {
 	public static function render_details( $post ) {
 		$venue   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
 		$captain = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
+		$colour  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
 		$seasons = get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_SEASONS, true );
 		$seasons = is_array( $seasons ) ? $seasons : array();
 
@@ -72,6 +73,14 @@ class Chess_Army_Knife_Teams_Admin {
 			<tr>
 				<th scope="row"><label for="chess_army_team_venue"><?php esc_html_e( 'Home venue', 'chess-army-knife' ); ?></label></th>
 				<td><input type="text" id="chess_army_team_venue" name="chess_army_team_venue" value="<?php echo esc_attr( $venue ); ?>" class="regular-text" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_team_colour"><?php esc_html_e( 'Calendar colour', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<input type="color" id="chess_army_team_colour" name="chess_army_team_colour" value="<?php echo esc_attr( '' !== $colour ? $colour : '#2a78d6' ); ?>" />
+					<label><input type="checkbox" name="chess_army_team_no_colour" value="1" <?php checked( '' === $colour ); ?> /> <?php esc_html_e( 'No colour', 'chess-army-knife' ); ?></label>
+					<p class="description"><?php esc_html_e( 'Marks this team\'s fixtures on the calendar. The team name is always shown too.', 'chess-army-knife' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="chess_army_team_captain"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></label></th>
@@ -90,7 +99,7 @@ class Chess_Army_Knife_Teams_Admin {
 				<td>
 					<?php $club_teams = Chess_Army_Knife_Settings::get_club_teams(); ?>
 					<?php if ( ! $club_teams ) : ?>
-						<p class="description"><?php esc_html_e( 'Add the club\'s league entries on the Club Teams page, then tick the ones that belong to this team.', 'chess-army-knife' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Add the club\'s league entries on the Club Teams page, then tick the ones that belong to this team. Fixtures are linked to teams when Import Events is run.', 'chess-army-knife' ); ?></p>
 					<?php endif; ?>
 					<?php foreach ( $club_teams as $club_team ) : ?>
 						<?php $key = Chess_Army_Knife_Teams::season_key( $club_team ); ?>
@@ -140,6 +149,9 @@ class Chess_Army_Knife_Teams_Admin {
 		}
 
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_VENUE, isset( $_POST['chess_army_team_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_venue'] ) ) : '' );
+
+		$colour = ! empty( $_POST['chess_army_team_no_colour'] ) || ! isset( $_POST['chess_army_team_colour'] ) ? '' : (string) sanitize_hex_color( wp_unslash( $_POST['chess_army_team_colour'] ) );
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_COLOUR, $colour );
 
 		// Only someone the club holds a record of can captain a team.
 		$captain = isset( $_POST['chess_army_team_captain'] ) ? absint( $_POST['chess_army_team_captain'] ) : 0;

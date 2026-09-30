@@ -39,6 +39,7 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 				'tags'        => array(),
 				'tournaments' => array(),
 				'leagues'     => array(),
+				'teams'       => array(),
 			),
 			$overrides
 		);
@@ -83,6 +84,7 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 				'show_location' => true,
 				'show_tags'     => true,
 				'show_links'    => true,
+				'show_teams'    => true,
 			),
 			Chess_Army_Knife_Events_Display::options( array() )
 		);
@@ -276,5 +278,62 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( 31, substr_count( $html, 'cak-month__daynum' ) );
 		$this->assertStringNotContainsString( 'has-events', $html );
+	}
+
+	private function team_event( array $teams ) {
+		return $this->event( array( 'teams' => $teams ) );
+	}
+
+	private function side( $id, $name, $side, $colour = '' ) {
+		return array(
+			'id'     => $id,
+			'name'   => $name,
+			'colour' => $colour,
+			'side'   => $side,
+		);
+	}
+
+	public function test_a_fixtures_teams_are_labelled_with_their_side() {
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::team_label( $this->event() ) );
+		$this->assertSame( 'Club A (home)', Chess_Army_Knife_Events_Display::team_label( $this->team_event( array( $this->side( 1, 'Club A', 'home' ) ) ) ) );
+		$this->assertSame( 'Club A (home), Club B (away)', Chess_Army_Knife_Events_Display::team_label( $this->team_event( array( $this->side( 1, 'Club A', 'home' ), $this->side( 2, 'Club B', 'away' ) ) ) ) );
+	}
+
+	public function test_the_side_of_a_fixture() {
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::side_of_event( $this->event() ) );
+		$this->assertSame( 'away', Chess_Army_Knife_Events_Display::side_of_event( $this->team_event( array( $this->side( 1, 'A', 'away' ) ) ) ) );
+		$this->assertSame( 'derby', Chess_Army_Knife_Events_Display::side_of_event( $this->team_event( array( $this->side( 1, 'A', 'home' ), $this->side( 2, 'B', 'away' ) ) ) ) );
+	}
+
+	public function test_home_and_away_filters() {
+		$home  = $this->team_event( array( $this->side( 1, 'A', 'home' ) ) );
+		$away  = $this->team_event( array( $this->side( 1, 'A', 'away' ) ) );
+		$other = $this->team_event( array( $this->side( 2, 'B', 'home' ) ) );
+		$night = $this->event();
+		$all   = array( $home, $away, $other, $night );
+
+		$this->assertSame( $all, Chess_Army_Knife_Events_Display::filter_by_venue( $all, 'all' ) );
+		$this->assertSame( array( $home, $other ), Chess_Army_Knife_Events_Display::filter_by_venue( $all, 'home' ), 'A club night is neither home nor away.' );
+		$this->assertSame( array( $away ), Chess_Army_Knife_Events_Display::filter_by_venue( $all, 'away' ) );
+		$this->assertSame( array( $home ), Chess_Army_Knife_Events_Display::filter_by_venue( $all, 'home', array( 1 ) ), 'Only the chosen teams count.' );
+	}
+
+	public function test_a_team_colour_is_passed_on_only_if_valid() {
+		Functions\when( 'sanitize_hex_color' )->alias(
+			function ( $colour ) {
+				return preg_match( '/^#[0-9a-f]{6}$/i', $colour ) ? $colour : '';
+			}
+		);
+
+		$this->assertSame( ' style="--cak-team-colour:#2a78d6"', Chess_Army_Knife_Events_Display::colour_style( $this->team_event( array( $this->side( 1, 'A', 'home', '#2a78d6' ) ) ) ) );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::colour_style( $this->team_event( array( $this->side( 1, 'A', 'home', 'red;x' ) ) ) ) );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::colour_style( $this->event() ) );
+	}
+
+	public function test_details_show_the_team_unless_switched_off() {
+		$event = $this->team_event( array( $this->side( 1, 'Club A', 'away' ) ) );
+
+		$this->assertStringContainsString( 'Club A (away)', Chess_Army_Knife_Events_Display::details_html( $event, array( 'show_teams' => true ) ) );
+		$this->assertStringNotContainsString( 'Club A', Chess_Army_Knife_Events_Display::details_html( $event, array( 'show_teams' => false ) ) );
 	}
 }

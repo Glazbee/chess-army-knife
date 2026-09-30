@@ -284,4 +284,40 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Our A v Rivals', $html );
 		$this->assertStringContainsString( 'Division 1', $html );
 	}
+
+	public function test_imported_fixtures_are_linked_to_their_team_with_the_side_and_relinked_on_the_next_import() {
+		$this->lms['Division 1'] = array(
+			$this->fixture( 'Our A', 'Rivals', '2099-10-05' ),
+			$this->fixture( 'Rivals', 'Our A', '2099-11-02' ),
+		);
+
+		// Imported before any team exists: no links.
+		Chess_Army_Knife_Events_Import::import();
+		$this->assertSame( array(), $this->imported()[0]['teams'] );
+
+		$team = self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => 'Club A',
+				'meta_input'  => array(
+					Chess_Army_Knife_Teams::META_SEASONS => array( '613|Division 1|Our A' ),
+					Chess_Army_Knife_Teams::META_COLOUR  => '#2a78d6',
+				),
+			)
+		);
+
+		$summary = Chess_Army_Knife_Events_Import::import();
+		$events  = $this->imported();
+
+		$this->assertSame( 2, $summary['updated'] );
+		$this->assertSame( 'home', $events[0]['teams'][0]['side'] );
+		$this->assertSame( 'away', $events[1]['teams'][0]['side'] );
+		$this->assertSame( $team, $events[0]['teams'][0]['id'] );
+		$this->assertSame( '#2a78d6', $events[0]['teams'][0]['colour'] );
+
+		$again = Chess_Army_Knife_Events_Import::import();
+		$this->assertSame( 0, $again['updated'] );
+		$this->assertCount( 1, get_post_meta( $events[0]['id'], Chess_Army_Knife_Events::META_TEAM, false ), 'Links are not duplicated.' );
+	}
 }
