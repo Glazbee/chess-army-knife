@@ -87,6 +87,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Agreed to receive the newsletter (UTC)', 'chess-army-knife' ) => $member['newsletter_consent_at'],
 				__( 'Agreed to be added to WhatsApp groups (UTC)', 'chess-army-knife' ) => $member['whatsapp_consent_at'],
 				__( 'WhatsApp groups for teams', 'chess-army-knife' ) => implode( ', ', $member['whatsapp_teams'] ),
+				__( 'Last renewal reminder sent (expiry date and days before it)', 'chess-army-knife' ) => $member['renewal_reminder'],
 				__( 'Record created (UTC)', 'chess-army-knife' ) => $member['created_at'],
 			);
 

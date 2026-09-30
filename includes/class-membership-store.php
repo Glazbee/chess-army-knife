@@ -82,6 +82,7 @@ class Chess_Army_Knife_Membership_Store {
 			newsletter_consent_at DATETIME NULL,
 			whatsapp_consent_at DATETIME NULL,
 			whatsapp_teams TEXT NULL,
+			renewal_reminder VARCHAR(24) NOT NULL DEFAULT '',
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
@@ -726,6 +727,56 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
+	 * Current members whose membership ends within a range of dates.
+	 *
+	 * @param string $from First expiry date (Y-m-d).
+	 * @param string $to   Last expiry date (Y-m-d).
+	 * @return array[]
+	 */
+	public static function get_expiring( $from, $to ) {
+		global $wpdb;
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE status = %s AND expiry_date BETWEEN %s AND %s ORDER BY expiry_date ASC, name ASC", self::STATUS_ACTIVE, $from, $to ), ARRAY_A );
+		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
+	 * Renew a member: the membership runs on for another period of its type.
+	 * It starts the day after the current one ends, or today if that has already
+	 * passed. The payment is noted as received today.
+	 *
+	 * @param int         $id    Member id.
+	 * @param string|null $today Site-local date (Y-m-d); today by default.
+	 * @return string The new expiry date, or '' if the member cannot be renewed (not a current or lapsed member, or a type that does not expire).
+	 */
+	public static function renew_member( $id, $today = null ) {
+		$member = self::get_member( $id );
+		$today  = $today ? $today : current_time( 'Y-m-d' );
+		$type   = $member ? Chess_Army_Knife_Memberships::get_type( $member['membership_type_id'] ) : null;
+
+		if ( ! $member || ! $type || $type['months'] <= 0 || self::STATUS_ACTIVE !== $member['status'] ) {
+			return '';
+		}
+
+		$start = $today;
+		if ( $member['expiry_date'] >= $today ) {
+			$start = gmdate( 'Y-m-d', strtotime( $member['expiry_date'] . ' UTC' ) + DAY_IN_SECONDS );
+		}
+		$expiry = Chess_Army_Knife_Memberships::expiry_from( $start, $type['months'] );
+
+		self::save_member(
+			array(
+				'id'          => (int) $id,
+				'expiry_date' => $expiry,
+				'paid_on'     => $today,
+			)
+		);
+		return $expiry;
+	}
+
+	/**
 	 * Everything held under an email address, for the privacy tools. A junior's record is found by their parent or guardian's address as well as their own.
 	 *
 	 * @param string $email Email address.
@@ -906,6 +957,7 @@ class Chess_Army_Knife_Membership_Store {
 				'newsletter_consent_at' => null,
 				'whatsapp_consent_at'   => null,
 				'whatsapp_teams'        => '',
+				'renewal_reminder'      => '',
 			)
 		);
 		return 'anonymised';

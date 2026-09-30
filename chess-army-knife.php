@@ -49,12 +49,14 @@ require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-form.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-notification-preferences.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-mailer.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-renewal-reminders.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-rating-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-photos.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-requests.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-privacy.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-members-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-renewals-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
 /**
@@ -84,6 +86,7 @@ function Chess_Army_Knife_activate() {
 
 	Chess_Army_Knife_Rating_Refresh::schedule();
 	Chess_Army_Knife_Mailer::schedule();
+	Chess_Army_Knife_Renewal_Reminders::schedule();
 }
 register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
 
@@ -98,6 +101,7 @@ function Chess_Army_Knife_deactivate() {
 	wp_clear_scheduled_hook( 'Chess_Army_Knife_cleanup_cache' );
 	Chess_Army_Knife_Rating_Refresh::unschedule();
 	Chess_Army_Knife_Mailer::unschedule();
+	Chess_Army_Knife_Renewal_Reminders::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 

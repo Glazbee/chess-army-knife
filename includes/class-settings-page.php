@@ -73,24 +73,28 @@ class Chess_Army_Knife_Settings {
 	 */
 	public static function defaults() {
 		return array(
-			'default_org_id'           => '',
-			'default_event_name'       => '',
-			'default_domain'           => 'S',
-			'ecf_club_code'            => '', // The club's ECF code, to refresh all members' ratings in one request.
-			'default_days_back'        => 60,
-			'default_max_players'      => 12,
-			'lms_base_url'             => '',
-			'default_event_location'   => '', // Used by club events that don't set their own.
-			'membership_payment_info'  => '', // How to pay for a membership (bank details, cash at the club...).
-			'data_contact_email'       => '', // Shown in the data policy as who to contact about personal data.
-			'member_retention_months'  => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
-			'club_teams'               => '',  // Raw textarea: one "org | event | team" per line.
-			'fast_cache_enabled'       => 1,
-			'match_time'               => '19:30',
-			'cache_ecf_minutes'        => 360, // Player info / games.
-			'cache_lms_minutes'        => 30,  // League tables / matches / fixtures.
-			'use_local_cache'          => 1,   // Persistent custom-table cache vs. plain transients.
-			'delete_data_on_uninstall' => 0, // Also delete tournaments and players when the plugin is deleted.
+			'default_org_id'            => '',
+			'default_event_name'        => '',
+			'default_domain'            => 'S',
+			'ecf_club_code'             => '', // The club's ECF code, to refresh all members' ratings in one request.
+			'default_days_back'         => 60,
+			'default_max_players'       => 12,
+			'lms_base_url'              => '',
+			'default_event_location'    => '', // Used by club events that don't set their own.
+			'membership_payment_info'   => '', // How to pay for a membership (bank details, cash at the club...).
+			'data_contact_email'        => '', // Shown in the data policy as who to contact about personal data.
+			'member_retention_months'   => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
+			'renewal_reminders_enabled' => 0, // Email members as their membership runs out.
+			'renewal_reminder_days'     => '30,7,0,-7', // Days before (positive) or after (negative) the last day of membership.
+			'renewal_reminder_subject'  => '',
+			'renewal_reminder_message'  => '',
+			'club_teams'                => '',  // Raw textarea: one "org | event | team" per line.
+			'fast_cache_enabled'        => 1,
+			'match_time'                => '19:30',
+			'cache_ecf_minutes'         => 360, // Player info / games.
+			'cache_lms_minutes'         => 30,  // League tables / matches / fixtures.
+			'use_local_cache'           => 1,   // Persistent custom-table cache vs. plain transients.
+			'delete_data_on_uninstall'  => 0, // Also delete tournaments and players when the plugin is deleted.
 		);
 	}
 
@@ -273,6 +277,16 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['member_retention_months'] ) ) {
 			$clean['member_retention_months'] = max( 0, min( 120, (int) $input['member_retention_months'] ) );
 		}
+		$clean['renewal_reminders_enabled'] = ! empty( $input['renewal_reminders_enabled'] ) ? 1 : 0;
+		if ( isset( $input['renewal_reminder_days'] ) ) {
+			$clean['renewal_reminder_days'] = implode( ',', Chess_Army_Knife_Renewal_Reminders::parse_schedule( sanitize_text_field( $input['renewal_reminder_days'] ) ) );
+		}
+		if ( isset( $input['renewal_reminder_subject'] ) ) {
+			$clean['renewal_reminder_subject'] = sanitize_text_field( $input['renewal_reminder_subject'] );
+		}
+		if ( isset( $input['renewal_reminder_message'] ) ) {
+			$clean['renewal_reminder_message'] = sanitize_textarea_field( $input['renewal_reminder_message'] );
+		}
 		if ( isset( $input['lms_base_url'] ) ) {
 			$clean['lms_base_url'] = esc_url_raw( trim( $input['lms_base_url'] ) );
 		}
@@ -435,6 +449,33 @@ class Chess_Army_Knife_Settings {
 							<input type="number" min="0" max="120" id="member_retention_months" name="<?php echo esc_attr( self::OPTION ); ?>[member_retention_months]" value="<?php echo esc_attr( $options['member_retention_months'] ); ?>" class="small-text" />
 							<?php esc_html_e( 'months', 'chess-army-knife' ); ?>
 							<p class="description"><?php esc_html_e( 'Members whose membership ended, and applications that were declined, cancelled or never approved, are deleted automatically this long after. A record with a payment on it is kept for your accounts, but its personal details are removed. Enter 0 to keep everything until you delete it yourself. Current members are never removed.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Renewal reminders', 'chess-army-knife' ); ?></th>
+						<td>
+							<label><input type="checkbox" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminders_enabled]" value="1" <?php checked( ! empty( $options['renewal_reminders_enabled'] ) ); ?> /> <?php esc_html_e( 'Email members as their membership runs out', 'chess-army-knife' ); ?></label>
+							<p class="description"><?php esc_html_e( 'A daily job emails current members once at each stage below (a junior\'s email goes to their parent or guardian). Members can stop these emails with the link in each one. See Memberships > Renewals for who would be emailed.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="renewal_reminder_days"><?php esc_html_e( 'Reminder days', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="renewal_reminder_days" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminder_days]" value="<?php echo esc_attr( $options['renewal_reminder_days'] ); ?>" class="regular-text" />
+							<p class="description"><?php esc_html_e( 'Days before the last day of membership, separated by commas; 0 is the last day itself and a negative number is days after. The default, 30,7,0,-7, sends four reminders.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="renewal_reminder_subject"><?php esc_html_e( 'Reminder subject', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="renewal_reminder_subject" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminder_subject]" value="<?php echo esc_attr( $options['renewal_reminder_subject'] ); ?>" class="large-text" placeholder="<?php echo esc_attr( Chess_Army_Knife_Renewal_Reminders::default_text()['subject'] ); ?>" />
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="renewal_reminder_message"><?php esc_html_e( 'Reminder message', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<textarea id="renewal_reminder_message" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminder_message]" rows="6" class="large-text" placeholder="<?php echo esc_attr( Chess_Army_Knife_Renewal_Reminders::default_text()['body'] ); ?>"><?php echo esc_textarea( $options['renewal_reminder_message'] ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Leave blank to use the wording shown. You can use {name}, {type}, {expiry}, {when} (for example "runs out on 31 March"), {reference} and {payment} (your payment instructions with the member\'s reference). Plain text only.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>

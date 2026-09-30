@@ -18,6 +18,7 @@ $chess_army_knife_delete_data = is_array( $chess_army_knife_settings ) && ! empt
 
 wp_clear_scheduled_hook( 'Chess_Army_Knife_refresh_ratings' );
 wp_clear_scheduled_hook( 'Chess_Army_Knife_send_mail' );
+wp_clear_scheduled_hook( 'Chess_Army_Knife_send_renewal_reminders' );
 delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
 delete_option( 'Chess_Army_Knife_templates' );
