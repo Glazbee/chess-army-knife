@@ -45,12 +45,14 @@ This is a PHP 7.4 Wordpress plugin for doing chess-related things. The plugin sh
 - Test both successful and non-successful execution paths
 - Verify that changes do not break existing functionality
 - Run the available project tests and static analysis tools where aplicable
+- Do not run integration tests with Wordpress. Let Github CI do this
 
 # Development
 - Make the smallest reasonable change to achieve the requested functionality
 - Do not modify unrelated files or introduce unnecesary refactoring
 - Do not assume undocumented behaviour; inspect the code or relevant API documentation first
 - Update relevant documentation when changing public functionality, configuration or integrations
+- We are in development mode. Do not bump the schema version, as no live installs exist
 
 
 # ECF API
