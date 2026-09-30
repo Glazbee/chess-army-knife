@@ -35,7 +35,7 @@ $can_edit = ! empty( $sections ) && Chess_Army_Knife_Tournaments::user_can_manag
 
 // The score a player can be given, and the label shown for it.
 $score_options = array(
-	''    => '—',
+	''    => __( 'No result', 'chess-army-knife' ),
 	'1'   => '1',
 	'0.5' => '½',
 	'0'   => '0',
@@ -46,9 +46,15 @@ $score_options = array(
 	<?php if ( $can_edit ) : ?>
 		data-rest-url="<?php echo esc_url( rest_url( Chess_Army_Knife_Tournament_REST::NAMESPACE_V1 . '/games/results' ) ); ?>"
 		data-nonce="<?php echo esc_attr( wp_create_nonce( 'wp_rest' ) ); ?>"
+		data-msg-saving="<?php esc_attr_e( 'Saving…', 'chess-army-knife' ); ?>"
+		data-msg-row-saved="<?php esc_attr_e( 'Saved', 'chess-army-knife' ); ?>"
+		data-msg-saved="<?php esc_attr_e( 'The results were saved.', 'chess-army-knife' ); ?>"
+		data-msg-some-failed="<?php esc_attr_e( 'Some results could not be saved. They are marked below.', 'chess-army-knife' ); ?>"
+		data-msg-error="<?php esc_attr_e( 'The results could not be saved. Please try again.', 'chess-army-knife' ); ?>"
+		data-msg-partner="<?php /* translators: 1: player name, 2: their score */ esc_attr_e( '%1$s set to %2$s', 'chess-army-knife' ); ?>"
 	<?php endif; ?>
 >
-	<p class="cak-games__title"><?php echo esc_html( $tournament['name'] ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-games__title', $tournament['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT === $tournament['status'] ) : ?>
 		<div class="chess-army-knife-empty"><?php esc_html_e( 'This tournament has not started yet.', 'chess-army-knife' ); ?></div>
@@ -59,16 +65,16 @@ $score_options = array(
 	<?php if ( $can_edit ) : ?>
 		<div class="cak-games__toolbar">
 			<button type="button" class="cak-games__save wp-element-button" disabled><?php esc_html_e( 'Save results', 'chess-army-knife' ); ?></button>
-			<span class="cak-games__status" role="status" aria-live="polite"></span>
+			<span class="cak-games__status" role="status" aria-live="polite" tabindex="-1"></span>
 		</div>
 	<?php endif; ?>
 
 	<?php foreach ( $sections as $label => $games ) : ?>
-		<p class="cak-games__round"><?php echo esc_html( $label ); ?></p>
+		<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-games__round', $label ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 		<ul class="cak-games__list">
 			<?php foreach ( $games as $game ) : ?>
 				<li class="cak-games__game<?php echo $can_edit ? '' : ' cak-games__game--readonly'; ?>" data-game-id="<?php echo esc_attr( $game['id'] ); ?>">
-					<span class="cak-games__player cak-games__player--white"><?php echo esc_html( $game['white'] ); ?></span>
+					<span class="cak-games__player cak-games__player--white"><?php echo esc_html( $game['white'] ); ?> <?php echo Chess_Army_Knife_A11y::hidden( __( '(White)', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></span>
 					<?php if ( $can_edit ) : ?>
 						<select class="cak-games__score" data-side="white" aria-label="<?php /* translators: %s: player name */ echo esc_attr( sprintf( __( 'Score for %s', 'chess-army-knife' ), $game['white'] ) ); ?>">
 							<?php foreach ( $score_options as $value => $option_label ) : ?>
@@ -84,7 +90,8 @@ $score_options = array(
 							<?php endforeach; ?>
 						</select>
 					<?php endif; ?>
-					<span class="cak-games__player cak-games__player--black"><?php echo esc_html( $game['black'] ); ?></span>
+					<span class="cak-games__player cak-games__player--black"><?php echo esc_html( $game['black'] ); ?> <?php echo Chess_Army_Knife_A11y::hidden( __( '(Black)', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden().
+					?></span>
 				</li>
 			<?php endforeach; ?>
 		</ul>

@@ -7,9 +7,10 @@ function initMonth( root ) {
 	const next = root.querySelector( '.cak-month__next' );
 	const label = root.querySelector( '.cak-month__label' );
 	const grid = root.querySelector( '.cak-month__grid' );
+	const message = root.querySelector( '.cak-month__message' );
 	let busy = false;
 
-	if ( ! prev || ! next || ! label || ! grid ) {
+	if ( ! prev || ! next || ! label || ! grid || ! message ) {
 		return;
 	}
 
@@ -18,6 +19,7 @@ function initMonth( root ) {
 			return;
 		}
 		busy = true;
+		message.textContent = root.dataset.msgLoading;
 
 		const url = new URL( root.dataset.endpoint, window.location.href );
 		url.searchParams.set( 'month', month );
@@ -31,8 +33,10 @@ function initMonth( root ) {
 			.fetch( url.toString(), { credentials: 'omit' } )
 			.then( ( response ) => ( response.ok ? response.json() : null ) )
 			.then( ( data ) => {
-				// On any failure keep showing the current month.
+				// On any failure keep showing the current month, and say so.
+				message.textContent = root.dataset.msgError;
 				if ( data && typeof data.html === 'string' ) {
+					message.textContent = '';
 					grid.innerHTML = data.html;
 					label.textContent = data.label;
 					root.dataset.month = data.month;
@@ -40,7 +44,9 @@ function initMonth( root ) {
 					next.dataset.month = data.next;
 				}
 			} )
-			.catch( () => {} )
+			.catch( () => {
+				message.textContent = root.dataset.msgError;
+			} )
 			.then( () => {
 				busy = false;
 			} );

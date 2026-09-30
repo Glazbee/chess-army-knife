@@ -14,9 +14,6 @@ defined( 'ABSPATH' ) || exit;
  */
 class Chess_Army_Knife_Headings {
 
-	/** Option holding the level of a block's main title. */
-	const OPTION = 'Chess_Army_Knife_heading_level';
-
 	/**
 	 * The level of a block's main title, 1 to 5.
 	 *
@@ -26,9 +23,9 @@ class Chess_Army_Knife_Headings {
 		/**
 		 * Filter the heading level used for a block's main title.
 		 *
-		 * @param int $level Level from 1 to 5; 2 unless changed under Settings.
+		 * @param int $level Level from 1 to 5; 2 unless changed under Settings → Accessibility.
 		 */
-		$level = (int) apply_filters( 'Chess_Army_Knife_heading_level', (int) get_option( self::OPTION, 2 ) );
+		$level = (int) apply_filters( 'Chess_Army_Knife_heading_level', (int) Chess_Army_Knife_Settings::get_options()['heading_level'] );
 		return max( 1, min( 5, $level ) );
 	}
 

@@ -1,3 +1,5 @@
+@use "../shared/a11y";
+
 .wp-block-chess-army-knife-next-club-event {
 	margin-bottom: 1.5em;
 
@@ -5,13 +7,12 @@
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 600;
-		color: var(--ecf-accent, inherit);
 	}
 
 	.cak-event {
 		padding: 0.75em 1em;
-		border: 1px solid #e2e2e2;
-		border-left: 4px solid var(--ecf-accent, #1e3a5f);
+		border: 1px solid a11y.$cak-rule;
+		border-left: 4px solid var(--ecf-accent, currentcolor);
 		border-radius: 4px;
 	}
 
@@ -34,22 +35,14 @@
 
 	.cak-event__location,
 	.cak-event__links {
-		font-size: 0.9em;
-		color: #555;
+		font-size: 0.95em;
 	}
 
 	.cak-event__tag {
 		display: inline-block;
 		padding: 0.05em 0.6em;
+		border: 1px solid currentcolor;
 		border-radius: 1em;
-		background: var(--ecf-accent-soft, #e8eef5);
-		font-size: 0.8em;
-	}
-
-	.chess-army-knife-empty {
-		padding: 0.75em 1em;
-		border-left: 4px solid #dcdcde;
-		background: #f6f7f7;
-		font-size: 0.9em;
+		font-size: 0.85em;
 	}
 }

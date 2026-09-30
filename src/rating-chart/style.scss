@@ -77,7 +77,7 @@
 		td {
 			text-align: left;
 			padding: 0.4em 0.6em;
-			border-bottom: 1px solid currentcolor;
+			border-bottom: 1px solid a11y.$cak-rule;
 		}
 
 		thead th {
@@ -105,22 +105,4 @@
 			font-weight: 700;
 		}
 	}
-
-	.chess-army-knife-notice {
-		padding: 0.75em 1em;
-		border-left: 4px solid currentcolor;
-		background: color-mix(in srgb, currentcolor 8%, transparent);
-	}
-
-	.chess-army-knife-empty {
-		padding: 0.75em 1em;
-		border-left: 4px solid currentcolor;
-		background: color-mix(in srgb, currentcolor 8%, transparent);
-	}
-}
-
-// Template colours (set via Chess Army Knife → Templates).
-.wp-block-chess-army-knife-rating-chart .ecf-rating-chart__title {
-	border-bottom: 3px solid var(--ecf-accent, currentcolor);
-	padding-bottom: 0.2em;
 }

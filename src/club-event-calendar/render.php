@@ -33,7 +33,7 @@ if ( 'month' === $layout ) {
 	<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 	<div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 		<?php if ( '' !== $block_title ) : ?>
-			<p class="cak-event__heading"><?php echo esc_html( $block_title ); ?></p>
+			<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-event__heading', $block_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 		<?php endif; ?>
 		<div
 			class="cak-month"
@@ -45,12 +45,15 @@ if ( 'month' === $layout ) {
 			data-teams="<?php echo esc_attr( implode( ',', $team_ids ) ); ?>"
 			data-venue="<?php echo esc_attr( $venue ); ?>"
 			data-show-teams="<?php echo $options['show_teams'] ? '1' : '0'; ?>"
+			data-msg-loading="<?php esc_attr_e( 'Loading…', 'chess-army-knife' ); ?>"
+			data-msg-error="<?php esc_attr_e( 'That month could not be loaded. The month shown has not changed.', 'chess-army-knife' ); ?>"
 		>
 			<div class="cak-month__nav">
-				<button type="button" class="cak-month__prev" hidden aria-label="<?php esc_attr_e( 'Previous month', 'chess-army-knife' ); ?>">‹</button>
-				<span class="cak-month__label" aria-live="polite"><?php echo esc_html( Chess_Army_Knife_Events_Display::month_label( $event_year, $month ) ); ?></span>
-				<button type="button" class="cak-month__next" hidden aria-label="<?php esc_attr_e( 'Next month', 'chess-army-knife' ); ?>">›</button>
+				<button type="button" class="cak-month__prev" hidden aria-label="<?php esc_attr_e( 'Previous month', 'chess-army-knife' ); ?>"><span aria-hidden="true">‹</span></button>
+				<span class="cak-month__label" role="status" aria-live="polite" aria-atomic="true"><?php echo esc_html( Chess_Army_Knife_Events_Display::month_label( $event_year, $month ) ); ?></span>
+				<button type="button" class="cak-month__next" hidden aria-label="<?php esc_attr_e( 'Next month', 'chess-army-knife' ); ?>"><span aria-hidden="true">›</span></button>
 			</div>
+			<p class="cak-month__message" role="status" aria-live="polite"></p>
 			<div class="cak-month__grid">
 				<?php echo Chess_Army_Knife_Events_Display::month_html( $event_year, $month, Chess_Army_Knife_Events_Display::month_events( $event_year, $month, $tag_slugs, $team_ids, $venue ), $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in month_html(). ?>
 			</div>
@@ -83,17 +86,17 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-even
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="cak-event__heading"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'Upcoming club events', 'chess-army-knife' ) ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-event__heading', '' !== $block_title ? $block_title : __( 'Upcoming club events', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( empty( $days ) ) : ?>
 		<div class="chess-army-knife-empty"><?php echo esc_html( '' !== $empty_message ? $empty_message : __( 'No upcoming events.', 'chess-army-knife' ) ); ?></div>
 	<?php else : ?>
 		<?php foreach ( $days as $day_events ) : ?>
 			<section class="cak-calendar__day">
-				<h3 class="cak-calendar__date"><?php echo esc_html( Chess_Army_Knife_Events_Display::date_label( $day_events[0] ) ); ?></h3>
+				<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-calendar__date', Chess_Army_Knife_Events_Display::date_label( $day_events[0] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 				<ul class="cak-calendar__events">
 					<?php foreach ( $day_events as $event ) : ?>
-						<li class="cak-event"<?php echo Chess_Army_Knife_Events_Display::colour_style( $event ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in colour_style(). ?>>
+						<li class="cak-event"<?php echo $options['show_teams'] && '' !== Chess_Army_Knife_Events_Display::team_label( $event ) ? Chess_Army_Knife_Events_Display::colour_style( $event ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in colour_style(). ?>>
 							<p class="cak-event__when"><span class="cak-event__time"><?php echo esc_html( Chess_Army_Knife_Events_Display::time_label( $event ) ); ?></span></p>
 							<p class="cak-event__title"><a href="<?php echo esc_url( $event['url'] ); ?>"><?php echo esc_html( $event['title'] ); ?></a></p>
 							<?php echo Chess_Army_Knife_Events_Display::details_html( $event, $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in details_html(). ?>

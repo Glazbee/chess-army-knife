@@ -49,6 +49,23 @@ $cak-scope: '[class*="wp-block-chess-army-knife-"]';
 	overflow-x: auto;
 }
 
+// Messages that stand in for a block (nothing chosen, nothing found, an error).
+// They follow the theme's text colour, so their contrast is the theme's.
+#{$cak-scope} :is(.chess-army-knife-notice, .chess-army-knife-empty) {
+	padding: 0.75em 1em;
+	border-left: 4px solid currentcolor;
+	background: color-mix(in srgb, currentcolor 8%, transparent);
+}
+
+// Titles take the accent as an underline, not as text colour, so the text keeps the theme's contrast.
+#{$cak-scope} .cak-block-title {
+	border-bottom: 3px solid var(--ecf-accent, currentcolor);
+	padding-bottom: 0.2em;
+}
+
+// Rules between rows and cards are decoration.
+$cak-rule: color-mix(in srgb, currentcolor 35%, transparent);
+
 // Windows High Contrast and similar.
 @media (forced-colors: active) {
 	#{$cak-scope}
@@ -63,5 +80,65 @@ $cak-scope: '[class*="wp-block-chess-army-knife-"]';
 		):focus-visible {
 		outline-color: Highlight;
 		box-shadow: none;
+	}
+}
+
+// High contrast: black on white, underlined links, solid borders (1.4.6).
+// It wins over the theme and the block's own styles on purpose, because
+// the person asked for it.
+@mixin cak-high-contrast {
+	color: #000 !important;
+	background-color: #fff !important;
+
+	*,
+	*::before,
+	*::after {
+		background-color: transparent !important;
+		color: inherit !important;
+		opacity: 1 !important;
+		box-shadow: none !important;
+		text-shadow: none !important;
+	}
+
+	:is(th, td, li, fieldset, details, figure, dl) {
+		border-color: #000 !important;
+	}
+
+	a {
+		color: #0000c8 !important;
+		text-decoration: underline !important;
+	}
+
+	:is(button, .wp-element-button) {
+		background-color: #000 !important;
+		color: #fff !important;
+		border: 2px solid #000 !important;
+	}
+
+	:is(input, select, textarea) {
+		background-color: #fff !important;
+		color: #000 !important;
+		border: 2px solid #000 !important;
+	}
+
+	:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+		outline: 4px solid #000 !important;
+		box-shadow: 0 0 0 2px #fff !important;
+	}
+
+	.chess-army-knife-notice,
+	.chess-army-knife-empty,
+	[class*="__notice"] {
+		border: 2px solid #000 !important;
+	}
+}
+
+.cak-contrast-always #{$cak-scope} {
+	@include cak-high-contrast;
+}
+
+@media (prefers-contrast: more) {
+	body:not(.cak-contrast-off) #{$cak-scope} {
+		@include cak-high-contrast;
 	}
 }

@@ -263,7 +263,6 @@ foreach ( $team_specs as $spec ) {
 
 $heading     = $block_title ? $block_title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
 $multi_event = count( array_unique( wp_list_pluck( $team_specs, 'event' ) ) ) > 1;
-$title_tag   = Chess_Army_Knife_Headings::tag( 0 );
 $team_tag    = Chess_Army_Knife_Headings::tag( 1 );
 
 /**
@@ -298,7 +297,7 @@ $date_format = get_option( 'date_format' );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<<?php echo esc_attr( $title_tag ); ?> class="ecf-carousel__title"><?php echo esc_html( $heading ); ?></<?php echo esc_attr( $title_tag ); ?>>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-carousel__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 

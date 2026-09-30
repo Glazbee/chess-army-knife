@@ -36,4 +36,10 @@ class ContrastTest extends Chess_Army_Knife_TestCase {
 		$this->assertFalse( Chess_Army_Knife_Contrast::meets( '', '#ffffff' ) );
 		$this->assertFalse( Chess_Army_Knife_Contrast::meets( '#12345', '#ffffff' ) );
 	}
+
+	public function test_blend_mixes_colours() {
+		$this->assertSame( '#808080', Chess_Army_Knife_Contrast::blend( '#000000', '#ffffff', 0.5 ) );
+		$this->assertSame( '#ffffff', Chess_Army_Knife_Contrast::blend( '#ff0000', '#ffffff', 0.0 ) );
+		$this->assertNull( Chess_Army_Knife_Contrast::blend( 'nope', '#ffffff', 0.5 ) );
+	}
 }

@@ -301,12 +301,13 @@ class Chess_Army_Knife_Templates {
 				'key'   => 'accent',
 				'label' => __( 'Accent colour', 'chess-army-knife' ),
 				'type'  => 'color',
-				'help'  => __( 'Titles, table highlights, carousel dots and chart lines.', 'chess-army-knife' ),
+				'help'  => __( 'Underlines, borders, highlights and chart lines. It needs a contrast of at least 3:1 with the background colour.', 'chess-army-knife' ),
 			),
 			array(
 				'key'   => 'bg',
 				'label' => __( 'Background colour', 'chess-army-knife' ),
 				'type'  => 'color',
+				'help'  => __( 'Choose the background and text colours together. Their contrast must be at least 7:1 (WCAG AAA), and you will be told if it is not.', 'chess-army-knife' ),
 			),
 			array(
 				'key'   => 'text',
@@ -324,7 +325,7 @@ class Chess_Army_Knife_Templates {
 				'key'   => 'custom_css',
 				'label' => __( 'Custom CSS', 'chess-army-knife' ),
 				'type'  => 'textarea',
-				'help'  => __( 'Use {block} to target blocks using this template, e.g. {block} th { text-transform: uppercase; }', 'chess-army-knife' ),
+				'help'  => __( 'Use {block} to target blocks using this template, e.g. {block} th { text-transform: uppercase; }. Custom CSS is not checked for contrast, so keep text at 7:1 or more.', 'chess-army-knife' ),
 			),
 		);
 		foreach ( $style as &$field ) {
@@ -542,6 +543,23 @@ class Chess_Army_Knife_Templates {
 			}
 		}
 
+		// Colours that are hard to read are not saved: the form comes back with what was typed, and says why.
+		if ( self::colour_problems( $values ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'page'                             => 'chess-army-knife-templates',
+						'action'                           => '' !== $id ? 'edit' : 'new',
+						'id'                               => $id,
+						'block'                            => $slug,
+						Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ),
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+			exit;
+		}
+
 		$all = self::get_all();
 		if ( '' === $id || ! isset( $all[ $id ] ) ) {
 			$id = 'tpl' . strtolower( wp_generate_password( 8, false ) );
@@ -564,6 +582,53 @@ class Chess_Army_Knife_Templates {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * What is wrong with a template's colours, in WCAG AAA terms.
+	 *
+	 * The text and background colours go together, and the accent is checked against
+	 * the background, so all of them are needed to check any.
+	 *
+	 * @param array $values Saved values: accent, bg and text as hex colours, if set.
+	 * @return string[] Messages; none if the colours are fine.
+	 */
+	public static function colour_problems( array $values ) {
+		$accent = ! empty( $values['accent'] ) ? $values['accent'] : '';
+		$bg     = ! empty( $values['bg'] ) ? $values['bg'] : '';
+		$text   = ! empty( $values['text'] ) ? $values['text'] : '';
+
+		if ( '' === $accent && '' === $bg && '' === $text ) {
+			return array();
+		}
+
+		if ( '' === $bg || '' === $text ) {
+			return array( __( 'Choose both a background colour and a text colour, so their contrast can be checked. The accent colour is checked against them too.', 'chess-army-knife' ) );
+		}
+
+		$problems = array();
+
+		$ratio = Chess_Army_Knife_Contrast::ratio( $text, $bg );
+		if ( null !== $ratio && $ratio < Chess_Army_Knife_Contrast::TEXT ) {
+			/* translators: %s: the contrast ratio, such as 4.5 */
+			$problems[] = sprintf( __( 'The text colour and background colour have a contrast of %s:1. WCAG AAA needs at least 7:1.', 'chess-army-knife' ), number_format_i18n( $ratio, 1 ) );
+		}
+
+		if ( '' !== $accent ) {
+			$ratio = Chess_Army_Knife_Contrast::ratio( $accent, $bg );
+			if ( null !== $ratio && $ratio < Chess_Army_Knife_Contrast::GRAPHIC ) {
+				/* translators: %s: the contrast ratio, such as 2.1 */
+				$problems[] = sprintf( __( 'The accent colour and background colour have a contrast of %s:1. They need at least 3:1.', 'chess-army-knife' ), number_format_i18n( $ratio, 1 ) );
+			}
+
+			// The accent tints the background behind some text.
+			$tint = Chess_Army_Knife_Contrast::blend( $accent, $bg, 0x22 / 255 );
+			if ( $tint && ! Chess_Army_Knife_Contrast::meets( $text, $tint ) && Chess_Army_Knife_Contrast::meets( $text, $bg ) ) {
+				$problems[] = __( 'The accent colour is used as a light tint behind text, and the text is then below 7:1. Choose a lighter accent, or a text colour that contrasts more.', 'chess-army-knife' );
+			}
+		}
+
+		return $problems;
 	}
 
 	/**
@@ -714,11 +779,43 @@ class Chess_Army_Knife_Templates {
 			return;
 		}
 
-		$values = $tpl ? $tpl['values'] : array();
+		$values      = $tpl ? $tpl['values'] : array();
+		$template_nm = $tpl ? $tpl['name'] : '';
+		$problems    = array();
+
+		// Coming back from a save that was refused: show what was typed, and why.
+		if ( Chess_Army_Knife_Form_State::has_values() ) {
+			$kept        = Chess_Army_Knife_Form_State::all();
+			$values      = array();
+			$template_nm = Chess_Army_Knife_Form_State::value( 'name' );
+			foreach ( isset( $kept['values'] ) && is_array( $kept['values'] ) ? $kept['values'] : array() as $key => $value ) {
+				if ( is_string( $value ) ) {
+					$values[ sanitize_key( $key ) ] = $value;
+				}
+			}
+			$problems = self::colour_problems(
+				array(
+					'accent' => sanitize_hex_color( isset( $values['accent'] ) ? $values['accent'] : '' ),
+					'bg'     => sanitize_hex_color( isset( $values['bg'] ) ? $values['bg'] : '' ),
+					'text'   => sanitize_hex_color( isset( $values['text'] ) ? $values['text'] : '' ),
+				)
+			);
+		}
+
 		$fields = self::fields( $slug );
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( $tpl ? __( 'Edit template', 'chess-army-knife' ) : __( 'New template', 'chess-army-knife' ) ); ?> — <?php echo esc_html( $types[ $slug ] ); ?></h1>
+			<?php if ( $problems ) : ?>
+				<div class="notice notice-error" role="alert">
+					<p><strong><?php esc_html_e( 'The template was not saved because its colours are hard to read.', 'chess-army-knife' ); ?></strong></p>
+					<ul>
+						<?php foreach ( $problems as $problem ) : ?>
+							<li><?php echo esc_html( $problem ); ?></li>
+						<?php endforeach; ?>
+					</ul>
+				</div>
+			<?php endif; ?>
 			<p class="description"><?php esc_html_e( 'Leave any field blank to let the block keep its own setting.', 'chess-army-knife' ); ?></p>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -730,7 +827,7 @@ class Chess_Army_Knife_Templates {
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="tpl_name"><?php esc_html_e( 'Template name', 'chess-army-knife' ); ?></label></th>
-						<td><input type="text" id="tpl_name" name="name" class="regular-text" required value="<?php echo esc_attr( $tpl ? $tpl['name'] : '' ); ?>" placeholder="<?php esc_attr_e( 'e.g. Home page — compact', 'chess-army-knife' ); ?>" /></td>
+						<td><input type="text" id="tpl_name" name="name" class="regular-text" required value="<?php echo esc_attr( $template_nm ); ?>" placeholder="<?php esc_attr_e( 'e.g. Home page — compact', 'chess-army-knife' ); ?>" /></td>
 					</tr>
 				</table>
 

@@ -1,3 +1,5 @@
+@use "../shared/a11y";
+
 .wp-block-chess-army-knife-club-event-calendar {
 	margin-bottom: 1.5em;
 
@@ -5,7 +7,6 @@
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 600;
-		color: var(--ecf-accent, inherit);
 	}
 
 	.cak-calendar__day {
@@ -15,7 +16,7 @@
 	.cak-calendar__date {
 		margin: 0 0 0.35em;
 		padding-bottom: 0.2em;
-		border-bottom: 2px solid var(--ecf-accent, #1e3a5f);
+		border-bottom: 3px solid var(--ecf-accent, currentcolor);
 		font-size: 1em;
 		font-weight: 700;
 	}
@@ -44,6 +45,7 @@
 		font-weight: 600;
 	}
 
+	// A team colour is only used beside the team's name.
 	.cak-event[style*="--cak-team-colour"] {
 		border-left: 4px solid var(--cak-team-colour);
 		padding-left: 0.6em;
@@ -54,15 +56,14 @@
 		padding-left: 0.3em;
 	}
 
-	.cak-event__team,
-	.cak-month__team {
-		font-size: 0.85em;
-		color: #555;
-	}
-
 	.cak-event__subscribe {
 		margin: 0.8em 0 0;
-		font-size: 0.9em;
+	}
+
+	.cak-event__subscribe a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
 	}
 
 	.cak-event__title {
@@ -71,23 +72,15 @@
 
 	.cak-event__location,
 	.cak-event__links {
-		font-size: 0.9em;
-		color: #555;
+		font-size: 0.95em;
 	}
 
 	.cak-event__tag {
 		display: inline-block;
 		padding: 0.05em 0.6em;
+		border: 1px solid currentcolor;
 		border-radius: 1em;
-		background: var(--ecf-accent-soft, #e8eef5);
-		font-size: 0.8em;
-	}
-
-	.chess-army-knife-empty {
-		padding: 0.75em 1em;
-		border-left: 4px solid #dcdcde;
-		background: #f6f7f7;
-		font-size: 0.9em;
+		font-size: 0.85em;
 	}
 
 	@media (max-width: 480px) {
@@ -121,17 +114,32 @@
 
 	.cak-month__prev,
 	.cak-month__next {
-		width: 2.2em;
-		height: 2.2em;
-		border: 1px solid #ccc;
+		width: 44px;
+		height: 44px;
+		border: 2px solid currentcolor;
 		border-radius: 50%;
-		background: #fff;
+		background: transparent;
+		color: inherit;
 		line-height: 1;
 		cursor: pointer;
 
 		&[hidden] {
 			display: none;
 		}
+
+		&:hover {
+			background: color-mix(in srgb, currentcolor 12%, transparent);
+		}
+	}
+
+	[dir="rtl"] & .cak-month__prev span,
+	[dir="rtl"] & .cak-month__next span {
+		display: inline-block;
+		transform: scaleX(-1);
+	}
+
+	.cak-month__message:empty {
+		display: none;
 	}
 
 	.cak-month__table {
@@ -141,32 +149,40 @@
 
 		th {
 			padding: 0.3em;
-			font-size: 0.85em;
+			font-size: 0.9em;
 			text-align: center;
-			border-bottom: 2px solid var(--ecf-accent, #1e3a5f);
+			border-bottom: 3px solid var(--ecf-accent, currentcolor);
+		}
+
+		abbr {
+			text-decoration: none;
 		}
 	}
 
 	.cak-month__day {
 		height: 5.5em;
 		padding: 0.25em;
-		border: 1px solid #e2e2e2;
+		border: 1px solid a11y.$cak-rule;
 		vertical-align: top;
-		font-size: 0.85em;
+		font-size: 0.9em;
 
 		&.is-outside {
-			background: #f6f7f7;
+			background: color-mix(in srgb, currentcolor 6%, transparent);
 		}
 
 		&.is-today {
-			background: var(--ecf-accent-soft, #e8eef5);
+			background: var(
+				--ecf-accent-soft,
+				color-mix(in srgb, currentcolor 12%, transparent)
+			);
+			outline: 2px solid currentcolor;
+			outline-offset: -2px;
 		}
 	}
 
 	.cak-month__daynum {
 		display: block;
 		font-weight: 700;
-		color: #555;
 	}
 
 	.cak-month__events {
@@ -185,33 +201,33 @@
 		font-weight: 600;
 	}
 
-	// On a phone, list just the days that have events.
+	.cak-month__location {
+		display: block;
+		font-size: 0.9em;
+	}
+
+	// The list of days is for a phone; the table is for everything wider.
+	.cak-month__list {
+		display: none;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.cak-month__list-date {
+		margin: 0.75em 0 0.25em;
+		font-size: 1em;
+		font-weight: 700;
+		border-bottom: 1px solid a11y.$cak-rule;
+	}
+
 	@media (max-width: 600px) {
-		.cak-month__table,
-		.cak-month__table tbody,
-		.cak-month__table tr,
-		.cak-month__table td {
+		.cak-month__table {
+			display: none;
+		}
+
+		.cak-month__list {
 			display: block;
-			width: auto;
-		}
-
-		.cak-month__table thead {
-			position: absolute;
-			left: -9999px;
-		}
-
-		.cak-month__day {
-			height: auto;
-			border-width: 0 0 1px;
-
-			&:not(.has-events) {
-				display: none;
-			}
-		}
-
-		.cak-month__daynum {
-			display: inline;
-			margin-right: 0.5em;
 		}
 	}
 }

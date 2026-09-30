@@ -15,16 +15,16 @@ class HeadingsTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_the_site_setting_moves_every_level() {
-		$this->options[ Chess_Army_Knife_Headings::OPTION ] = 3;
+		$this->set_settings( array( 'heading_level' => 3 ) );
 		$this->assertSame( 'h3', Chess_Army_Knife_Headings::tag() );
 		$this->assertSame( 'h4', Chess_Army_Knife_Headings::tag( 1 ) );
 	}
 
 	public function test_levels_stay_between_h1_and_h6() {
-		$this->options[ Chess_Army_Knife_Headings::OPTION ] = 99;
+		$this->set_settings( array( 'heading_level' => 99 ) );
 		$this->assertSame( 'h5', Chess_Army_Knife_Headings::tag() );
 		$this->assertSame( 'h6', Chess_Army_Knife_Headings::tag( 5 ) );
-		$this->options[ Chess_Army_Knife_Headings::OPTION ] = 0;
+		$this->set_settings( array( 'heading_level' => 0 ) );
 		$this->assertSame( 'h1', Chess_Army_Knife_Headings::tag() );
 	}
 }

@@ -42,7 +42,7 @@ if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'] && 'kn
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="cak-standings__title"><?php echo esc_html( $tournament['name'] ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-standings__title', $tournament['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT === $tournament['status'] ) : ?>
 		<div class="chess-army-knife-empty"><?php esc_html_e( 'This tournament has not started yet.', 'chess-army-knife' ); ?></div>
@@ -52,32 +52,42 @@ if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'] && 'kn
 
 	<?php foreach ( $tables as $heading => $table ) : ?>
 		<?php if ( '' !== $heading ) : ?>
-			<p class="cak-standings__group"><?php echo esc_html( $heading ); ?></p>
+			<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-standings__group', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 		<?php endif; ?>
-		<div class="cak-standings__scroll">
+		<?php $caption = '' !== $heading ? sprintf( /* translators: 1: tournament name, 2: group name */ __( '%1$s standings, %2$s', 'chess-army-knife' ), $tournament['name'], $heading ) : sprintf( /* translators: %s: tournament name */ __( '%s standings', 'chess-army-knife' ), $tournament['name'] ); ?>
+		<div class="cak-standings__scroll cak-scroll" tabindex="0" role="region" aria-label="<?php echo esc_attr( $caption ); ?>">
 			<table class="cak-standings__table">
+				<caption class="cak-visually-hidden"><?php echo esc_html( $caption ); ?></caption>
 				<thead>
 					<tr>
-						<th class="is-numeric">#</th>
-						<th><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
+						<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( '#', __( 'Rank', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
+						<th scope="col"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
 						<?php foreach ( $table['rounds'] as $round ) : ?>
-							<th class="is-numeric"><?php echo esc_html( 'R' . $round ); ?></th>
+							<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( 'R' . $round, sprintf( /* translators: %d: round number */ __( 'Round %d', 'chess-army-knife' ), $round ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
 						<?php endforeach; ?>
-						<th class="is-numeric"><?php esc_html_e( 'Total', 'chess-army-knife' ); ?></th>
+						<th scope="col" class="is-numeric"><?php esc_html_e( 'Total', 'chess-army-knife' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php foreach ( $table['rows'] as $row ) : ?>
 						<tr class="<?php echo $row['withdrawn'] ? 'is-withdrawn' : ''; ?>">
 							<td class="is-numeric"><?php echo esc_html( $row['rank'] ); ?></td>
-							<td>
+							<th scope="row">
 								<?php echo esc_html( $row['name'] ); ?>
 								<?php if ( $row['withdrawn'] ) : ?>
 									<em>(<?php esc_html_e( 'withdrawn', 'chess-army-knife' ); ?>)</em>
 								<?php endif; ?>
-							</td>
+							</th>
 							<?php foreach ( $row['scores'] as $score ) : ?>
-								<td class="is-numeric"><?php echo esc_html( null === $score ? '' : Chess_Army_Knife_Tournaments_Page::format_points( $score ) ); ?></td>
+								<td class="is-numeric">
+									<?php
+									if ( null === $score ) {
+										echo Chess_Army_Knife_A11y::hidden( __( 'No game', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden().
+									} else {
+										echo esc_html( Chess_Army_Knife_Tournaments_Page::format_points( $score ) );
+									}
+									?>
+								</td>
 							<?php endforeach; ?>
 							<td class="is-numeric"><strong><?php echo esc_html( Chess_Army_Knife_Tournaments_Page::format_points( $row['total'] ) ); ?></strong></td>
 						</tr>

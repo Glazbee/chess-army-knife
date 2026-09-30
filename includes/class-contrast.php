@@ -26,17 +26,14 @@ class Chess_Army_Knife_Contrast {
 	 * @return float|null Luminance from 0 to 1, or null if the colour is not valid hex.
 	 */
 	public static function luminance( $hex ) {
-		$hex = ltrim( trim( (string) $hex ), '#' );
-		if ( 3 === strlen( $hex ) ) {
-			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-		}
-		if ( ! preg_match( '/^[0-9a-f]{6}$/i', $hex ) ) {
+		$rgb = self::rgb( $hex );
+		if ( null === $rgb ) {
 			return null;
 		}
 
 		$channels = array();
-		foreach ( str_split( $hex, 2 ) as $pair ) {
-			$value      = hexdec( $pair ) / 255;
+		foreach ( $rgb as $byte ) {
+			$value      = $byte / 255;
 			$channels[] = $value <= 0.03928 ? $value / 12.92 : pow( ( $value + 0.055 ) / 1.055, 2.4 );
 		}
 
@@ -58,6 +55,45 @@ class Chess_Army_Knife_Contrast {
 		}
 
 		return ( max( $a, $b ) + 0.05 ) / ( min( $a, $b ) + 0.05 );
+	}
+
+	/**
+	 * A colour laid over another at partial opacity, as the eye sees it.
+	 *
+	 * @param string $top     Hex colour on top.
+	 * @param string $bottom  Hex colour underneath.
+	 * @param float  $opacity Opacity of the top colour, from 0 to 1.
+	 * @return string|null Hex colour, or null if either colour is not valid hex.
+	 */
+	public static function blend( $top, $bottom, $opacity ) {
+		$a = self::rgb( $top );
+		$b = self::rgb( $bottom );
+		if ( null === $a || null === $b ) {
+			return null;
+		}
+
+		$hex = '#';
+		foreach ( array( 0, 1, 2 ) as $i ) {
+			$hex .= sprintf( '%02x', (int) round( $a[ $i ] * $opacity + $b[ $i ] * ( 1 - $opacity ) ) );
+		}
+		return $hex;
+	}
+
+	/**
+	 * Red, green and blue (0 to 255) of a hex colour.
+	 *
+	 * @param string $hex Colour such as #1e3a5f or #fff.
+	 * @return int[]|null
+	 */
+	protected static function rgb( $hex ) {
+		$hex = ltrim( trim( (string) $hex ), '#' );
+		if ( 3 === strlen( $hex ) ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+		if ( ! preg_match( '/^[0-9a-f]{6}$/i', $hex ) ) {
+			return null;
+		}
+		return array_map( 'hexdec', str_split( $hex, 2 ) );
 	}
 
 	/**

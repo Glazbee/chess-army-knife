@@ -242,12 +242,14 @@ class Chess_Army_Knife_Events_Display {
 	}
 
 	/**
-	 * The month grid: a table of weeks with each day's events.
+	 * The month grid: a table of weeks with each day's events, and the same events as a
+	 * list of days for small screens. The stylesheet shows one and hides the other, so
+	 * a screen reader meets the events once.
 	 *
 	 * @param int     $year    Year.
 	 * @param int     $month   Month, 1-12.
 	 * @param array[] $events  Events starting in the month (see Chess_Army_Knife_Events::data()).
-	 * @param array   $options show_location flag (adds the location as a tooltip).
+	 * @param array   $options show_location and show_teams flags.
 	 * @return string Escaped HTML.
 	 */
 	public static function month_html( $year, $month, array $events, array $options ) {
@@ -261,11 +263,13 @@ class Chess_Army_Knife_Events_Display {
 
 		$label = self::month_label( $year, $month );
 
-		$html = '<table class="cak-month__table"><caption class="screen-reader-text">' . esc_html( $label ) . '</caption><thead><tr>';
+		$html = '<table class="cak-month__table"><caption class="cak-visually-hidden">' . esc_html( $label ) . '</caption><thead><tr>';
 		for ( $i = 0; $i < 7; $i++ ) {
 			// 2024-01-07 was a Sunday.
-			$weekday = wp_date( 'D', gmmktime( 12, 0, 0, 1, 7 + ( ( $start_of_week + $i ) % 7 ), 2024 ), new DateTimeZone( 'UTC' ) );
-			$html   .= '<th scope="col">' . esc_html( $weekday ) . '</th>';
+			$timestamp = gmmktime( 12, 0, 0, 1, 7 + ( ( $start_of_week + $i ) % 7 ), 2024 );
+			$weekday   = wp_date( 'D', $timestamp, new DateTimeZone( 'UTC' ) );
+			$full_day  = wp_date( 'l', $timestamp, new DateTimeZone( 'UTC' ) );
+			$html     .= '<th scope="col"><abbr title="' . esc_attr( $full_day ) . '">' . esc_html( $weekday ) . '</abbr></th>';
 		}
 		$html .= '</tr></thead><tbody>';
 
@@ -281,24 +285,69 @@ class Chess_Army_Knife_Events_Display {
 				$day_events = isset( $by_day[ $date ] ) ? $by_day[ $date ] : array();
 				$classes    = 'cak-month__day' . ( $day_events ? ' has-events' : '' ) . ( $date === $today ? ' is-today' : '' );
 
-				$html .= '<td class="' . esc_attr( $classes ) . '"><span class="cak-month__daynum">' . (int) $day . '</span>';
-				if ( $day_events ) {
-					$html .= '<ul class="cak-month__events">';
-					foreach ( $day_events as $event ) {
-						$tooltip = ! empty( $options['show_location'] ) && '' !== $event['location'] ? ' title="' . esc_attr( $event['location'] ) . '"' : '';
-						$team    = ! empty( $options['show_teams'] ) ? self::team_label( $event ) : '';
-						$html   .= '<li class="cak-month__event"' . self::colour_style( $event ) . '><span class="cak-month__time">' . esc_html( self::time_label( $event ) ) . '</span> '
-							. '<a href="' . esc_url( $event['url'] ) . '"' . $tooltip . '>' . esc_html( $event['title'] ) . '</a>'
-							. ( '' !== $team ? ' <span class="cak-month__team">' . esc_html( $team ) . '</span>' : '' ) . '</li>';
-					}
-					$html .= '</ul>';
-				}
+				// The number is what is seen; a screen reader hears the whole date.
+				$html .= '<td class="' . esc_attr( $classes ) . '"><span class="cak-month__daynum"><span aria-hidden="true">' . (int) $day . '</span>'
+					. '<span class="cak-visually-hidden">' . esc_html( self::full_date( $year, $month, $day ) ) . '</span></span>';
+				$html .= self::month_events_html( $day_events, $options );
 				$html .= '</td>';
 			}
 			$html .= '</tr>';
 		}
+		$html .= '</tbody></table>';
 
-		return $html . '</tbody></table>';
+		// The same days, as a list, for a phone.
+		$html .= '<ul class="cak-month__list">';
+		foreach ( $by_day as $date => $day_events ) {
+			$parts = explode( '-', $date );
+			$tag   = Chess_Army_Knife_Headings::tag( 1 );
+			$html .= '<li class="cak-month__list-day"><' . $tag . ' class="cak-month__list-date">' . esc_html( self::full_date( (int) $parts[0], (int) $parts[1], (int) $parts[2] ) ) . '</' . $tag . '>'
+				. self::month_events_html( $day_events, $options ) . '</li>';
+		}
+		$html .= '</ul>';
+
+		if ( ! $by_day ) {
+			$html .= '<p class="cak-month__none">' . esc_html__( 'No events this month.', 'chess-army-knife' ) . '</p>';
+		}
+
+		return $html;
+	}
+
+	/**
+	 * A day's events as a list.
+	 *
+	 * @param array[] $day_events Events on the day.
+	 * @param array   $options    show_location and show_teams flags.
+	 * @return string Escaped HTML, or '' if there are no events.
+	 */
+	protected static function month_events_html( array $day_events, array $options ) {
+		if ( ! $day_events ) {
+			return '';
+		}
+
+		$html = '<ul class="cak-month__events">';
+		foreach ( $day_events as $event ) {
+			$team     = ! empty( $options['show_teams'] ) ? self::team_label( $event ) : '';
+			$location = ! empty( $options['show_location'] ) ? (string) $event['location'] : '';
+			// The team colour only ever comes with the team's name, so colour is never the only clue.
+			$colour = '' !== $team ? self::colour_style( $event ) : '';
+			$html  .= '<li class="cak-month__event"' . $colour . '><span class="cak-month__time">' . esc_html( self::time_label( $event ) ) . '</span> '
+				. '<a href="' . esc_url( $event['url'] ) . '">' . esc_html( $event['title'] ) . '</a>'
+				. ( '' !== $team ? ' <span class="cak-month__team">' . esc_html( $team ) . '</span>' : '' )
+				. ( '' !== $location ? ' <span class="cak-month__location">' . esc_html( $location ) . '</span>' : '' ) . '</li>';
+		}
+		return $html . '</ul>';
+	}
+
+	/**
+	 * A date written out in full, such as "Monday 5 October 2026".
+	 *
+	 * @param int $year  Year.
+	 * @param int $month Month, 1-12.
+	 * @param int $day   Day of the month.
+	 * @return string
+	 */
+	public static function full_date( $year, $month, $day ) {
+		return wp_date( 'l ' . get_option( 'date_format' ), gmmktime( 12, 0, 0, $month, $day, $year ), new DateTimeZone( 'UTC' ) );
 	}
 
 	/**
