@@ -291,17 +291,28 @@ class EventsImportTest extends WP_UnitTestCase {
 			$this->fixture( 'Rivals', 'Our A', '2099-11-02' ),
 		);
 
-		// Imported before any team exists: no links.
+		// Imported while the league belongs to a team called Our A: linked to that team.
 		Chess_Army_Knife_Events_Import::import();
-		$this->assertSame( array(), $this->imported()[0]['teams'] );
+		$this->assertSame( 'Our A', $this->imported()[0]['teams'][0]['name'] );
 
+		// The league moves to Club A, which the LMS knows as Our A.
+		Chess_Army_Knife_Teams::install_table(); // Deleting a team clears its squad.
+		foreach ( Chess_Army_Knife_Teams::all() as $old_team ) {
+			wp_delete_post( $old_team['id'], true );
+		}
 		$team = self::factory()->post->create(
 			array(
 				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
 				'post_status' => 'publish',
 				'post_title'  => 'Club A',
 				'meta_input'  => array(
-					Chess_Army_Knife_Teams::META_SEASONS => array( '613|Division 1|Our A' ),
+					Chess_Army_Knife_Teams::META_LEAGUES => array(
+						array(
+							'org'   => '613',
+							'event' => 'Division 1',
+							'name'  => 'Our A',
+						),
+					),
 					Chess_Army_Knife_Teams::META_COLOUR  => '#2a78d6',
 				),
 			)

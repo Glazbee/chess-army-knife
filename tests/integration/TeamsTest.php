@@ -209,7 +209,17 @@ class TeamsTest extends WP_UnitTestCase {
 		$ada  = $this->person( 'Ada Lovelace' );
 		$team = $this->team( 'Club A', array( Chess_Army_Knife_Teams::META_VENUE => 'Village Hall' ) );
 		update_post_meta( $team, Chess_Army_Knife_Teams::META_CAPTAIN, $ada );
-		update_post_meta( $team, Chess_Army_Knife_Teams::META_SEASONS, array( '613|Division 1|Club A' ) );
+		update_post_meta(
+			$team,
+			Chess_Army_Knife_Teams::META_LEAGUES,
+			array(
+				array(
+					'org'   => '613',
+					'event' => 'Division 1',
+					'name'  => '',
+				),
+			)
+		);
 		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles /-->' );
