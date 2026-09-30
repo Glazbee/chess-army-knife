@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/tournament-winners",
   "title": "Tournament Past Winners",
-  "category": "widgets",
+  "category": "chess-army-knife-tournaments",
   "icon": "awards",
   "description": "List the winners of completed tournaments, most recent first.",
   "keywords": [

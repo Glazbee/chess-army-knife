@@ -75,6 +75,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-renewals-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-checks-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-stats.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-dashboard-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-block-help.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-access.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-menu.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';

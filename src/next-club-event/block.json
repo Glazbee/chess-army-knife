@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/next-club-event",
 	"title": "Next Club Event",
-	"category": "widgets",
+	"category": "chess-army-knife-events",
 	"icon": "calendar-alt",
 	"description": "Shows the next club event, optionally only one with a chosen tag such as in-house.",
 	"keywords": [ "chess", "club", "event", "next", "calendar" ],

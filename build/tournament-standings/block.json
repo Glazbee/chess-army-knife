@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/tournament-standings",
   "title": "Tournament Standings",
-  "category": "widgets",
+  "category": "chess-army-knife-tournaments",
   "icon": "editor-ol",
   "description": "A cross-table of a tournament: each player's points in every round and their total, in rank order.",
   "keywords": [

@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/rating-chart",
 	"title": "ECF Rating Chart",
-	"category": "widgets",
+	"category": "chess-army-knife-ratings",
 	"icon": "chart-line",
 	"description": "Show how an ECF player's rating has changed over time, drawn from their recent rated games.",
 	"keywords": [

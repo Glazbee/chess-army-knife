@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/league-table",
 	"title": "ECF League Standings & Matchups",
-	"category": "widgets",
+	"category": "chess-army-knife-leagues",
 	"icon": "list-view",
 	"description": "Show a league table and recent/upcoming matchups from the ECF League Management System (LMS).",
 	"keywords": [

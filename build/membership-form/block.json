@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/membership-form",
   "title": "Membership Application Form",
-  "category": "widgets",
+  "category": "chess-army-knife-membership",
   "icon": "feedback",
   "description": "A form for people to apply for club membership. Applications are reviewed by the club before anyone becomes a member.",
   "keywords": [

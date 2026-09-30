@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/my-data",
 	"title": "Manage My Data",
-	"category": "widgets",
+	"category": "chess-army-knife-membership",
 	"icon": "shield",
 	"description": "Lets a member stop the newsletter or WhatsApp groups, ask for a copy of their data, or ask for it to be deleted, without needing an account.",
 	"keywords": [ "chess", "club", "privacy", "gdpr", "unsubscribe", "consent", "data" ],

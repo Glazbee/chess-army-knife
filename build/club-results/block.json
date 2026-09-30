@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/club-results",
   "title": "ECF Club Results",
-  "category": "widgets",
+  "category": "chess-army-knife-ratings",
   "icon": "groups",
   "description": "Shows recent rated results for the club's current members who have an ECF rating code.",
   "keywords": [

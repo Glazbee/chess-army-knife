@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/biggest-gainers",
 	"title": "ECF Biggest Rating Gainers",
-	"category": "widgets",
+	"category": "chess-army-knife-ratings",
 	"icon": "chart-bar",
 	"description": "Shows the club's current members whose ECF rating has risen the most recently.",
 	"keywords": [
