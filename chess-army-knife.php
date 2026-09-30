@@ -47,6 +47,8 @@ require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-form.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-notification-preferences.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-mailer.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-rating-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-photos.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-requests.php';
@@ -63,6 +65,8 @@ function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Cache::install_table();
 	Chess_Army_Knife_Tournament_Store::install_tables();
 	Chess_Army_Knife_Membership_Store::install_table();
+	Chess_Army_Knife_Notification_Preferences::install_table();
+	Chess_Army_Knife_Mailer::install_table();
 
 	// The event post type needs its URLs registered before they are flushed.
 	Chess_Army_Knife_Events::register();
@@ -79,6 +83,7 @@ function Chess_Army_Knife_activate() {
 	}
 
 	Chess_Army_Knife_Rating_Refresh::schedule();
+	Chess_Army_Knife_Mailer::schedule();
 }
 register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
 
@@ -92,6 +97,7 @@ function Chess_Army_Knife_deactivate() {
 	flush_rewrite_rules();
 	wp_clear_scheduled_hook( 'Chess_Army_Knife_cleanup_cache' );
 	Chess_Army_Knife_Rating_Refresh::unschedule();
+	Chess_Army_Knife_Mailer::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 
@@ -117,6 +123,8 @@ function Chess_Army_Knife_maybe_upgrade() {
 		Chess_Army_Knife_Cache::install_table();
 		Chess_Army_Knife_Tournament_Store::install_tables();
 		Chess_Army_Knife_Membership_Store::install_table();
+		Chess_Army_Knife_Notification_Preferences::install_table();
+		Chess_Army_Knife_Mailer::install_table();
 		update_option( 'Chess_Army_Knife_db_version', Chess_Army_Knife_VERSION );
 	}
 }

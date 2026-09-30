@@ -17,6 +17,7 @@ $chess_army_knife_settings    = get_option( 'Chess_Army_Knife_settings', array()
 $chess_army_knife_delete_data = is_array( $chess_army_knife_settings ) && ! empty( $chess_army_knife_settings['delete_data_on_uninstall'] );
 
 wp_clear_scheduled_hook( 'Chess_Army_Knife_refresh_ratings' );
+wp_clear_scheduled_hook( 'Chess_Army_Knife_send_mail' );
 delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
 delete_option( 'Chess_Army_Knife_templates' );
@@ -78,6 +79,11 @@ if ( $chess_army_knife_delete_data ) {
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_members" );
+
+	foreach ( array( 'mail', 'optouts' ) as $chess_army_knife_mail_table ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_{$chess_army_knife_mail_table}" );
+	}
 }
 
 // Tournament history is user data: only drop it if the admin opted in on the Settings page.

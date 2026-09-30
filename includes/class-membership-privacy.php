@@ -108,6 +108,54 @@ class Chess_Army_Knife_Membership_Privacy {
 			);
 		}
 
+		// The emails the club has sent them, and the kinds they have turned off.
+		$categories = Chess_Army_Knife_Notification_Preferences::categories();
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Mailer::get_log_for_person( $member['id'] ) as $mail ) {
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-emails',
+					'group_label' => __( 'Emails from the club', 'chess-army-knife' ),
+					'item_id'     => 'email-' . $mail['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Subject', 'chess-army-knife' ),
+							'value' => $mail['subject'],
+						),
+						array(
+							'name'  => __( 'Kind', 'chess-army-knife' ),
+							'value' => isset( $categories[ $mail['category'] ] ) ? $categories[ $mail['category'] ] : $mail['category'],
+						),
+						array(
+							'name'  => __( 'Status', 'chess-army-knife' ),
+							'value' => $mail['status'],
+						),
+						array(
+							'name'  => __( 'Sent (UTC)', 'chess-army-knife' ),
+							'value' => (string) $mail['sent_at'],
+						),
+					),
+				);
+			}
+
+			$opt_outs = array();
+			foreach ( Chess_Army_Knife_Notification_Preferences::get_opt_outs( $member['id'] ) as $category ) {
+				$opt_outs[] = isset( $categories[ $category ] ) ? $categories[ $category ] : $category;
+			}
+			if ( $opt_outs ) {
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-email-choices',
+					'group_label' => __( 'Emails you have turned off', 'chess-army-knife' ),
+					'item_id'     => 'email-choices-' . $member['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Kinds of email', 'chess-army-knife' ),
+							'value' => implode( ', ', $opt_outs ),
+						),
+					),
+				);
+			}
+		}
+
 		// The tournaments they have been entered in.
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
 			foreach ( Chess_Army_Knife_Tournament_Store::get_tournaments_for_person( $member['id'] ) as $tournament ) {
@@ -272,6 +320,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				'heading'    => __( 'Newsletters and WhatsApp groups', 'chess-army-knife' ),
 				'paragraphs' => array(
 					__( 'We only send you the club newsletter, or add you to a WhatsApp group for a club team, if you have said yes on the application form or to a club officer. These are separate choices: you can say no to either and still be a member. For WhatsApp we also record which team\'s group you asked to join. If you are added to a group, the other members can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added using their parent or guardian\'s agreement and number unless they say otherwise. You can change your mind at any time: use the Manage My Data page on this website, or contact us, and we will stop.', 'chess-army-knife' ),
+					__( 'We also email members about their membership, such as renewal reminders, and about club events and fixtures. These are service messages, so they do not need a separate opt-in, but every email has a link to stop that kind of email. We keep a log of the emails we send (the subject and the time, not the text) for a limited time, and delete it if your details are erased. Emails for a junior go to their parent or guardian.', 'chess-army-knife' ),
 				),
 			),
 			array(
