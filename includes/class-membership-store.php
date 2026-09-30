@@ -853,6 +853,7 @@ class Chess_Army_Knife_Membership_Store {
 			unset( $data['id'] );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->update( self::table(), $data, array( 'id' => $id ) );
+			do_action( 'Chess_Army_Knife_members_changed' );
 			return $id;
 		}
 
@@ -864,6 +865,7 @@ class Chess_Army_Knife_Membership_Store {
 		$data['created_at'] = $data['updated_at'];
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table(), $data );
+		do_action( 'Chess_Army_Knife_members_changed' );
 		return (int) $wpdb->insert_id;
 	}
 
@@ -975,6 +977,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table(), array( 'id' => (int) $id ), array( '%d' ) );
+		do_action( 'Chess_Army_Knife_members_changed' );
 	}
 
 	/**

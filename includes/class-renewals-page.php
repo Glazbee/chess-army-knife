@@ -16,7 +16,7 @@ class Chess_Army_Knife_Renewals_Page {
 	 * Hook up the screen and its actions.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 6 );
+		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 7 );
 		add_action( 'admin_post_chess_army_knife_send_reminders', array( __CLASS__, 'handle_send' ) );
 		add_action( 'admin_post_chess_army_knife_test_reminder', array( __CLASS__, 'handle_test' ) );
 		add_action( 'admin_post_chess_army_knife_renew_member', array( __CLASS__, 'handle_renew' ) );
@@ -140,7 +140,7 @@ class Chess_Army_Knife_Renewals_Page {
 					$enabled
 						/* translators: %s: list of days, for example "30, 7, 0, -7" */
 						? sprintf( __( 'Reminders are on. They go out at these days from the last day of membership: %s.', 'chess-army-knife' ), $days )
-						: __( 'Reminders are off. Turn them on, and set the days and wording, under Settings > Chess Army Knife.', 'chess-army-knife' )
+						: __( 'Reminders are off. Turn them on, and set the days and wording, under ECF & LMS > Settings.', 'chess-army-knife' )
 				);
 				?>
 			</p>
