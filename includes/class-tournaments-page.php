@@ -463,7 +463,7 @@ class Chess_Army_Knife_Tournaments_Page {
 			</table>
 
 			<h3><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h3>
-			<?php Chess_Army_Knife_Player_Selector::render( Chess_Army_Knife_Tournament_Store::get_players() ); ?>
+			<?php Chess_Army_Knife_Player_Selector::render( Chess_Army_Knife_Membership_Store::get_players() ); ?>
 
 			<?php submit_button( __( 'Create tournament', 'chess-army-knife' ) ); ?>
 		</form>
@@ -660,7 +660,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$entered   = array_column( $entries, 'player_id' );
 		$available = array_values(
 			array_filter(
-				Chess_Army_Knife_Tournament_Store::get_players(),
+				Chess_Army_Knife_Membership_Store::get_players(),
 				function ( $player ) use ( $entered ) {
 					return ! in_array( $player['id'], $entered, true );
 				}

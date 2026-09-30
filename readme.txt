@@ -8,22 +8,22 @@ Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Gutenberg blocks for English chess clubs: ECF ratings and league data, club tournaments and club events.
+Gutenberg blocks for English chess clubs: ECF ratings and league data, club tournaments, club events and club memberships.
 
 == Description ==
 
-This plugin adds thirteen blocks to the WordPress block editor, pulling live data from:
+This plugin adds seventeen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
 
 **Blocks included**
 
-1. **ECF Rating Chart** — search for a player and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
-2. **ECF Club Results** — pick a club and show a merged feed of recent rated results across its members (win/draw/loss, opponent, event).
+1. **ECF Rating Chart** — choose a club member and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
+2. **ECF Club Results** — a merged feed of recent rated results for the club's current members who have an ECF rating code (win/draw/loss, colour, event). Opponents are not shown.
 3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
 4. **ECF Team Fixtures Carousel** — a rotating carousel showing each team's last result and next fixture. Teams are read automatically from the league table, or you can supply your own list.
-5. **ECF Biggest Rating Gainers** — showcase the club members whose rating has risen the most over a recent period.
+5. **ECF Biggest Rating Gainers** — showcase the club's current members whose rating has risen the most over a recent period.
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
 7. **Tournament Status** — where a tournament stands: status, format, players, current round (Swiss), games played and the winner.
@@ -33,10 +33,59 @@ This plugin adds thirteen blocks to the WordPress block editor, pulling live dat
 11. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
 12. **Club Event Calendar** — upcoming club events by date, as a list or a month grid, optionally only those with chosen tags.
 13. **Next Club Event** — the next club event, optionally only one with a chosen tag.
+14. **Club Memberships** — advertise the memberships the club offers (junior, adult, senior or any others) with their prices and descriptions, and how to pay. Optionally link each one to your application form.
+15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
+O. **Manage My Data** — lets a member stop the newsletter or WhatsApp groups, ask for a copy of their details, or ask for them to be deleted, without an account. Changes are confirmed by an emailed link.
+
+**Memberships**
+
+Memberships are managed under **Memberships** in the admin menu:
+
+* **Membership Types** are what you advertise: a name, description, price and length (12 months, or 0 for no expiry). Publish a type to offer it; keep it as a draft to hide it. Use the Order box to arrange them.
+* **Members** lists everyone, with views for current members, pending applications, expired, and declined or cancelled. Approve or decline applications, and use **Add member** to enter someone who cannot use the online form. Record when a payment was received and how, and keep private notes.
+* **How to pay** is entered once under **ECF & LMS → Settings**. The website never takes payments: members pay by bank transfer, cash or whatever you describe, and each member has a payment reference (such as MEM-12) to quote so you can match transfers.
+
+Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form is built around how a chess club uses data:
+
+* **Running the club** is the basis for the required details (name, email, phone, ECF rating code): to run the membership and to provide playing members to the ECF, who are given each member's name and ECF rating code. Applicants tick to confirm they have read how their details are used, the time is recorded, and the form links to your privacy policy if the site has one.
+* **Newsletter and WhatsApp groups** are two separate, optional, unticked choices on the form, each recorded with its time, because neither is needed to run the membership and a WhatsApp group shows a member's number to the rest of the group. If the club has teams on the Club Teams page, the member also ticks which team(s) they play for, so they are only added to the groups they asked for (WhatsApp needs a phone number). A member can withdraw either at any time and still stay a member (see Manage My Data below, or untick them on the member's record). The one required tick only confirms they have read how their details are used.
+* **Juniors (under 18)**: the form asks for the junior's date of birth and a parent or guardian's name, email and phone, and writes to the parent rather than the junior. The junior's own email and phone are only kept if the parent ticks that the club may contact the junior directly. Someone whose date of birth is under 18 is treated as a junior even if they do not tick the box. An adult's date of birth is not kept. The parent or guardian gives the consent for a junior.
+* It also limits how often one visitor can apply.
+
+**Every player is written down once**
+
+The club's people table is the only place anyone's details are kept. Tournament entries are references to a person in it: a tournament holds no names or ECF codes of its own, so correcting a record corrects every tournament, and exporting or erasing a person covers their tournament entries too. (There is no separate Players page any more; add people on the Members screen or from the tournament screens.)
+
+* **Guests.** People who are not members, such as tournament guests, are recorded as **Not a member**. They are kept in the same table but left out of the member lists and counts, appear under their own **Not members** view, and can still be chosen as tournament players and tagged in photos. Guests are deleted with the same retention period, counted from when they were last used. A player typed into the tournament screens is recorded this way automatically. A member's or guest's manual rating (for someone without an ECF code) is part of their record.
+* **Typed ECF codes.** A block can still be given an ECF rating code by hand. Before anything is fetched from the ECF about that code, it is matched to the person's record (with or without the letter), or, if nobody has that code, the ECF is asked who it is and they are written down as a non-member. A code the ECF does not know records nobody.
+* **Ratings stay up to date.** An hourly background job refreshes the ECF rating of every current member who has an ECF code, once per cache period (set under **ECF & LMS → Settings**, 6 hours by default), using the default rating list. Enter your club's **ECF club code** (for example `4USL`) under **ECF & LMS → Settings** and one request to the ECF's club list refreshes every member at once, instead of one request per member. The list also contains people the club holds no record of, so it is never cached and only the ratings of people already on your records are kept; the rest is dropped immediately. Anyone the list does not cover (and everyone, if no club code is set) is checked individually, least recently checked first, a small batch at a time (20 by default, change it with the `Chess_Army_Knife_rating_refresh_batch` filter) so the ECF's daily processing limit is respected. The club list only has standard, rapid and blitz ratings, so an online rating list is checked individually. The latest rating is kept on each member's record and shown on the Members screen with how long ago it was checked, and the cache the blocks read is refilled, so visitors never wait for the ECF. A code the ECF rejects is noted and not retried until the next period, and a run stops early if the ECF keeps failing. **Refresh ECF ratings** on the Members screen runs a refresh straight away. Guests are not refreshed in the background; their rating is fetched when a tournament starts.
+* **Choosing players.** The player pickers in the block editor and on the Tournaments screen search the club's own people: current members and guests with an ECF code. The ECF's own player database is never searched.
+* **Club rosters.** Club Results and Biggest Gainers use the club's own current members with an ECF code, not the ECF's club roster, so nobody appears there without a record. The club search, club picker and default club code have been removed. Opponents' names and ratings are no longer shown, because the club holds no record of them.
+* **Deleting.** Deleting a person outright is only possible if nothing ties them to a payment, a photo or a tournament. Otherwise their personal details are removed and the rest is kept.
+
+**Manage My Data**
+
+The Manage My Data block needs no account. The member gives their email address (a junior's parent uses theirs) and chooses:
+
+* **Change my newsletter and WhatsApp choices**: a private, one-time link is emailed to that address; it lets them untick (or tick) the newsletter and WhatsApp choices, and choose which teams' groups, for everyone under the address. Nobody can change anyone else's choices.
+* **Send me a copy of my details** or **Delete my details**: these use WordPress's own personal data requests. The person confirms by email, then the request appears under **Tools → Export / Erase Personal Data**, where the club's exporter and eraser do the work.
+
+The answer is the same whether or not the address is on file, and the number of emails one visitor or address can cause is limited. Put the block on a page such as your privacy policy.
+
+**Photos**
+
+Anyone who can manage members sees a **Members in this photo** checklist in a photo's details (in the upload dialog and on the Edit Media screen). Tick the members and guests who appear. Tags hold the member's id, not their name, and are only visible to people who manage members. Find a person's photos from the **Photos** link on the Members screen, the thumbnails on their record, or the Media Library's member filter, which works in both the grid and list views. Photo tags are included when a person's data is exported. Erasing a person does not delete photos, because they may show other people: their record is kept without personal details, so the tagged photos can still be found and reviewed by hand.
+
+**Data protection (GDPR)**
+
+* Members are covered by WordPress's own **Tools → Export Personal Data** and **Erase Personal Data**, found by email address. A junior is found by their parent or guardian's email address as well as their own. Exporting includes everything held, including your notes. Erasing deletes the record; if a payment was recorded on it, the record is kept for your accounts with all personal details removed.
+* Records are deleted automatically after the period set under **ECF & LMS → Settings → Keep old membership records for** (24 months by default, 0 to keep everything): memberships that ended, and applications that were declined, cancelled or never approved. Current members are never removed.
+* The **Club Data Policy** block shows the club's policy to anyone, and the same wording is offered under **Settings → Privacy → Policy Guide**. Set **Data protection contact** under **ECF & LMS → Settings** so people know who to ask. Add your own paragraphs with the `Chess_Army_Knife_data_policy_sections` filter. Review the wording so it matches what your club actually does; it is not legal advice.
+* Collect only what you need: an adult's date of birth is never stored by the form. Deleting the plugin removes members only if you tick the delete-data option.
 
 **Global defaults**
 
-Set a default club code, LMS organisation ID, event name and rating list once under **Settings → Chess Army Knife**. Any block field left blank will use that default automatically, and can still be overridden individually per block.
+Set a default LMS organisation ID, event name and rating list once under **Settings → Chess Army Knife**. Any block field left blank will use that default automatically, and can still be overridden individually per block.
 
 All API responses are cached in a dedicated database table (so cached data survives object-cache evictions on shared hosting) — durations are configurable under **Settings → Chess Army Knife**, where you can also switch back to plain WordPress transients if you prefer.
 
@@ -50,10 +99,8 @@ The ECF's own API documentation page currently points requests at a legacy host 
 
 1. Upload the `chess-army-knife` folder to `/wp-content/plugins/`, or install the zip via **Plugins → Add New → Upload Plugin**.
 2. Activate the plugin.
-3. Visit **ECF & LMS → Settings** in the admin menu to (optionally) set a default club code and LMS organisation ID, and **ECF & LMS → Club Teams** to list your club's teams across any divisions/organisations.
+3. Visit **ECF & LMS → Settings** in the admin menu to (optionally) set a default LMS organisation ID, and **ECF & LMS → Club Teams** to list your club's teams across any divisions/organisations.
 4. Add the blocks from the inserter — search for "ECF" or "LMS".
-
-**Finding your ECF club code**: search for your club at https://rating.englishchess.org.uk/clubs — the code is shown next to the club name (e.g. `9BAJ`). You can also just start typing your club's name directly into the block's picker in the editor.
 
 **Finding your LMS organisation ID**: go to your league's LMS homepage — the URL looks like `https://lms.englishchess.org.uk/lms/organisation/613`. The number at the end (`613`) is your organisation ID. The event/division name must match exactly what's shown in LMS (e.g. `Division 1`), including capitalisation and spacing.
 
@@ -74,6 +121,20 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: an ECF club code setting: one request to the ECF's club list refreshes every member's rating at once, keeping only people already on your records.
+* Added: members' ECF ratings are refreshed hourly in the background (oldest check first, in small batches, backing off if the ECF fails), stored on their record, shown on the Members screen and kept in the cache the blocks read. A Refresh ECF ratings button checks a batch on demand.
+* Changed: everyone's details are held once, in the people table. Tournament entries reference a person instead of copying their name and ECF code, and the Players page and its separate profile table are gone. A manual rating is part of a person's record.
+* Changed: no player is fetched from the ECF without a record. A typed ECF code is matched to a person or, if unknown, written down as a non-member once the ECF has confirmed who it is. Club Results and Biggest Gainers use the club's own current members; the ECF club roster, club search, club picker and default club code are removed, and Club Results no longer shows opponents.
+* Added: Manage My Data block: withdraw newsletter or WhatsApp consent, or change which teams' groups, from an emailed link, or ask for a copy or deletion through WordPress's personal data requests.
+* Added: the Media Library member filter now works in grid view as well as list view.
+* Added: club memberships. Membership Types (name, description, price, length), a Members screen with pending applications, current, expired and cancelled members, and manual adding, editing and payment recording. New Club Memberships and Membership Application Form blocks, and a payment instructions field under Settings.
+* Added: data protection for members: personal data export and erase, recorded consent, automatic deletion of old records after a retention period, suggested privacy policy wording and a public Club Data Policy block.
+* Added: the player pickers search the club's own members (and guests) instead of the ECF's player database.
+* Added: people who are not members (such as tournament guests) can be recorded with a "Not a member" flag and are left out of member lists and counts.
+* Added: tag members in photos from the Media Library, find a member's photos, and include them in personal data exports.
+* Added: separate, unticked opt-ins on the application form for the club newsletter and for WhatsApp groups, with a choice of which team(s), each recorded with its time. A failed save is now reported to the applicant instead of a thank-you.
+* Added: junior members (under 18) are handled through a parent or guardian, and the newsletter and WhatsApp groups are separate, recorded, optional consents.
+* Added: a separate "manage members" permission for the Memberships screens, set per user on their profile rather than given to all administrators.
 * Added: Tournament Standings block, a cross-table of each player's points in every round and their total.
 * Changed: results are now entered in the Tournament Games to Play block. Everyone sees the games; administrators also get two score selectors per game (choosing 1 for one player gives the other 0, and ½ gives ½ to both) and one Save button at the top. Games are saved together, so a wrong score is not recorded by accident. Forfeits and corrections are still made on the Tournaments admin page.
 * Removed: the Tournament Results Entry block, replaced by the above. Pages that used it need the Tournament Games to Play block instead.

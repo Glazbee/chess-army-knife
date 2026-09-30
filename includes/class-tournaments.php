@@ -264,18 +264,22 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
-	 * Enter a saved player profile in a draft tournament.
+	 * Enter a person in a draft tournament. The person must be a current
+	 * member or a guest recorded as not being a member.
 	 *
 	 * @param int $tournament_id Tournament id.
-	 * @param int $player_id     Player profile id.
+	 * @param int $player_id     Person id (see Chess_Army_Knife_Membership_Store).
 	 * @return int|WP_Error Entry id.
 	 */
 	public static function add_player( $tournament_id, $player_id ) {
 		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
-		$player     = Chess_Army_Knife_Tournament_Store::get_player( $player_id );
+		$player     = Chess_Army_Knife_Membership_Store::get_member( $player_id );
 
 		if ( ! $tournament || ! $player ) {
 			return new WP_Error( 'tournament_missing', __( 'Tournament or player not found.', 'chess-army-knife' ) );
+		}
+		if ( ! Chess_Army_Knife_Membership_Store::can_play( $player ) ) {
+			return new WP_Error( 'tournament_ineligible', __( 'Only current members and recorded guests can be entered.', 'chess-army-knife' ) );
 		}
 		if ( self::STATUS_DRAFT !== $tournament['status'] ) {
 			return new WP_Error( 'tournament_started', __( 'Players can only be added before the tournament starts.', 'chess-army-knife' ) );
@@ -290,8 +294,6 @@ class Chess_Army_Knife_Tournaments {
 			array(
 				'tournament_id' => (int) $tournament_id,
 				'player_id'     => (int) $player_id,
-				'name'          => $player['name'],
-				'ecf_code'      => $player['ecf_code'],
 			)
 		);
 	}
@@ -415,7 +417,7 @@ class Chess_Army_Knife_Tournaments {
 
 		// Snapshot ratings now; later rating changes never affect seeding.
 		foreach ( $entries as $i => $entry ) {
-			$player = Chess_Army_Knife_Tournament_Store::get_player( $entry['player_id'] );
+			$player = Chess_Army_Knife_Membership_Store::get_member( $entry['player_id'] );
 			$rating = self::lookup_rating(
 				array(
 					'ecf_code'      => $entry['ecf_code'],

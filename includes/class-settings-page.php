@@ -1,11 +1,11 @@
 <?php
 /**
- * Admin settings screen: global defaults (club code, LMS org id, rating
+ * Admin settings screen: global defaults (LMS org id, rating
  * domain, LMS host override) so editors don't have to repeat them in
  * every block, plus cache duration controls and a "clear cache" action.
  *
  * Blocks store an *empty* value for anything that should follow the
- * global default (e.g. a blank "rating list" or "club code"); render.php
+ * global default (e.g. a blank "rating list" or "LMS organisation"); render.php
  * for each block resolves that via Chess_Army_Knife_Settings::resolve().
  *
  * @package Chess_Army_Knife
@@ -73,18 +73,21 @@ class Chess_Army_Knife_Settings {
 	 */
 	public static function defaults() {
 		return array(
-			'default_club_code'        => '',
 			'default_org_id'           => '',
 			'default_event_name'       => '',
 			'default_domain'           => 'S',
+			'ecf_club_code'            => '', // The club's ECF code, to refresh all members' ratings in one request.
 			'default_days_back'        => 60,
 			'default_max_players'      => 12,
 			'lms_base_url'             => '',
 			'default_event_location'   => '', // Used by club events that don't set their own.
+			'membership_payment_info'  => '', // How to pay for a membership (bank details, cash at the club...).
+			'data_contact_email'       => '', // Shown in the data policy as who to contact about personal data.
+			'member_retention_months'  => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
 			'club_teams'               => '',  // Raw textarea: one "org | event | team" per line.
 			'fast_cache_enabled'       => 1,
 			'match_time'               => '19:30',
-			'cache_ecf_minutes'        => 360, // Player info / games / club roster.
+			'cache_ecf_minutes'        => 360, // Player info / games.
 			'cache_lms_minutes'        => 30,  // League tables / matches / fixtures.
 			'use_local_cache'          => 1,   // Persistent custom-table cache vs. plain transients.
 			'delete_data_on_uninstall' => 0, // Also delete tournaments and players when the plugin is deleted.
@@ -240,14 +243,14 @@ class Chess_Army_Knife_Settings {
 	public static function sanitize( $input ) {
 		$clean = self::defaults();
 
-		if ( isset( $input['default_club_code'] ) ) {
-			$clean['default_club_code'] = strtoupper( sanitize_text_field( $input['default_club_code'] ) );
-		}
 		if ( isset( $input['default_org_id'] ) ) {
 			$clean['default_org_id'] = preg_replace( '/[^0-9]/', '', $input['default_org_id'] );
 		}
 		if ( isset( $input['default_event_name'] ) ) {
 			$clean['default_event_name'] = sanitize_text_field( $input['default_event_name'] );
+		}
+		if ( isset( $input['ecf_club_code'] ) ) {
+			$clean['ecf_club_code'] = strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', sanitize_text_field( $input['ecf_club_code'] ) ) );
 		}
 		if ( isset( $input['default_domain'] ) ) {
 			$clean['default_domain'] = Chess_Army_Knife_ECF_Client::normalise_domain( $input['default_domain'] );
@@ -260,6 +263,15 @@ class Chess_Army_Knife_Settings {
 		}
 		if ( isset( $input['default_event_location'] ) ) {
 			$clean['default_event_location'] = sanitize_text_field( $input['default_event_location'] );
+		}
+		if ( isset( $input['membership_payment_info'] ) ) {
+			$clean['membership_payment_info'] = sanitize_textarea_field( $input['membership_payment_info'] );
+		}
+		if ( isset( $input['data_contact_email'] ) ) {
+			$clean['data_contact_email'] = sanitize_email( $input['data_contact_email'] );
+		}
+		if ( isset( $input['member_retention_months'] ) ) {
+			$clean['member_retention_months'] = max( 0, min( 120, (int) $input['member_retention_months'] ) );
 		}
 		if ( isset( $input['lms_base_url'] ) ) {
 			$clean['lms_base_url'] = esc_url_raw( trim( $input['lms_base_url'] ) );
@@ -337,13 +349,6 @@ class Chess_Army_Knife_Settings {
 				</p>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="default_club_code"><?php esc_html_e( 'Default ECF club code', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="text" id="default_club_code" name="<?php echo esc_attr( self::OPTION ); ?>[default_club_code]" value="<?php echo esc_attr( $options['default_club_code'] ); ?>" class="regular-text" placeholder="e.g. 9BAJ" />
-							<p class="description"><?php esc_html_e( 'Used by "Club Results" and "Biggest Gainers" blocks when their own club field is left blank.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
-					<tr>
 						<th scope="row"><label for="default_org_id"><?php esc_html_e( 'Default LMS organisation ID', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="text" id="default_org_id" name="<?php echo esc_attr( self::OPTION ); ?>[default_org_id]" value="<?php echo esc_attr( $options['default_org_id'] ); ?>" class="regular-text" placeholder="e.g. 613" />
@@ -384,6 +389,13 @@ class Chess_Army_Knife_Settings {
 						</td>
 					</tr>
 					<tr>
+						<th scope="row"><label for="ecf_club_code"><?php esc_html_e( 'ECF club code', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="ecf_club_code" name="<?php echo esc_attr( self::OPTION ); ?>[ecf_club_code]" value="<?php echo esc_attr( $options['ecf_club_code'] ); ?>" class="regular-text" placeholder="e.g. 4USL" />
+							<p class="description"><?php esc_html_e( 'Your club\'s ECF code. Members\' ratings are then refreshed from the ECF\'s club list in a single request instead of one request per member. Only ratings of people already on your records are kept; the rest of the list is not stored.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
 						<th scope="row"><label for="default_days_back"><?php esc_html_e( 'Default "days to look back"', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="number" min="1" id="default_days_back" name="<?php echo esc_attr( self::OPTION ); ?>[default_days_back]" value="<?php echo esc_attr( $options['default_days_back'] ); ?>" class="small-text" />
@@ -401,6 +413,28 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<input type="text" id="default_event_location" name="<?php echo esc_attr( self::OPTION ); ?>[default_event_location]" value="<?php echo esc_attr( $options['default_event_location'] ); ?>" class="regular-text" placeholder="e.g. The Village Hall, High Street" />
 							<p class="description"><?php esc_html_e( 'Where club events are usually held. A club event that has no location of its own uses this.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="membership_payment_info"><?php esc_html_e( 'How to pay for membership', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<textarea id="membership_payment_info" name="<?php echo esc_attr( self::OPTION ); ?>[membership_payment_info]" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'e.g. Bank transfer to Any Chess Club, sort code 00-00-00, account 12345678, quoting your reference. Or pay cash at the club.', 'chess-army-knife' ); ?>"><?php echo esc_textarea( $options['membership_payment_info'] ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="data_contact_email"><?php esc_html_e( 'Data protection contact', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="email" id="data_contact_email" name="<?php echo esc_attr( self::OPTION ); ?>[data_contact_email]" value="<?php echo esc_attr( $options['data_contact_email'] ); ?>" class="regular-text" />
+							<p class="description"><?php esc_html_e( 'Shown publicly in the Club Data Policy block as who to contact to see, correct or delete personal details. Use a club address rather than a personal one.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="member_retention_months"><?php esc_html_e( 'Keep old membership records for', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="number" min="0" max="120" id="member_retention_months" name="<?php echo esc_attr( self::OPTION ); ?>[member_retention_months]" value="<?php echo esc_attr( $options['member_retention_months'] ); ?>" class="small-text" />
+							<?php esc_html_e( 'months', 'chess-army-knife' ); ?>
+							<p class="description"><?php esc_html_e( 'Members whose membership ended, and applications that were declined, cancelled or never approved, are deleted automatically this long after. A record with a payment on it is kept for your accounts, but its personal details are removed. Enter 0 to keep everything until you delete it yourself. Current members are never removed.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>
@@ -464,7 +498,7 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( self::OPTION ); ?>[delete_data_on_uninstall]" value="1" <?php checked( ! empty( $options['delete_data_on_uninstall'] ) ); ?> />
-								<?php esc_html_e( 'Also delete all tournaments, results and player profiles', 'chess-army-knife' ); ?>
+								<?php esc_html_e( 'Also delete all tournaments, results, player profiles, club events, membership types and members', 'chess-army-knife' ); ?>
 							</label>
 							<p class="description">
 								<?php esc_html_e( 'Off by default, so deleting the plugin keeps your tournament history. Settings and cached data are always removed. This cannot be undone.', 'chess-army-knife' ); ?>

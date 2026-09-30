@@ -8,11 +8,8 @@ import {
 	TextControl,
 	ToggleControl,
 	Notice,
-	Placeholder,
 } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
-import ClubPicker from '../shared/club-picker';
-import useEcfLmsDefaults from '../shared/use-defaults';
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -22,20 +19,10 @@ const DOMAIN_OPTIONS = [
 ];
 
 export default function Edit( { attributes, setAttributes } ) {
-	const {
-		clubCode,
-		clubName,
-		domain,
-		daysBack,
-		maxPlayers,
-		topCount,
-		minGames,
-		title,
-	} = attributes;
+	const { domain, daysBack, maxPlayers, topCount, minGames, title } =
+		attributes;
 
 	const blockProps = useBlockProps();
-	const siteDefaults = useEcfLmsDefaults();
-	const hasClub = Boolean( clubCode || siteDefaults.clubCode );
 
 	return (
 		<div { ...blockProps }>
@@ -47,34 +34,6 @@ export default function Edit( { attributes, setAttributes } ) {
 						setAttributes( { templateId: value } )
 					}
 				/>
-				<PanelBody
-					title={ __( 'Club', 'chess-army-knife' ) }
-					initialOpen={ true }
-				>
-					<ClubPicker
-						value={ { code: clubCode, name: clubName } }
-						onSelect={ ( club ) =>
-							setAttributes( {
-								clubCode: club.code,
-								clubName: club.name,
-							} )
-						}
-					/>
-					<TextControl
-						label={ __(
-							'ECF club code (manual override)',
-							'chess-army-knife'
-						) }
-						help={ __(
-							'Leave blank to use the site-wide default, if one is set.',
-							'chess-army-knife'
-						) }
-						value={ clubCode }
-						onChange={ ( value ) =>
-							setAttributes( { clubCode: value.toUpperCase() } )
-						}
-					/>
-				</PanelBody>
 				<PanelBody
 					title={ __( 'Settings', 'chess-army-knife' ) }
 					initialOpen={ true }
@@ -179,34 +138,10 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 			</InspectorControls>
 
-			{ ! hasClub ? (
-				<Placeholder
-					icon="chart-bar"
-					label={ __(
-						'ECF Biggest Rating Gainers',
-						'chess-army-knife'
-					) }
-					instructions={ __(
-						'Search for a club in the sidebar (or set a site-wide default club on the settings page) to preview this block.',
-						'chess-army-knife'
-					) }
-				>
-					<ClubPicker
-						value={ { code: clubCode, name: clubName } }
-						onSelect={ ( club ) =>
-							setAttributes( {
-								clubCode: club.code,
-								clubName: club.name,
-							} )
-						}
-					/>
-				</Placeholder>
-			) : (
-				<ServerSideRender
-					block="chess-army-knife/biggest-gainers"
-					attributes={ attributes }
-				/>
-			) }
+			<ServerSideRender
+				block="chess-army-knife/biggest-gainers"
+				attributes={ attributes }
+			/>
 		</div>
 	);
 }

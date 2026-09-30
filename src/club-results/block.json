@@ -5,7 +5,7 @@
 	"title": "ECF Club Results",
 	"category": "widgets",
 	"icon": "groups",
-	"description": "Show recent rated results for players registered at an ECF club.",
+	"description": "Shows recent rated results for the club's current members who have an ECF rating code.",
 	"keywords": [
 		"chess",
 		"ecf",
@@ -15,14 +15,6 @@
 	"version": "1.0.0",
 	"textdomain": "chess-army-knife",
 	"attributes": {
-		"clubCode": {
-			"type": "string",
-			"default": ""
-		},
-		"clubName": {
-			"type": "string",
-			"default": ""
-		},
 		"domain": {
 			"type": "string",
 			"default": ""
@@ -46,10 +38,6 @@
 		"title": {
 			"type": "string",
 			"default": ""
-		},
-		"showOpponentRating": {
-			"type": "boolean",
-			"default": true
 		},
 		"templateId": {
 			"type": "string",

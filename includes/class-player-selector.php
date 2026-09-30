@@ -1,9 +1,10 @@
 <?php
 /**
  * The "choose players" control shared by the create-tournament form and a
- * draft tournament: a searchable checklist of saved players, a search of the
- * ECF list by name (which fills in the rating code), and a manual entry for
- * players without a code. The behaviour lives in assets/admin.js.
+ * draft tournament: a searchable checklist of the club's members and guests, a
+ * search of them by name (which fills in the rating code), and a manual entry
+ * for anyone else, who is recorded as not being a member. The behaviour lives
+ * in assets/admin.js.
  *
  * @package Chess_Army_Knife
  */
@@ -16,7 +17,7 @@ class Chess_Army_Knife_Player_Selector {
 	const MAX_NEW_PLAYERS = 200;
 
 	/**
-	 * Load the admin script and styles on the Tournaments and Players pages.
+	 * Load the admin script and styles on the Tournaments page.
 	 */
 	public static function init() {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
@@ -28,13 +29,7 @@ class Chess_Army_Knife_Player_Selector {
 	 * @param string $hook Admin page hook suffix.
 	 */
 	public static function enqueue_assets( $hook ) {
-		$ours = false;
-		foreach ( array( Chess_Army_Knife_Tournaments_Page::SLUG, Chess_Army_Knife_Players_Page::SLUG ) as $slug ) {
-			if ( false !== strpos( (string) $hook, $slug ) ) {
-				$ours = true;
-			}
-		}
-		if ( ! $ours ) {
+		if ( false === strpos( (string) $hook, Chess_Army_Knife_Tournaments_Page::SLUG ) ) {
 			return;
 		}
 
@@ -44,24 +39,63 @@ class Chess_Army_Knife_Player_Selector {
 			'chess-army-knife-admin',
 			'chessArmyKnifeAdmin',
 			array(
-				'minRating' => Chess_Army_Knife_Players_Page::MIN_MANUAL_RATING,
+				'minRating' => Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING,
 				'i18n'      => array(
 					/* translators: %d: number of players */
 					'selected'    => __( '%d selected', 'chess-army-knife' ),
 					'add'         => __( 'Add', 'chess-army-knife' ),
 					'use'         => __( 'Use', 'chess-army-knife' ),
 					'select'      => __( 'Select', 'chess-army-knife' ),
-					'saved'       => __( 'already saved', 'chess-army-knife' ),
+					'saved'       => __( 'already listed', 'chess-army-knife' ),
 					'remove'      => __( 'Remove', 'chess-army-knife' ),
-					'noResults'   => __( 'No matching players found.', 'chess-army-knife' ),
-					'searchError' => __( 'The ECF search is not available right now.', 'chess-army-knife' ),
+					'noResults'   => __( 'No matching members found. Only current members with an ECF code are listed.', 'chess-army-knife' ),
+					'searchError' => __( 'The member search is not available right now.', 'chess-army-knife' ),
 					'needName'    => __( 'Please enter a name.', 'chess-army-knife' ),
 					/* translators: %d: lowest manual rating */
-					'needRating'  => sprintf( __( 'A manual rating must be %d or higher.', 'chess-army-knife' ), Chess_Army_Knife_Players_Page::MIN_MANUAL_RATING ),
+					'needRating'  => sprintf( __( 'A manual rating must be %d or higher.', 'chess-army-knife' ), Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ),
 					'manual'      => __( 'manual rating', 'chess-army-knife' ),
 				),
 			)
 		);
+	}
+
+	/**
+	 * Validate and clean one typed or found player.
+	 *
+	 * @param array $input Raw (unslashed) values: name, ecf_code, manual_rating.
+	 * @return array|WP_Error name, ecf_code, manual_rating (int|null).
+	 */
+	public static function sanitize_player( array $input ) {
+		$name = isset( $input['name'] ) ? sanitize_text_field( $input['name'] ) : '';
+		if ( '' === $name ) {
+			return new WP_Error( 'player_name', __( 'Please enter a name.', 'chess-army-knife' ) );
+		}
+
+		$code = isset( $input['ecf_code'] ) ? strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', $input['ecf_code'] ) ) : '';
+
+		$rating = null;
+		if ( isset( $input['manual_rating'] ) && '' !== trim( (string) $input['manual_rating'] ) ) {
+			$rating = (int) $input['manual_rating'];
+			if ( $rating < Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING || $rating > Chess_Army_Knife_Membership_Store::MAX_MANUAL_RATING ) {
+				return new WP_Error( 'player_rating', self::rating_message() );
+			}
+		}
+
+		return array(
+			'name'          => $name,
+			'ecf_code'      => $code,
+			'manual_rating' => $rating,
+		);
+	}
+
+	/**
+	 * The message for a manual rating that is out of range.
+	 *
+	 * @return string
+	 */
+	protected static function rating_message() {
+		/* translators: 1: lowest manual rating, 2: highest manual rating */
+		return sprintf( __( 'A manual rating must be between %1$d and %2$d.', 'chess-army-knife' ), Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING, Chess_Army_Knife_Membership_Store::MAX_MANUAL_RATING );
 	}
 
 	/**
@@ -84,7 +118,7 @@ class Chess_Army_Knife_Player_Selector {
 			if ( ! is_array( $input ) ) {
 				continue;
 			}
-			$clean = Chess_Army_Knife_Players_Page::sanitize_player( $input );
+			$clean = self::sanitize_player( $input );
 			if ( is_wp_error( $clean ) ) {
 				$result['errors'][] = $clean->get_error_message();
 				continue;
@@ -103,7 +137,7 @@ class Chess_Army_Knife_Player_Selector {
 
 	/**
 	 * Enter the players chosen in the selector in a draft tournament. Players
-	 * found on the ECF list or typed in are saved as profiles first (reusing
+	 * found among the members or typed in are saved as profiles first (reusing
 	 * the profile that already has the same ECF code).
 	 *
 	 * @param int   $tournament_id Tournament id.
@@ -120,8 +154,11 @@ class Chess_Army_Knife_Player_Selector {
 
 		$new = self::parse_new_players( isset( $input['new_players'] ) ? $input['new_players'] : array() );
 		foreach ( $new['players'] as $player ) {
-			$existing     = '' !== $player['ecf_code'] ? Chess_Army_Knife_Tournament_Store::find_player_by_code( $player['ecf_code'] ) : null;
-			$player_ids[] = $existing ? $existing['id'] : Chess_Army_Knife_Tournament_Store::save_player( $player );
+			// The person's own record, or a new one marked as not being a member: nobody is entered without a record.
+			$person_id = Chess_Army_Knife_Membership_Store::ensure_person( $player['name'], $player['ecf_code'], $player['manual_rating'] );
+			if ( $person_id ) {
+				$player_ids[] = $person_id;
+			}
 		}
 		$outcome['errors'] = $new['errors'];
 
@@ -152,23 +189,23 @@ class Chess_Army_Knife_Player_Selector {
 	/**
 	 * Print the control.
 	 *
-	 * @param array[] $players Saved players that can be chosen.
+	 * @param array[] $players Members and guests that can be chosen.
 	 */
 	public static function render( array $players ) {
 		?>
 		<div class="cak-selector" data-cak-selector>
 			<?php if ( empty( $players ) ) : ?>
-				<p class="description"><?php esc_html_e( 'No saved players yet. Find players on the ECF list below, or add one without an ECF code.', 'chess-army-knife' ); ?></p>
+				<p class="description"><?php esc_html_e( 'No members or guests to choose from yet. Find club members below, or add someone who is not a member.', 'chess-army-knife' ); ?></p>
 			<?php else : ?>
 				<p>
-					<label for="cak-filter"><strong><?php esc_html_e( 'Saved players', 'chess-army-knife' ); ?></strong></label><br />
+					<label for="cak-filter"><strong><?php esc_html_e( 'Members and guests', 'chess-army-knife' ); ?></strong></label><br />
 					<input type="search" id="cak-filter" class="regular-text" data-cak-filter placeholder="<?php esc_attr_e( 'Filter by name or ECF code…', 'chess-army-knife' ); ?>" />
 					<button type="button" class="button-link" data-cak-select-shown><?php esc_html_e( 'Select all shown', 'chess-army-knife' ); ?></button>
 					&middot;
 					<button type="button" class="button-link" data-cak-clear><?php esc_html_e( 'Clear', 'chess-army-knife' ); ?></button>
 					<span class="description" data-cak-count aria-live="polite"></span>
 				</p>
-				<div class="cak-selector__list" role="group" aria-label="<?php esc_attr_e( 'Saved players', 'chess-army-knife' ); ?>">
+				<div class="cak-selector__list" role="group" aria-label="<?php esc_attr_e( 'Members and guests', 'chess-army-knife' ); ?>">
 					<?php foreach ( $players as $player ) : ?>
 						<label class="cak-selector__item" data-cak-search="<?php echo esc_attr( strtolower( $player['name'] . ' ' . $player['ecf_code'] ) ); ?>" data-cak-code="<?php echo esc_attr( $player['ecf_code'] ); ?>">
 							<input type="checkbox" name="player_ids[]" value="<?php echo esc_attr( $player['id'] ); ?>" />
@@ -191,8 +228,8 @@ class Chess_Army_Knife_Player_Selector {
 			<?php endif; ?>
 
 			<p>
-				<label for="cak-ecf-search"><strong><?php esc_html_e( 'Find a player on the ECF list', 'chess-army-knife' ); ?></strong></label><br />
-				<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a surname…', 'chess-army-knife' ); ?>" />
+				<label for="cak-ecf-search"><strong><?php esc_html_e( 'Find a club member', 'chess-army-knife' ); ?></strong></label><br />
+				<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a name…', 'chess-army-knife' ); ?>" />
 				<span class="spinner" data-cak-spinner></span>
 			</p>
 			<ul class="cak-selector__results" data-cak-results></ul>
@@ -201,13 +238,13 @@ class Chess_Army_Knife_Player_Selector {
 				<summary><?php esc_html_e( 'Player without an ECF code?', 'chess-army-knife' ); ?></summary>
 				<p>
 					<input type="text" class="regular-text" data-cak-manual-name placeholder="<?php esc_attr_e( 'Name', 'chess-army-knife' ); ?>" />
-					<input type="number" class="small-text" data-cak-manual-rating min="<?php echo esc_attr( Chess_Army_Knife_Players_Page::MIN_MANUAL_RATING ); ?>" max="4000" placeholder="<?php esc_attr_e( 'Rating', 'chess-army-knife' ); ?>" />
+					<input type="number" class="small-text" data-cak-manual-rating min="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ); ?>" max="4000" placeholder="<?php esc_attr_e( 'Rating', 'chess-army-knife' ); ?>" />
 					<button type="button" class="button" data-cak-manual-add><?php esc_html_e( 'Add', 'chess-army-knife' ); ?></button>
 				</p>
 				<p class="description">
 					<?php
 					/* translators: %d: lowest allowed manual rating */
-					echo esc_html( sprintf( __( 'A manual rating of %d or higher must be entered. It is only used for seeding when the player has no ECF code.', 'chess-army-knife' ), Chess_Army_Knife_Players_Page::MIN_MANUAL_RATING ) );
+					echo esc_html( sprintf( __( 'A manual rating of %d or higher must be entered. It is only used for seeding when the player has no ECF code.', 'chess-army-knife' ), Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ) );
 					?>
 				</p>
 				<p class="description cak-selector__error" data-cak-manual-error role="alert"></p>

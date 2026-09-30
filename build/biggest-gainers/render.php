@@ -2,7 +2,8 @@
 /**
  * Server-side render for the ECF Biggest Rating Gainers block.
  *
- * For a bounded, rating-ordered sample of a club's roster, pulls each
+ * For a bounded sample of the club's own current members who have an ECF
+ * rating code (never anyone the club holds no record of), pulls each
  * player's recent games, finds the earliest and latest rating recorded
  * within the look-back window, and ranks players by that change.
  *
@@ -16,8 +17,6 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'biggest-gainers', $attributes );
 
-$club_code     = strtoupper( trim( Chess_Army_Knife_Settings::resolve( 'default_club_code', $attributes['clubCode'] ?? '' ) ) );
-$club_name     = isset( $attributes['clubName'] ) ? $attributes['clubName'] : '';
 $rating_domain = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
 $days_back     = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
 $max_players   = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_max_players', empty( $attributes['maxPlayers'] ) ? '' : $attributes['maxPlayers'], 12 ) );
@@ -34,77 +33,20 @@ $games_per_player = 40;
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'biggest-gainers', $attributes );
 
-if ( '' === $club_code ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'ECF Biggest Rating Gainers: no club selected yet. Edit this block and search for a club, or set a site-wide default club on the settings page.', 'chess-army-knife' )
-	);
-	return;
-}
-
-$roster = Chess_Army_Knife_ECF_Client::get_club_players( $club_code );
-
-if ( is_wp_error( $roster ) ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-notice">%2$s %3$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'Could not load the club roster from the ECF API:', 'chess-army-knife' ),
-		esc_html( $roster->get_error_message() )
-	);
-	return;
-}
-
-$columns = isset( $roster['columns'] ) ? $roster['columns'] : array();
-$rows    = isset( $roster['players'] ) ? $roster['players'] : array();
-
-if ( empty( $rows ) || empty( $columns ) ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-empty">%2$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'No players were found for this club code.', 'chess-army-knife' )
-	);
-	return;
-}
-
-$idx = array_flip( $columns );
-
-$rating_column = array(
-	'S' => 'std',
-	'R' => 'rpd',
-	'B' => 'btz',
-)[ $rating_domain ] ?? 'std';
-
-$code_idx   = $idx['ECF_code'] ?? null;
-$name_idx   = $idx['full_name'] ?? null;
-$rating_idx = $idx[ $rating_column ] ?? null;
-
+// The club's own current members with an ECF code: nobody is looked up on the ECF without a record here.
 $players = array();
-foreach ( $rows as $row ) {
-	if ( null === $code_idx || null === $name_idx || ! isset( $row[ $code_idx ] ) ) {
-		continue;
-	}
+foreach ( Chess_Army_Knife_Membership_Store::get_players( '', true, $max_players, true ) as $member ) {
 	$players[] = array(
-		'code'   => (string) $row[ $code_idx ],
-		'name'   => (string) $row[ $name_idx ],
-		'rating' => ( null !== $rating_idx && isset( $row[ $rating_idx ] ) ) ? (int) $row[ $rating_idx ] : 0,
+		'code' => $member['ecf_code'],
+		'name' => $member['name'],
 	);
 }
-
-usort(
-	$players,
-	function ( $a, $b ) {
-		return $b['rating'] <=> $a['rating'];
-	}
-);
-
-$players = array_slice( $players, 0, $max_players );
 
 if ( empty( $players ) ) {
 	printf(
 		'<div %1$s><div class="chess-army-knife-empty">%2$s</div></div>',
 		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'No players with a usable ECF code were found for this club.', 'chess-army-knife' )
+		esc_html__( 'No current members with an ECF rating code were found.', 'chess-army-knife' )
 	);
 	return;
 }
@@ -112,7 +54,7 @@ if ( empty( $players ) ) {
 $cutoff = gmdate( 'Y-m-d', strtotime( '-' . $days_back . ' days' ) );
 
 $movers           = array();
-$admin_cache_keys = array( Chess_Army_Knife_ECF_Client::cache_key_club_players( $club_code ) );
+$admin_cache_keys = array();
 
 foreach ( $players as $player ) {
 	$admin_cache_keys[] = Chess_Army_Knife_ECF_Client::cache_key_games( $player['code'], $rating_domain, $games_per_player );
@@ -174,11 +116,7 @@ usort(
 
 $movers = array_slice( $movers, 0, $top_count );
 
-$heading = $block_title ? $block_title : sprintf(
-	/* translators: %s: club name */
-	__( 'Biggest improvers — %s', 'chess-army-knife' ),
-	$club_name ? $club_name : $club_code
-);
+$heading = $block_title ? $block_title : __( 'Biggest improvers', 'chess-army-knife' );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>

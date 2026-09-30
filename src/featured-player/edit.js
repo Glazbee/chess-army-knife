@@ -234,7 +234,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					icon="star-filled"
 					label={ __( 'ECF Featured Player', 'chess-army-knife' ) }
 					instructions={ __(
-						'Search for a player, or type a display name in the sidebar.',
+						'Choose a club member, or type a display name in the sidebar.',
 						'chess-army-knife'
 					) }
 				>

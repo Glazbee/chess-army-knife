@@ -16,10 +16,16 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 $chess_army_knife_settings    = get_option( 'Chess_Army_Knife_settings', array() );
 $chess_army_knife_delete_data = is_array( $chess_army_knife_settings ) && ! empty( $chess_army_knife_settings['delete_data_on_uninstall'] );
 
+wp_clear_scheduled_hook( 'Chess_Army_Knife_refresh_ratings' );
 delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
 delete_option( 'Chess_Army_Knife_templates' );
 delete_option( 'Chess_Army_Knife_db_version' );
+
+// The membership permission is not data: take it back from whoever was given it.
+foreach ( get_users( array( 'capability' => 'chess_army_manage_memberships' ) ) as $chess_army_knife_user ) {
+	$chess_army_knife_user->remove_cap( 'chess_army_manage_memberships' );
+}
 
 global $wpdb;
 
@@ -62,9 +68,21 @@ if ( $chess_army_knife_delete_data ) {
 	}
 }
 
+// Membership types and members (personal details) are user data too: only removed if the admin opted in.
+if ( $chess_army_knife_delete_data ) {
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup of plugin-owned data and tables.
+	$chess_army_knife_type_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s", 'chess_army_mem_type' ) );
+	foreach ( $chess_army_knife_type_ids as $chess_army_knife_type_id ) {
+		wp_delete_post( (int) $chess_army_knife_type_id, true );
+	}
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_members" );
+}
+
 // Tournament history is user data: only drop it if the admin opted in on the Settings page.
 if ( $chess_army_knife_delete_data ) {
-	foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $chess_army_knife_table ) {
+	foreach ( array( 'games', 'entries', 'tournaments' ) as $chess_army_knife_table ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_{$chess_army_knife_table}" );
 	}

@@ -1,0 +1,71 @@
+.wp-block-chess-army-knife-my-data {
+	margin-bottom: 1.5em;
+
+	.cak-my-data__heading {
+		margin: 0 0 0.5em;
+		font-size: 1.1em;
+		font-weight: 600;
+		color: var(--ecf-accent, inherit);
+	}
+
+	.cak-my-data__form p {
+		margin: 0 0 0.9em;
+	}
+
+	.cak-my-data__form label {
+		display: block;
+		margin-bottom: 0.25em;
+	}
+
+	.cak-my-data__choices label,
+	.cak-my-data__person label {
+		display: flex;
+		gap: 0.5em;
+		align-items: flex-start;
+	}
+
+	.cak-my-data__team {
+		margin-left: 1.5em;
+	}
+
+	.cak-my-data__form input[type="email"] {
+		width: 100%;
+		max-width: 28em;
+		box-sizing: border-box;
+	}
+
+	.cak-my-data__person,
+	.cak-my-data__choices {
+		margin: 0 0 1em;
+		padding: 0.5em 1em 0;
+		border: 1px solid #e2e2e2;
+		border-radius: 4px;
+	}
+
+	// Off-screen rather than display: none, so simple bots still fill it in.
+	.cak-my-data__trap {
+		position: absolute;
+		left: -9999px;
+	}
+
+	.cak-my-data__notice {
+		margin-bottom: 1em;
+		padding: 0.75em 1em;
+		border-left: 4px solid #dcdcde;
+		background: #f6f7f7;
+	}
+
+	.cak-my-data__notice p:last-child {
+		margin-bottom: 0;
+	}
+
+	.cak-my-data__notice--success {
+		border-left-color: #2e7d32;
+		background: #edf7ed;
+	}
+
+	.cak-my-data__notice--error {
+		border-left-color: #b32d2e;
+		background: #fcf0f1;
+	}
+}

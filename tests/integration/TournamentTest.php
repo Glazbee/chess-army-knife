@@ -16,7 +16,7 @@ class TournamentTest extends WP_UnitTestCase {
 
 		// Use transients for the ECF cache, and start each test with fresh (temporary) tables.
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
+		foreach ( array( 'games', 'entries', 'tournaments', 'members' ) as $name ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Tournament_Store::install_tables();
@@ -70,7 +70,7 @@ class TournamentTest extends WP_UnitTestCase {
 	}
 
 	private function add_player( $name, $code = '', $manual = null ) {
-		$id                     = Chess_Army_Knife_Tournament_Store::save_player(
+		$id                     = Chess_Army_Knife_Membership_Store::add_guest(
 			array(
 				'name'          => $name,
 				'ecf_code'      => $code,
@@ -108,16 +108,86 @@ class TournamentTest extends WP_UnitTestCase {
 		return $id;
 	}
 
-	public function test_player_profiles_round_trip() {
-		$id = $this->add_player( 'Alice', '100001A', 1650 );
+	public function test_a_players_name_and_code_are_read_from_their_record_never_copied() {
+		$tournament = $this->create_tournament();
+		$id         = $this->add_player( 'Alice', '100001A', 1650 );
+		Chess_Army_Knife_Tournaments::add_player( $tournament, $id );
 
-		$player = Chess_Army_Knife_Tournament_Store::get_player( $id );
-		$this->assertSame( 'Alice', $player['name'] );
-		$this->assertSame( '100001A', $player['ecf_code'] );
-		$this->assertSame( 1650, $player['manual_rating'] );
+		$entry = Chess_Army_Knife_Tournament_Store::get_entries( $tournament )[0];
+		$this->assertSame( 'Alice', $entry['name'] );
+		$this->assertSame( '100001A', $entry['ecf_code'] );
+		$this->assertSame( $id, $entry['player_id'] );
 
-		Chess_Army_Knife_Tournament_Store::delete_player( $id );
-		$this->assertNull( Chess_Army_Knife_Tournament_Store::get_player( $id ) );
+		// Correcting the record corrects every tournament: there is only one copy.
+		Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'id'   => $id,
+				'name' => 'Alice Smith',
+			)
+		);
+		$this->assertSame( 'Alice Smith', Chess_Army_Knife_Tournament_Store::get_entries( $tournament )[0]['name'] );
+		$this->assertSame( 'Alice Smith', Chess_Army_Knife_Tournament_Store::get_entry( $entry['id'] )['name'] );
+	}
+
+	public function test_a_tournament_holds_no_personal_details_of_its_own() {
+		global $wpdb;
+		$columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . Chess_Army_Knife_Tournament_Store::table( 'entries' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- Test inspects the plugin's own table.
+
+		$this->assertNotContains( 'name', $columns );
+		$this->assertNotContains( 'ecf_code', $columns );
+		$this->assertEmpty( $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', '%chess_army_knife_players' ) ), 'There is no separate table of player profiles.' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Test inspects the plugin's own tables.
+	}
+
+	public function test_erasing_a_player_entered_in_a_tournament_keeps_the_tournament_intact() {
+		$tournament = $this->create_tournament();
+		$id         = $this->add_player( 'Alice', '100001A', 1650 );
+		Chess_Army_Knife_Tournaments::add_player( $tournament, $id );
+
+		$this->assertSame( 'anonymised', Chess_Army_Knife_Membership_Store::erase_member( $id ) );
+
+		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $tournament );
+		$this->assertCount( 1, $entries );
+		$this->assertSame( Chess_Army_Knife_Membership_Store::erased_name(), $entries[0]['name'] );
+		$this->assertSame( '', $entries[0]['ecf_code'] );
+		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id )['manual_rating'] );
+	}
+
+	public function test_a_person_deleted_outright_still_leaves_a_readable_entry() {
+		$tournament = $this->create_tournament();
+		$id         = $this->add_player( 'Alice' );
+		Chess_Army_Knife_Tournaments::add_player( $tournament, $id );
+
+		Chess_Army_Knife_Membership_Store::delete_member( $id );
+
+		$this->assertSame( Chess_Army_Knife_Membership_Store::erased_name(), Chess_Army_Knife_Tournament_Store::get_entries( $tournament )[0]['name'] );
+	}
+
+	public function test_only_current_members_and_guests_can_be_entered() {
+		$tournament = $this->create_tournament();
+		$applicant  = Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'   => 'Applicant',
+				'status' => 'pending',
+			)
+		);
+		$lapsed     = Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'        => 'Lapsed',
+				'status'      => 'active',
+				'expiry_date' => '2020-01-01',
+			)
+		);
+		$current    = Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'   => 'Current',
+				'status' => 'active',
+			)
+		);
+
+		$this->assertSame( 'tournament_ineligible', Chess_Army_Knife_Tournaments::add_player( $tournament, $applicant )->get_error_code() );
+		$this->assertSame( 'tournament_ineligible', Chess_Army_Knife_Tournaments::add_player( $tournament, $lapsed )->get_error_code() );
+		$this->assertIsInt( Chess_Army_Knife_Tournaments::add_player( $tournament, $current ) );
+		$this->assertIsInt( Chess_Army_Knife_Tournaments::add_player( $tournament, $this->add_player( 'Guest' ) ) );
 	}
 
 	public function test_create_validates_name_and_format() {

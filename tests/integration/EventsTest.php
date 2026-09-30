@@ -13,7 +13,7 @@ class EventsTest extends WP_UnitTestCase {
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
 		delete_option( Chess_Army_Knife_Club_Teams_Page::OPTION );
-		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
+		foreach ( array( 'games', 'entries', 'tournaments', 'members' ) as $name ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Tournament_Store::install_tables();

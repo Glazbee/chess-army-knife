@@ -7,12 +7,9 @@ import {
 	RangeControl,
 	TextControl,
 	ToggleControl,
-	Placeholder,
 	Notice,
 } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
-import ClubPicker from '../shared/club-picker';
-import useEcfLmsDefaults from '../shared/use-defaults';
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -22,21 +19,10 @@ const DOMAIN_OPTIONS = [
 ];
 
 export default function Edit( { attributes, setAttributes } ) {
-	const {
-		clubCode,
-		clubName,
-		domain,
-		maxPlayers,
-		gamesPerPlayer,
-		daysBack,
-		maxResults,
-		title,
-		showOpponentRating,
-	} = attributes;
+	const { domain, maxPlayers, gamesPerPlayer, daysBack, maxResults, title } =
+		attributes;
 
 	const blockProps = useBlockProps();
-	const siteDefaults = useEcfLmsDefaults();
-	const hasClub = Boolean( clubCode || siteDefaults.clubCode );
 
 	return (
 		<div { ...blockProps }>
@@ -48,31 +34,6 @@ export default function Edit( { attributes, setAttributes } ) {
 						setAttributes( { templateId: value } )
 					}
 				/>
-				<PanelBody
-					title={ __( 'Club', 'chess-army-knife' ) }
-					initialOpen={ true }
-				>
-					<ClubPicker
-						value={ { code: clubCode, name: clubName } }
-						onSelect={ ( club ) =>
-							setAttributes( {
-								clubCode: club.code,
-								clubName: club.name,
-							} )
-						}
-					/>
-					<TextControl
-						label={ __(
-							'ECF club code (manual override)',
-							'chess-army-knife'
-						) }
-						help={ __( 'e.g. 9BAJ', 'chess-army-knife' ) }
-						value={ clubCode }
-						onChange={ ( value ) =>
-							setAttributes( { clubCode: value.toUpperCase() } )
-						}
-					/>
-				</PanelBody>
 				<PanelBody
 					title={ __( 'Results settings', 'chess-army-knife' ) }
 					initialOpen={ true }
@@ -94,13 +55,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
-						placeholder={
-							clubName ||
-							__(
-								'Defaults to the club name',
-								'chess-army-knife'
-							)
-						}
+						placeholder={ __(
+							'Recent club results',
+							'chess-army-knife'
+						) }
 					/>
 					<RangeControl
 						label={ __( 'Days to look back', 'chess-army-knife' ) }
@@ -125,16 +83,6 @@ export default function Edit( { attributes, setAttributes } ) {
 						min={ 5 }
 						max={ 60 }
 						step={ 5 }
-					/>
-					<ToggleControl
-						label={ __(
-							"Show opponents' ratings",
-							'chess-army-knife'
-						) }
-						checked={ showOpponentRating }
-						onChange={ ( value ) =>
-							setAttributes( { showOpponentRating: value } )
-						}
 					/>
 					<ToggleControl
 						label={ __( 'Show event column', 'chess-army-knife' ) }
@@ -187,31 +135,10 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 			</InspectorControls>
 
-			{ ! hasClub ? (
-				<Placeholder
-					icon="groups"
-					label={ __( 'ECF Club Results', 'chess-army-knife' ) }
-					instructions={ __(
-						'Search for a club in the sidebar, or type its ECF club code, to preview recent results. (Or set a site-wide default club on the settings page.)',
-						'chess-army-knife'
-					) }
-				>
-					<ClubPicker
-						value={ { code: clubCode, name: clubName } }
-						onSelect={ ( club ) =>
-							setAttributes( {
-								clubCode: club.code,
-								clubName: club.name,
-							} )
-						}
-					/>
-				</Placeholder>
-			) : (
-				<ServerSideRender
-					block="chess-army-knife/club-results"
-					attributes={ attributes }
-				/>
-			) }
+			<ServerSideRender
+				block="chess-army-knife/club-results"
+				attributes={ attributes }
+			/>
 		</div>
 	);
 }

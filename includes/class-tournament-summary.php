@@ -59,21 +59,15 @@ class Chess_Army_Knife_Tournament_Summary {
 	 * @return array[] Each: seed, name, ecf_code, rating, source ('ecf'|'manual'|'none'|'pending'), withdrawn.
 	 */
 	public static function players( array $tournament ) {
-		$started  = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
-		$profiles = array();
-		if ( ! $started ) {
-			foreach ( Chess_Army_Knife_Tournament_Store::get_players() as $profile ) {
-				$profiles[ $profile['id'] ] = $profile;
-			}
-		}
-
-		$rows = array();
+		$started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
+		$rows    = array();
 		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament['id'] ) as $entry ) {
 			$rating = $entry['start_rating'];
 			$source = $entry['rating_source'];
 
 			if ( ! $started ) {
-				$manual = isset( $profiles[ $entry['player_id'] ] ) ? $profiles[ $entry['player_id'] ]['manual_rating'] : null;
+				$person = Chess_Army_Knife_Membership_Store::get_member( $entry['player_id'] );
+				$manual = $person ? $person['manual_rating'] : null;
 				if ( '' !== $entry['ecf_code'] ) {
 					$rating = null;
 					$source = 'pending';

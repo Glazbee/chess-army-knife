@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Chess Army Knife
  * Plugin URI:        https://example.com/chess-army-knife
- * Description:       Gutenberg blocks for chess clubs: English Chess Federation (ECF) ratings and League Management System (LMS) data, club tournaments and club events.
+ * Description:       Gutenberg blocks for chess clubs: English Chess Federation (ECF) ratings and League Management System (LMS) data, club tournaments, club events and club memberships.
  * Version:           0.0.1
  * Requires at least: 7.1.2
  * Requires PHP:      7.4
@@ -35,7 +35,6 @@ require_once Chess_Army_Knife_DIR . 'includes/class-swiss-dutch.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournaments.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-rest.php';
-require_once Chess_Army_Knife_DIR . 'includes/class-players-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-player-selector.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournaments-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-summary.php';
@@ -45,6 +44,15 @@ require_once Chess_Army_Knife_DIR . 'includes/class-events-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-display.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-import.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-membership-form.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-rating-refresh.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-member-photos.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-member-requests.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-membership-privacy.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-memberships-admin.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-members-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
 /**
@@ -54,14 +62,23 @@ require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Cache::install_table();
 	Chess_Army_Knife_Tournament_Store::install_tables();
+	Chess_Army_Knife_Membership_Store::install_table();
 
 	// The event post type needs its URLs registered before they are flushed.
 	Chess_Army_Knife_Events::register();
 	flush_rewrite_rules();
 
+	// Whoever turns the plugin on can manage members; they can then give the permission to others.
+	$activating_user = wp_get_current_user();
+	if ( $activating_user->exists() && $activating_user->has_cap( 'manage_options' ) ) {
+		$activating_user->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+	}
+
 	if ( ! wp_next_scheduled( 'Chess_Army_Knife_cleanup_cache' ) ) {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'Chess_Army_Knife_cleanup_cache' );
 	}
+
+	Chess_Army_Knife_Rating_Refresh::schedule();
 }
 register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
 
@@ -74,6 +91,7 @@ function Chess_Army_Knife_deactivate() {
 	Chess_Army_Knife_Cache::flush_all();
 	flush_rewrite_rules();
 	wp_clear_scheduled_hook( 'Chess_Army_Knife_cleanup_cache' );
+	Chess_Army_Knife_Rating_Refresh::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 
@@ -98,6 +116,7 @@ function Chess_Army_Knife_maybe_upgrade() {
 	if ( get_option( 'Chess_Army_Knife_db_version' ) !== Chess_Army_Knife_VERSION ) {
 		Chess_Army_Knife_Cache::install_table();
 		Chess_Army_Knife_Tournament_Store::install_tables();
+		Chess_Army_Knife_Membership_Store::install_table();
 		update_option( 'Chess_Army_Knife_db_version', Chess_Army_Knife_VERSION );
 	}
 }

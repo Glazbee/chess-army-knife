@@ -1,8 +1,11 @@
 <?php
 /**
- * Database access for player profiles, tournaments, entrants and games.
+ * Database access for tournaments, entrants and games.
  *
- * All queries go through $wpdb with prepared statements or the insert/update
+ * Nobody's details are stored here: an entrant is a reference to a person in
+ * the club's people table (see Chess_Army_Knife_Membership_Store), whose name
+ * and ECF code are read from there, so everything held about a player is in
+ * one place. All queries go through $wpdb with prepared statements or the insert/update
  * helpers. Table names are built from the site prefix, never from user input.
  *
  * @package Chess_Army_Knife
@@ -13,7 +16,7 @@ defined( 'ABSPATH' ) || exit;
 class Chess_Army_Knife_Tournament_Store {
 
 	/**
-	 * Full table name for one of: players, tournaments, entries, games.
+	 * Full table name for one of: tournaments, entries, games (or members, the people table).
 	 *
 	 * @param string $name Short table name.
 	 * @return string
@@ -30,23 +33,14 @@ class Chess_Army_Knife_Tournament_Store {
 		global $wpdb;
 
 		$charset = $wpdb->get_charset_collate();
-		$players = self::table( 'players' );
 		$tourney = self::table( 'tournaments' );
 		$entries = self::table( 'entries' );
 		$games   = self::table( 'games' );
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-		dbDelta(
-			"CREATE TABLE {$players} (
-			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-			name VARCHAR(191) NOT NULL,
-			ecf_code VARCHAR(20) NOT NULL DEFAULT '',
-			manual_rating INT(11) NULL,
-			created_at DATETIME NOT NULL,
-			PRIMARY KEY  (id)
-			) {$charset};"
-		);
+		// Entrants point at people, so their table has to exist too.
+		Chess_Army_Knife_Membership_Store::install_table();
 
 		dbDelta(
 			"CREATE TABLE {$tourney} (
@@ -70,15 +64,14 @@ class Chess_Army_Knife_Tournament_Store {
 			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			tournament_id BIGINT(20) UNSIGNED NOT NULL,
 			player_id BIGINT(20) UNSIGNED NOT NULL,
-			name VARCHAR(191) NOT NULL,
-			ecf_code VARCHAR(20) NOT NULL DEFAULT '',
 			seed INT(11) NULL,
 			start_rating INT(11) NULL,
 			rating_source VARCHAR(10) NOT NULL DEFAULT 'none',
 			status VARCHAR(12) NOT NULL DEFAULT 'active',
 			group_no INT(11) NOT NULL DEFAULT 0,
 			PRIMARY KEY  (id),
-			KEY tournament_id (tournament_id)
+			KEY tournament_id (tournament_id),
+			KEY player_id (player_id)
 			) {$charset};"
 		);
 
@@ -98,100 +91,6 @@ class Chess_Army_Knife_Tournament_Store {
 			KEY tournament_id (tournament_id)
 			) {$charset};"
 		);
-	}
-
-	/* -------------------------------------------------------------
-	 * Players
-	 * ------------------------------------------------------------- */
-
-	/**
-	 * All player profiles, ordered by name.
-	 *
-	 * @return array[]
-	 */
-	public static function get_players() {
-		global $wpdb;
-		$table = self::table( 'players' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$rows = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY name ASC", ARRAY_A );
-		return array_map( array( __CLASS__, 'cast_player' ), (array) $rows );
-	}
-
-	/**
-	 * One player profile.
-	 *
-	 * @param int $id Player id.
-	 * @return array|null
-	 */
-	public static function get_player( $id ) {
-		global $wpdb;
-		$table = self::table( 'players' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A );
-		return $row ? self::cast_player( $row ) : null;
-	}
-
-	/**
-	 * The saved player profile with an ECF rating code, if any.
-	 *
-	 * @param string $code ECF rating code.
-	 * @return array|null
-	 */
-	public static function find_player_by_code( $code ) {
-		global $wpdb;
-		$table = self::table( 'players' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE ecf_code = %s ORDER BY id ASC LIMIT 1", (string) $code ), ARRAY_A );
-		return $row ? self::cast_player( $row ) : null;
-	}
-
-	/**
-	 * Insert or update a player profile.
-	 *
-	 * @param array $data name, ecf_code, manual_rating (int|null), and optionally id.
-	 * @return int Player id.
-	 */
-	public static function save_player( array $data ) {
-		global $wpdb;
-		$row = array(
-			'name'          => $data['name'],
-			'ecf_code'      => $data['ecf_code'],
-			'manual_rating' => $data['manual_rating'],
-		);
-
-		if ( ! empty( $data['id'] ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-			$wpdb->update( self::table( 'players' ), $row, array( 'id' => (int) $data['id'] ) );
-			return (int) $data['id'];
-		}
-
-		$row['created_at'] = current_time( 'mysql', true );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$wpdb->insert( self::table( 'players' ), $row );
-		return (int) $wpdb->insert_id;
-	}
-
-	/**
-	 * Delete a player profile (entries in existing tournaments keep their own name snapshot).
-	 *
-	 * @param int $id Player id.
-	 */
-	public static function delete_player( $id ) {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$wpdb->delete( self::table( 'players' ), array( 'id' => (int) $id ), array( '%d' ) );
-	}
-
-	/**
-	 * Normalise types on a player row.
-	 *
-	 * @param array $row Raw row.
-	 * @return array
-	 */
-	protected static function cast_player( array $row ) {
-		$row['id']            = (int) $row['id'];
-		$row['manual_rating'] = ( null === $row['manual_rating'] ) ? null : (int) $row['manual_rating'];
-		return $row;
 	}
 
 	/* -------------------------------------------------------------
@@ -286,16 +185,25 @@ class Chess_Army_Knife_Tournament_Store {
 	 * ------------------------------------------------------------- */
 
 	/**
+	 * The columns and join that give an entrant their person's name and ECF code.
+	 *
+	 * @return string SQL that selects entries (alias e) with the person (alias p).
+	 */
+	protected static function entry_select() {
+		return 'SELECT e.*, p.name AS name, p.ecf_code AS ecf_code FROM ' . self::table( 'entries' ) . ' e LEFT JOIN ' . self::table( 'members' ) . ' p ON p.id = e.player_id';
+	}
+
+	/**
 	 * Entrants in a tournament, in seed order (unseeded last, then by name).
 	 *
 	 * @param int $tournament_id Tournament id.
-	 * @return array[]
+	 * @return array[] Each entry with its person's name and ecf_code.
 	 */
 	public static function get_entries( $tournament_id ) {
 		global $wpdb;
-		$table = self::table( 'entries' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE tournament_id = %d ORDER BY seed IS NULL, seed ASC, name ASC", (int) $tournament_id ), ARRAY_A );
+		$select = self::entry_select();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
+		$rows = $wpdb->get_results( $wpdb->prepare( "{$select} WHERE e.tournament_id = %d ORDER BY e.seed IS NULL, e.seed ASC, p.name ASC", (int) $tournament_id ), ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_entry' ), (array) $rows );
 	}
 
@@ -307,16 +215,50 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	public static function get_entry( $id ) {
 		global $wpdb;
+		$select = self::entry_select();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
+		$row = $wpdb->get_row( $wpdb->prepare( "{$select} WHERE e.id = %d", (int) $id ), ARRAY_A );
+		return $row ? self::cast_entry( $row ) : null;
+	}
+
+	/**
+	 * Whether a person is entered in any tournament.
+	 *
+	 * @param int $person_id Person id.
+	 * @return bool
+	 */
+	public static function person_has_entries( $person_id ) {
+		global $wpdb;
 		$table = self::table( 'entries' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A );
-		return $row ? self::cast_entry( $row ) : null;
+		return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE player_id = %d", (int) $person_id ) );
+	}
+
+	/**
+	 * The tournaments a person is entered in, newest first, for the privacy tools.
+	 *
+	 * @param int $person_id Person id.
+	 * @return array[] Each { id, name, status }.
+	 */
+	public static function get_tournaments_for_person( $person_id ) {
+		global $wpdb;
+		$entries = self::table( 'entries' );
+		$tourney = self::table( 'tournaments' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT t.id, t.name, t.status FROM {$entries} e INNER JOIN {$tourney} t ON t.id = e.tournament_id WHERE e.player_id = %d ORDER BY t.id DESC", (int) $person_id ), ARRAY_A );
+		return array_map(
+			function ( $row ) {
+				$row['id'] = (int) $row['id'];
+				return $row;
+			},
+			(array) $rows
+		);
 	}
 
 	/**
 	 * Add an entrant.
 	 *
-	 * @param array $data tournament_id, player_id, name, ecf_code.
+	 * @param array $data tournament_id and player_id (the person's id).
 	 * @return int Entry id.
 	 */
 	public static function add_entry( array $data ) {
@@ -362,6 +304,9 @@ class Chess_Army_Knife_Tournament_Store {
 		foreach ( array( 'seed', 'start_rating' ) as $key ) {
 			$row[ $key ] = ( null === $row[ $key ] ) ? null : (int) $row[ $key ];
 		}
+		// A person who was deleted outright leaves the entry standing, without their details.
+		$row['name']     = null === $row['name'] ? Chess_Army_Knife_Membership_Store::erased_name() : $row['name'];
+		$row['ecf_code'] = null === $row['ecf_code'] ? '' : $row['ecf_code'];
 		return $row;
 	}
 

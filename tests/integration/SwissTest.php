@@ -12,7 +12,7 @@ class SwissTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
+		foreach ( array( 'games', 'entries', 'tournaments', 'members' ) as $name ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Tournament_Store::install_tables();
@@ -38,7 +38,7 @@ class SwissTest extends WP_UnitTestCase {
 		$this->assertIsInt( $id, is_wp_error( $id ) ? $id->get_error_message() : '' );
 
 		for ( $i = 1; $i <= $count; $i++ ) {
-			$player = Chess_Army_Knife_Tournament_Store::save_player(
+			$player = Chess_Army_Knife_Membership_Store::add_guest(
 				array(
 					'name'          => "Player {$i}",
 					'ecf_code'      => '',
@@ -138,7 +138,7 @@ class SwissTest extends WP_UnitTestCase {
 		for ( $i = 1; $i <= 4; $i++ ) {
 			Chess_Army_Knife_Tournaments::add_player(
 				$id,
-				Chess_Army_Knife_Tournament_Store::save_player(
+				Chess_Army_Knife_Membership_Store::add_guest(
 					array(
 						'name'          => "P{$i}",
 						'ecf_code'      => '',
@@ -299,7 +299,7 @@ class SwissTest extends WP_UnitTestCase {
 		foreach ( array( 'A', 'B' ) as $name ) {
 			Chess_Army_Knife_Tournaments::add_player(
 				$knockout,
-				Chess_Army_Knife_Tournament_Store::save_player(
+				Chess_Army_Knife_Membership_Store::add_guest(
 					array(
 						'name'          => $name,
 						'ecf_code'      => '',

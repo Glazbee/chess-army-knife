@@ -13,7 +13,7 @@ class EventCalendarMonthTest extends WP_UnitTestCase {
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
 		update_option( 'start_of_week', 1 );
-		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
+		foreach ( array( 'games', 'entries', 'tournaments', 'members' ) as $name ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Tournament_Store::install_tables();
