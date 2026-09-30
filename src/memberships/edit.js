@@ -44,7 +44,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __( 'Show how to pay', 'chess-army-knife' ) }
 						help={ __(
-							'The payment instructions are set under ECF & LMS → Settings.',
+							'The payment instructions are set under Chess Army Knife → Settings.',
 							'chess-army-knife'
 						) }
 						checked={ showPaymentInfo }

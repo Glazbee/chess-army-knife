@@ -456,25 +456,95 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'MEM-' . $id, $edit );
 	}
 
-	public function test_the_memberships_menu_opens_on_members_and_only_shows_to_those_with_the_permission() {
+	private function build_menu() {
 		global $menu, $submenu;
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
+		$menu    = array();
+		$submenu = array();
+		do_action( 'admin_menu' );
+
+		return $submenu;
+	}
+
+	public function test_one_menu_lists_every_screen_for_everyone_and_opens_on_the_overview() {
+		$expected = array(
+			Chess_Army_Knife_Memberships::MENU_SLUG,
+			Chess_Army_Knife_Dashboard_Page::SLUG,
+			Chess_Army_Knife_Member_Checks_Page::SLUG,
+			Chess_Army_Knife_Renewals_Page::SLUG,
+			'edit.php?post_type=' . Chess_Army_Knife_Announcements::POST_TYPE,
+			'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE,
+			'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
+			Chess_Army_Knife_Selection_Page::SLUG,
+			Chess_Army_Knife_Events_Import::PAGE,
+			Chess_Army_Knife_Tournaments_Page::SLUG,
+			'edit.php?post_type=' . Chess_Army_Knife_Events::POST_TYPE,
+			Chess_Army_Knife_Templates::PAGE,
+			Chess_Army_Knife_Settings::PAGE,
+		);
+
+		// A member with no club permissions still sees every screen: each one explains what it needs.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$submenu = $this->build_menu();
+		$slugs   = wp_list_pluck( $submenu[ Chess_Army_Knife_Menu::SLUG ], 2 );
+
+		$this->assertSame( Chess_Army_Knife_Menu::SLUG, reset( $slugs ), 'The menu opens on the Overview.' );
+		foreach ( $expected as $slug ) {
+			$this->assertContains( $slug, $slugs );
+		}
+		$this->assertArrayNotHasKey( Chess_Army_Knife_Memberships::MENU_SLUG, $submenu, 'There is no separate Memberships menu.' );
+		$this->assertArrayNotHasKey( 'chess-army-teams', $submenu, 'There is no separate Teams menu.' );
+	}
+
+	public function test_screens_a_user_may_not_use_explain_what_they_need_instead_of_failing() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$screens = array(
+			array( 'Chess_Army_Knife_Members_Page', 'Manage members' ),
+			array( 'Chess_Army_Knife_Dashboard_Page', 'manage members' ),
+			array( 'Chess_Army_Knife_Member_Checks_Page', 'manage members' ),
+			array( 'Chess_Army_Knife_Renewals_Page', 'manage members' ),
+			array( 'Chess_Army_Knife_Selection_Page', 'captain' ),
+			array( 'Chess_Army_Knife_Events_Import', 'club teams' ),
+			array( 'Chess_Army_Knife_Tournaments_Page', 'administrator' ),
+			array( 'Chess_Army_Knife_Templates', 'administrator' ),
+			array( 'Chess_Army_Knife_Settings', 'administrator' ),
+		);
+		foreach ( $screens as $screen ) {
+			ob_start();
+			call_user_func( array( $screen[0], 'render_page' ) );
+			$html = ob_get_clean();
+
+			$this->assertStringContainsString( 'You do not have permission to use this page.', $html, $screen[0] );
+			$this->assertStringContainsStringIgnoringCase( $screen[1], $html, $screen[0] );
+		}
+	}
+
+	public function test_a_user_with_the_permission_sees_the_screen_not_the_notice() {
 		$this->manager();
-		$menu    = array();
-		$submenu = array();
-		do_action( 'admin_menu' );
 
-		$slugs = wp_list_pluck( $submenu[ Chess_Army_Knife_Memberships::MENU_SLUG ], 2 );
-		$this->assertSame( Chess_Army_Knife_Memberships::MENU_SLUG, reset( $slugs ), 'The menu opens on Members.' );
-		$this->assertContains( 'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE, $slugs );
+		ob_start();
+		Chess_Army_Knife_Members_Page::render_page();
+		$html = ob_get_clean();
 
-		$menu    = array();
-		$submenu = array();
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		do_action( 'admin_menu' );
+		$this->assertStringNotContainsString( 'You do not have permission', $html );
+		$this->assertStringContainsString( 'Add member', $html );
+	}
 
-		$this->assertArrayNotHasKey( Chess_Army_Knife_Memberships::MENU_SLUG, $submenu );
+	public function test_the_overview_says_which_screens_the_user_can_and_cannot_use() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		ob_start();
+		Chess_Army_Knife_Menu::render_overview();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'Needs: Manage members', $html );
+		$this->assertStringNotContainsString( 'You can use this', $html );
+
+		$this->manager();
+		ob_start();
+		Chess_Army_Knife_Menu::render_overview();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'You can use this', $html );
 	}
 
 	public function test_the_members_list_shows_a_juniors_parent_as_the_contact_and_who_agreed_to_what() {

@@ -15,45 +15,14 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Selection_Page {
 
-	const SLUG = Chess_Army_Knife_Teams::MENU_SLUG; // The Teams menu opens on this screen.
+	const SLUG = 'chess-army-knife-selection';
 
 	/**
 	 * Hook up the screen and its actions.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 5 ); // Before the team screens and Import Events add themselves beneath it.
 		add_action( 'admin_post_chess_army_knife_selection_request', array( __CLASS__, 'handle_request' ) );
 		add_action( 'admin_post_chess_army_knife_selection_lineup', array( __CLASS__, 'handle_lineup' ) );
-	}
-
-	/**
-	 * Add the screen for people who have something to do on it.
-	 */
-	public static function add_menu() {
-		if ( ! Chess_Army_Knife_Captains::user_can_select() ) {
-			return;
-		}
-
-		// A captain sees the menu for Team Selection alone; team managers also get the teams and Import Events.
-		$capability = Chess_Army_Knife_Teams::user_can_manage() ? Chess_Army_Knife_Teams::CAPABILITY : Chess_Army_Knife_Captains::CAPABILITY;
-
-		add_menu_page(
-			__( 'Teams', 'chess-army-knife' ),
-			__( 'Teams', 'chess-army-knife' ),
-			$capability,
-			self::SLUG,
-			array( __CLASS__, 'render_page' ),
-			'dashicons-groups',
-			78
-		);
-		add_submenu_page(
-			self::SLUG,
-			__( 'Team Selection', 'chess-army-knife' ),
-			__( 'Team Selection', 'chess-army-knife' ),
-			$capability,
-			self::SLUG,
-			array( __CLASS__, 'render_page' )
-		);
 	}
 
 	/**
@@ -146,8 +115,8 @@ class Chess_Army_Knife_Selection_Page {
 	 * Render the screen.
 	 */
 	public static function render_page() {
-		if ( ! Chess_Army_Knife_Captains::user_can_select() ) {
-			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ), '', array( 'response' => 403 ) );
+		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Captains::user_can_select(), __( 'Team Selection', 'chess-army-knife' ), 'selection' ) ) {
+			return;
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.

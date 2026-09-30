@@ -30,7 +30,6 @@ class Chess_Army_Knife_Events_Import {
 	 * Hook up the admin page and its form handler.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 11 ); // After the Teams menu and the team screens beneath it.
 		add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'handle_import' ) );
 	}
 
@@ -378,20 +377,6 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
-	 * Add the import page under the plugin's menu.
-	 */
-	public static function add_menu() {
-		add_submenu_page(
-			Chess_Army_Knife_Teams::MENU_SLUG,
-			__( 'Import Events from LMS', 'chess-army-knife' ),
-			__( 'Import Events', 'chess-army-knife' ),
-			Chess_Army_Knife_Teams::CAPABILITY,
-			self::PAGE,
-			array( __CLASS__, 'render_page' )
-		);
-	}
-
-	/**
 	 * Handle the "Import now" button.
 	 */
 	public static function handle_import() {
@@ -418,7 +403,7 @@ class Chess_Army_Knife_Events_Import {
 	 * Render the import page.
 	 */
 	public static function render_page() {
-		if ( ! Chess_Army_Knife_Teams::user_can_manage() ) {
+		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Teams::user_can_manage(), __( 'Import Events from LMS', 'chess-army-knife' ), 'teams' ) ) {
 			return;
 		}
 

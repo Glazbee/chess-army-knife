@@ -71,7 +71,7 @@ class Chess_Army_Knife_Events {
 					'not_found_in_trash' => __( 'No club events found in the Trash.', 'chess-army-knife' ),
 				),
 				'public'       => true,
-				'show_in_menu' => 'chess-army-knife', // Under the plugin's own menu.
+				'show_in_menu' => false, // Listed in the plugin's menu (see Chess_Army_Knife_Menu).
 				'show_in_rest' => true,
 				'has_archive'  => false,
 				'supports'     => array( 'title', 'editor' ),

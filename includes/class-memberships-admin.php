@@ -25,39 +25,12 @@ class Chess_Army_Knife_Memberships_Admin {
 	 * Hook up the admin screens.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 5 ); // Before WordPress adds Membership Types beneath it, so Members comes first.
 		add_action( 'add_meta_boxes_' . Chess_Army_Knife_Memberships::POST_TYPE, array( __CLASS__, 'add_meta_box' ) );
 		add_action( 'save_post_' . Chess_Army_Knife_Memberships::POST_TYPE, array( __CLASS__, 'save' ) );
 		add_action( 'show_user_profile', array( __CLASS__, 'render_profile_field' ) );
 		add_action( 'edit_user_profile', array( __CLASS__, 'render_profile_field' ) );
 		add_action( 'personal_options_update', array( __CLASS__, 'save_profile_field' ) );
 		add_action( 'edit_user_profile_update', array( __CLASS__, 'save_profile_field' ) );
-	}
-
-	/**
-	 * Add the Memberships menu. Membership types add themselves beneath it.
-	 */
-	public static function add_menu() {
-		$pending = Chess_Army_Knife_Memberships::user_can_manage() ? Chess_Army_Knife_Membership_Store::count_view( 'pending' ) : 0;
-		$bubble  = $pending ? ' <span class="awaiting-mod">' . (int) $pending . '</span>' : '';
-
-		add_menu_page(
-			__( 'Memberships', 'chess-army-knife' ),
-			__( 'Memberships', 'chess-army-knife' ) . $bubble,
-			Chess_Army_Knife_Memberships::CAPABILITY,
-			Chess_Army_Knife_Memberships::MENU_SLUG,
-			array( 'Chess_Army_Knife_Members_Page', 'render_page' ),
-			'dashicons-id',
-			77
-		);
-		add_submenu_page(
-			Chess_Army_Knife_Memberships::MENU_SLUG,
-			__( 'Members', 'chess-army-knife' ),
-			__( 'Members', 'chess-army-knife' ),
-			Chess_Army_Knife_Memberships::CAPABILITY,
-			Chess_Army_Knife_Memberships::MENU_SLUG,
-			array( 'Chess_Army_Knife_Members_Page', 'render_page' )
-		);
 	}
 
 	/* -------------------------------------------------------------

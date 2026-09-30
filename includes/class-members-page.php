@@ -359,7 +359,9 @@ class Chess_Army_Knife_Members_Page {
 	 * Render the page: the add/edit form if asked for, otherwise the list.
 	 */
 	public static function render_page() {
-		self::require_permission();
+		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Memberships::user_can_manage(), __( 'Members', 'chess-army-knife' ), 'members' ) ) {
+			return;
+		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		if ( isset( $_GET['edit'] ) ) {
