@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/event-registration",
 	"title": "Event Registration",
-	"category": "widgets",
+	"category": "chess-army-knife-events",
 	"icon": "tickets-alt",
 	"description": "Lets people register for a club event without an account. They confirm from an emailed link and can cancel from their confirmation email. Put it on the event's page, or choose an event.",
 	"keywords": [ "chess", "club", "event", "register", "rsvp", "sign up" ],

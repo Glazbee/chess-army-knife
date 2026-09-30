@@ -46,6 +46,7 @@ class Chess_Army_Knife_Menu {
 	 * Every screen, in menu order.
 	 *
 	 * @return array[] Each {
+	 *     @type string        $key         Short name, used to link to the screen.
 	 *     @type string        $group       Heading on the Overview.
 	 *     @type string        $title       Name of the screen.
 	 *     @type string        $description What it is for.
@@ -74,6 +75,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $members_group,
 				'title'       => __( 'Members', 'chess-army-knife' ),
 				'description' => __( 'Members and applications: approve, edit, bulk actions and CSV export.', 'chess-army-knife' ),
+				'key'         => 'members',
 				'slug'        => Chess_Army_Knife_Memberships::MENU_SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Members_Page', 'render_page' ),
 				'kind'        => 'members',
@@ -83,6 +85,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $members_group,
 				'title'       => __( 'Dashboard', 'chess-army-knife' ),
 				'description' => __( 'The club at a glance: totals only, no names.', 'chess-army-knife' ),
+				'key'         => 'dashboard',
 				'slug'        => Chess_Army_Knife_Dashboard_Page::SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Dashboard_Page', 'render_page' ),
 				'kind'        => 'members',
@@ -92,6 +95,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $members_group,
 				'title'       => __( 'Member Checks', 'chess-army-knife' ),
 				'description' => __( 'Missing or invalid ECF codes, incomplete applications, expired memberships and duplicates.', 'chess-army-knife' ),
+				'key'         => 'member_checks',
 				'slug'        => Chess_Army_Knife_Member_Checks_Page::SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Member_Checks_Page', 'render_page' ),
 				'kind'        => 'members',
@@ -101,6 +105,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $members_group,
 				'title'       => __( 'Renewals', 'chess-army-knife' ),
 				'description' => __( 'Who the next renewal reminders will go to.', 'chess-army-knife' ),
+				'key'         => 'renewals',
 				'slug'        => Chess_Army_Knife_Renewals_Page::SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Renewals_Page', 'render_page' ),
 				'kind'        => 'members',
@@ -110,6 +115,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $members_group,
 				'title'       => __( 'Announcements', 'chess-army-knife' ),
 				'description' => __( 'Messages to members, all of them or chosen teams.', 'chess-army-knife' ),
+				'key'         => 'announcements',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Announcements::POST_TYPE,
 				'callback'    => null,
 				'kind'        => 'members',
@@ -120,6 +126,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $members_group,
 				'title'       => __( 'Membership Types', 'chess-army-knife' ),
 				'description' => __( 'The memberships the club offers, with their prices and lengths.', 'chess-army-knife' ),
+				'key'         => 'membership_types',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE,
 				'callback'    => null,
 				'kind'        => 'members',
@@ -130,6 +137,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $teams_group,
 				'title'       => __( 'Teams', 'chess-army-knife' ),
 				'description' => __( 'The club\'s teams, their league entries and squads.', 'chess-army-knife' ),
+				'key'         => 'teams',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
 				'callback'    => null,
 				'kind'        => 'teams',
@@ -140,6 +148,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $teams_group,
 				'title'       => __( 'Team Selection', 'chess-army-knife' ),
 				'description' => __( 'Ask the squad who can play and publish the line-up.', 'chess-army-knife' ),
+				'key'         => 'team_selection',
 				'slug'        => Chess_Army_Knife_Selection_Page::SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Selection_Page', 'render_page' ),
 				'kind'        => 'selection',
@@ -149,6 +158,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $teams_group,
 				'title'       => __( 'Import Events', 'chess-army-knife' ),
 				'description' => __( 'Bring league fixtures in from the LMS.', 'chess-army-knife' ),
+				'key'         => 'import_events',
 				'slug'        => Chess_Army_Knife_Events_Import::PAGE,
 				'callback'    => array( 'Chess_Army_Knife_Events_Import', 'render_page' ),
 				'kind'        => 'teams',
@@ -158,6 +168,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $club_group,
 				'title'       => __( 'Tournaments', 'chess-army-knife' ),
 				'description' => __( 'Club tournaments, players and results.', 'chess-army-knife' ),
+				'key'         => 'tournaments',
 				'slug'        => Chess_Army_Knife_Tournaments_Page::SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Tournaments_Page', 'render_page' ),
 				'kind'        => 'tournaments',
@@ -167,6 +178,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $club_group,
 				'title'       => __( 'Club Events', 'chess-army-knife' ),
 				'description' => __( 'Club nights and events, shown in the calendar blocks.', 'chess-army-knife' ),
+				'key'         => 'club_events',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Events::POST_TYPE,
 				'callback'    => null,
 				'kind'        => 'events',
@@ -179,6 +191,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $setup_group,
 				'title'       => __( 'Templates', 'chess-army-knife' ),
 				'description' => __( 'Saved looks for the plugin\'s blocks.', 'chess-army-knife' ),
+				'key'         => 'templates',
 				'slug'        => Chess_Army_Knife_Templates::PAGE,
 				'callback'    => array( 'Chess_Army_Knife_Templates', 'render_page' ),
 				'kind'        => 'settings',
@@ -190,6 +203,7 @@ class Chess_Army_Knife_Menu {
 				'group'       => $setup_group,
 				'title'       => __( 'Settings', 'chess-army-knife' ),
 				'description' => __( 'ECF and LMS settings, caching, renewal reminders and how members pay.', 'chess-army-knife' ),
+				'key'         => 'settings',
 				'slug'        => Chess_Army_Knife_Settings::PAGE,
 				'callback'    => array( 'Chess_Army_Knife_Settings', 'render_page' ),
 				'kind'        => 'settings',
@@ -197,7 +211,32 @@ class Chess_Army_Knife_Menu {
 					return current_user_can( 'manage_options' );
 				},
 			),
+			array(
+				'key'         => 'block_help',
+				'group'       => __( 'Help', 'chess-army-knife' ),
+				'title'       => __( 'Block Help', 'chess-army-knife' ),
+				'description' => __( 'How to add the plugin\'s blocks to your pages, and what each one needs.', 'chess-army-knife' ),
+				'slug'        => Chess_Army_Knife_Block_Help::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Block_Help', 'render_page' ),
+				'kind'        => '',
+				'can'         => '__return_true',
+			),
 		);
+	}
+
+	/**
+	 * One screen, by its key.
+	 *
+	 * @param string $key Key of a screen in areas().
+	 * @return array|null
+	 */
+	public static function area( $key ) {
+		foreach ( self::areas() as $area ) {
+			if ( $area['key'] === $key ) {
+				return $area;
+			}
+		}
+		return null;
 	}
 
 	/**

@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/memberships",
   "title": "Club Memberships",
-  "category": "widgets",
+  "category": "chess-army-knife-membership",
   "icon": "id",
   "description": "Advertises the club's memberships with their prices, and how to pay for them.",
   "keywords": [

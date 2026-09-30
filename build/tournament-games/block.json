@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/tournament-games",
   "title": "Tournament Games to Play",
-  "category": "widgets",
+  "category": "chess-army-knife-tournaments",
   "icon": "list-view",
   "description": "List the games in a tournament that still have to be played. Administrators can also record the results here.",
   "keywords": [

@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/member-portal",
 	"title": "Member Portal",
-	"category": "widgets",
+	"category": "chess-army-knife-membership",
 	"icon": "id-alt",
 	"description": "Lets members see and correct their own details, choose what they are emailed about, see their membership and event places, and delete their data. No account is needed: members sign in with a link emailed to them.",
 	"keywords": [ "chess", "club", "member", "portal", "account", "profile", "my details" ],

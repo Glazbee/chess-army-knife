@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/data-policy",
 	"title": "Club Data Policy",
-	"category": "widgets",
+	"category": "chess-army-knife-membership",
 	"icon": "privacy",
 	"description": "Shows how the club handles members' personal data. Kept up to date from the club's settings, so it can sit on any page, such as the privacy policy.",
 	"keywords": [ "chess", "club", "privacy", "gdpr", "data", "policy" ],

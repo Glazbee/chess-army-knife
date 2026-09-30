@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/team-profiles",
   "title": "Club Teams",
-  "category": "widgets",
+  "category": "chess-army-knife-leagues",
   "icon": "groups",
   "description": "Shows the club's teams: name, description, home venue and the leagues they play in. Squads and captains are never shown.",
   "keywords": [

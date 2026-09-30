@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/tournament-players",
   "title": "Tournament Players",
-  "category": "widgets",
+  "category": "chess-army-knife-tournaments",
   "icon": "groups",
   "description": "List the players in a tournament with their ECF codes and ratings.",
   "keywords": [

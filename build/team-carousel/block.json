@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/team-carousel",
   "title": "ECF Team Fixtures Carousel",
-  "category": "widgets",
+  "category": "chess-army-knife-leagues",
   "icon": "slides",
   "description": "A carousel that scrolls through a league's teams, showing each one's last result and next fixture.",
   "keywords": [

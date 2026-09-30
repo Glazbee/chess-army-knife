@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/tournament-status",
   "title": "Tournament Status",
-  "category": "widgets",
+  "category": "chess-army-knife-tournaments",
   "icon": "flag",
   "description": "Show where a tournament stands: whether it has started, the current round, games played and the winner.",
   "keywords": [

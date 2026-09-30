@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chess-army-knife/club-event-calendar",
   "title": "Club Event Calendar",
-  "category": "widgets",
+  "category": "chess-army-knife-events",
   "icon": "calendar",
   "description": "Lists upcoming club events by date, optionally only those with chosen tags or teams, home or away, with a calendar feed to subscribe to.",
   "keywords": [

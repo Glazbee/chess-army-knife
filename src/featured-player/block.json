@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "chess-army-knife/featured-player",
 	"title": "ECF Featured Player",
-	"category": "widgets",
+	"category": "chess-army-knife-ratings",
 	"icon": "star-filled",
 	"description": "Spotlight a player with their ECF rating, a photo, a short blurb on why they're featured, and links to their chess.com and Lichess profiles.",
 	"keywords": [ "chess", "ecf", "player", "featured", "spotlight", "lichess", "chess.com" ],
