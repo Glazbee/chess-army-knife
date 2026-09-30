@@ -42,9 +42,9 @@ if ( 'club-teams' === $team_source ) {
 			wp_kses_post( $wrapper_attributes ),
 			wp_kses_post(
 				sprintf(
-					/* translators: %s: link to the club teams admin page */
-					__( 'No teams are configured yet. Add your teams under %s.', 'chess-army-knife' ),
-					'<a href="' . esc_url( admin_url( 'admin.php?page=chess-army-knife-club-teams' ) ) . '">' . esc_html__( 'ECF & LMS → Club Teams', 'chess-army-knife' ) . '</a>'
+					/* translators: %s: link to the Teams screen */
+					__( 'No teams are configured yet. Add your teams, with their leagues, under %s.', 'chess-army-knife' ),
+					'<a href="' . esc_url( admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ) . '">' . esc_html__( 'Teams', 'chess-army-knife' ) . '</a>'
 				)
 			)
 		);

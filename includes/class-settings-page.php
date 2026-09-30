@@ -28,8 +28,8 @@ class Chess_Army_Knife_Settings {
 
 	/**
 	 * Add the top-level admin menu (Settings is its first/default page;
-	 * other plugin admin screens, like Club Teams, register their own
-	 * submenu under the same top-level slug).
+	 * other plugin admin screens register their own submenu under the
+	 * same top-level slug).
 	 */
 	public static function add_menu() {
 		add_menu_page(
@@ -212,17 +212,15 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
-	 * Get the club's configured teams. Delegates to the structured
-	 * "Club Teams" admin page storage; the old free-text "org | event |
-	 * team" per-line format (from before that page existed) is parsed
-	 * automatically as a one-time migration if the structured list is
-	 * still empty and legacy text is present.
+	 * Get the club's league entries: every LMS organisation, event and team
+	 * name the club's teams play in. They are kept on the teams themselves
+	 * (see Chess_Army_Knife_Teams).
 	 *
-	 * @return array[] List of { org, event, team }.
+	 * @return array[] List of { org, event, team, team_id }.
 	 */
 	public static function get_club_teams() {
-		if ( class_exists( 'Chess_Army_Knife_Club_Teams_Page' ) ) {
-			return Chess_Army_Knife_Club_Teams_Page::get_teams();
+		if ( class_exists( 'Chess_Army_Knife_Teams' ) ) {
+			return Chess_Army_Knife_Teams::league_entries();
 		}
 		return array();
 	}
@@ -347,9 +345,9 @@ class Chess_Army_Knife_Settings {
 			<p>
 				<?php
 				printf(
-					/* translators: %s: link to the Club Teams admin page */
-					wp_kses_post( __( 'Manage the list of teams your club has entered in each division on the %s page.', 'chess-army-knife' ) ),
-					'<a href="' . esc_url( admin_url( 'admin.php?page=chess-army-knife-club-teams' ) ) . '">' . esc_html__( 'Club Teams', 'chess-army-knife' ) . '</a>'
+					/* translators: %s: link to the Teams screen */
+					wp_kses_post( __( 'The leagues your club\'s teams have entered are set on each team, under %s.', 'chess-army-knife' ) ),
+					'<a href="' . esc_url( admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ) . '">' . esc_html__( 'Teams', 'chess-army-knife' ) . '</a>'
 				);
 				?>
 			</p>

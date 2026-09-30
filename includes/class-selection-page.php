@@ -15,13 +15,13 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Selection_Page {
 
-	const SLUG = 'chess-army-knife-selection';
+	const SLUG = Chess_Army_Knife_Teams::MENU_SLUG; // The Teams menu opens on this screen.
 
 	/**
 	 * Hook up the screen and its actions.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
+		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 5 ); // Before the team screens and Import Events add themselves beneath it.
 		add_action( 'admin_post_chess_army_knife_selection_request', array( __CLASS__, 'handle_request' ) );
 		add_action( 'admin_post_chess_army_knife_selection_lineup', array( __CLASS__, 'handle_lineup' ) );
 	}
@@ -33,14 +33,26 @@ class Chess_Army_Knife_Selection_Page {
 		if ( ! Chess_Army_Knife_Captains::user_can_select() ) {
 			return;
 		}
+
+		// A captain sees the menu for Team Selection alone; team managers also get the teams and Import Events.
+		$capability = Chess_Army_Knife_Teams::user_can_manage() ? Chess_Army_Knife_Teams::CAPABILITY : Chess_Army_Knife_Captains::CAPABILITY;
+
 		add_menu_page(
-			__( 'Team Selection', 'chess-army-knife' ),
-			__( 'Team Selection', 'chess-army-knife' ),
-			current_user_can( Chess_Army_Knife_Captains::CAPABILITY ) ? Chess_Army_Knife_Captains::CAPABILITY : Chess_Army_Knife_Memberships::CAPABILITY,
+			__( 'Teams', 'chess-army-knife' ),
+			__( 'Teams', 'chess-army-knife' ),
+			$capability,
 			self::SLUG,
 			array( __CLASS__, 'render_page' ),
 			'dashicons-groups',
 			78
+		);
+		add_submenu_page(
+			self::SLUG,
+			__( 'Team Selection', 'chess-army-knife' ),
+			__( 'Team Selection', 'chess-army-knife' ),
+			$capability,
+			self::SLUG,
+			array( __CLASS__, 'render_page' )
 		);
 	}
 
@@ -282,7 +294,7 @@ class Chess_Army_Knife_Selection_Page {
 
 			<h2><?php esc_html_e( 'Availability', 'chess-army-knife' ); ?></h2>
 			<?php if ( ! $pool ) : ?>
-				<p><?php esc_html_e( 'This team\'s squad has no current members. Add them on the team\'s page under Memberships > Teams.', 'chess-army-knife' ); ?></p>
+				<p><?php esc_html_e( 'This team\'s squad has no current members. Ask a club officer to add them on the team\'s page under Teams.', 'chess-army-knife' ); ?></p>
 			<?php else : ?>
 				<table class="widefat striped" style="max-width:640px">
 					<thead><tr><th><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th><th><?php esc_html_e( 'Rating', 'chess-army-knife' ); ?></th><th><?php esc_html_e( 'Reply', 'chess-army-knife' ); ?></th></tr></thead>

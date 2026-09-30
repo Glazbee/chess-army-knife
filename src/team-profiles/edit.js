@@ -38,7 +38,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<SelectControl
 						label={ __( 'Team', 'chess-army-knife' ) }
 						help={ __(
-							'Teams are set up under Memberships → Teams.',
+							'Teams are set up under Teams.',
 							'chess-army-knife'
 						) }
 						value={ teamId }

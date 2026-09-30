@@ -12,7 +12,6 @@ class EventsTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		delete_option( Chess_Army_Knife_Club_Teams_Page::OPTION );
 		foreach ( array( 'games', 'entries', 'tournaments', 'members' ) as $name ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
@@ -230,9 +229,7 @@ class EventsTest extends WP_UnitTestCase {
 	}
 
 	public function test_saving_the_details_box_stores_the_event() {
-		Chess_Army_Knife_Club_Teams_Page::get_teams(); // Initialise the option.
-		update_option(
-			Chess_Army_Knife_Club_Teams_Page::OPTION,
+		Chess_Army_Knife_Teams::assign_league_entries(
 			array(
 				array(
 					'org'   => '613',
@@ -327,8 +324,7 @@ class EventsTest extends WP_UnitTestCase {
 	}
 
 	public function test_available_leagues_lists_each_division_once() {
-		update_option(
-			Chess_Army_Knife_Club_Teams_Page::OPTION,
+		Chess_Army_Knife_Teams::assign_league_entries(
 			array(
 				array(
 					'org'   => '613',

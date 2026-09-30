@@ -1,10 +1,11 @@
 <?php
 /**
- * Admin side of teams: the details and squad boxes on the team edit screen,
- * and the button that creates teams from the Club Teams list.
+ * Admin side of teams: the details and squad boxes on the team edit screen.
  *
- * Squads and captains are personal data, so everything here needs the
- * membership permission, which also guards the team post type itself.
+ * Editing a team needs the team permission, which also guards the team post
+ * type itself. Squads and captains are personal data: choosing who is in one
+ * needs the membership permission, and someone with only the team permission
+ * sees no more than the names of the people already in each squad.
  *
  * @package Chess_Army_Knife
  */
@@ -22,8 +23,6 @@ class Chess_Army_Knife_Teams_Admin {
 	public static function init() {
 		add_action( 'add_meta_boxes_' . Chess_Army_Knife_Teams::POST_TYPE, array( __CLASS__, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . Chess_Army_Knife_Teams::POST_TYPE, array( __CLASS__, 'save' ) );
-		add_action( 'admin_notices', array( __CLASS__, 'maybe_offer_creation' ) );
-		add_action( 'admin_post_chess_army_knife_create_teams', array( __CLASS__, 'handle_create' ) );
 	}
 
 	/**
@@ -64,8 +63,6 @@ class Chess_Army_Knife_Teams_Admin {
 		$venue   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
 		$captain = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
 		$colour  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
-		$seasons = get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_SEASONS, true );
-		$seasons = is_array( $seasons ) ? $seasons : array();
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
@@ -112,29 +109,48 @@ class Chess_Army_Knife_Teams_Admin {
 			<tr>
 				<th scope="row"><label for="chess_army_team_captain"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></label></th>
 				<td>
-					<select id="chess_army_team_captain" name="chess_army_team_captain">
-						<option value="0"><?php esc_html_e( 'None', 'chess-army-knife' ); ?></option>
-						<?php foreach ( self::candidates( array_filter( array( $captain ) ) ) as $person ) : ?>
-							<option value="<?php echo esc_attr( $person['id'] ); ?>" <?php selected( $captain, $person['id'] ); ?>><?php echo esc_html( $person['name'] ); ?></option>
-						<?php endforeach; ?>
-					</select>
-					<p class="description"><?php esc_html_e( 'Only visible here, to people who can manage members; it is not shown on the website.', 'chess-army-knife' ); ?></p>
+					<?php if ( Chess_Army_Knife_Memberships::user_can_manage() ) : ?>
+						<select id="chess_army_team_captain" name="chess_army_team_captain">
+							<option value="0"><?php esc_html_e( 'None', 'chess-army-knife' ); ?></option>
+							<?php foreach ( self::candidates( array_filter( array( $captain ) ) ) as $person ) : ?>
+								<option value="<?php echo esc_attr( $person['id'] ); ?>" <?php selected( $captain, $person['id'] ); ?>><?php echo esc_html( $person['name'] ); ?></option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description"><?php esc_html_e( 'Only visible here, to people who can manage teams; it is not shown on the website.', 'chess-army-knife' ); ?></p>
+					<?php else : ?>
+						<?php $captain_person = $captain ? Chess_Army_Knife_Membership_Store::get_member( $captain ) : null; ?>
+						<?php echo esc_html( $captain_person ? $captain_person['name'] : __( 'None', 'chess-army-knife' ) ); ?>
+						<p class="description"><?php esc_html_e( 'Only someone who can manage members can change this.', 'chess-army-knife' ); ?></p>
+					<?php endif; ?>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e( 'Seasons', 'chess-army-knife' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'League entries', 'chess-army-knife' ); ?></th>
 				<td>
-					<?php $club_teams = Chess_Army_Knife_Settings::get_club_teams(); ?>
-					<?php if ( ! $club_teams ) : ?>
-						<p class="description"><?php esc_html_e( 'Add the club\'s league entries on the Club Teams page, then tick the ones that belong to this team. Fixtures are linked to teams when Import Events is run.', 'chess-army-knife' ); ?></p>
-					<?php endif; ?>
-					<?php foreach ( $club_teams as $club_team ) : ?>
-						<?php $key = Chess_Army_Knife_Teams::season_key( $club_team ); ?>
-						<label style="display:block">
-							<input type="checkbox" name="chess_army_team_seasons[]" value="<?php echo esc_attr( $key ); ?>" <?php checked( in_array( $key, $seasons, true ) ); ?> />
-							<?php echo esc_html( $club_team['team'] . ' — ' . $club_team['event'] ); ?>
-						</label>
-					<?php endforeach; ?>
+					<?php
+					$leagues = Chess_Army_Knife_Teams::clean_leagues( get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_LEAGUES, true ) );
+					$rows    = count( $leagues ) + 3; // A few blank rows to add to.
+					?>
+					<table class="widefat striped" style="max-width:720px">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'LMS organisation ID', 'chess-army-knife' ); ?></th>
+								<th><?php esc_html_e( 'Event / division', 'chess-army-knife' ); ?></th>
+								<th><?php esc_html_e( 'Name in the LMS, if different', 'chess-army-knife' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php for ( $row = 0; $row < $rows; $row++ ) : ?>
+								<?php $league = isset( $leagues[ $row ] ) ? $leagues[ $row ] : array_fill_keys( array( 'org', 'event', 'name' ), '' ); ?>
+								<tr>
+									<td><input type="text" name="chess_army_team_leagues[<?php echo esc_attr( $row ); ?>][org]" value="<?php echo esc_attr( $league['org'] ); ?>" class="small-text" inputmode="numeric" placeholder="270" aria-label="<?php esc_attr_e( 'LMS organisation ID', 'chess-army-knife' ); ?>" /></td>
+									<td><input type="text" name="chess_army_team_leagues[<?php echo esc_attr( $row ); ?>][event]" value="<?php echo esc_attr( $league['event'] ); ?>" class="regular-text" placeholder="Division 1" aria-label="<?php esc_attr_e( 'Event / division', 'chess-army-knife' ); ?>" /></td>
+									<td><input type="text" name="chess_army_team_leagues[<?php echo esc_attr( $row ); ?>][name]" value="<?php echo esc_attr( $league['name'] ); ?>" class="regular-text" aria-label="<?php esc_attr_e( 'Name in the LMS, if different', 'chess-army-knife' ); ?>" /></td>
+								</tr>
+							<?php endfor; ?>
+						</tbody>
+					</table>
+					<p class="description"><?php esc_html_e( 'The leagues this team plays in, one row for each season. Import Events reads the fixtures of these and links them to this team. Clear a row to remove it; save to get more blank rows. Leave the last column empty when the LMS uses this team\'s name.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 		</table>
@@ -149,6 +165,19 @@ class Chess_Army_Knife_Teams_Admin {
 	 */
 	public static function render_squad( $post ) {
 		$squad = Chess_Army_Knife_Teams::squad( $post->ID );
+
+		// Without the membership permission the squad can be seen but not changed: choosing from every member would show all of them.
+		if ( ! Chess_Army_Knife_Memberships::user_can_manage() ) {
+			?>
+			<p class="description"><?php esc_html_e( 'The people in this team. The squad is private. Only someone who can manage members can change it.', 'chess-army-knife' ); ?></p>
+			<ul>
+				<?php foreach ( Chess_Army_Knife_Membership_Store::get_members_by_ids( $squad ) as $person ) : ?>
+					<li><?php echo esc_html( $person['name'] ); ?></li>
+				<?php endforeach; ?>
+			</ul>
+			<?php
+			return;
+		}
 		?>
 		<p class="description"><?php esc_html_e( 'Current members in this team. The squad is private: it is used for team lists and, later, fixture availability.', 'chess-army-knife' ); ?></p>
 		<div style="max-height:260px;overflow:auto;border:1px solid #dcdcde;padding:8px">
@@ -171,7 +200,7 @@ class Chess_Army_Knife_Teams_Admin {
 		if ( ! isset( $_POST[ self::NONCE_FIELD ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ self::NONCE_FIELD ] ) ), self::NONCE_ACTION ) ) {
 			return;
 		}
-		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $post_id ) || ! current_user_can( 'edit_post', $post_id ) || ! Chess_Army_Knife_Memberships::user_can_manage() ) {
+		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
 
@@ -188,76 +217,21 @@ class Chess_Army_Knife_Teams_Admin {
 			Chess_Army_Knife_Captains::set_user( $post_id, $user_id && get_userdata( $user_id ) ? $user_id : 0 );
 		}
 
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each entry is cleaned by clean_leagues().
+		$leagues = isset( $_POST['chess_army_team_leagues'] ) && is_array( $_POST['chess_army_team_leagues'] ) ? wp_unslash( $_POST['chess_army_team_leagues'] ) : array();
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_LEAGUES, Chess_Army_Knife_Teams::clean_leagues( $leagues ) );
+
+		// The captain and the squad are people's details: only someone who manages members may choose them.
+		if ( ! Chess_Army_Knife_Memberships::user_can_manage() ) {
+			return;
+		}
+
 		// Only someone the club holds a record of can captain a team.
 		$captain = isset( $_POST['chess_army_team_captain'] ) ? absint( $_POST['chess_army_team_captain'] ) : 0;
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_CAPTAIN, $captain && Chess_Army_Knife_Membership_Store::get_member( $captain ) ? $captain : 0 );
 
-		// Only entries that are on the Club Teams list are kept.
-		$valid   = array_map( array( 'Chess_Army_Knife_Teams', 'season_key' ), Chess_Army_Knife_Settings::get_club_teams() );
-		$seasons = isset( $_POST['chess_army_team_seasons'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['chess_army_team_seasons'] ) ) : array();
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_SEASONS, array_values( array_intersect( $valid, $seasons ) ) );
-
 		$squad = isset( $_POST['chess_army_team_squad'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['chess_army_team_squad'] ) ) : array();
 		Chess_Army_Knife_Teams::set_squad( $post_id, $squad );
-	}
-
-	/**
-	 * On the Teams list, offer to create teams from the Club Teams list.
-	 */
-	public static function maybe_offer_creation() {
-		$screen = get_current_screen();
-		if ( ! $screen || 'edit-' . Chess_Army_Knife_Teams::POST_TYPE !== $screen->id || ! Chess_Army_Knife_Memberships::user_can_manage() ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only notice.
-		if ( isset( $_GET['teams_created'] ) ) {
-			/* translators: %d: number of teams */
-			printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>', esc_html( sprintf( _n( '%d team created.', '%d teams created.', absint( $_GET['teams_created'] ), 'chess-army-knife' ), absint( $_GET['teams_created'] ) ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		}
-
-		$existing = array_map( 'strtolower', Chess_Army_Knife_Teams::choices() );
-		$missing  = 0;
-		$seen     = array();
-		foreach ( Chess_Army_Knife_Settings::get_club_teams() as $club_team ) {
-			$name = strtolower( trim( (string) $club_team['team'] ) );
-			if ( '' !== $name && ! in_array( $name, $existing, true ) && ! isset( $seen[ $name ] ) ) {
-				$seen[ $name ] = true;
-				++$missing;
-			}
-		}
-		if ( ! $missing ) {
-			return;
-		}
-
-		printf(
-			'<div class="notice notice-info"><p>%1$s <a href="%2$s" class="button">%3$s</a></p></div>',
-			/* translators: %d: number of team names */
-			esc_html( sprintf( _n( '%d team on your Club Teams list has no team here yet.', '%d teams on your Club Teams list have no team here yet.', $missing, 'chess-army-knife' ), $missing ) ),
-			esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=chess_army_knife_create_teams' ), 'chess_army_knife_create_teams' ) ),
-			esc_html__( 'Create them', 'chess-army-knife' )
-		);
-	}
-
-	/**
-	 * Create the missing teams.
-	 */
-	public static function handle_create() {
-		if ( ! Chess_Army_Knife_Memberships::user_can_manage() ) {
-			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ), '', array( 'response' => 403 ) );
-		}
-		check_admin_referer( 'chess_army_knife_create_teams' );
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'post_type'     => Chess_Army_Knife_Teams::POST_TYPE,
-					'teams_created' => Chess_Army_Knife_Teams::create_missing_from_club_teams(),
-				),
-				admin_url( 'edit.php' )
-			)
-		);
-		exit;
 	}
 }
 

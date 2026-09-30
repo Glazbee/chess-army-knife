@@ -22,12 +22,16 @@ wp_clear_scheduled_hook( 'Chess_Army_Knife_send_renewal_reminders' );
 wp_clear_scheduled_hook( 'Chess_Army_Knife_send_announcements' );
 delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
+delete_option( 'Chess_Army_Knife_club_teams_migrated' );
 delete_option( 'Chess_Army_Knife_templates' );
 delete_option( 'Chess_Army_Knife_db_version' );
 
 // The membership permission is not data: take it back from whoever was given it.
 foreach ( get_users( array( 'capability' => 'chess_army_manage_memberships' ) ) as $chess_army_knife_user ) {
 	$chess_army_knife_user->remove_cap( 'chess_army_manage_memberships' );
+}
+foreach ( get_users( array( 'capability' => 'chess_army_manage_teams' ) ) as $chess_army_knife_user ) {
+	$chess_army_knife_user->remove_cap( 'chess_army_manage_teams' );
 }
 
 global $wpdb;

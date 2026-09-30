@@ -95,7 +95,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							'chess-army-knife'
 						) }
 						help={ __(
-							'Bolds matching teams in the table and matchups. Teams listed under ECF & LMS → Club Teams are highlighted automatically, so this is only needed for extra teams.',
+							'Bolds matching teams in the table and matchups. Teams with a league entry under Teams are highlighted automatically, so this is only needed for extra teams.',
 							'chess-army-knife'
 						) }
 						value={ highlightTeam }

@@ -115,10 +115,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					{ teamSource === 'club-teams' && (
 						<Notice status="info" isDismissible={ false }>
 							{ __(
-								'Reads the team list from Settings → Chess Army Knife, so it can cover teams across several divisions or organisations at once — including more than one team in the same division.',
+								'Reads the leagues of your teams (under Teams), so it can cover teams across several divisions or organisations at once — including more than one team in the same division.',
 								'chess-army-knife'
 							) }{ ' ' }
-							<ExternalLink href="/wp-admin/admin.php?page=chess-army-knife-club-teams">
+							<ExternalLink href="/wp-admin/edit.php?post_type=chess_army_team">
 								{ __(
 									'Manage your teams',
 									'chess-army-knife'

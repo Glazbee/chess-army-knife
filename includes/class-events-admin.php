@@ -43,7 +43,7 @@ class Chess_Army_Knife_Events_Admin {
 	}
 
 	/**
-	 * Leagues the club can attach: each distinct division among the Club Teams.
+	 * Leagues the club can attach: each distinct division among the teams' league entries.
 	 *
 	 * @return array[] Each { ref, label }.
 	 */
@@ -133,7 +133,7 @@ class Chess_Army_Knife_Events_Admin {
 				<th scope="row"><?php esc_html_e( 'Leagues', 'chess-army-knife' ); ?></th>
 				<td>
 					<?php if ( empty( $leagues ) ) : ?>
-						<p class="description"><?php esc_html_e( 'Add teams on the Club Teams page to attach their leagues here.', 'chess-army-knife' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Add leagues to your teams, under Teams, to attach them here.', 'chess-army-knife' ); ?></p>
 					<?php endif; ?>
 					<?php foreach ( $leagues as $league ) : ?>
 						<label style="display:block">
