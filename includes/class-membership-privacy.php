@@ -157,6 +157,40 @@ class Chess_Army_Knife_Membership_Privacy {
 			}
 		}
 
+		// The events they have registered for.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Event_Registrations::for_person( $member['id'] ) as $registration ) {
+				$event   = get_post( $registration['event_id'] );
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-registrations',
+					'group_label' => __( 'Club events you registered for', 'chess-army-knife' ),
+					'item_id'     => 'registration-' . $registration['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Event', 'chess-army-knife' ),
+							'value' => $event ? get_the_title( $event ) : '',
+						),
+						array(
+							'name'  => __( 'Status', 'chess-army-knife' ),
+							'value' => Chess_Army_Knife_Event_Registrations::STATUS_WAITING === $registration['status'] ? __( 'Waiting list', 'chess-army-knife' ) : __( 'Registered', 'chess-army-knife' ),
+						),
+						array(
+							'name'  => __( 'Guests', 'chess-army-knife' ),
+							'value' => (string) $registration['guests'],
+						),
+						array(
+							'name'  => __( 'Attended', 'chess-army-knife' ),
+							'value' => $registration['attended'] ? __( 'Yes', 'chess-army-knife' ) : '',
+						),
+						array(
+							'name'  => __( 'Registered (UTC)', 'chess-army-knife' ),
+							'value' => $registration['registered_at'],
+						),
+					),
+				);
+			}
+		}
+
 		// The teams they are in the squad of, or captain.
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
 			foreach ( Chess_Army_Knife_Teams::teams_of_person( $member['id'] ) as $team ) {
@@ -250,6 +284,9 @@ class Chess_Army_Knife_Membership_Privacy {
 				if ( Chess_Army_Knife_Tournament_Store::person_has_entries( $member['id'] ) ) {
 					$messages[] = __( 'Tournament entries were kept, without any personal details, so past tournaments still add up.', 'chess-army-knife' );
 				}
+				if ( Chess_Army_Knife_Event_Registrations::person_has_registrations( $member['id'] ) ) {
+					$messages[] = __( 'Event registrations were kept, without any personal details, so attendance at past events still adds up.', 'chess-army-knife' );
+				}
 				if ( $photos ) {
 					/* translators: 1: number of photos, 2: member record number */
 					$messages[] = sprintf( _n( '%1$d photo tagged with this person was not deleted, because photos can show other people. It needs reviewing by hand: in the Media Library, filter by the record "Erased member" (record %2$d).', '%1$d photos tagged with this person were not deleted, because photos can show other people. They need reviewing by hand: in the Media Library, filter by the record "Erased member" (record %2$d).', $photos, 'chess-army-knife' ), $photos, $member['id'] );
@@ -323,6 +360,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				'paragraphs' => array(
 					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
 					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
+					__( 'If you register for a club event we record that, with the time, the number of guests you bring and whether you came. If you are not a member we keep your name and email address as a record of a non-member. Registrations are deleted after the retention period below.', 'chess-army-knife' ),
 					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. Only club officers can see this.', 'chess-army-knife' ),
 					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),
 				),

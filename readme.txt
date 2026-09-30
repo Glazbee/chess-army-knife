@@ -37,6 +37,7 @@ This plugin adds seventeen blocks to the WordPress block editor, pulling live da
 15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
 O. **Manage My Data** — lets a member stop the newsletter or WhatsApp groups, ask for a copy of their details, or ask for them to be deleted, without an account. Changes are confirmed by an emailed link.
 P. **Club Teams** — shows the club's teams: name, description, home venue and leagues (never the captain or squad). Show all teams or pick one.
+Q. **Event Registration** — a registration form for a club event, with places, a waiting list and confirmation by emailed link.
 
 **Memberships**
 
@@ -50,6 +51,7 @@ Members' details are personal, so the Memberships menu is only for people with t
 
 * **Running the club** is the basis for the required details (name, email, phone, ECF rating code): to run the membership and to provide playing members to the ECF, who are given each member's name and ECF rating code. Applicants tick to confirm they have read how their details are used, the time is recorded, and the form links to your privacy policy if the site has one.
 * **Fixtures calendar**: run **Import Events** after setting up teams so fixtures are linked to them. The Club Event Calendar block then offers a team filter, home or away, team names and colours, and a calendar subscription link (the feed is at `/?chess_army_ics=1`, with optional `teams`, `venue` and `tags`). The feed holds only what the public calendar shows.
+* **Event registration**: turn on "Take registrations" on an event and add the **Event Registration** block to its page. Capacity counts a person and their guests. Confirmation and cancellation are by emailed link, so no account is needed. Attendance is taken on the event screen.
 * **Teams** (Memberships → Teams) hold each team's description, home venue, captain, squad and league entries. Only the name, description, venue and leagues are public (Club Teams block); the captain and squad are for officers. Members choose their WhatsApp groups from these teams.
 * **Dashboard** (Memberships → Dashboard) summarises the club at a glance using totals from the people table; it shows no names.
 * **Renewal reminders** are emailed by a daily job to current members, at the days you set (default 30, 7 and 0 days before the last day of membership and 7 days after). They are service messages, so they do not need the newsletter opt-in, but every email has a link to stop them, and a junior's goes to their parent or guardian. Turn them on and word them under **ECF & LMS → Settings**; **Memberships → Renewals** shows who is due and sends a test. Use **Renew** on the Members screen when someone pays.
@@ -126,6 +128,7 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: event registration. Tick "Take registrations" on an event (with optional places, guests each and closing time) and add the Event Registration block to its page. Visitors need no account: they give a name and email, confirm from an emailed link and can cancel from their confirmation email. A full event has a waiting list that moves up when someone cancels. Anyone not on your records is saved as a guest (not a member). Officers see who registered, mark attendance, and add or remove people on the event screen (with the membership permission). Registrations are in personal data exports, anonymised rather than lost when a person is erased, and deleted with the event or after the retention period.
 * Added: a team-aware calendar. Imported league fixtures are linked to the club team playing them (and whether it is home or away) when Import Events is run. The Club Event Calendar block can show only chosen teams, only home or only away fixtures, shows each fixture's team and side, and marks fixtures with the team's colour (set on the team). It adds a link to an iCalendar (.ics) feed for the same selection, so members can subscribe in their calendar app; one address covers the whole club and another each team.
 * Added: Teams (Memberships → Teams). A permanent team such as "Club A" has a description, home venue, captain, squad and the seasons (Club Teams entries) it plays in, and a **Club Teams** block shows the public details. Squads and captains are private, appear in a person's data export and are cleared when they are erased. A button creates teams from your Club Teams list.
 * Changed: members' WhatsApp team choices are stored by team id instead of name, so renaming a team loses nobody's choice. Choices saved under an old team name are matched to the team of that name.
