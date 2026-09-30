@@ -269,7 +269,7 @@ class Chess_Army_Knife_Membership_Privacy {
 			array(
 				'heading'    => __( 'Newsletters and WhatsApp groups', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'We only send you the club newsletter, or add you to a WhatsApp group for a club team, if you have said yes. These are separate choices and you can say no to either and still be a member. If you are added to a WhatsApp group, the other members of the group can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added to a group with their parent or guardian\'s agreement, using the parent or guardian\'s number unless they say otherwise. You can change your mind at any time and we will stop.', 'chess-army-knife' ),
+					__( 'By joining the club you agree that we may email you the club newsletter and add you to the WhatsApp groups for the club teams you play in. If you are added to a group, the other members can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added to a group using their parent or guardian\'s number unless they say otherwise. You can withdraw either of these at any time and still stay a member: use the Manage My Data page on this website, or contact us, and we will stop.', 'chess-army-knife' ),
 				),
 			),
 			array(

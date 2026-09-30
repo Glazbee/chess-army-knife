@@ -12,7 +12,7 @@ Gutenberg blocks for English chess clubs: ECF ratings and league data, club tour
 
 == Description ==
 
-This plugin adds sixteen blocks to the WordPress block editor, pulling live data from:
+This plugin adds seventeen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -20,10 +20,10 @@ This plugin adds sixteen blocks to the WordPress block editor, pulling live data
 **Blocks included**
 
 1. **ECF Rating Chart** — choose a club member and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
-2. **ECF Club Results** — pick a club and show a merged feed of recent rated results across its members (win/draw/loss, opponent, event).
+2. **ECF Club Results** — a merged feed of recent rated results for the club's current members who have an ECF rating code (win/draw/loss, colour, event). Opponents are not shown.
 3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
 4. **ECF Team Fixtures Carousel** — a rotating carousel showing each team's last result and next fixture. Teams are read automatically from the league table, or you can supply your own list.
-5. **ECF Biggest Rating Gainers** — showcase the club members whose rating has risen the most over a recent period.
+5. **ECF Biggest Rating Gainers** — showcase the club's current members whose rating has risen the most over a recent period.
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
 7. **Tournament Status** — where a tournament stands: status, format, players, current round (Swiss), games played and the winner.
@@ -35,7 +35,7 @@ This plugin adds sixteen blocks to the WordPress block editor, pulling live data
 13. **Next Club Event** — the next club event, optionally only one with a chosen tag.
 14. **Club Memberships** — advertise the memberships the club offers (junior, adult, senior or any others) with their prices and descriptions, and how to pay. Optionally link each one to your application form.
 15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
-16. **Club Data Policy** — how the club handles members' personal data, for any page (such as your privacy policy). It is written from your settings, so the retention period and contact address are always current.
+O. **Manage My Data** — lets a member stop the newsletter or WhatsApp groups, ask for a copy of their details, or ask for them to be deleted, without an account. Changes are confirmed by an emailed link.
 
 **Memberships**
 
@@ -48,21 +48,32 @@ Memberships are managed under **Memberships** in the admin menu:
 Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form is built around how a chess club uses data:
 
 * **Running the club** is the basis for the required details (name, email, phone, ECF rating code): to run the membership and to provide playing members to the ECF, who are given each member's name and ECF rating code. Applicants tick to confirm they have read how their details are used, the time is recorded, and the form links to your privacy policy if the site has one.
-* **Newsletter and WhatsApp groups** are separate optional tick boxes, each recorded with its time, because they are not needed to run the membership and a WhatsApp group shows a member's number to the rest of the group. Untick them on the member's record to record that they have withdrawn.
+* **Newsletter and WhatsApp groups** are covered by the same tick, which says so in plain words: joining the club is taken as agreeing to the club newsletter and to being added to the WhatsApp groups for the teams a member plays in. Each is recorded with its time, and a member can withdraw either at any time and still stay a member (see Manage My Data below, or untick them on the member's record). Note that consent bundled into joining is weaker than a separate tick box under GDPR and the email marketing rules, which is why withdrawing is easy and prominent.
 * **Juniors (under 18)**: the form asks for the junior's date of birth and a parent or guardian's name, email and phone, and writes to the parent rather than the junior. The junior's own email and phone are only kept if the parent ticks that the club may contact the junior directly. Someone whose date of birth is under 18 is treated as a junior even if they do not tick the box. An adult's date of birth is not kept. The parent or guardian gives the consent for a junior.
 * It also limits how often one visitor can apply.
 
-**Players who are not members**
+**Every player is written down once**
 
-Tournament guests and other people the club holds details for can be recorded as **Not a member** (choose that status when adding someone on the Members screen; players typed into the tournament screens are added this way automatically). They are kept in the same table, so the club can find everything it holds about someone, but they are left out of the member lists and counts, appear under their own **Not members** view, and can still be chosen as tournament players and tagged in photos. Guests are deleted with the same retention period, counted from when they were last used.
+The club's people table is the only place anyone's details are kept. Tournament entries are references to a person in it: a tournament holds no names or ECF codes of its own, so correcting a record corrects every tournament, and exporting or erasing a person covers their tournament entries too. (There is no separate Players page any more; add people on the Members screen or from the tournament screens.)
 
-**Choosing players**
+* **Guests.** People who are not members, such as tournament guests, are recorded as **Not a member**. They are kept in the same table but left out of the member lists and counts, appear under their own **Not members** view, and can still be chosen as tournament players and tagged in photos. Guests are deleted with the same retention period, counted from when they were last used. A player typed into the tournament screens is recorded this way automatically. A member's or guest's manual rating (for someone without an ECF code) is part of their record.
+* **Typed ECF codes.** A block can still be given an ECF rating code by hand. Before anything is fetched from the ECF about that code, it is matched to the person's record (with or without the letter), or, if nobody has that code, the ECF is asked who it is and they are written down as a non-member. A code the ECF does not know records nobody.
+* **Choosing players.** The player pickers in the block editor and on the Tournaments screen search the club's own people: current members and guests with an ECF code. The ECF's own player database is never searched.
+* **Club rosters.** Club Results and Biggest Gainers use the club's own current members with an ECF code, not the ECF's club roster, so nobody appears there without a record. The club search, club picker and default club code have been removed. Opponents' names and ratings are no longer shown, because the club holds no record of them.
+* **Deleting.** Deleting a person outright is only possible if nothing ties them to a payment, a photo or a tournament. Otherwise their personal details are removed and the rest is kept.
 
-The player pickers in the block editor and on the Tournaments and Players screens search the club's own list: current members with an ECF rating code, and guests. The ECF's database is no longer searched, so the club only handles people it holds a record for. (Club search and the ECF rating fetched for a chosen code are unchanged.)
+**Manage My Data**
+
+The Manage My Data block needs no account. The member gives their email address (a junior's parent uses theirs) and chooses:
+
+* **Change my newsletter and WhatsApp choices**: a private, one-time link is emailed to that address; it lets them untick (or tick) each choice for everyone under the address. Nobody can change anyone else's choices.
+* **Send me a copy of my details** or **Delete my details**: these use WordPress's own personal data requests. The person confirms by email, then the request appears under **Tools → Export / Erase Personal Data**, where the club's exporter and eraser do the work.
+
+The answer is the same whether or not the address is on file, and the number of emails one visitor or address can cause is limited. Put the block on a page such as your privacy policy.
 
 **Photos**
 
-Anyone who can manage members sees a **Members in this photo** checklist in a photo's details (in the upload dialog and on the Edit Media screen). Tick the members and guests who appear. Tags hold the member's id, not their name, and are only visible to people who manage members. Find a person's photos from the **Photos** link on the Members screen, the thumbnails on their record, or the Media Library's member filter (list view). Photo tags are included when a person's data is exported. Erasing a person does not delete photos, because they may show other people: their record is kept without personal details, so the tagged photos can still be found and reviewed by hand.
+Anyone who can manage members sees a **Members in this photo** checklist in a photo's details (in the upload dialog and on the Edit Media screen). Tick the members and guests who appear. Tags hold the member's id, not their name, and are only visible to people who manage members. Find a person's photos from the **Photos** link on the Members screen, the thumbnails on their record, or the Media Library's member filter, which works in both the grid and list views. Photo tags are included when a person's data is exported. Erasing a person does not delete photos, because they may show other people: their record is kept without personal details, so the tagged photos can still be found and reviewed by hand.
 
 **Data protection (GDPR)**
 
@@ -73,7 +84,7 @@ Anyone who can manage members sees a **Members in this photo** checklist in a ph
 
 **Global defaults**
 
-Set a default club code, LMS organisation ID, event name and rating list once under **Settings → Chess Army Knife**. Any block field left blank will use that default automatically, and can still be overridden individually per block.
+Set a default LMS organisation ID, event name and rating list once under **Settings → Chess Army Knife**. Any block field left blank will use that default automatically, and can still be overridden individually per block.
 
 All API responses are cached in a dedicated database table (so cached data survives object-cache evictions on shared hosting) — durations are configurable under **Settings → Chess Army Knife**, where you can also switch back to plain WordPress transients if you prefer.
 
@@ -87,10 +98,8 @@ The ECF's own API documentation page currently points requests at a legacy host 
 
 1. Upload the `chess-army-knife` folder to `/wp-content/plugins/`, or install the zip via **Plugins → Add New → Upload Plugin**.
 2. Activate the plugin.
-3. Visit **ECF & LMS → Settings** in the admin menu to (optionally) set a default club code and LMS organisation ID, and **ECF & LMS → Club Teams** to list your club's teams across any divisions/organisations.
+3. Visit **ECF & LMS → Settings** in the admin menu to (optionally) set a default LMS organisation ID, and **ECF & LMS → Club Teams** to list your club's teams across any divisions/organisations.
 4. Add the blocks from the inserter — search for "ECF" or "LMS".
-
-**Finding your ECF club code**: search for your club at https://rating.englishchess.org.uk/clubs — the code is shown next to the club name (e.g. `9BAJ`). You can also just start typing your club's name directly into the block's picker in the editor.
 
 **Finding your LMS organisation ID**: go to your league's LMS homepage — the URL looks like `https://lms.englishchess.org.uk/lms/organisation/613`. The number at the end (`613`) is your organisation ID. The event/division name must match exactly what's shown in LMS (e.g. `Division 1`), including capitalisation and spacing.
 
@@ -111,6 +120,10 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Changed: everyone's details are held once, in the people table. Tournament entries reference a person instead of copying their name and ECF code, and the Players page and its separate profile table are gone. A manual rating is part of a person's record.
+* Changed: no player is fetched from the ECF without a record. A typed ECF code is matched to a person or, if unknown, written down as a non-member once the ECF has confirmed who it is. Club Results and Biggest Gainers use the club's own current members; the ECF club roster, club search, club picker and default club code are removed, and Club Results no longer shows opponents.
+* Added: Manage My Data block: withdraw newsletter or WhatsApp consent from an emailed link, or ask for a copy or deletion through WordPress's personal data requests. Joining the club now records the newsletter and WhatsApp agreement from the one tick, in plain words.
+* Added: the Media Library member filter now works in grid view as well as list view.
 * Added: club memberships. Membership Types (name, description, price, length), a Members screen with pending applications, current, expired and cancelled members, and manual adding, editing and payment recording. New Club Memberships and Membership Application Form blocks, and a payment instructions field under Settings.
 * Added: data protection for members: personal data export and erase, recorded consent, automatic deletion of old records after a retention period, suggested privacy policy wording and a public Club Data Policy block.
 * Added: the player pickers search the club's own members (and guests) instead of the ECF's player database.

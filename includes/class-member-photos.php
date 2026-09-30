@@ -30,6 +30,8 @@ class Chess_Army_Knife_Member_Photos {
 		add_action( 'manage_media_custom_column', array( __CLASS__, 'render_column' ), 10, 2 );
 		add_action( 'restrict_manage_posts', array( __CLASS__, 'render_filter' ) );
 		add_action( 'pre_get_posts', array( __CLASS__, 'filter_media_list' ) );
+		add_filter( 'ajax_query_attachments_args', array( __CLASS__, 'filter_ajax_query' ) );
+		add_action( 'wp_enqueue_media', array( __CLASS__, 'enqueue_media_filter' ) );
 	}
 
 	/* -------------------------------------------------------------
@@ -302,6 +304,66 @@ class Chess_Army_Knife_Member_Photos {
 					'key'   => self::META,
 					'value' => $member_id,
 				),
+			)
+		);
+	}
+
+	/**
+	 * Limit the Media Library grid (and the media dialog) to one member's photos.
+	 * WordPress drops query keys it does not know before this filter runs, so the
+	 * member is read from the request itself.
+	 *
+	 * @param array $query Attachment query arguments.
+	 * @return array
+	 */
+	public static function filter_ajax_query( $query ) {
+		$member_id = isset( $_REQUEST['query'][ self::QUERY_VAR ] ) ? absint( $_REQUEST['query'][ self::QUERY_VAR ] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter on a list the user is already allowed to see; nothing is changed.
+
+		if ( $member_id && self::user_can_tag() ) {
+			$query['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- No other API finds the photos tagged with a member.
+				array(
+					'key'   => self::META,
+					'value' => $member_id,
+				),
+			);
+		}
+
+		return $query;
+	}
+
+	/**
+	 * Add the member filter to the grid view and the media dialog, for people who
+	 * manage members. It lists the people who are in at least one photo.
+	 */
+	public static function enqueue_media_filter() {
+		if ( ! self::user_can_tag() ) {
+			return;
+		}
+
+		$members = array();
+		foreach ( array_keys( self::counts() ) as $member_id ) {
+			$member = Chess_Army_Knife_Membership_Store::get_member( $member_id );
+			if ( $member ) {
+				$members[] = array(
+					'id'   => $member['id'],
+					'name' => $member['name'],
+				);
+			}
+		}
+		usort(
+			$members,
+			function ( $a, $b ) {
+				return strcasecmp( $a['name'], $b['name'] );
+			}
+		);
+
+		wp_enqueue_script( 'chess-army-knife-media-filter', Chess_Army_Knife_URL . 'assets/media-filter.js', array( 'media-views' ), Chess_Army_Knife_VERSION, true );
+		wp_localize_script(
+			'chess-army-knife-media-filter',
+			'chessArmyKnifeMedia',
+			array(
+				'allLabel' => __( 'All members', 'chess-army-knife' ),
+				'members'  => $members,
 			)
 		);
 	}

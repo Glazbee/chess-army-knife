@@ -190,26 +190,6 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertNull( $one['whatsapp_consent_at'] );
 	}
 
-	public function test_a_whatsapp_group_needs_a_phone_number() {
-		$adult = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp' => '1' ) ), false );
-		$this->assertSame( 'member_whatsapp', $adult->get_error_code() );
-
-		// A junior can use their parent's number.
-		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'whatsapp' => '1' ) ), false );
-		$this->assertSame( '2026-09-29', $junior['whatsapp_consent_at'] );
-
-		$no_number = Chess_Army_Knife_Membership_Store::sanitize_member(
-			$this->junior_input(
-				array(
-					'whatsapp'       => '1',
-					'guardian_phone' => '',
-				)
-			),
-			false
-		);
-		$this->assertSame( 'member_whatsapp', $no_number->get_error_code(), 'The junior\'s own number is not kept, so it cannot be used.' );
-	}
-
 	public function test_public_application_ignores_admin_only_fields() {
 		$member = Chess_Army_Knife_Membership_Store::sanitize_member(
 			$this->form_input(

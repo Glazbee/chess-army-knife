@@ -80,11 +80,17 @@ class Chess_Army_Knife_Membership_Form {
 
 		self::count_attempt();
 
+		// The one tick on the form covers running the membership, the newsletter and the WhatsApp groups,
+		// so all three are recorded from the same moment. Withdrawing is done on the Manage My Data page.
+		$agreed                          = current_time( 'mysql', true );
+		$member['newsletter_consent_at'] = $agreed;
+		$member['whatsapp_consent_at']   = $agreed;
+
 		return Chess_Army_Knife_Membership_Store::save_member(
 			$member + array(
 				'status'     => Chess_Army_Knife_Membership_Store::STATUS_PENDING,
 				'source'     => Chess_Army_Knife_Membership_Store::SOURCE_FORM,
-				'consent_at' => current_time( 'mysql', true ), // When the applicant agreed to the club keeping their details.
+				'consent_at' => $agreed,
 			)
 		);
 	}
@@ -105,7 +111,6 @@ class Chess_Army_Knife_Membership_Form {
 			'member_dob'      => __( 'Please enter a valid date of birth.', 'chess-army-knife' ),
 			'member_type'     => __( 'Please choose a membership type.', 'chess-army-knife' ),
 			'member_guardian' => __( 'Please give a parent or guardian\'s name and email address.', 'chess-army-knife' ),
-			'member_whatsapp' => __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : __( 'Something went wrong. Please try again.', 'chess-army-knife' );
 	}

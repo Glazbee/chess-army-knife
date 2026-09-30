@@ -763,7 +763,7 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'name="' . Chess_Army_Knife_Membership_Form::NONCE_FIELD . '"', $html );
 		$this->assertStringContainsString( 'name="' . Chess_Army_Knife_Membership_Form::HONEYPOT . '"', $html );
 		$this->assertStringContainsString( 'name="consent"', $html );
-		foreach ( array( 'is_junior', 'guardian_name', 'guardian_email', 'guardian_phone', 'junior_contact', 'newsletter', 'whatsapp' ) as $field ) {
+		foreach ( array( 'is_junior', 'guardian_name', 'guardian_email', 'guardian_phone', 'junior_contact' ) as $field ) {
 			$this->assertStringContainsString( 'name="' . $field . '"', $html );
 		}
 		$this->assertStringContainsString( 'value="' . $type . '"', $html );

@@ -243,6 +243,62 @@ class MemberPhotosTest extends WP_UnitTestCase {
 		$this->assertGreaterThanOrEqual( 2, count( $found ), 'A non-manager cannot use the filter to learn who is in which photo.' );
 	}
 
+	public function test_the_grid_view_query_can_be_limited_to_one_members_photos() {
+		$this->manager();
+		$ada = $this->member( 'Ada Member' );
+		$tag = $this->photo( 'Tagged' );
+		$this->photo( 'Untagged' );
+		Chess_Army_Knife_Member_Photos::set_members( $tag, array( $ada ) );
+		$_REQUEST['query'] = array( Chess_Army_Knife_Member_Photos::QUERY_VAR => (string) $ada );
+
+		$query = apply_filters(
+			'ajax_query_attachments_args',
+			array(
+				'post_type'   => 'attachment',
+				'post_status' => 'inherit',
+				'fields'      => 'ids',
+			)
+		);
+
+		$this->assertSame( array( $tag ), array_map( 'intval', get_posts( $query ) ) );
+
+		// "All members" (0), or no filter at all, changes nothing.
+		$_REQUEST['query'] = array( Chess_Army_Knife_Member_Photos::QUERY_VAR => '0' );
+		$this->assertArrayNotHasKey( 'meta_query', apply_filters( 'ajax_query_attachments_args', array() ) );
+		$_REQUEST['query'] = array();
+		$this->assertArrayNotHasKey( 'meta_query', apply_filters( 'ajax_query_attachments_args', array() ) );
+		unset( $_REQUEST['query'] );
+	}
+
+	public function test_the_grid_view_filter_is_ignored_without_the_permission() {
+		$ada = $this->member( 'Ada Member' );
+		Chess_Army_Knife_Member_Photos::set_members( $this->photo(), array( $ada ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$_REQUEST['query'] = array( Chess_Army_Knife_Member_Photos::QUERY_VAR => (string) $ada );
+
+		$this->assertArrayNotHasKey( 'meta_query', apply_filters( 'ajax_query_attachments_args', array() ), 'A non-manager cannot use the grid to learn who is in which photo.' );
+		unset( $_REQUEST['query'] );
+	}
+
+	public function test_the_grid_filter_script_lists_only_people_who_are_in_a_photo_and_only_for_managers() {
+		$ada = $this->member( 'Ada Member' );
+		$this->member( 'Nobody Photographed' );
+		Chess_Army_Knife_Member_Photos::set_members( $this->photo(), array( $ada ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		do_action( 'wp_enqueue_media' );
+		$this->assertFalse( wp_script_is( 'chess-army-knife-media-filter', 'enqueued' ) );
+
+		$this->manager();
+		do_action( 'wp_enqueue_media' );
+		$this->assertTrue( wp_script_is( 'chess-army-knife-media-filter', 'enqueued' ) );
+		$data = wp_scripts()->get_data( 'chess-army-knife-media-filter', 'data' );
+		$this->assertStringContainsString( 'Ada Member', $data );
+		$this->assertStringNotContainsString( 'Nobody Photographed', $data );
+		$this->assertStringContainsString( 'All members', $data );
+		$this->assertContains( 'media-views', wp_scripts()->registered['chess-army-knife-media-filter']->deps );
+	}
+
 	public function test_the_media_library_shows_who_is_tagged_and_only_to_managers() {
 		$ada   = $this->member( 'Ada Member' );
 		$photo = $this->photo();

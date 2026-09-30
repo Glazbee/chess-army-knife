@@ -121,16 +121,6 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 				</p>
 			</fieldset>
 
-			<fieldset class="cak-membership-form__group">
-				<legend><?php esc_html_e( 'Optional extras', 'chess-army-knife' ); ?></legend>
-				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="newsletter" value="1" /> <?php esc_html_e( 'Send me the club newsletter by email', 'chess-army-knife' ); ?></label>
-				</p>
-				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="whatsapp" value="1" /> <?php esc_html_e( 'Add me (or my junior) to the WhatsApp group for club teams. The other group members will be able to see the phone number and name.', 'chess-army-knife' ); ?></label>
-				</p>
-			</fieldset>
-
 			<?php // Hidden from people; a bot that fills in every field gives itself away. ?>
 			<p class="cak-membership-form__trap" aria-hidden="true">
 				<label for="cak-member-website"><?php esc_html_e( 'Leave this field empty', 'chess-army-knife' ); ?></label>
@@ -146,7 +136,7 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 			<p class="cak-membership-form__consent">
 				<label>
 					<input type="checkbox" name="consent" value="1" required />
-					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details. If this application is for someone under 18, I am their parent or guardian and I agree on their behalf.', 'chess-army-knife' ) ); ?>
+					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details, and I agree to the club keeping them to run my membership, emailing me the club newsletter, and adding me to the WhatsApp groups for the club teams I play in. I can withdraw the newsletter and WhatsApp at any time. If this application is for someone under 18, I am their parent or guardian and I agree on their behalf.', 'chess-army-knife' ) ); ?>
 				</label>
 			</p>
 
