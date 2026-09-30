@@ -173,7 +173,7 @@ class Chess_Army_Knife_Member_Requests {
 	/**
 	 * Save the choices made on the private withdrawal page.
 	 *
-	 * @param array $input Raw (unslashed) form values: token, and newsletter[id] / whatsapp[id] for each ticked box.
+	 * @param array $input Raw (unslashed) form values: token, newsletter[id] / whatsapp[id] for each ticked box, and teams[id][] for the teams chosen.
 	 * @return true|WP_Error
 	 */
 	public static function withdraw( array $input ) {
@@ -203,6 +203,9 @@ class Chess_Army_Knife_Member_Requests {
 					$update[ $column ] = $now; // Given again; an existing consent keeps its original time.
 				}
 			}
+			// Teams only go with a WhatsApp consent: withdrawing it clears them, and only the club's own teams are kept.
+			$wants_whatsapp           = in_array( $person['id'], $whatsapp, true );
+			$update['whatsapp_teams'] = $wants_whatsapp ? Chess_Army_Knife_Membership_Store::clean_teams( isset( $input['teams'][ $person['id'] ] ) ? $input['teams'][ $person['id'] ] : $person['whatsapp_teams'] ) : '';
 			Chess_Army_Knife_Membership_Store::save_member( $update );
 		}
 

@@ -48,7 +48,7 @@ Memberships are managed under **Memberships** in the admin menu:
 Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form is built around how a chess club uses data:
 
 * **Running the club** is the basis for the required details (name, email, phone, ECF rating code): to run the membership and to provide playing members to the ECF, who are given each member's name and ECF rating code. Applicants tick to confirm they have read how their details are used, the time is recorded, and the form links to your privacy policy if the site has one.
-* **Newsletter and WhatsApp groups** are covered by the same tick, which says so in plain words: joining the club is taken as agreeing to the club newsletter and to being added to the WhatsApp groups for the teams a member plays in. Each is recorded with its time, and a member can withdraw either at any time and still stay a member (see Manage My Data below, or untick them on the member's record). Note that consent bundled into joining is weaker than a separate tick box under GDPR and the email marketing rules, which is why withdrawing is easy and prominent.
+* **Newsletter and WhatsApp groups** are two separate, optional, unticked choices on the form, each recorded with its time, because neither is needed to run the membership and a WhatsApp group shows a member's number to the rest of the group. If the club has teams on the Club Teams page, the member also ticks which team(s) they play for, so they are only added to the groups they asked for (WhatsApp needs a phone number). A member can withdraw either at any time and still stay a member (see Manage My Data below, or untick them on the member's record). The one required tick only confirms they have read how their details are used.
 * **Juniors (under 18)**: the form asks for the junior's date of birth and a parent or guardian's name, email and phone, and writes to the parent rather than the junior. The junior's own email and phone are only kept if the parent ticks that the club may contact the junior directly. Someone whose date of birth is under 18 is treated as a junior even if they do not tick the box. An adult's date of birth is not kept. The parent or guardian gives the consent for a junior.
 * It also limits how often one visitor can apply.
 
@@ -66,7 +66,7 @@ The club's people table is the only place anyone's details are kept. Tournament 
 
 The Manage My Data block needs no account. The member gives their email address (a junior's parent uses theirs) and chooses:
 
-* **Change my newsletter and WhatsApp choices**: a private, one-time link is emailed to that address; it lets them untick (or tick) each choice for everyone under the address. Nobody can change anyone else's choices.
+* **Change my newsletter and WhatsApp choices**: a private, one-time link is emailed to that address; it lets them untick (or tick) the newsletter and WhatsApp choices, and choose which teams' groups, for everyone under the address. Nobody can change anyone else's choices.
 * **Send me a copy of my details** or **Delete my details**: these use WordPress's own personal data requests. The person confirms by email, then the request appears under **Tools → Export / Erase Personal Data**, where the club's exporter and eraser do the work.
 
 The answer is the same whether or not the address is on file, and the number of emails one visitor or address can cause is limited. Put the block on a page such as your privacy policy.
@@ -122,13 +122,14 @@ Yes — add as many blocks as you like, each configured independently.
 = Unreleased =
 * Changed: everyone's details are held once, in the people table. Tournament entries reference a person instead of copying their name and ECF code, and the Players page and its separate profile table are gone. A manual rating is part of a person's record.
 * Changed: no player is fetched from the ECF without a record. A typed ECF code is matched to a person or, if unknown, written down as a non-member once the ECF has confirmed who it is. Club Results and Biggest Gainers use the club's own current members; the ECF club roster, club search, club picker and default club code are removed, and Club Results no longer shows opponents.
-* Added: Manage My Data block: withdraw newsletter or WhatsApp consent from an emailed link, or ask for a copy or deletion through WordPress's personal data requests. Joining the club now records the newsletter and WhatsApp agreement from the one tick, in plain words.
+* Added: Manage My Data block: withdraw newsletter or WhatsApp consent, or change which teams' groups, from an emailed link, or ask for a copy or deletion through WordPress's personal data requests.
 * Added: the Media Library member filter now works in grid view as well as list view.
 * Added: club memberships. Membership Types (name, description, price, length), a Members screen with pending applications, current, expired and cancelled members, and manual adding, editing and payment recording. New Club Memberships and Membership Application Form blocks, and a payment instructions field under Settings.
 * Added: data protection for members: personal data export and erase, recorded consent, automatic deletion of old records after a retention period, suggested privacy policy wording and a public Club Data Policy block.
 * Added: the player pickers search the club's own members (and guests) instead of the ECF's player database.
 * Added: people who are not members (such as tournament guests) can be recorded with a "Not a member" flag and are left out of member lists and counts.
 * Added: tag members in photos from the Media Library, find a member's photos, and include them in personal data exports.
+* Added: separate, unticked opt-ins on the application form for the club newsletter and for WhatsApp groups, with a choice of which team(s), each recorded with its time. A failed save is now reported to the applicant instead of a thank-you.
 * Added: junior members (under 18) are handled through a parent or guardian, and the newsletter and WhatsApp groups are separate, recorded, optional consents.
 * Added: a separate "manage members" permission for the Memberships screens, set per user on their profile rather than given to all administrators.
 * Added: Tournament Standings block, a cross-table of each player's points in every round and their total.

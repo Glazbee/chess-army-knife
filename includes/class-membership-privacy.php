@@ -85,6 +85,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Agreed to the club keeping these details (UTC)', 'chess-army-knife' ) => $member['consent_at'],
 				__( 'Agreed to receive the newsletter (UTC)', 'chess-army-knife' ) => $member['newsletter_consent_at'],
 				__( 'Agreed to be added to WhatsApp groups (UTC)', 'chess-army-knife' ) => $member['whatsapp_consent_at'],
+				__( 'WhatsApp groups for teams', 'chess-army-knife' ) => implode( ', ', $member['whatsapp_teams'] ),
 				__( 'Record created (UTC)', 'chess-army-knife' ) => $member['created_at'],
 			);
 
@@ -269,7 +270,7 @@ class Chess_Army_Knife_Membership_Privacy {
 			array(
 				'heading'    => __( 'Newsletters and WhatsApp groups', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'By joining the club you agree that we may email you the club newsletter and add you to the WhatsApp groups for the club teams you play in. If you are added to a group, the other members can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added to a group using their parent or guardian\'s number unless they say otherwise. You can withdraw either of these at any time and still stay a member: use the Manage My Data page on this website, or contact us, and we will stop.', 'chess-army-knife' ),
+					__( 'We only send you the club newsletter, or add you to a WhatsApp group for a club team, if you have said yes on the application form or to a club officer. These are separate choices: you can say no to either and still be a member. For WhatsApp we also record which team\'s group you asked to join. If you are added to a group, the other members can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added using their parent or guardian\'s agreement and number unless they say otherwise. You can change your mind at any time: use the Manage My Data page on this website, or contact us, and we will stop.', 'chess-army-knife' ),
 				),
 			),
 			array(

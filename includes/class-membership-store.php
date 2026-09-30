@@ -78,6 +78,7 @@ class Chess_Army_Knife_Membership_Store {
 			consent_at DATETIME NULL,
 			newsletter_consent_at DATETIME NULL,
 			whatsapp_consent_at DATETIME NULL,
+			whatsapp_teams TEXT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
@@ -195,6 +196,11 @@ class Chess_Army_Knife_Membership_Store {
 			}
 		}
 
+		// A WhatsApp group shows a phone number to the other members, so there must be one to add.
+		if ( ! empty( $input['whatsapp'] ) && '' === $phone . $guardian_phone ) {
+			return new WP_Error( 'member_whatsapp', __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ) );
+		}
+
 		$now    = current_time( 'mysql', true );
 		$member = array(
 			'name'                  => $name,
@@ -210,6 +216,8 @@ class Chess_Army_Knife_Membership_Store {
 			// Optional extras, each agreed separately; blank means not agreed.
 			'newsletter_consent_at' => ! empty( $input['newsletter'] ) ? $now : null,
 			'whatsapp_consent_at'   => ! empty( $input['whatsapp'] ) ? $now : null,
+			// Which teams' groups, only for someone who agreed to WhatsApp, and only teams the club has.
+			'whatsapp_teams'        => ! empty( $input['whatsapp'] ) ? self::clean_teams( isset( $input['whatsapp_teams'] ) ? $input['whatsapp_teams'] : array() ) : '',
 		);
 
 		if ( ! $is_admin ) {
@@ -264,6 +272,26 @@ class Chess_Army_Knife_Membership_Store {
 	 */
 	public static function contact_email( array $member ) {
 		return '' !== $member['email'] ? $member['email'] : $member['guardian_email'];
+	}
+
+	/**
+	 * Keep only the teams the club has, as the text stored for them.
+	 *
+	 * @param mixed $submitted Team names ticked on a form.
+	 * @return string JSON list of team names, or '' for none.
+	 */
+	public static function clean_teams( $submitted ) {
+		$allowed = Chess_Army_Knife_Memberships::team_names();
+		$teams   = array();
+
+		foreach ( (array) $submitted as $team ) {
+			$team = sanitize_text_field( (string) $team );
+			if ( in_array( $team, $allowed, true ) ) {
+				$teams[ $team ] = $team;
+			}
+		}
+
+		return $teams ? wp_json_encode( array_values( $teams ) ) : '';
 	}
 
 	/**
@@ -798,6 +826,7 @@ class Chess_Army_Knife_Membership_Store {
 				'consent_at'            => null,
 				'newsletter_consent_at' => null,
 				'whatsapp_consent_at'   => null,
+				'whatsapp_teams'        => '',
 			)
 		);
 		return 'anonymised';
@@ -825,6 +854,8 @@ class Chess_Army_Knife_Membership_Store {
 		$row['id']                 = (int) $row['id'];
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
 		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
+		$teams                     = json_decode( (string) $row['whatsapp_teams'], true );
+		$row['whatsapp_teams']     = is_array( $teams ) ? array_values( array_map( 'strval', $teams ) ) : array();
 
 		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];

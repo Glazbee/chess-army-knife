@@ -305,6 +305,29 @@ class Chess_Army_Knife_Memberships {
 	}
 
 	/* -------------------------------------------------------------
+	 * Teams
+	 * ------------------------------------------------------------- */
+
+	/**
+	 * The club's team names, for choosing which teams' WhatsApp groups to join.
+	 * They come from the Club Teams page; a team that plays in several seasons or
+	 * divisions is listed once.
+	 *
+	 * @return string[]
+	 */
+	public static function team_names() {
+		$names = array();
+		foreach ( Chess_Army_Knife_Settings::get_club_teams() as $team ) {
+			$name = trim( (string) $team['team'] );
+			if ( '' !== $name ) {
+				$names[ $name ] = $name;
+			}
+		}
+		natcasesort( $names );
+		return array_values( $names );
+	}
+
+	/* -------------------------------------------------------------
 	 * Payment
 	 * ------------------------------------------------------------- */
 

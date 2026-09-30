@@ -80,19 +80,20 @@ class Chess_Army_Knife_Membership_Form {
 
 		self::count_attempt();
 
-		// The one tick on the form covers running the membership, the newsletter and the WhatsApp groups,
-		// so all three are recorded from the same moment. Withdrawing is done on the Manage My Data page.
-		$agreed                          = current_time( 'mysql', true );
-		$member['newsletter_consent_at'] = $agreed;
-		$member['whatsapp_consent_at']   = $agreed;
-
-		return Chess_Army_Knife_Membership_Store::save_member(
+		$id = Chess_Army_Knife_Membership_Store::save_member(
 			$member + array(
 				'status'     => Chess_Army_Knife_Membership_Store::STATUS_PENDING,
 				'source'     => Chess_Army_Knife_Membership_Store::SOURCE_FORM,
-				'consent_at' => $agreed,
+				'consent_at' => current_time( 'mysql', true ), // When the applicant confirmed they had read how the club uses their details.
 			)
 		);
+
+		// A save that did not happen must never look like success to the applicant.
+		if ( ! $id ) {
+			return new WP_Error( 'save_failed', __( 'Sorry, we could not save your application. Please try again, or contact the club.', 'chess-army-knife' ) );
+		}
+
+		return $id;
 	}
 
 	/**
@@ -104,12 +105,14 @@ class Chess_Army_Knife_Membership_Form {
 	public static function error_message( $code ) {
 		$messages = array(
 			'expired'         => __( 'The form has expired. Please try again.', 'chess-army-knife' ),
+			'save_failed'     => __( 'Sorry, we could not save your application. Please try again, or contact the club.', 'chess-army-knife' ),
 			'throttled'       => __( 'Too many applications from your connection. Please try again later.', 'chess-army-knife' ),
 			'consent'         => __( 'Please agree to the club keeping your details.', 'chess-army-knife' ),
 			'member_name'     => __( 'Please enter your name.', 'chess-army-knife' ),
 			'member_email'    => __( 'Please enter a valid email address.', 'chess-army-knife' ),
 			'member_dob'      => __( 'Please enter a valid date of birth.', 'chess-army-knife' ),
 			'member_type'     => __( 'Please choose a membership type.', 'chess-army-knife' ),
+			'member_whatsapp' => __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ),
 			'member_guardian' => __( 'Please give a parent or guardian\'s name and email address.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : __( 'Something went wrong. Please try again.', 'chess-army-knife' );

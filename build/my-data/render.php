@@ -25,7 +25,8 @@ $error_code = isset( $_GET['cak_data_error'] ) ? sanitize_key( wp_unslash( $_GET
 $token      = isset( $_GET['cak_withdraw'] ) ? preg_replace( '/[^A-Za-z0-9]/', '', sanitize_text_field( wp_unslash( $_GET['cak_withdraw'] ) ) ) : '';
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-$found = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_token( $token ) : null;
+$team_names = Chess_Army_Knife_Memberships::team_names();
+$found      = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_token( $token ) : null;
 ?>
 <div <?php echo wp_kses_post( get_block_wrapper_attributes( array( 'id' => Chess_Army_Knife_Member_Requests::ANCHOR ) ) ); ?>>
 	<p class="cak-my-data__heading"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'Manage my data', 'chess-army-knife' ) ); ?></p>
@@ -70,9 +71,17 @@ $found = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_token( $to
 					<p>
 						<label>
 							<input type="checkbox" name="whatsapp[<?php echo esc_attr( $person['id'] ); ?>]" value="1" <?php checked( '' !== $person['whatsapp_consent_at'] ); ?> />
-							<?php esc_html_e( 'Add to the WhatsApp groups for club teams (the phone number is visible to the group)', 'chess-army-knife' ); ?>
+							<?php esc_html_e( 'Add to the WhatsApp group for the team(s) ticked below (the phone number is visible to the group)', 'chess-army-knife' ); ?>
 						</label>
 					</p>
+					<?php foreach ( $team_names as $team_name ) : ?>
+						<p class="cak-my-data__team">
+							<label>
+								<input type="checkbox" name="teams[<?php echo esc_attr( $person['id'] ); ?>][]" value="<?php echo esc_attr( $team_name ); ?>" <?php checked( in_array( $team_name, $person['whatsapp_teams'], true ) ); ?> />
+								<?php echo esc_html( $team_name ); ?>
+							</label>
+						</p>
+					<?php endforeach; ?>
 				</fieldset>
 			<?php endforeach; ?>
 			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my choices', 'chess-army-knife' ); ?></button></p>

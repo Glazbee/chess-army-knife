@@ -71,16 +71,62 @@ class MemberRequestsTest extends WP_UnitTestCase {
 	 * Consent on joining
 	 * ------------------------------------------------------------- */
 
-	public function test_joining_through_the_form_records_all_three_agreements_from_the_one_tick() {
-		$type = self::factory()->post->create(
+	private function adult_type() {
+		return self::factory()->post->create(
 			array(
 				'post_type'   => Chess_Army_Knife_Memberships::POST_TYPE,
 				'post_title'  => 'Adult',
 				'post_status' => 'publish',
 			)
 		);
+	}
 
-		$id = Chess_Army_Knife_Membership_Form::submit(
+	private function club_teams() {
+		update_option(
+			Chess_Army_Knife_Club_Teams_Page::OPTION,
+			array(
+				array(
+					'org'   => '613',
+					'event' => 'Division 1',
+					'team'  => 'Club A',
+				),
+				array(
+					'org'   => '613',
+					'event' => 'Division 2',
+					'team'  => 'Club B',
+				),
+			)
+		);
+	}
+
+	private function apply( array $extra = array() ) {
+		return Chess_Army_Knife_Membership_Form::submit(
+			$extra + array(
+				Chess_Army_Knife_Membership_Form::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Membership_Form::ACTION ),
+				'name'               => 'Ada Lovelace',
+				'email'              => 'ada@example.test',
+				'membership_type_id' => (string) $this->adult_type(),
+				'consent'            => '1',
+			)
+		);
+	}
+
+	public function test_joining_records_no_newsletter_or_whatsapp_agreement_unless_ticked() {
+		$member = Chess_Army_Knife_Membership_Store::get_member( $this->apply() );
+
+		$this->assertNotSame( '', $member['consent_at'], 'The privacy acknowledgement is recorded.' );
+		$this->assertSame( '', $member['newsletter_consent_at'] );
+		$this->assertSame( '', $member['whatsapp_consent_at'] );
+		$this->assertSame( array(), $member['whatsapp_teams'] );
+	}
+
+	public function test_an_application_that_could_not_be_saved_is_reported_not_thanked() {
+		global $wpdb;
+		$type = $this->adult_type();
+		$wpdb->query( 'DROP TEMPORARY TABLE ' . Chess_Army_Knife_Membership_Store::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->suppress_errors( true );
+
+		$result = Chess_Army_Knife_Membership_Form::submit(
 			array(
 				Chess_Army_Knife_Membership_Form::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Membership_Form::ACTION ),
 				'name'               => 'Ada Lovelace',
@@ -89,32 +135,63 @@ class MemberRequestsTest extends WP_UnitTestCase {
 				'consent'            => '1',
 			)
 		);
+		$wpdb->suppress_errors( false );
 
-		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
-		$this->assertNotSame( '', $member['consent_at'] );
-		$this->assertSame( $member['consent_at'], $member['newsletter_consent_at'] );
-		$this->assertSame( $member['consent_at'], $member['whatsapp_consent_at'] );
+		$this->assertWPError( $result );
+		$this->assertSame( 'save_failed', $result->get_error_code() );
+		$this->assertStringContainsString( 'could not save', Chess_Army_Knife_Membership_Form::error_message( 'save_failed' ) );
 	}
 
-	public function test_the_form_states_what_the_tick_covers_and_has_no_separate_boxes() {
-		self::factory()->post->create(
-			array(
-				'post_type'   => Chess_Army_Knife_Memberships::POST_TYPE,
-				'post_title'  => 'Adult',
-				'post_status' => 'publish',
+	public function test_each_opt_in_is_recorded_on_its_own_with_the_teams_chosen() {
+		$this->club_teams();
+
+		$newsletter_only = Chess_Army_Knife_Membership_Store::get_member( $this->apply( array( 'newsletter' => '1' ) ) );
+		$this->assertNotSame( '', $newsletter_only['newsletter_consent_at'] );
+		$this->assertSame( '', $newsletter_only['whatsapp_consent_at'] );
+
+		$whatsapp = Chess_Army_Knife_Membership_Store::get_member(
+			$this->apply(
+				array(
+					'email'          => 'grace@example.test',
+					'phone'          => '0123',
+					'whatsapp'       => '1',
+					'whatsapp_teams' => array( 'Club B', 'Club A', 'Ghost Team' ),
+				)
 			)
 		);
+		$this->assertSame( '', $whatsapp['newsletter_consent_at'] );
+		$this->assertNotSame( '', $whatsapp['whatsapp_consent_at'] );
+		$this->assertSame( array( 'Club B', 'Club A' ), $whatsapp['whatsapp_teams'], 'Only the club\'s own teams are kept.' );
+	}
+
+	public function test_the_form_offers_separate_unticked_choices_and_each_team() {
+		$this->club_teams();
+		$this->adult_type();
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/membership-form /-->' );
 
-		$this->assertStringContainsString( 'emailing me the club newsletter', $html );
-		$this->assertStringContainsString( 'WhatsApp groups', $html );
-		$this->assertStringContainsString( 'withdraw the newsletter and WhatsApp at any time', $html );
-		$this->assertStringNotContainsString( 'name="newsletter"', $html );
-		$this->assertStringNotContainsString( 'name="whatsapp"', $html );
+		$this->assertStringContainsString( 'name="newsletter" value="1" />', $html );
+		$this->assertStringContainsString( 'name="whatsapp" value="1" />', $html );
+		$this->assertDoesNotMatchRegularExpression( '/name="(newsletter|whatsapp)"[^>]*checked/', $html, 'Nothing is pre-ticked.' );
+		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="Club A"', $html );
+		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="Club B"', $html );
+		$this->assertStringContainsString( 'You can say no to both and still be a member', $html );
+		$this->assertStringNotContainsString( 'emailing me the club newsletter', $html, 'The required tick no longer covers them.' );
 	}
 
-	public function test_a_member_added_by_the_club_starts_agreed_and_can_be_unticked() {
+	public function test_the_form_shows_no_team_list_when_the_club_has_no_teams() {
+		delete_option( Chess_Army_Knife_Club_Teams_Page::OPTION );
+		update_option( Chess_Army_Knife_Club_Teams_Page::OPTION, array() );
+		$this->adult_type();
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/membership-form /-->' );
+
+		$this->assertStringContainsString( 'name="whatsapp" value="1"', $html );
+		$this->assertStringNotContainsString( 'whatsapp_teams', $html );
+	}
+
+	public function test_a_member_added_by_the_club_starts_with_nothing_ticked_and_the_teams_to_choose() {
+		$this->club_teams();
 		$user = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
 		wp_set_current_user( $user );
@@ -124,8 +201,9 @@ class MemberRequestsTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Members_Page::render_page();
 		$html = ob_get_clean();
 
-		$this->assertMatchesRegularExpression( '/name="newsletter" value="1"\s+checked=\'checked\'/', $html );
-		$this->assertMatchesRegularExpression( '/name="whatsapp" value="1"\s+checked=\'checked\'/', $html );
+		$this->assertMatchesRegularExpression( '/name="newsletter" value="1"\s*\/>/', $html );
+		$this->assertMatchesRegularExpression( '/name="whatsapp" value="1"\s*\/>/', $html );
+		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="Club A"', $html );
 	}
 
 	/* -------------------------------------------------------------
@@ -413,7 +491,103 @@ class MemberRequestsTest extends WP_UnitTestCase {
 			$text .= implode( ' ', $section['paragraphs'] );
 		}
 
-		$this->assertStringContainsString( 'By joining the club you agree', $text );
+		$this->assertStringContainsString( 'if you have said yes', $text );
+		$this->assertStringContainsString( 'you can say no to either and still be a member', $text );
+		$this->assertStringContainsString( 'which team\'s group you asked to join', $text );
 		$this->assertStringContainsString( 'Manage My Data page', $text );
+	}
+
+	/* -------------------------------------------------------------
+	 * Teams
+	 * ------------------------------------------------------------- */
+
+	public function test_the_private_page_lets_someone_change_their_teams_and_withdrawing_whatsapp_clears_them() {
+		$this->club_teams();
+		$id    = $this->member(
+			array(
+				'whatsapp_consent_at' => '2026-01-01 09:00:00',
+				'whatsapp_teams'      => wp_json_encode( array( 'Club A' ) ),
+			)
+		);
+		$token = $this->link_for( 'ada@example.test' );
+
+		$this->assertTrue(
+			$this->withdraw(
+				$token,
+				array(
+					'whatsapp' => array( $id => '1' ),
+					'teams'    => array( $id => array( 'Club B', 'Ghost Team' ) ),
+				)
+			)
+		);
+		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
+		$this->assertSame( array( 'Club B' ), $member['whatsapp_teams'] );
+		$this->assertSame( '2026-01-01 09:00:00', $member['whatsapp_consent_at'], 'The original agreement time stays.' );
+
+		$token = $this->link_for_again( 'ada@example.test' );
+		$this->withdraw( $token, array( 'teams' => array( $id => array( 'Club A' ) ) ) ); // WhatsApp box left unticked.
+		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
+		$this->assertSame( '', $member['whatsapp_consent_at'] );
+		$this->assertSame( array(), $member['whatsapp_teams'], 'No agreement, no team memberships.' );
+	}
+
+	public function test_the_private_page_shows_each_team_with_the_current_ones_ticked() {
+		$this->club_teams();
+		$this->member(
+			array(
+				'whatsapp_consent_at' => '2026-01-01 09:00:00',
+				'whatsapp_teams'      => wp_json_encode( array( 'Club B' ) ),
+			)
+		);
+		$_GET = array( 'cak_withdraw' => $this->link_for( 'ada@example.test' ) );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/my-data /-->' );
+
+		$this->assertMatchesRegularExpression( '/name="teams\[\d+\]\[\]" value="Club B"\s+checked=\'checked\'/', $html );
+		$this->assertDoesNotMatchRegularExpression( '/value="Club A"\s+checked/', $html );
+		$this->assertStringContainsString( 'value="Club A"', $html );
+	}
+
+	public function test_the_members_list_and_export_show_which_teams_a_member_asked_for() {
+		$this->club_teams();
+		$id   = $this->member(
+			array(
+				'newsletter_consent_at' => '2026-01-01 09:00:00',
+				'whatsapp_consent_at'   => '2026-01-01 09:00:00',
+				'whatsapp_teams'        => wp_json_encode( array( 'Club A', 'Club B' ) ),
+			)
+		);
+		$user = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+		wp_set_current_user( $user );
+		$_GET = array( 'view' => 'active' );
+
+		ob_start();
+		Chess_Army_Knife_Members_Page::render_page();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'WhatsApp (Club A, Club B)', $html );
+		$this->assertStringContainsString( 'Newsletter', $html );
+
+		$values = wp_list_pluck( Chess_Army_Knife_Membership_Privacy::export( 'ada@example.test' )['data'][0]['data'], 'value', 'name' );
+		$this->assertSame( 'Club A, Club B', $values['WhatsApp groups for teams'] );
+
+		Chess_Army_Knife_Membership_Privacy::erase( 'ada@example.test' );
+		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id ), 'A record with nothing tying it to payments, photos or tournaments is deleted.' );
+	}
+
+	public function test_erasing_a_record_that_is_kept_clears_the_teams_too() {
+		$id = $this->member(
+			array(
+				'paid_on'             => '2026-09-05',
+				'whatsapp_consent_at' => '2026-01-01 09:00:00',
+				'whatsapp_teams'      => wp_json_encode( array( 'Club A' ) ),
+			)
+		);
+
+		Chess_Army_Knife_Membership_Privacy::erase( 'ada@example.test' );
+
+		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
+		$this->assertSame( array(), $member['whatsapp_teams'] );
+		$this->assertSame( '', $member['whatsapp_consent_at'] );
 	}
 }

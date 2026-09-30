@@ -16,6 +16,7 @@ $intro_text   = isset( $attributes['introText'] ) ? trim( (string) $attributes['
 $consent_text = isset( $attributes['consentText'] ) ? trim( (string) $attributes['consentText'] ) : '';
 
 $membership_types = Chess_Army_Knife_Memberships::types();
+$team_names       = Chess_Army_Knife_Memberships::team_names();
 $page_url         = get_permalink();
 
 // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of a submission; nothing is changed.
@@ -121,6 +122,25 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 				</p>
 			</fieldset>
 
+			<fieldset class="cak-membership-form__group">
+				<legend><?php esc_html_e( 'Optional: club news and WhatsApp', 'chess-army-knife' ); ?></legend>
+				<p class="cak-membership-form__hint"><?php esc_html_e( 'These are separate choices. You can say no to both and still be a member, and change your mind at any time.', 'chess-army-knife' ); ?></p>
+				<p class="cak-membership-form__check">
+					<label><input type="checkbox" name="newsletter" value="1" /> <?php esc_html_e( 'Yes, email me the club newsletter', 'chess-army-knife' ); ?></label>
+				</p>
+				<p class="cak-membership-form__check">
+					<label><input type="checkbox" name="whatsapp" value="1" /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group for the club team(s) ticked below. The other people in the group will be able to see the name and phone number.', 'chess-army-knife' ); ?></label>
+				</p>
+				<?php if ( $team_names ) : ?>
+					<p class="cak-membership-form__hint"><?php esc_html_e( 'Which team(s) do you play for?', 'chess-army-knife' ); ?></p>
+					<?php foreach ( $team_names as $team_name ) : ?>
+						<p class="cak-membership-form__check">
+							<label><input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_name ); ?>" /> <?php echo esc_html( $team_name ); ?></label>
+						</p>
+					<?php endforeach; ?>
+				<?php endif; ?>
+			</fieldset>
+
 			<?php // Hidden from people; a bot that fills in every field gives itself away. ?>
 			<p class="cak-membership-form__trap" aria-hidden="true">
 				<label for="cak-member-website"><?php esc_html_e( 'Leave this field empty', 'chess-army-knife' ); ?></label>
@@ -136,7 +156,7 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 			<p class="cak-membership-form__consent">
 				<label>
 					<input type="checkbox" name="consent" value="1" required />
-					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details, and I agree to the club keeping them to run my membership, emailing me the club newsletter, and adding me to the WhatsApp groups for the club teams I play in. I can withdraw the newsletter and WhatsApp at any time. If this application is for someone under 18, I am their parent or guardian and I agree on their behalf.', 'chess-army-knife' ) ); ?>
+					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details. If this application is for someone under 18, I am their parent or guardian and I agree on their behalf.', 'chess-army-knife' ) ); ?>
 				</label>
 			</p>
 

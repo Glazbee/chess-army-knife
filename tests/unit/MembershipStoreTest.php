@@ -32,6 +32,26 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 			}
 		);
 		Functions\when( 'get_post_meta' )->justReturn( '' );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+
+		// The club's teams (the same team in two seasons is one team).
+		$this->options['Chess_Army_Knife_club_teams'] = array(
+			array(
+				'org'   => '613',
+				'event' => 'Division 1',
+				'team'  => 'Club B',
+			),
+			array(
+				'org'   => '613',
+				'event' => 'Division 2',
+				'team'  => 'Club A',
+			),
+			array(
+				'org'   => '613',
+				'event' => 'Division 2',
+				'team'  => 'Club B',
+			),
+		);
 
 		// Membership types: 7 is on offer, 8 is a draft.
 		$types = array(
@@ -92,6 +112,7 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 				'type_name'             => 'Junior',
 				'newsletter_consent_at' => null,
 				'whatsapp_consent_at'   => null,
+				'whatsapp_teams'        => '',
 			),
 			$member
 		);
@@ -188,6 +209,60 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '2026-09-29', $both['whatsapp_consent_at'] );
 		$this->assertSame( '2026-09-29', $one['newsletter_consent_at'] );
 		$this->assertNull( $one['whatsapp_consent_at'] );
+	}
+
+	public function test_a_whatsapp_group_needs_a_phone_number() {
+		$adult = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp' => '1' ) ), false );
+		$this->assertSame( 'member_whatsapp', $adult->get_error_code() );
+
+		// A junior can use their parent's number.
+		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'whatsapp' => '1' ) ), false );
+		$this->assertSame( '2026-09-29', $junior['whatsapp_consent_at'] );
+
+		$no_number = Chess_Army_Knife_Membership_Store::sanitize_member(
+			$this->junior_input(
+				array(
+					'whatsapp'       => '1',
+					'guardian_phone' => '',
+				)
+			),
+			false
+		);
+		$this->assertSame( 'member_whatsapp', $no_number->get_error_code(), 'The junior\'s own number is not kept, so it cannot be used.' );
+	}
+
+	public function test_the_club_offers_each_team_once_by_name() {
+		$this->assertSame( array( 'Club A', 'Club B' ), Chess_Army_Knife_Memberships::team_names() );
+	}
+
+	public function test_the_teams_chosen_are_kept_only_with_a_whatsapp_opt_in_and_only_if_the_club_has_them() {
+		$chosen = Chess_Army_Knife_Membership_Store::sanitize_member(
+			$this->form_input(
+				array(
+					'phone'          => '0123',
+					'whatsapp'       => '1',
+					'whatsapp_teams' => array( 'Club B', 'Club B', 'Not A Team', '<b>Club A</b>', 'Club A' ),
+				)
+			),
+			false
+		);
+		$this->assertSame( '["Club B","Club A"]', $chosen['whatsapp_teams'] );
+
+		$no_opt_in = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp_teams' => array( 'Club A' ) ) ), false );
+		$this->assertSame( '', $no_opt_in['whatsapp_teams'], 'Teams without a WhatsApp opt-in are not kept.' );
+		$this->assertNull( $no_opt_in['whatsapp_consent_at'] );
+
+		$none = Chess_Army_Knife_Membership_Store::sanitize_member(
+			$this->form_input(
+				array(
+					'phone'    => '0123',
+					'whatsapp' => '1',
+				)
+			),
+			false
+		);
+		$this->assertSame( '', $none['whatsapp_teams'], 'Opting in without choosing a team is allowed.' );
+		$this->assertSame( '2026-09-29', $none['whatsapp_consent_at'] );
 	}
 
 	public function test_public_application_ignores_admin_only_fields() {
