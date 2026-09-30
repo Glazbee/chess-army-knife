@@ -121,6 +121,7 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: a mail queue for emails to members (foundation for reminders, announcements and availability requests). Mail is sent in small batches through wp_mail(), to the member or a junior's parent or guardian, with a log of what was sent (subject and time only). Every email ends with a link to stop that kind of email; the newsletter is opt-in and the other kinds can be turned off. The log and choices are included in personal data exports, deleted on erasure, and the log is pruned after 180 days.
 * Added: an ECF club code setting: one request to the ECF's club list refreshes every member's rating at once, keeping only people already on your records.
 * Added: members' ECF ratings are refreshed hourly in the background (oldest check first, in small batches, backing off if the ECF fails), stored on their record, shown on the Members screen and kept in the cache the blocks read. A Refresh ECF ratings button checks a batch on demand.
 * Changed: everyone's details are held once, in the people table. Tournament entries reference a person instead of copying their name and ECF code, and the Players page and its separate profile table are gone. A manual rating is part of a person's record.

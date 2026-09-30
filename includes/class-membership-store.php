@@ -877,6 +877,10 @@ class Chess_Army_Knife_Membership_Store {
 
 		// A record is kept, without personal details, while it has a payment on it or is tagged
 		// in photos: the photos may show other people, so someone has to review them by hand.
+		// What they were emailed, and their email choices, are never kept.
+		Chess_Army_Knife_Mailer::remove_person( $id );
+		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
+
 		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
@@ -915,6 +919,8 @@ class Chess_Army_Knife_Membership_Store {
 	public static function delete_member( $id ) {
 		global $wpdb;
 		Chess_Army_Knife_Member_Photos::remove_member( $id );
+		Chess_Army_Knife_Mailer::remove_person( $id );
+		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table(), array( 'id' => (int) $id ), array( '%d' ) );
 	}
