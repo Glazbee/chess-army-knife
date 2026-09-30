@@ -20,6 +20,7 @@ class Chess_Army_Knife_Members_Page {
 		add_action( 'admin_post_chess_army_knife_save_member', array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_chess_army_knife_member_status', array( __CLASS__, 'handle_status' ) );
 		add_action( 'admin_post_chess_army_knife_delete_member', array( __CLASS__, 'handle_delete' ) );
+		add_action( 'admin_post_chess_army_knife_refresh_ratings', array( __CLASS__, 'handle_refresh_ratings' ) );
 	}
 
 	/**
@@ -81,7 +82,12 @@ class Chess_Army_Knife_Members_Page {
 		} else {
 			$clean['source'] = Chess_Army_Knife_Membership_Store::SOURCE_MANUAL;
 		}
-		Chess_Army_Knife_Membership_Store::save_member( $clean );
+		$saved_id = Chess_Army_Knife_Membership_Store::save_member( $clean );
+
+		// A rating belongs to the code it was fetched for.
+		if ( $previous && $previous['ecf_code'] !== $clean['ecf_code'] ) {
+			Chess_Army_Knife_Membership_Store::clear_rating( $saved_id );
+		}
 
 		wp_safe_redirect( self::url( array( 'saved' => '1' ) ) );
 		exit;
@@ -126,6 +132,27 @@ class Chess_Army_Knife_Members_Page {
 		}
 
 		wp_safe_redirect( self::url( array( 'updated' => $status ) ) );
+		exit;
+	}
+
+	/**
+	 * Handle the "Refresh ECF ratings" link: check one batch now instead of waiting for the hourly job.
+	 */
+	public static function handle_refresh_ratings() {
+		self::require_permission();
+		check_admin_referer( 'chess_army_knife_refresh_ratings_0' );
+
+		$result = Chess_Army_Knife_Rating_Refresh::run();
+
+		wp_safe_redirect(
+			self::url(
+				array(
+					'rr_checked' => $result['checked'],
+					'rr_updated' => $result['updated'],
+					'rr_failed'  => $result['failed'],
+				)
+			)
+		);
 		exit;
 	}
 
@@ -198,6 +225,17 @@ class Chess_Army_Knife_Members_Page {
 			$notice = array( 'success', __( 'Member deleted.', 'chess-army-knife' ) );
 		} elseif ( isset( $_GET['updated'] ) ) {
 			$notice = array( 'success', __( 'Member updated.', 'chess-army-knife' ) );
+		} elseif ( isset( $_GET['rr_checked'] ) ) {
+			$notice = array(
+				isset( $_GET['rr_failed'] ) && absint( $_GET['rr_failed'] ) ? 'warning' : 'success',
+				sprintf(
+					/* translators: 1: members checked, 2: ratings updated, 3: members the ECF could not give a rating for */
+					__( 'Checked %1$d members with the ECF: %2$d ratings updated, %3$d could not be fetched. Everyone else is checked by the hourly job.', 'chess-army-knife' ),
+					absint( $_GET['rr_checked'] ),
+					isset( $_GET['rr_updated'] ) ? absint( $_GET['rr_updated'] ) : 0,
+					isset( $_GET['rr_failed'] ) ? absint( $_GET['rr_failed'] ) : 0
+				),
+			);
 		} elseif ( isset( $_GET['error'] ) ) {
 			$notice = array( 'error', self::error_message( sanitize_key( wp_unslash( $_GET['error'] ) ) ) );
 		}
@@ -249,6 +287,7 @@ class Chess_Army_Knife_Members_Page {
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
 			<a href="<?php echo esc_url( self::url( array( 'edit' => 'new' ) ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add member', 'chess-army-knife' ); ?></a>
+			<a href="<?php echo esc_url( self::action_url( 'refresh_ratings', 0 ) ); ?>" class="page-title-action"><?php esc_html_e( 'Refresh ECF ratings', 'chess-army-knife' ); ?></a>
 			<hr class="wp-header-end" />
 
 			<?php self::render_notices(); ?>
@@ -289,11 +328,12 @@ class Chess_Army_Knife_Members_Page {
 						<th><?php esc_html_e( 'Contact', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Payment', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Agreed to', 'chess-army-knife' ); ?></th>
+						<th><?php esc_html_e( 'ECF rating', 'chess-army-knife' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $members ) ) : ?>
-						<tr><td colspan="7"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
+						<tr><td colspan="8"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
 					<?php endif; ?>
 					<?php foreach ( $members as $member ) : ?>
 						<?php $status = Chess_Army_Knife_Membership_Store::effective_status( $member, $today ); ?>
@@ -354,6 +394,19 @@ class Chess_Army_Knife_Members_Page {
 									$agreed[] = $member['whatsapp_teams'] ? sprintf( /* translators: %s: team names */ __( 'WhatsApp (%s)', 'chess-army-knife' ), implode( ', ', $member['whatsapp_teams'] ) ) : __( 'WhatsApp', 'chess-army-knife' );
 								}
 								echo $agreed ? esc_html( implode( ', ', $agreed ) ) : '&mdash;';
+								?>
+							</td>
+							<td>
+								<?php
+								if ( '' === $member['ecf_code'] ) {
+									echo '&mdash;';
+								} elseif ( '' === $member['ecf_checked_at'] ) {
+									esc_html_e( 'Not checked yet', 'chess-army-knife' );
+								} else {
+									echo esc_html( null === $member['ecf_rating'] ? __( 'No rating', 'chess-army-knife' ) : (string) $member['ecf_rating'] );
+									/* translators: %s: how long ago, for example "2 hours" */
+									echo '<br /><span class="description">' . esc_html( sprintf( __( 'checked %s ago', 'chess-army-knife' ), human_time_diff( strtotime( $member['ecf_checked_at'] . ' UTC' ) ) ) ) . '</span>';
+								}
 								?>
 							</td>
 						</tr>

@@ -16,6 +16,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 $chess_army_knife_settings    = get_option( 'Chess_Army_Knife_settings', array() );
 $chess_army_knife_delete_data = is_array( $chess_army_knife_settings ) && ! empty( $chess_army_knife_settings['delete_data_on_uninstall'] );
 
+wp_clear_scheduled_hook( 'Chess_Army_Knife_refresh_ratings' );
 delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
 delete_option( 'Chess_Army_Knife_templates' );

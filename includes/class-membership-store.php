@@ -66,6 +66,9 @@ class Chess_Army_Knife_Membership_Store {
 			guardian_phone VARCHAR(40) NOT NULL DEFAULT '',
 			ecf_code VARCHAR(20) NOT NULL DEFAULT '',
 			manual_rating INT(11) NULL,
+			ecf_rating INT(11) NULL,
+			ecf_rating_domain VARCHAR(2) NOT NULL DEFAULT '',
+			ecf_checked_at DATETIME NULL,
 			membership_type_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
 			type_name VARCHAR(191) NOT NULL DEFAULT '',
 			status VARCHAR(12) NOT NULL DEFAULT 'pending',
@@ -84,7 +87,8 @@ class Chess_Army_Knife_Membership_Store {
 			PRIMARY KEY  (id),
 			KEY status (status),
 			KEY email (email),
-			KEY guardian_email (guardian_email)
+			KEY guardian_email (guardian_email),
+			KEY ecf_checked_at (ecf_checked_at)
 			) {$charset};"
 		);
 	}
@@ -654,6 +658,74 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
+	 * Current members with an ECF rating code whose rating is due a refresh: never
+	 * checked, or last checked before a cutoff. The least recently checked come
+	 * first, so a batch at a time works through everyone. Guests are not refreshed
+	 * in the background; a rating is fetched for them when a tournament starts.
+	 *
+	 * @param string $cutoff_utc Checked before this UTC "Y-m-d H:i:s", or never.
+	 * @param int    $limit      Most members to return.
+	 * @return array[]
+	 */
+	public static function get_due_for_rating( $cutoff_utc, $limit ) {
+		global $wpdb;
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE ecf_code <> '' AND status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) AND ( ecf_checked_at IS NULL OR ecf_checked_at < %s ) ORDER BY ecf_checked_at IS NULL DESC, ecf_checked_at ASC, id ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
+				current_time( 'Y-m-d' ),
+				$cutoff_utc,
+				max( 1, (int) $limit )
+			),
+			ARRAY_A
+		);
+		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
+	 * Note the outcome of checking someone's ECF rating. This deliberately does
+	 * not touch when the record was last changed, so a background refresh never
+	 * keeps an old record alive past its retention period.
+	 *
+	 * @param int      $id     Member id.
+	 * @param int|null $rating Latest rating, or null if the ECF gave none (an earlier rating is then kept).
+	 * @param string   $domain Rating list the rating is from, for example S.
+	 */
+	public static function record_rating_check( $id, $rating, $domain ) {
+		global $wpdb;
+
+		$data = array( 'ecf_checked_at' => current_time( 'mysql', true ) );
+		if ( null !== $rating ) {
+			$data['ecf_rating']        = (int) $rating;
+			$data['ecf_rating_domain'] = (string) $domain;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$wpdb->update( self::table(), $data, array( 'id' => (int) $id ) );
+	}
+
+	/**
+	 * Forget a person's stored ECF rating, for example when their code changes.
+	 *
+	 * @param int $id Member id.
+	 */
+	public static function clear_rating( $id ) {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$wpdb->update(
+			self::table(),
+			array(
+				'ecf_rating'        => null,
+				'ecf_rating_domain' => '',
+				'ecf_checked_at'    => null,
+			),
+			array( 'id' => (int) $id )
+		);
+	}
+
+	/**
 	 * Everything held under an email address, for the privacy tools. A junior's record is found by their parent or guardian's address as well as their own.
 	 *
 	 * @param string $email Email address.
@@ -822,6 +894,9 @@ class Chess_Army_Knife_Membership_Store {
 				'guardian_phone'        => '',
 				'ecf_code'              => '',
 				'manual_rating'         => null,
+				'ecf_rating'            => null,
+				'ecf_rating_domain'     => '',
+				'ecf_checked_at'        => null,
 				'notes'                 => '',
 				'consent_at'            => null,
 				'newsletter_consent_at' => null,
@@ -854,6 +929,8 @@ class Chess_Army_Knife_Membership_Store {
 		$row['id']                 = (int) $row['id'];
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
 		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
+		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
+		$row['ecf_checked_at']     = null === $row['ecf_checked_at'] ? '' : (string) $row['ecf_checked_at'];
 		$teams                     = json_decode( (string) $row['whatsapp_teams'], true );
 		$row['whatsapp_teams']     = is_array( $teams ) ? array_values( array_map( 'strval', $teams ) ) : array();
 

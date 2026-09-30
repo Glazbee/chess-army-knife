@@ -73,6 +73,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Parent or guardian', 'chess-army-knife' ) => $member['guardian_name'],
 				__( 'ECF rating code', 'chess-army-knife' ) => $member['ecf_code'],
 				__( 'Manual rating', 'chess-army-knife' )  => null === $member['manual_rating'] ? '' : $member['manual_rating'],
+				__( 'Latest ECF rating (fetched from the ECF)', 'chess-army-knife' ) => null === $member['ecf_rating'] ? '' : $member['ecf_rating'] . ( '' !== $member['ecf_rating_domain'] ? ' (' . $member['ecf_rating_domain'] . ')' : '' ),
 				__( 'Membership type', 'chess-army-knife' ) => $member['type_name'],
 				__( 'Status', 'chess-army-knife' )         => isset( $labels[ $member['status'] ] ) ? $labels[ $member['status'] ] : $member['status'],
 				__( 'Membership starts', 'chess-army-knife' ) => $member['start_date'],
@@ -264,7 +265,7 @@ class Chess_Army_Knife_Membership_Privacy {
 			array(
 				'heading'    => __( 'Sharing with the English Chess Federation', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'The club provides its playing members to the English Chess Federation (ECF) so that their games can be rated. For this we give the ECF your name and ECF rating code, and any other details it needs to rate your games. The ECF looks after that information under its own privacy policy.', 'chess-army-knife' ),
+					__( 'The club provides its playing members to the English Chess Federation (ECF) so that their games can be rated. For this we give the ECF your name and ECF rating code, and any other details it needs to rate your games. We also fetch your current ECF rating from the ECF regularly and keep the latest one with your record. The ECF looks after its information under its own privacy policy.', 'chess-army-knife' ),
 				),
 			),
 			array(

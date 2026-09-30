@@ -47,6 +47,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-form.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-rating-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-photos.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-requests.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-privacy.php';
@@ -76,6 +77,8 @@ function Chess_Army_Knife_activate() {
 	if ( ! wp_next_scheduled( 'Chess_Army_Knife_cleanup_cache' ) ) {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'Chess_Army_Knife_cleanup_cache' );
 	}
+
+	Chess_Army_Knife_Rating_Refresh::schedule();
 }
 register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
 
@@ -88,6 +91,7 @@ function Chess_Army_Knife_deactivate() {
 	Chess_Army_Knife_Cache::flush_all();
 	flush_rewrite_rules();
 	wp_clear_scheduled_hook( 'Chess_Army_Knife_cleanup_cache' );
+	Chess_Army_Knife_Rating_Refresh::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 
