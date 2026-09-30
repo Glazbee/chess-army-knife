@@ -1,7 +1,7 @@
 <?php
 /**
  * Imports club events from the LMS: every fixture of the club's registered
- * teams (the Club Teams list) becomes an event, so league matches show up
+ * teams (their league entries) becomes an event, so league matches show up
  * in the event blocks alongside club nights.
  *
  * Re-running the import is safe. Each fixture is matched to its event by a
@@ -30,7 +30,7 @@ class Chess_Army_Knife_Events_Import {
 	 * Hook up the admin page and its form handler.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
+		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 11 ); // After the Teams menu and the team screens beneath it.
 		add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'handle_import' ) );
 	}
 
@@ -136,7 +136,7 @@ class Chess_Army_Knife_Events_Import {
 	 * @param string  $today              Today, "Y-m-d" (earlier fixtures are ignored).
 	 * @param string  $default_time       Start time for a fixture with none, "HH:MM".
 	 * @return array {
-	 *     @type array[] $candidates Each { key, title, start, location, league, club_teams }, where club_teams maps a Club Teams entry key to 'home' or 'away'.
+	 *     @type array[] $candidates Each { key, title, start, location, league, club_teams }, where club_teams maps a league entry key to 'home' or 'away'.
 	 *     @type int     $skipped    Fixtures ignored because their date couldn't be read.
 	 * }
 	 */
@@ -232,7 +232,7 @@ class Chess_Army_Knife_Events_Import {
 	 * Link an event to the club teams playing in it, and record which side each is on.
 	 *
 	 * @param int      $post_id    Event id.
-	 * @param string[] $club_teams Club Teams entry key => 'home' or 'away'.
+	 * @param string[] $club_teams league entry key => 'home' or 'away'.
 	 * @return bool Whether anything changed.
 	 */
 	protected static function sync_teams( $post_id, array $club_teams ) {
@@ -382,10 +382,10 @@ class Chess_Army_Knife_Events_Import {
 	 */
 	public static function add_menu() {
 		add_submenu_page(
-			'chess-army-knife',
+			Chess_Army_Knife_Teams::MENU_SLUG,
 			__( 'Import Events from LMS', 'chess-army-knife' ),
 			__( 'Import Events', 'chess-army-knife' ),
-			'manage_options',
+			Chess_Army_Knife_Teams::CAPABILITY,
 			self::PAGE,
 			array( __CLASS__, 'render_page' )
 		);
@@ -395,7 +395,7 @@ class Chess_Army_Knife_Events_Import {
 	 * Handle the "Import now" button.
 	 */
 	public static function handle_import() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( self::ACTION ) ) {
+		if ( ! Chess_Army_Knife_Teams::user_can_manage() || ! check_admin_referer( self::ACTION ) ) {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 
@@ -418,7 +418,7 @@ class Chess_Army_Knife_Events_Import {
 	 * Render the import page.
 	 */
 	public static function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Chess_Army_Knife_Teams::user_can_manage() ) {
 			return;
 		}
 
@@ -465,9 +465,9 @@ class Chess_Army_Knife_Events_Import {
 				<p>
 					<?php
 					printf(
-						/* translators: %s: link to the Club Teams page */
-						wp_kses_post( __( 'Add your teams on the %s page first.', 'chess-army-knife' ) ),
-						'<a href="' . esc_url( admin_url( 'admin.php?page=chess-army-knife-club-teams' ) ) . '">' . esc_html__( 'Club Teams', 'chess-army-knife' ) . '</a>'
+						/* translators: %s: link to the Teams screen */
+						wp_kses_post( __( 'Add your teams, with the leagues they play in, on the %s screen first.', 'chess-army-knife' ) ),
+						'<a href="' . esc_url( admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ) . '">' . esc_html__( 'Teams', 'chess-army-knife' ) . '</a>'
 					);
 					?>
 				</p>

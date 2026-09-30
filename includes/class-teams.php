@@ -5,13 +5,17 @@
  *
  * A team is a non-public post of type chess_army_team (17 characters; WordPress
  * allows 20). Its venue, captain and the seasons it plays in are post meta; a
- * season is an entry of the Club Teams list (league and team name) and is
- * linked by a key rather than copied, so the league details stay in one place.
- * The squad is a person-to-team link in its own small table. The captain and
+ * season is one of the team's league entries (LMS organisation, event and, if
+ * it differs from the team's name, the name the LMS knows it by). The squad is a person-to-team link in its own small table. The captain and
  * the squad are personal data: they are for people with the membership
  * permission, are part of a person's data export, and are removed when the
  * person is erased. Members choose their WhatsApp groups by team id, so
  * renaming a team loses nobody's choice.
+ *
+ * Editing teams needs its own permission, chess_army_manage_teams, which shows
+ * nothing about members beyond the squads of the teams a user can see. Anyone
+ * with the membership permission has it too, and is the only one who can
+ * choose who is in a squad or captains it.
  *
  * @package Chess_Army_Knife
  */
@@ -20,11 +24,18 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Teams {
 
-	const POST_TYPE = 'chess_army_team';
+	const POST_TYPE  = 'chess_army_team';
+	const CAPABILITY = 'chess_army_manage_teams';
+	const MENU_SLUG  = 'chess-army-teams';
+
+	/** Set once the old Club Teams list has been moved onto the teams. */
+	const MIGRATED_OPTION = 'Chess_Army_Knife_club_teams_migrated';
+	const LEGACY_OPTION   = 'Chess_Army_Knife_club_teams';
 
 	const META_VENUE   = '_chess_army_team_venue';
 	const META_CAPTAIN = '_chess_army_team_captain';
-	const META_SEASONS = '_chess_army_team_seasons';
+	const META_SEASONS = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
+	const META_LEAGUES = '_chess_army_team_leagues';
 	const META_COLOUR  = '_chess_army_team_colour';
 
 	/**
@@ -33,10 +44,35 @@ class Chess_Army_Knife_Teams {
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register' ) );
 		add_action( 'before_delete_post', array( __CLASS__, 'forget_team' ) );
+		add_action( 'init', array( __CLASS__, 'maybe_migrate' ), 20 );
+		add_filter( 'user_has_cap', array( __CLASS__, 'officers_manage_teams' ) );
 	}
 
 	/**
-	 * Register the team post type, under the Memberships menu.
+	 * Whether the current user may edit teams and see every team.
+	 *
+	 * @return bool
+	 */
+	public static function user_can_manage() {
+		return current_user_can( self::CAPABILITY );
+	}
+
+	/**
+	 * Anyone who manages members may manage teams too: they can already see
+	 * every member. The team permission on its own never shows member details.
+	 *
+	 * @param array $allcaps Permissions of the user being checked.
+	 * @return array
+	 */
+	public static function officers_manage_teams( $allcaps ) {
+		if ( ! empty( $allcaps[ Chess_Army_Knife_Memberships::CAPABILITY ] ) ) {
+			$allcaps[ self::CAPABILITY ] = true;
+		}
+		return $allcaps;
+	}
+
+	/**
+	 * Register the team post type, under the Teams menu.
 	 */
 	public static function register() {
 		register_post_type(
@@ -54,10 +90,10 @@ class Chess_Army_Knife_Teams {
 				),
 				'public'       => false,
 				'show_ui'      => true,
-				'show_in_menu' => Chess_Army_Knife_Memberships::MENU_SLUG,
+				'show_in_menu' => self::MENU_SLUG,
 				'show_in_rest' => false, // Classic editing screen: the details are plain fields.
 				'supports'     => array( 'title', 'excerpt', 'page-attributes' ), // The excerpt is the description shown publicly.
-				'capabilities' => Chess_Army_Knife_Memberships::post_capabilities(),
+				'capabilities' => Chess_Army_Knife_Memberships::post_capabilities( self::CAPABILITY ),
 			)
 		);
 	}
@@ -101,7 +137,7 @@ class Chess_Army_Knife_Teams {
 	/**
 	 * The teams on offer, in their page order.
 	 *
-	 * @return array[] Each { id, name, description, venue, captain_id, seasons }.
+	 * @return array[] Each { id, name, description, venue, captain_id, colour, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
 		$posts = get_posts(
@@ -136,15 +172,22 @@ class Chess_Army_Knife_Teams {
 	 * @return array
 	 */
 	protected static function team_data( $post ) {
-		$seasons = get_post_meta( $post->ID, self::META_SEASONS, true );
+		$name    = get_the_title( $post );
+		$leagues = self::clean_leagues( get_post_meta( $post->ID, self::META_LEAGUES, true ) );
 		return array(
 			'id'          => (int) $post->ID,
-			'name'        => get_the_title( $post ),
+			'name'        => $name,
 			'description' => (string) $post->post_excerpt,
 			'venue'       => (string) get_post_meta( $post->ID, self::META_VENUE, true ),
 			'captain_id'  => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
-			'seasons'     => is_array( $seasons ) ? array_values( array_map( 'strval', $seasons ) ) : array(),
+			'leagues'     => $leagues,
+			'seasons'     => array_map(
+				function ( $league ) use ( $name ) {
+					return self::season_key( self::league_entry( $league, $name ) );
+				},
+				$leagues
+			),
 		);
 	}
 
@@ -162,9 +205,9 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * The identity of a season: an entry of the Club Teams list.
+	 * The identity of a season: a league entry.
 	 *
-	 * @param array $club_team Club Teams entry { org, event, team }.
+	 * @param array $club_team League entry { org, event, team }.
 	 * @return string
 	 */
 	public static function season_key( array $club_team ) {
@@ -172,7 +215,7 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * The team that plays a season (an entry of the Club Teams list).
+	 * The team that plays a season (a league entry).
 	 *
 	 * @param string $season_key Key from season_key().
 	 * @return array|null The team (see all()), or null if no team has that season.
@@ -184,22 +227,6 @@ class Chess_Army_Knife_Teams {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * The Club Teams entries a team plays in this season or has played in.
-	 *
-	 * @param array $team Team from all().
-	 * @return array[] Each { org, event, team }.
-	 */
-	public static function seasons_of( array $team ) {
-		$seasons = array();
-		foreach ( Chess_Army_Knife_Settings::get_club_teams() as $club_team ) {
-			if ( in_array( self::season_key( $club_team ), $team['seasons'], true ) ) {
-				$seasons[] = $club_team;
-			}
-		}
-		return $seasons;
 	}
 
 	/**
@@ -243,35 +270,219 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * Create a team for each team name on the Club Teams list that has none yet,
-	 * linked to its entries on that list.
+	 * A league entry as the rest of the plugin reads it: the name is the one the
+	 * LMS knows the team by, which is the team's own name unless told otherwise.
 	 *
+	 * @param array  $league    League { org, event, name }.
+	 * @param string $team_name The team's name.
+	 * @return array { org, event, team }
+	 */
+	protected static function league_entry( array $league, $team_name ) {
+		return array(
+			'org'   => $league['org'],
+			'event' => $league['event'],
+			'team'  => '' !== $league['name'] ? $league['name'] : $team_name,
+		);
+	}
+
+	/**
+	 * The league entries a team plays in this season or has played in.
+	 *
+	 * @param array $team Team from all().
+	 * @return array[] Each { org, event, team }.
+	 */
+	public static function seasons_of( array $team ) {
+		return array_map(
+			function ( $league ) use ( $team ) {
+				return self::league_entry( $league, $team['name'] );
+			},
+			$team['leagues']
+		);
+	}
+
+	/**
+	 * Every league entry of every team: what the fixtures, the league table and
+	 * the carousel read to know which teams are the club's.
+	 *
+	 * @return array[] Each { org, event, team, team_id }.
+	 */
+	public static function league_entries() {
+		$entries = array();
+		foreach ( self::all() as $team ) {
+			foreach ( self::seasons_of( $team ) as $entry ) {
+				$entries[] = $entry + array( 'team_id' => $team['id'] );
+			}
+		}
+		return $entries;
+	}
+
+	/**
+	 * Clean a submitted or stored list of league entries. An entry needs an
+	 * LMS organisation (digits) and an event; anything else is dropped, and so
+	 * is a repeat of an entry already listed.
+	 *
+	 * @param mixed $raw List of { org, event, name }.
+	 * @return array[] Each { org, event, name }.
+	 */
+	public static function clean_leagues( $raw ) {
+		$leagues = array();
+
+		foreach ( is_array( $raw ) ? $raw : array() as $league ) {
+			if ( ! is_array( $league ) ) {
+				continue;
+			}
+			$org   = isset( $league['org'] ) ? preg_replace( '/[^0-9]/', '', sanitize_text_field( (string) $league['org'] ) ) : '';
+			$event = isset( $league['event'] ) ? sanitize_text_field( (string) $league['event'] ) : '';
+			$name  = isset( $league['name'] ) ? sanitize_text_field( (string) $league['name'] ) : '';
+			if ( '' === $org || '' === $event ) {
+				continue;
+			}
+			$leagues[ $org . '|' . strtolower( $event ) . '|' . strtolower( $name ) ] = array(
+				'org'   => $org,
+				'event' => $event,
+				'name'  => $name,
+			);
+		}
+		return array_values( $leagues );
+	}
+
+	/**
+	 * Give teams the league entries listed, creating a team for a name that has
+	 * none yet. A team is found by its name, ignoring case.
+	 *
+	 * @param array[] $entries Each { org, event, team }.
 	 * @return int How many teams were created.
 	 */
-	public static function create_missing_from_club_teams() {
-		$existing = array_map( 'strtolower', self::choices() );
-		$names    = array();
+	public static function assign_league_entries( array $entries ) {
+		$teams   = array();
+		$created = 0;
+		foreach ( self::all() as $team ) {
+			$teams[ strtolower( $team['name'] ) ] = $team;
+		}
 
-		foreach ( Chess_Army_Knife_Settings::get_club_teams() as $club_team ) {
-			$name = trim( (string) $club_team['team'] );
-			if ( '' !== $name && ! in_array( strtolower( $name ), $existing, true ) ) {
-				$names[ $name ][] = self::season_key( $club_team );
+		foreach ( $entries as $entry ) {
+			$name = trim( (string) $entry['team'] );
+			$key  = strtolower( $name );
+			if ( '' === $name ) {
+				continue;
+			}
+
+			if ( ! isset( $teams[ $key ] ) ) {
+				$id = wp_insert_post(
+					array(
+						'post_type'   => self::POST_TYPE,
+						'post_status' => 'publish',
+						'post_title'  => $name,
+					)
+				);
+				if ( ! $id ) {
+					continue;
+				}
+				++$created;
+				$teams[ $key ] = self::get( $id );
+			}
+
+			self::add_league( $teams[ $key ]['id'], $entry['org'], $entry['event'], '' );
+			$teams[ $key ] = self::get( $teams[ $key ]['id'] );
+		}
+		return $created;
+	}
+
+	/**
+	 * Add a league entry to a team, unless it has it.
+	 *
+	 * @param int    $team_id Team id.
+	 * @param string $org     LMS organisation id.
+	 * @param string $event   Event or division name.
+	 * @param string $name    The team's name in the LMS, or '' if it is the team's own name.
+	 */
+	protected static function add_league( $team_id, $org, $event, $name ) {
+		$leagues   = self::clean_leagues( get_post_meta( $team_id, self::META_LEAGUES, true ) );
+		$leagues[] = array(
+			'org'   => $org,
+			'event' => $event,
+			'name'  => $name,
+		);
+		update_post_meta( $team_id, self::META_LEAGUES, self::clean_leagues( $leagues ) );
+	}
+
+	/**
+	 * Move the old Club Teams list (and the free-text field before it) onto the
+	 * teams, once. A team that was ticked for an entry keeps it, under the name
+	 * the LMS knows it by; any other entry goes to the team of that name, which
+	 * is created if the club has none.
+	 */
+	public static function maybe_migrate() {
+		if ( get_option( self::MIGRATED_OPTION ) ) {
+			return;
+		}
+
+		$entries = self::legacy_entries();
+		$rest    = array();
+
+		foreach ( $entries as $entry ) {
+			$key   = self::season_key( $entry );
+			$owner = null;
+			foreach ( self::all() as $team ) {
+				$old = get_post_meta( $team['id'], self::META_SEASONS, true );
+				if ( is_array( $old ) && in_array( $key, $old, true ) ) {
+					$owner = $team;
+					break;
+				}
+			}
+
+			if ( null !== $owner ) {
+				// The LMS name is only kept when it differs from the team's own.
+				$lms_name = 0 === strcasecmp( $entry['team'], $owner['name'] ) ? '' : $entry['team'];
+				self::add_league( $owner['id'], $entry['org'], $entry['event'], $lms_name );
+			} else {
+				$rest[] = $entry;
+			}
+		}
+		self::assign_league_entries( $rest );
+
+		foreach ( self::all() as $team ) {
+			delete_post_meta( $team['id'], self::META_SEASONS );
+		}
+		delete_option( self::LEGACY_OPTION );
+		update_option( self::MIGRATED_OPTION, 1 );
+	}
+
+	/**
+	 * The entries of the old Club Teams list: the structured list if it was ever
+	 * saved, otherwise the older free-text "org | event | team" lines.
+	 *
+	 * @return array[] Each { org, event, team }.
+	 */
+	protected static function legacy_entries() {
+		$saved   = get_option( self::LEGACY_OPTION, null );
+		$entries = array();
+
+		if ( null === $saved ) {
+			$settings = get_option( Chess_Army_Knife_Settings::OPTION, array() );
+			$raw      = is_array( $settings ) && isset( $settings['club_teams'] ) ? $settings['club_teams'] : '';
+			foreach ( preg_split( '/\r\n|\r|\n/', (string) $raw ) as $line ) {
+				$parts = array_map( 'trim', explode( '|', $line ) );
+				if ( count( $parts ) >= 3 ) {
+					$saved[] = array(
+						'org'   => $parts[0],
+						'event' => $parts[1],
+						'team'  => $parts[2],
+					);
+				}
 			}
 		}
 
-		$created = 0;
-		foreach ( $names as $name => $keys ) {
-			$id       = wp_insert_post(
-				array(
-					'post_type'   => self::POST_TYPE,
-					'post_status' => 'publish',
-					'post_title'  => $name,
-					'meta_input'  => array( self::META_SEASONS => $keys ),
-				)
-			);
-			$created += $id ? 1 : 0;
+		foreach ( (array) $saved as $entry ) {
+			if ( isset( $entry['org'], $entry['event'], $entry['team'] ) && '' !== trim( $entry['org'] . $entry['event'] . $entry['team'] ) ) {
+				$entries[] = array(
+					'org'   => $entry['org'],
+					'event' => $entry['event'],
+					'team'  => $entry['team'],
+				);
+			}
 		}
-		return $created;
+		return $entries;
 	}
 
 	/* -------------------------------------------------------------

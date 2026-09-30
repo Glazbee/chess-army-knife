@@ -60,11 +60,12 @@ class Chess_Army_Knife_Memberships {
 	}
 
 	/**
-	 * Every post capability of the type, mapped to the one membership permission.
+	 * Every post capability of a type, mapped to one permission.
 	 *
+	 * @param string $capability The permission; the membership one by default.
 	 * @return array
 	 */
-	public static function post_capabilities() {
+	public static function post_capabilities( $capability = self::CAPABILITY ) {
 		$names = array(
 			'edit_post',
 			'read_post',
@@ -82,7 +83,7 @@ class Chess_Army_Knife_Memberships {
 			'create_posts',
 		);
 
-		return array_fill_keys( $names, self::CAPABILITY );
+		return array_fill_keys( $names, $capability );
 	}
 
 	/**

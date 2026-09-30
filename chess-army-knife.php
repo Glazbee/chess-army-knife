@@ -25,7 +25,6 @@ require_once Chess_Army_Knife_DIR . 'includes/class-chess-army-knife-cache.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-ecf-client.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-lms-client.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-settings-page.php';
-require_once Chess_Army_Knife_DIR . 'includes/class-club-teams-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-templates.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-berger.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-standings.php';

@@ -175,7 +175,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<SelectControl
 						label={ __( 'Home or away', 'chess-army-knife' ) }
 						help={ __(
-							'Fixtures come from the Import Events page and are linked to teams set up under Memberships → Teams.',
+							'Fixtures come from the Import Events page and are linked to teams set up under Teams.',
 							'chess-army-knife'
 						) }
 						value={ venue }

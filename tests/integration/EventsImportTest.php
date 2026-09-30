@@ -17,8 +17,7 @@ class EventsImportTest extends WP_UnitTestCase {
 		parent::set_up();
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		update_option(
-			Chess_Army_Knife_Club_Teams_Page::OPTION,
+		Chess_Army_Knife_Teams::assign_league_entries(
 			array(
 				array(
 					'org'   => '613',
@@ -208,8 +207,7 @@ class EventsImportTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_league_that_fails_to_load_is_reported_and_others_still_import() {
-		update_option(
-			Chess_Army_Knife_Club_Teams_Page::OPTION,
+		Chess_Army_Knife_Teams::assign_league_entries(
 			array(
 				array(
 					'org'   => '613',
@@ -243,8 +241,7 @@ class EventsImportTest extends WP_UnitTestCase {
 	}
 
 	public function test_one_request_per_league_however_many_teams() {
-		update_option(
-			Chess_Army_Knife_Club_Teams_Page::OPTION,
+		Chess_Army_Knife_Teams::assign_league_entries(
 			array(
 				array(
 					'org'   => '613',
@@ -267,7 +264,10 @@ class EventsImportTest extends WP_UnitTestCase {
 	}
 
 	public function test_without_club_teams_nothing_is_requested() {
-		update_option( Chess_Army_Knife_Club_Teams_Page::OPTION, array() );
+		Chess_Army_Knife_Teams::install_table(); // Deleting a team clears its squad.
+		foreach ( Chess_Army_Knife_Teams::all() as $club_team ) {
+			wp_delete_post( $club_team['id'], true );
+		}
 
 		$summary = Chess_Army_Knife_Events_Import::import();
 

@@ -103,8 +103,7 @@ class MemberRequestsTest extends WP_UnitTestCase {
 				'post_title'  => 'Club B',
 			)
 		);
-		update_option(
-			Chess_Army_Knife_Club_Teams_Page::OPTION,
+		Chess_Army_Knife_Teams::assign_league_entries(
 			array(
 				array(
 					'org'   => '613',
@@ -201,8 +200,9 @@ class MemberRequestsTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_form_shows_no_team_list_when_the_club_has_no_teams() {
-		delete_option( Chess_Army_Knife_Club_Teams_Page::OPTION );
-		update_option( Chess_Army_Knife_Club_Teams_Page::OPTION, array() );
+		foreach ( Chess_Army_Knife_Teams::all() as $club_team ) {
+			wp_delete_post( $club_team['id'], true );
+		}
 		$this->adult_type();
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/membership-form /-->' );

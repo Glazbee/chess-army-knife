@@ -7,7 +7,8 @@
  * someone the website side needs the power to promote users, because it adds
  * a permission to their account. The permission only opens the teams they
  * captain (and the squad, availability and line-up of those teams); people
- * with the membership permission can work with every team.
+ * with the team permission (and so those with the membership permission) can
+ * work with every team.
  *
  * @package Chess_Army_Knife
  */
@@ -90,7 +91,7 @@ class Chess_Army_Knife_Captains {
 	 * @return bool
 	 */
 	public static function user_can_select() {
-		return Chess_Army_Knife_Memberships::user_can_manage() || current_user_can( self::CAPABILITY );
+		return Chess_Army_Knife_Teams::user_can_manage() || current_user_can( self::CAPABILITY );
 	}
 
 	/**
@@ -101,7 +102,7 @@ class Chess_Army_Knife_Captains {
 	 */
 	public static function teams_for_user( $user_id = 0 ) {
 		$user_id = $user_id ? (int) $user_id : get_current_user_id();
-		if ( user_can( $user_id, Chess_Army_Knife_Memberships::CAPABILITY ) ) {
+		if ( user_can( $user_id, Chess_Army_Knife_Teams::CAPABILITY ) ) {
 			return Chess_Army_Knife_Teams::all();
 		}
 		if ( ! user_can( $user_id, self::CAPABILITY ) ) {

@@ -78,7 +78,7 @@ $is_highlighted = function ( $team, $event = '' ) use ( $highlight_team, $club_t
 	if ( '' !== $highlight_team && false !== stripos( $team, $highlight_team ) ) {
 		return true;
 	}
-	// Automatically highlight any team listed under ECF & LMS -> Club Teams
+	// Automatically highlight any team with a league entry under Teams
 	// for this organisation (and this event, when known).
 	foreach ( $club_teams as $t ) {
 		if ( '' !== $event && 0 !== strcasecmp( $t['event'], $event ) ) {

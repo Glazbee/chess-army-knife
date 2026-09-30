@@ -19,6 +19,7 @@ class Chess_Army_Knife_Memberships_Admin {
 	const NONCE_ACTION  = 'chess_army_knife_save_membership_type';
 	const NONCE_FIELD   = 'chess_army_knife_membership_type_nonce';
 	const PROFILE_FIELD = 'chess_army_knife_can_manage_memberships';
+	const TEAMS_FIELD   = 'chess_army_knife_can_manage_teams';
 
 	/**
 	 * Hook up the admin screens.
@@ -169,6 +170,16 @@ class Chess_Army_Knife_Memberships_Admin {
 					<p class="description"><?php esc_html_e( 'Members share personal details, so this is not given to every administrator automatically.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Club teams', 'chess-army-knife' ); ?></th>
+				<td>
+					<label for="<?php echo esc_attr( self::TEAMS_FIELD ); ?>">
+						<input type="checkbox" id="<?php echo esc_attr( self::TEAMS_FIELD ); ?>" name="<?php echo esc_attr( self::TEAMS_FIELD ); ?>" value="1" <?php checked( user_can( $user, Chess_Army_Knife_Teams::CAPABILITY ) ); ?> <?php disabled( user_can( $user, Chess_Army_Knife_Memberships::CAPABILITY ) ); ?> />
+						<?php esc_html_e( 'Can edit teams and their leagues, import fixtures and pick every team', 'chess-army-knife' ); ?>
+					</label>
+					<p class="description"><?php esc_html_e( 'This shows nothing about members beyond the people in each team\'s squad. Anyone who can manage members can do this already. A team\'s captain does not need it: choosing a captain\'s website login on the team lets them pick that team only.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
 		</table>
 		<?php
 	}
@@ -192,6 +203,15 @@ class Chess_Army_Knife_Memberships_Admin {
 			$user->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
 		} else {
 			$user->remove_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+		}
+
+		// The box is disabled, so not sent, for someone who manages members: their own permission already covers teams.
+		if ( empty( $_POST[ self::PROFILE_FIELD ] ) ) {
+			if ( ! empty( $_POST[ self::TEAMS_FIELD ] ) ) {
+				$user->add_cap( Chess_Army_Knife_Teams::CAPABILITY );
+			} else {
+				$user->remove_cap( Chess_Army_Knife_Teams::CAPABILITY );
+			}
 		}
 	}
 }
