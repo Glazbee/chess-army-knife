@@ -538,13 +538,13 @@ class MembershipsTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Menu::render_overview();
 		$html = ob_get_clean();
 		$this->assertStringContainsString( 'Needs: Manage members', $html );
-		$this->assertStringNotContainsString( 'You can use this', $html );
+		$this->assertSame( 1, substr_count( $html, 'You can use this' ), 'Only the Block Help, which is for everyone.' );
 
 		$this->manager();
 		ob_start();
 		Chess_Army_Knife_Menu::render_overview();
 		$html = ob_get_clean();
-		$this->assertStringContainsString( 'You can use this', $html );
+		$this->assertGreaterThan( 1, substr_count( $html, 'You can use this' ), 'The member screens as well.' );
 	}
 
 	public function test_the_members_list_shows_a_juniors_parent_as_the_contact_and_who_agreed_to_what() {
