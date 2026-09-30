@@ -8,11 +8,11 @@ Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Gutenberg blocks for English chess clubs: ECF ratings and league data, club tournaments and club events.
+Gutenberg blocks for English chess clubs: ECF ratings and league data, club tournaments, club events and club memberships.
 
 == Description ==
 
-This plugin adds thirteen blocks to the WordPress block editor, pulling live data from:
+This plugin adds fifteen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -33,6 +33,18 @@ This plugin adds thirteen blocks to the WordPress block editor, pulling live dat
 11. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
 12. **Club Event Calendar** — upcoming club events by date, as a list or a month grid, optionally only those with chosen tags.
 13. **Next Club Event** — the next club event, optionally only one with a chosen tag.
+14. **Club Memberships** — advertise the memberships the club offers (junior, adult, senior or any others) with their prices and descriptions, and how to pay. Optionally link each one to your application form.
+15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
+
+**Memberships**
+
+Memberships are managed under **Memberships** in the admin menu:
+
+* **Membership Types** are what you advertise: a name, description, price and length (12 months, or 0 for no expiry). Publish a type to offer it; keep it as a draft to hide it. Use the Order box to arrange them.
+* **Members** lists everyone, with views for current members, pending applications, expired, and declined or cancelled. Approve or decline applications, and use **Add member** to enter someone who cannot use the online form. Record when a payment was received and how, and keep private notes.
+* **How to pay** is entered once under **ECF & LMS → Settings**. The website never takes payments: members pay by bank transfer, cash or whatever you describe, and each member has a payment reference (such as MEM-12) to quote so you can match transfers.
+
+Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form asks people to agree to the club keeping their details, and limits how often one visitor can apply.
 
 **Global defaults**
 
@@ -74,6 +86,8 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: club memberships. Membership Types (name, description, price, length), a Members screen with pending applications, current, expired and cancelled members, and manual adding, editing and payment recording. New Club Memberships and Membership Application Form blocks, and a payment instructions field under Settings.
+* Added: a separate "manage members" permission for the Memberships screens, set per user on their profile rather than given to all administrators.
 * Added: Tournament Standings block, a cross-table of each player's points in every round and their total.
 * Changed: results are now entered in the Tournament Games to Play block. Everyone sees the games; administrators also get two score selectors per game (choosing 1 for one player gives the other 0, and ½ gives ½ to both) and one Save button at the top. Games are saved together, so a wrong score is not recorded by accident. Forfeits and corrections are still made on the Tournaments admin page.
 * Removed: the Tournament Results Entry block, replaced by the above. Pages that used it need the Tournament Games to Play block instead.

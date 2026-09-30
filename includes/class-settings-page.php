@@ -81,6 +81,7 @@ class Chess_Army_Knife_Settings {
 			'default_max_players'      => 12,
 			'lms_base_url'             => '',
 			'default_event_location'   => '', // Used by club events that don't set their own.
+			'membership_payment_info'  => '', // How to pay for a membership (bank details, cash at the club...).
 			'club_teams'               => '',  // Raw textarea: one "org | event | team" per line.
 			'fast_cache_enabled'       => 1,
 			'match_time'               => '19:30',
@@ -261,6 +262,9 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['default_event_location'] ) ) {
 			$clean['default_event_location'] = sanitize_text_field( $input['default_event_location'] );
 		}
+		if ( isset( $input['membership_payment_info'] ) ) {
+			$clean['membership_payment_info'] = sanitize_textarea_field( $input['membership_payment_info'] );
+		}
 		if ( isset( $input['lms_base_url'] ) ) {
 			$clean['lms_base_url'] = esc_url_raw( trim( $input['lms_base_url'] ) );
 		}
@@ -403,6 +407,13 @@ class Chess_Army_Knife_Settings {
 							<p class="description"><?php esc_html_e( 'Where club events are usually held. A club event that has no location of its own uses this.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
+					<tr>
+						<th scope="row"><label for="membership_payment_info"><?php esc_html_e( 'How to pay for membership', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<textarea id="membership_payment_info" name="<?php echo esc_attr( self::OPTION ); ?>[membership_payment_info]" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'e.g. Bank transfer to Any Chess Club, sort code 00-00-00, account 12345678, quoting your reference. Or pay cash at the club.', 'chess-army-knife' ); ?>"><?php echo esc_textarea( $options['membership_payment_info'] ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
 				</table>
 
 				<h2><?php esc_html_e( 'Advanced', 'chess-army-knife' ); ?></h2>
@@ -464,7 +475,7 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( self::OPTION ); ?>[delete_data_on_uninstall]" value="1" <?php checked( ! empty( $options['delete_data_on_uninstall'] ) ); ?> />
-								<?php esc_html_e( 'Also delete all tournaments, results and player profiles', 'chess-army-knife' ); ?>
+								<?php esc_html_e( 'Also delete all tournaments, results, player profiles, club events, membership types and members', 'chess-army-knife' ); ?>
 							</label>
 							<p class="description">
 								<?php esc_html_e( 'Off by default, so deleting the plugin keeps your tournament history. Settings and cached data are always removed. This cannot be undone.', 'chess-army-knife' ); ?>
