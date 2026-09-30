@@ -188,6 +188,7 @@ class Chess_Army_Knife_Members_Page {
 			'member_status'     => __( 'Please choose a status.', 'chess-army-knife' ),
 			'member_date'       => __( 'Please enter dates as YYYY-MM-DD.', 'chess-army-knife' ),
 			'member_date_order' => __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ),
+			'renew'             => __( 'That membership could not be renewed: it must be a current or lapsed member whose type has a length.', 'chess-army-knife' ),
 			'member_rating'     => __( 'That manual rating is out of range.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : Chess_Army_Knife_Membership_Form::error_message( $code );
@@ -225,6 +226,9 @@ class Chess_Army_Knife_Members_Page {
 			$notice = array( 'success', __( 'Member deleted.', 'chess-army-knife' ) );
 		} elseif ( isset( $_GET['updated'] ) ) {
 			$notice = array( 'success', __( 'Member updated.', 'chess-army-knife' ) );
+		} elseif ( isset( $_GET['renewed'] ) ) {
+			/* translators: %s: new last day of membership */
+			$notice = array( 'success', sprintf( __( 'Membership renewed until %s.', 'chess-army-knife' ), mysql2date( get_option( 'date_format' ), sanitize_text_field( wp_unslash( $_GET['renewed'] ) ) ) ) );
 		} elseif ( isset( $_GET['rr_checked'] ) ) {
 			$notice = array(
 				isset( $_GET['rr_failed'] ) && absint( $_GET['rr_failed'] ) ? 'warning' : 'success',
@@ -346,6 +350,9 @@ class Chess_Army_Knife_Members_Page {
 										<a href="<?php echo esc_url( self::action_url( 'member_status', $member['id'], array( 'status' => Chess_Army_Knife_Membership_Store::STATUS_REJECTED ) ) ); ?>"><?php esc_html_e( 'Decline', 'chess-army-knife' ); ?></a> |
 									<?php endif; ?>
 									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></a> |
+									<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'] ) : ?>
+										<a href="<?php echo esc_url( self::action_url( 'renew_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Renew this membership for another period and note the payment as received today?', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Renew', 'chess-army-knife' ); ?></a> |
+									<?php endif; ?>
 									<?php if ( ! empty( $photos[ $member['id'] ] ) ) : ?>
 										<a href="<?php echo esc_url( Chess_Army_Knife_Member_Photos::library_url( $member['id'] ) ); ?>">
 											<?php
@@ -391,7 +398,7 @@ class Chess_Army_Knife_Members_Page {
 									$agreed[] = __( 'Newsletter', 'chess-army-knife' );
 								}
 								if ( '' !== $member['whatsapp_consent_at'] ) {
-									$agreed[] = $member['whatsapp_teams'] ? sprintf( /* translators: %s: team names */ __( 'WhatsApp (%s)', 'chess-army-knife' ), implode( ', ', $member['whatsapp_teams'] ) ) : __( 'WhatsApp', 'chess-army-knife' );
+									$agreed[] = $member['whatsapp_teams'] ? sprintf( /* translators: %s: team names */ __( 'WhatsApp (%s)', 'chess-army-knife' ), implode( ', ', Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) ) ) : __( 'WhatsApp', 'chess-army-knife' );
 								}
 								echo $agreed ? esc_html( implode( ', ', $agreed ) ) : '&mdash;';
 								?>
@@ -578,9 +585,9 @@ class Chess_Army_Knife_Members_Page {
 								<input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $member['whatsapp_consent_at'] ); ?> />
 								<?php esc_html_e( 'Has agreed to be added to WhatsApp groups (their phone number is visible to the group)', 'chess-army-knife' ); ?>
 							</label>
-							<?php foreach ( Chess_Army_Knife_Memberships::team_names() as $team_name ) : ?>
+							<?php foreach ( Chess_Army_Knife_Teams::choices() as $team_id => $team_name ) : ?>
 								<label style="display:block;margin-left:1.5em">
-									<input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_name ); ?>" <?php checked( in_array( $team_name, $member['whatsapp_teams'], true ) ); ?> />
+									<input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( in_array( $team_id, $member['whatsapp_teams'], true ) ); ?> />
 									<?php echo esc_html( $team_name ); ?>
 								</label>
 							<?php endforeach; ?>

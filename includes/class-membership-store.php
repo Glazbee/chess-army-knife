@@ -82,6 +82,7 @@ class Chess_Army_Knife_Membership_Store {
 			newsletter_consent_at DATETIME NULL,
 			whatsapp_consent_at DATETIME NULL,
 			whatsapp_teams TEXT NULL,
+			renewal_reminder VARCHAR(24) NOT NULL DEFAULT '',
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
@@ -281,15 +282,15 @@ class Chess_Army_Knife_Membership_Store {
 	/**
 	 * Keep only the teams the club has, as the text stored for them.
 	 *
-	 * @param mixed $submitted Team names ticked on a form.
-	 * @return string JSON list of team names, or '' for none.
+	 * @param mixed $submitted Team ids ticked on a form.
+	 * @return string JSON list of team ids, or '' for none.
 	 */
 	public static function clean_teams( $submitted ) {
-		$allowed = Chess_Army_Knife_Memberships::team_names();
+		$allowed = array_keys( Chess_Army_Knife_Teams::choices() );
 		$teams   = array();
 
 		foreach ( (array) $submitted as $team ) {
-			$team = sanitize_text_field( (string) $team );
+			$team = absint( $team );
 			if ( in_array( $team, $allowed, true ) ) {
 				$teams[ $team ] = $team;
 			}
@@ -726,6 +727,56 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
+	 * Current members whose membership ends within a range of dates.
+	 *
+	 * @param string $from First expiry date (Y-m-d).
+	 * @param string $to   Last expiry date (Y-m-d).
+	 * @return array[]
+	 */
+	public static function get_expiring( $from, $to ) {
+		global $wpdb;
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE status = %s AND expiry_date BETWEEN %s AND %s ORDER BY expiry_date ASC, name ASC", self::STATUS_ACTIVE, $from, $to ), ARRAY_A );
+		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
+	 * Renew a member: the membership runs on for another period of its type.
+	 * It starts the day after the current one ends, or today if that has already
+	 * passed. The payment is noted as received today.
+	 *
+	 * @param int         $id    Member id.
+	 * @param string|null $today Site-local date (Y-m-d); today by default.
+	 * @return string The new expiry date, or '' if the member cannot be renewed (not a current or lapsed member, or a type that does not expire).
+	 */
+	public static function renew_member( $id, $today = null ) {
+		$member = self::get_member( $id );
+		$today  = $today ? $today : current_time( 'Y-m-d' );
+		$type   = $member ? Chess_Army_Knife_Memberships::get_type( $member['membership_type_id'] ) : null;
+
+		if ( ! $member || ! $type || $type['months'] <= 0 || self::STATUS_ACTIVE !== $member['status'] ) {
+			return '';
+		}
+
+		$start = $today;
+		if ( $member['expiry_date'] >= $today ) {
+			$start = gmdate( 'Y-m-d', strtotime( $member['expiry_date'] . ' UTC' ) + DAY_IN_SECONDS );
+		}
+		$expiry = Chess_Army_Knife_Memberships::expiry_from( $start, $type['months'] );
+
+		self::save_member(
+			array(
+				'id'          => (int) $id,
+				'expiry_date' => $expiry,
+				'paid_on'     => $today,
+			)
+		);
+		return $expiry;
+	}
+
+	/**
 	 * Everything held under an email address, for the privacy tools. A junior's record is found by their parent or guardian's address as well as their own.
 	 *
 	 * @param string $email Email address.
@@ -802,6 +853,7 @@ class Chess_Army_Knife_Membership_Store {
 			unset( $data['id'] );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->update( self::table(), $data, array( 'id' => $id ) );
+			do_action( 'Chess_Army_Knife_members_changed' );
 			return $id;
 		}
 
@@ -813,6 +865,7 @@ class Chess_Army_Knife_Membership_Store {
 		$data['created_at'] = $data['updated_at'];
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table(), $data );
+		do_action( 'Chess_Army_Knife_members_changed' );
 		return (int) $wpdb->insert_id;
 	}
 
@@ -880,8 +933,10 @@ class Chess_Army_Knife_Membership_Store {
 		// What they were emailed, and their email choices, are never kept.
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
+		Chess_Army_Knife_Teams::remove_person( $id );
+		Chess_Army_Knife_Selection::remove_person( $id );
 
-		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) ) {
+		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) && ! Chess_Army_Knife_Event_Registrations::person_has_registrations( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
 		}
@@ -906,6 +961,7 @@ class Chess_Army_Knife_Membership_Store {
 				'newsletter_consent_at' => null,
 				'whatsapp_consent_at'   => null,
 				'whatsapp_teams'        => '',
+				'renewal_reminder'      => '',
 			)
 		);
 		return 'anonymised';
@@ -921,8 +977,12 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Member_Photos::remove_member( $id );
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
+		Chess_Army_Knife_Teams::remove_person( $id );
+		Chess_Army_Knife_Event_Registrations::remove_person( $id );
+		Chess_Army_Knife_Selection::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table(), array( 'id' => (int) $id ), array( '%d' ) );
+		do_action( 'Chess_Army_Knife_members_changed' );
 	}
 
 	/**
@@ -938,7 +998,7 @@ class Chess_Army_Knife_Membership_Store {
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
 		$row['ecf_checked_at']     = null === $row['ecf_checked_at'] ? '' : (string) $row['ecf_checked_at'];
 		$teams                     = json_decode( (string) $row['whatsapp_teams'], true );
-		$row['whatsapp_teams']     = is_array( $teams ) ? array_values( array_map( 'strval', $teams ) ) : array();
+		$row['whatsapp_teams']     = is_array( $teams ) ? Chess_Army_Knife_Teams::normalise_ids( $teams ) : array();
 
 		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];

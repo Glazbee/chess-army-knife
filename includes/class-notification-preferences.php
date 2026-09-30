@@ -69,6 +69,7 @@ class Chess_Army_Knife_Notification_Preferences {
 	public static function categories() {
 		$categories = array(
 			self::NEWSLETTER => __( 'Newsletter', 'chess-army-knife' ),
+			'announcements'  => __( 'Club announcements', 'chess-army-knife' ),
 			'event_notices'  => __( 'Event notices', 'chess-army-knife' ),
 			'fixtures'       => __( 'Fixture and availability requests', 'chess-army-knife' ),
 			'renewals'       => __( 'Membership renewal reminders', 'chess-army-knife' ),

@@ -53,6 +53,89 @@ class Chess_Army_Knife_Events_Display {
 	}
 
 	/**
+	 * Whether a fixture is home, away or between two of the club's own teams.
+	 *
+	 * @param array $event Event data.
+	 * @return string 'home', 'away', 'derby', or '' for an event that is not a team fixture.
+	 */
+	public static function side_of_event( array $event ) {
+		$sides = array_unique( array_column( $event['teams'], 'side' ) );
+		if ( in_array( 'home', $sides, true ) && in_array( 'away', $sides, true ) ) {
+			return 'derby';
+		}
+		if ( in_array( 'home', $sides, true ) ) {
+			return 'home';
+		}
+		return in_array( 'away', $sides, true ) ? 'away' : '';
+	}
+
+	/**
+	 * "Club A (home)": the team or teams in a fixture with their side.
+	 *
+	 * @param array $event Event data.
+	 * @return string Plain text, or '' for an event with no team.
+	 */
+	public static function team_label( array $event ) {
+		if ( ! $event['teams'] ) {
+			return '';
+		}
+		$sides = array(
+			'home' => __( 'home', 'chess-army-knife' ),
+			'away' => __( 'away', 'chess-army-knife' ),
+		);
+		$parts = array();
+		foreach ( $event['teams'] as $team ) {
+			/* translators: 1: team name, 2: home or away */
+			$parts[] = isset( $sides[ $team['side'] ] ) ? sprintf( __( '%1$s (%2$s)', 'chess-army-knife' ), $team['name'], $sides[ $team['side'] ] ) : $team['name'];
+		}
+		return implode( ', ', $parts );
+	}
+
+	/**
+	 * Keep only home or away fixtures. A fixture counts as home if any of the
+	 * chosen teams (or, with none chosen, any team in it) is at home.
+	 *
+	 * @param array[] $events   Events.
+	 * @param string  $venue    'home', 'away'; anything else keeps everything.
+	 * @param int[]   $team_ids Teams chosen on the block, if any.
+	 * @return array[]
+	 */
+	public static function filter_by_venue( array $events, $venue, array $team_ids = array() ) {
+		if ( ! in_array( $venue, array( 'home', 'away' ), true ) ) {
+			return $events;
+		}
+		return array_values(
+			array_filter(
+				$events,
+				function ( $event ) use ( $venue, $team_ids ) {
+					foreach ( $event['teams'] as $team ) {
+						if ( $venue === $team['side'] && ( ! $team_ids || in_array( $team['id'], $team_ids, true ) ) ) {
+							return true;
+						}
+					}
+					return false;
+				}
+			)
+		);
+	}
+
+	/**
+	 * The inline style that carries a fixture's team colour to its CSS.
+	 *
+	 * @param array $event Event data.
+	 * @return string ' style="..."' with a leading space, or '' if no team has a colour.
+	 */
+	public static function colour_style( array $event ) {
+		foreach ( $event['teams'] as $team ) {
+			$colour = sanitize_hex_color( $team['colour'] );
+			if ( $colour ) {
+				return ' style="--cak-team-colour:' . esc_attr( $colour ) . '"';
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * The location, tags and attached tournaments/leagues of an event.
 	 *
 	 * @param array $event   Event data.
@@ -61,6 +144,11 @@ class Chess_Army_Knife_Events_Display {
 	 */
 	public static function details_html( array $event, array $options ) {
 		$html = '';
+
+		$team_label = self::team_label( $event );
+		if ( ! empty( $options['show_teams'] ) && '' !== $team_label ) {
+			$html .= '<p class="cak-event__team">' . esc_html( $team_label ) . '</p>';
+		}
 
 		if ( ! empty( $options['show_location'] ) && '' !== $event['location'] ) {
 			$html .= '<p class="cak-event__location">' . esc_html( $event['location'] ) . '</p>';
@@ -103,6 +191,7 @@ class Chess_Army_Knife_Events_Display {
 			'show_location' => ! isset( $attributes['showLocation'] ) || $attributes['showLocation'],
 			'show_tags'     => ! isset( $attributes['showTags'] ) || $attributes['showTags'],
 			'show_links'    => ! isset( $attributes['showLinks'] ) || $attributes['showLinks'],
+			'show_teams'    => ! isset( $attributes['showTeams'] ) || $attributes['showTeams'],
 		);
 	}
 
@@ -197,8 +286,10 @@ class Chess_Army_Knife_Events_Display {
 					$html .= '<ul class="cak-month__events">';
 					foreach ( $day_events as $event ) {
 						$tooltip = ! empty( $options['show_location'] ) && '' !== $event['location'] ? ' title="' . esc_attr( $event['location'] ) . '"' : '';
-						$html   .= '<li class="cak-month__event"><span class="cak-month__time">' . esc_html( self::time_label( $event ) ) . '</span> '
-							. '<a href="' . esc_url( $event['url'] ) . '"' . $tooltip . '>' . esc_html( $event['title'] ) . '</a></li>';
+						$team    = ! empty( $options['show_teams'] ) ? self::team_label( $event ) : '';
+						$html   .= '<li class="cak-month__event"' . self::colour_style( $event ) . '><span class="cak-month__time">' . esc_html( self::time_label( $event ) ) . '</span> '
+							. '<a href="' . esc_url( $event['url'] ) . '"' . $tooltip . '>' . esc_html( $event['title'] ) . '</a>'
+							. ( '' !== $team ? ' <span class="cak-month__team">' . esc_html( $team ) . '</span>' : '' ) . '</li>';
 					}
 					$html .= '</ul>';
 				}
@@ -215,17 +306,24 @@ class Chess_Army_Knife_Events_Display {
 	 *
 	 * @param int      $year  Year.
 	 * @param int      $month Month, 1-12.
-	 * @param string[] $tags  Tag slugs.
+	 * @param string[] $tags     Tag slugs.
+	 * @param int[]    $team_ids Team ids; none means every event.
+	 * @param string   $venue    'all', 'home' or 'away'.
 	 * @return array[]
 	 */
-	public static function month_events( $year, $month, array $tags ) {
-		return Chess_Army_Knife_Events::query(
-			array(
-				'after'  => sprintf( '%04d-%02d-01 00:00:00', $year, $month ),
-				'before' => self::shift_month( $year, $month, 1 ) . '-01 00:00:00',
-				'tags'   => $tags,
-				'limit'  => 0,
-			)
+	public static function month_events( $year, $month, array $tags, array $team_ids = array(), $venue = 'all' ) {
+		return self::filter_by_venue(
+			Chess_Army_Knife_Events::query(
+				array(
+					'after'  => sprintf( '%04d-%02d-01 00:00:00', $year, $month ),
+					'before' => self::shift_month( $year, $month, 1 ) . '-01 00:00:00',
+					'tags'   => $tags,
+					'teams'  => $team_ids,
+					'limit'  => 0,
+				)
+			),
+			$venue,
+			$team_ids
 		);
 	}
 

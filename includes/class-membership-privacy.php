@@ -86,7 +86,8 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Agreed to the club keeping these details (UTC)', 'chess-army-knife' ) => $member['consent_at'],
 				__( 'Agreed to receive the newsletter (UTC)', 'chess-army-knife' ) => $member['newsletter_consent_at'],
 				__( 'Agreed to be added to WhatsApp groups (UTC)', 'chess-army-knife' ) => $member['whatsapp_consent_at'],
-				__( 'WhatsApp groups for teams', 'chess-army-knife' ) => implode( ', ', $member['whatsapp_teams'] ),
+				__( 'WhatsApp groups for teams', 'chess-army-knife' ) => implode( ', ', Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) ),
+				__( 'Last renewal reminder sent (expiry date and days before it)', 'chess-army-knife' ) => $member['renewal_reminder'],
 				__( 'Record created (UTC)', 'chess-army-knife' ) => $member['created_at'],
 			);
 
@@ -150,6 +151,92 @@ class Chess_Army_Knife_Membership_Privacy {
 						array(
 							'name'  => __( 'Kinds of email', 'chess-army-knife' ),
 							'value' => implode( ', ', $opt_outs ),
+						),
+					),
+				);
+			}
+		}
+
+		// Whether they can play, and the line-ups they were picked for.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Selection::records_for_person( $member['id'] ) as $record ) {
+				$event   = get_post( $record['event_id'] );
+				$team    = Chess_Army_Knife_Teams::get( $record['team_id'] );
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-selection',
+					'group_label' => __( 'Club team selection', 'chess-army-knife' ),
+					'item_id'     => 'selection-' . $record['event_id'] . '-' . $record['team_id'] . '-' . $member['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Fixture', 'chess-army-knife' ),
+							'value' => $event ? get_the_title( $event ) : '',
+						),
+						array(
+							'name'  => __( 'Team', 'chess-army-knife' ),
+							'value' => $team ? $team['name'] : '',
+						),
+						array(
+							'name'  => __( 'Your reply', 'chess-army-knife' ),
+							'value' => $record['response'],
+						),
+						array(
+							'name'  => __( 'Board picked for', 'chess-army-knife' ),
+							'value' => $record['board'] ? (string) $record['board'] : '',
+						),
+					),
+				);
+			}
+		}
+
+		// The events they have registered for.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Event_Registrations::for_person( $member['id'] ) as $registration ) {
+				$event   = get_post( $registration['event_id'] );
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-registrations',
+					'group_label' => __( 'Club events you registered for', 'chess-army-knife' ),
+					'item_id'     => 'registration-' . $registration['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Event', 'chess-army-knife' ),
+							'value' => $event ? get_the_title( $event ) : '',
+						),
+						array(
+							'name'  => __( 'Status', 'chess-army-knife' ),
+							'value' => Chess_Army_Knife_Event_Registrations::STATUS_WAITING === $registration['status'] ? __( 'Waiting list', 'chess-army-knife' ) : __( 'Registered', 'chess-army-knife' ),
+						),
+						array(
+							'name'  => __( 'Guests', 'chess-army-knife' ),
+							'value' => (string) $registration['guests'],
+						),
+						array(
+							'name'  => __( 'Attended', 'chess-army-knife' ),
+							'value' => $registration['attended'] ? __( 'Yes', 'chess-army-knife' ) : '',
+						),
+						array(
+							'name'  => __( 'Registered (UTC)', 'chess-army-knife' ),
+							'value' => $registration['registered_at'],
+						),
+					),
+				);
+			}
+		}
+
+		// The teams they are in the squad of, or captain.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Teams::teams_of_person( $member['id'] ) as $team ) {
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-teams',
+					'group_label' => __( 'Club teams you are in', 'chess-army-knife' ),
+					'item_id'     => 'team-' . $team['id'] . '-' . $member['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Team', 'chess-army-knife' ),
+							'value' => $team['name'],
+						),
+						array(
+							'name'  => __( 'Captain', 'chess-army-knife' ),
+							'value' => $team['captain'] ? __( 'Yes', 'chess-army-knife' ) : '',
 						),
 					),
 				);
@@ -228,6 +315,9 @@ class Chess_Army_Knife_Membership_Privacy {
 				if ( Chess_Army_Knife_Tournament_Store::person_has_entries( $member['id'] ) ) {
 					$messages[] = __( 'Tournament entries were kept, without any personal details, so past tournaments still add up.', 'chess-army-knife' );
 				}
+				if ( Chess_Army_Knife_Event_Registrations::person_has_registrations( $member['id'] ) ) {
+					$messages[] = __( 'Event registrations were kept, without any personal details, so attendance at past events still adds up.', 'chess-army-knife' );
+				}
 				if ( $photos ) {
 					/* translators: 1: number of photos, 2: member record number */
 					$messages[] = sprintf( _n( '%1$d photo tagged with this person was not deleted, because photos can show other people. It needs reviewing by hand: in the Media Library, filter by the record "Erased member" (record %2$d).', '%1$d photos tagged with this person were not deleted, because photos can show other people. They need reviewing by hand: in the Media Library, filter by the record "Erased member" (record %2$d).', $photos, 'chess-army-knife' ), $photos, $member['id'] );
@@ -301,6 +391,10 @@ class Chess_Army_Knife_Membership_Privacy {
 				'paragraphs' => array(
 					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
 					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
+					__( 'You can see and correct your details, choose what we email you, and delete your details yourself, at any time, from the members\' page on this website. You sign in with a link we email to the address we hold for you.', 'chess-army-knife' ),
+					__( 'If you play in a club team, the team captain can see your name and rating, ask you whether you can play in a fixture, and record your reply and whether they pick you. A reply or line-up is deleted with the fixture, if you ask us to delete your details, or after the retention period.', 'chess-army-knife' ),
+					__( 'If you register for a club event we record that, with the time, the number of guests you bring and whether you came. If you are not a member we keep your name and email address as a record of a non-member. Registrations are deleted after the retention period below.', 'chess-army-knife' ),
+					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. Only club officers can see this.', 'chess-army-knife' ),
 					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),
 				),
 			),
@@ -320,7 +414,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				'heading'    => __( 'Newsletters and WhatsApp groups', 'chess-army-knife' ),
 				'paragraphs' => array(
 					__( 'We only send you the club newsletter, or add you to a WhatsApp group for a club team, if you have said yes on the application form or to a club officer. These are separate choices: you can say no to either and still be a member. For WhatsApp we also record which team\'s group you asked to join. If you are added to a group, the other members can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added using their parent or guardian\'s agreement and number unless they say otherwise. You can change your mind at any time: use the Manage My Data page on this website, or contact us, and we will stop.', 'chess-army-knife' ),
-					__( 'We also email members about their membership, such as renewal reminders, and about club events and fixtures. These are service messages, so they do not need a separate opt-in, but every email has a link to stop that kind of email. We keep a log of the emails we send (the subject and the time, not the text) for a limited time, and delete it if your details are erased. Emails for a junior go to their parent or guardian.', 'chess-army-knife' ),
+					__( 'We also email members about their membership, such as renewal reminders, about club events and fixtures, and with club announcements. Announcements are also kept so members can read past ones after signing in to their member page. These are service messages, so they do not need a separate opt-in, but every email has a link to stop that kind of email. We keep a log of the emails we send (the subject and the time, not the text) for a limited time, and delete it if your details are erased. Emails for a junior go to their parent or guardian.', 'chess-army-knife' ),
 				),
 			),
 			array(

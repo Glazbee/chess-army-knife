@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "chess-army-knife/member-portal",
+	"title": "Member Portal",
+	"category": "widgets",
+	"icon": "id-alt",
+	"description": "Lets members see and correct their own details, choose what they are emailed about, see their membership and event places, and delete their data. No account is needed: members sign in with a link emailed to them.",
+	"keywords": [ "chess", "club", "member", "portal", "account", "profile", "my details" ],
+	"version": "0.0.1",
+	"textdomain": "chess-army-knife",
+	"attributes": {
+		"title": { "type": "string", "default": "" }
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

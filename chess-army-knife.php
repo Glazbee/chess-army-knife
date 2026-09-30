@@ -44,17 +44,34 @@ require_once Chess_Army_Knife_DIR . 'includes/class-events-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-display.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-import.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-events-feed.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-event-registrations.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-captains.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-selection.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-announcements.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-teams.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-teams-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-form.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-notification-preferences.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-mailer.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-renewal-reminders.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-rating-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-photos.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-requests.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-privacy.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-members-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-event-registration-form.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-availability-reply.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-selection-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-announcements-admin.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-member-portal.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-event-registrations-admin.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-renewals-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-member-stats.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-dashboard-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
 /**
@@ -67,6 +84,9 @@ function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Membership_Store::install_table();
 	Chess_Army_Knife_Notification_Preferences::install_table();
 	Chess_Army_Knife_Mailer::install_table();
+	Chess_Army_Knife_Teams::install_table();
+	Chess_Army_Knife_Event_Registrations::install_table();
+	Chess_Army_Knife_Selection::install_tables();
 
 	// The event post type needs its URLs registered before they are flushed.
 	Chess_Army_Knife_Events::register();
@@ -84,6 +104,8 @@ function Chess_Army_Knife_activate() {
 
 	Chess_Army_Knife_Rating_Refresh::schedule();
 	Chess_Army_Knife_Mailer::schedule();
+	Chess_Army_Knife_Renewal_Reminders::schedule();
+	Chess_Army_Knife_Announcements::schedule();
 }
 register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
 
@@ -98,6 +120,8 @@ function Chess_Army_Knife_deactivate() {
 	wp_clear_scheduled_hook( 'Chess_Army_Knife_cleanup_cache' );
 	Chess_Army_Knife_Rating_Refresh::unschedule();
 	Chess_Army_Knife_Mailer::unschedule();
+	Chess_Army_Knife_Renewal_Reminders::unschedule();
+	Chess_Army_Knife_Announcements::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 
@@ -125,6 +149,9 @@ function Chess_Army_Knife_maybe_upgrade() {
 		Chess_Army_Knife_Membership_Store::install_table();
 		Chess_Army_Knife_Notification_Preferences::install_table();
 		Chess_Army_Knife_Mailer::install_table();
+		Chess_Army_Knife_Teams::install_table();
+		Chess_Army_Knife_Event_Registrations::install_table();
+		Chess_Army_Knife_Selection::install_tables();
 		update_option( 'Chess_Army_Knife_db_version', Chess_Army_Knife_VERSION );
 	}
 }

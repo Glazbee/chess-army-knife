@@ -23,6 +23,9 @@ function initMonth( root ) {
 		url.searchParams.set( 'month', month );
 		url.searchParams.set( 'tags', root.dataset.tags || '' );
 		url.searchParams.set( 'location', root.dataset.location || '1' );
+		url.searchParams.set( 'teams', root.dataset.teams || '' );
+		url.searchParams.set( 'venue', root.dataset.venue || 'all' );
+		url.searchParams.set( 'showteams', root.dataset.showTeams || '1' );
 
 		window
 			.fetch( url.toString(), { credentials: 'omit' } )

@@ -36,17 +36,31 @@ class Chess_Army_Knife_Events_REST {
 				'callback'            => array( __CLASS__, 'month' ),
 				'permission_callback' => '__return_true', // Public data.
 				'args'                => array(
-					'month'    => array(
+					'month'     => array(
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'tags'     => array(
+					'tags'      => array(
 						'type'              => 'string',
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'location' => array(
+					'location'  => array(
+						'type'    => 'string',
+						'default' => '1',
+					),
+					'teams'     => array(
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'venue'     => array(
+						'type'              => 'string',
+						'default'           => 'all',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'showteams' => array(
 						'type'    => 'string',
 						'default' => '1',
 					),
@@ -83,8 +97,12 @@ class Chess_Army_Knife_Events_REST {
 
 		list( $year, $month ) = $parsed;
 
-		$tags    = Chess_Army_Knife_Events_Display::tag_slugs( explode( ',', (string) $request['tags'] ) );
-		$options = array( 'show_location' => '0' !== (string) $request['location'] );
+		$tags     = Chess_Army_Knife_Events_Display::tag_slugs( explode( ',', (string) $request['tags'] ) );
+		$team_ids = array_values( array_filter( array_map( 'absint', explode( ',', (string) $request['teams'] ) ) ) );
+		$options  = array(
+			'show_location' => '0' !== (string) $request['location'],
+			'show_teams'    => '0' !== (string) $request['showteams'],
+		);
 
 		$response = new WP_REST_Response(
 			array(
@@ -92,7 +110,7 @@ class Chess_Army_Knife_Events_REST {
 				'label' => Chess_Army_Knife_Events_Display::month_label( $year, $month ),
 				'prev'  => Chess_Army_Knife_Events_Display::shift_month( $year, $month, -1 ),
 				'next'  => Chess_Army_Knife_Events_Display::shift_month( $year, $month, 1 ),
-				'html'  => Chess_Army_Knife_Events_Display::month_html( $year, $month, Chess_Army_Knife_Events_Display::month_events( $year, $month, $tags ), $options ),
+				'html'  => Chess_Army_Knife_Events_Display::month_html( $year, $month, Chess_Army_Knife_Events_Display::month_events( $year, $month, $tags, $team_ids, (string) $request['venue'] ), $options ),
 			)
 		);
 		$response->header( 'Cache-Control', 'public, max-age=60' );

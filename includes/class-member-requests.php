@@ -235,7 +235,7 @@ class Chess_Army_Knife_Member_Requests {
 	 *
 	 * @return string
 	 */
-	protected static function visitor_key() {
+	public static function visitor_key() {
 		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
 		return 'chess_army_knife_data_ip_' . md5( $address );
 	}
@@ -246,7 +246,7 @@ class Chess_Army_Knife_Member_Requests {
 	 * @param string $key Transient key.
 	 * @return bool
 	 */
-	protected static function over_limit( $key ) {
+	public static function over_limit( $key ) {
 		return (int) get_transient( $key ) >= self::MAX_PER_HOUR;
 	}
 
@@ -255,7 +255,7 @@ class Chess_Army_Knife_Member_Requests {
 	 *
 	 * @param string $key Transient key.
 	 */
-	protected static function count( $key ) {
+	public static function count( $key ) {
 		set_transient( $key, (int) get_transient( $key ) + 1, HOUR_IN_SECONDS );
 	}
 }

@@ -5,7 +5,7 @@
   "title": "Club Event Calendar",
   "category": "widgets",
   "icon": "calendar",
-  "description": "Lists upcoming club events by date, optionally only those with chosen tags.",
+  "description": "Lists upcoming club events by date, optionally only those with chosen tags or teams, home or away, with a calendar feed to subscribe to.",
   "keywords": [
     "chess",
     "club",
@@ -44,6 +44,25 @@
       "default": true
     },
     "showLinks": {
+      "type": "boolean",
+      "default": true
+    },
+    "showTeams": {
+      "type": "boolean",
+      "default": true
+    },
+    "teamIds": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "venue": {
+      "type": "string",
+      "default": "all"
+    },
+    "showSubscribe": {
       "type": "boolean",
       "default": true
     },

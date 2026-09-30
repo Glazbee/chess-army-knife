@@ -1,0 +1,28 @@
+.wp-block-chess-army-knife-event-registration {
+	margin-bottom: 1.5em;
+
+	.cak-registration__notice {
+		margin: 0 0 1em;
+		padding: 0.6em 0.9em;
+		border-left: 4px solid currentcolor;
+		background: rgba(0, 0, 0, 0.04);
+	}
+
+	.cak-registration__notice.is-error {
+		border-left-color: #b32d2e;
+	}
+
+	.cak-registration__field {
+		margin: 0 0 0.8em;
+	}
+
+	.cak-registration__field label {
+		display: block;
+		font-weight: 600;
+	}
+
+	.cak-registration__hp {
+		position: absolute;
+		left: -9999px;
+	}
+}
