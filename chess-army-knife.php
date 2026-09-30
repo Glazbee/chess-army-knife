@@ -45,6 +45,8 @@ require_once Chess_Army_Knife_DIR . 'includes/class-events-display.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-import.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-teams.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-teams-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-form.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-notification-preferences.php';
@@ -71,6 +73,7 @@ function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Membership_Store::install_table();
 	Chess_Army_Knife_Notification_Preferences::install_table();
 	Chess_Army_Knife_Mailer::install_table();
+	Chess_Army_Knife_Teams::install_table();
 
 	// The event post type needs its URLs registered before they are flushed.
 	Chess_Army_Knife_Events::register();
@@ -131,6 +134,7 @@ function Chess_Army_Knife_maybe_upgrade() {
 		Chess_Army_Knife_Membership_Store::install_table();
 		Chess_Army_Knife_Notification_Preferences::install_table();
 		Chess_Army_Knife_Mailer::install_table();
+		Chess_Army_Knife_Teams::install_table();
 		update_option( 'Chess_Army_Knife_db_version', Chess_Army_Knife_VERSION );
 	}
 }

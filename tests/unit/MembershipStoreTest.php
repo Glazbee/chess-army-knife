@@ -34,7 +34,23 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		Functions\when( 'get_post_meta' )->justReturn( '' );
 		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
 
-		// The club's teams (the same team in two seasons is one team).
+		// The club's teams, as team posts: Club A (id 11) and Club B (id 12).
+		Functions\when( 'get_posts' )->justReturn(
+			array(
+				(object) array(
+					'ID'           => 11,
+					'post_title'   => 'Club A',
+					'post_excerpt' => '',
+				),
+				(object) array(
+					'ID'           => 12,
+					'post_title'   => 'Club B',
+					'post_excerpt' => '',
+				),
+			)
+		);
+
+		// The club's league entries (the same team in two seasons is one entry per season).
 		$this->options['Chess_Army_Knife_club_teams'] = array(
 			array(
 				'org'   => '613',
@@ -231,8 +247,19 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'member_whatsapp', $no_number->get_error_code(), 'The junior\'s own number is not kept, so it cannot be used.' );
 	}
 
-	public function test_the_club_offers_each_team_once_by_name() {
-		$this->assertSame( array( 'Club A', 'Club B' ), Chess_Army_Knife_Memberships::team_names() );
+	public function test_the_club_offers_its_teams_by_id() {
+		$this->assertSame(
+			array(
+				11 => 'Club A',
+				12 => 'Club B',
+			),
+			Chess_Army_Knife_Teams::choices()
+		);
+	}
+
+	public function test_old_team_names_become_ids_and_unknown_ones_are_kept() {
+		$this->assertSame( array( 12, 11, 'Ghost Team' ), Chess_Army_Knife_Teams::normalise_ids( array( 'Club B', '11', 'Ghost Team', 'club a' ) ) );
+		$this->assertSame( array( 'Club B', 'Gone', 'Club A' ), Chess_Army_Knife_Teams::labels( array( 12, 'Gone', 11 ) ) );
 	}
 
 	public function test_the_teams_chosen_are_kept_only_with_a_whatsapp_opt_in_and_only_if_the_club_has_them() {
@@ -241,14 +268,14 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 				array(
 					'phone'          => '0123',
 					'whatsapp'       => '1',
-					'whatsapp_teams' => array( 'Club B', 'Club B', 'Not A Team', '<b>Club A</b>', 'Club A' ),
+					'whatsapp_teams' => array( '12', '12', '99', 'Club A', '11' ),
 				)
 			),
 			false
 		);
-		$this->assertSame( '["Club B","Club A"]', $chosen['whatsapp_teams'] );
+		$this->assertSame( '[12,11]', $chosen['whatsapp_teams'] );
 
-		$no_opt_in = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp_teams' => array( 'Club A' ) ) ), false );
+		$no_opt_in = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp_teams' => array( '11' ) ) ), false );
 		$this->assertSame( '', $no_opt_in['whatsapp_teams'], 'Teams without a WhatsApp opt-in are not kept.' );
 		$this->assertNull( $no_opt_in['whatsapp_consent_at'] );
 

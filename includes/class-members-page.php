@@ -398,7 +398,7 @@ class Chess_Army_Knife_Members_Page {
 									$agreed[] = __( 'Newsletter', 'chess-army-knife' );
 								}
 								if ( '' !== $member['whatsapp_consent_at'] ) {
-									$agreed[] = $member['whatsapp_teams'] ? sprintf( /* translators: %s: team names */ __( 'WhatsApp (%s)', 'chess-army-knife' ), implode( ', ', $member['whatsapp_teams'] ) ) : __( 'WhatsApp', 'chess-army-knife' );
+									$agreed[] = $member['whatsapp_teams'] ? sprintf( /* translators: %s: team names */ __( 'WhatsApp (%s)', 'chess-army-knife' ), implode( ', ', Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) ) ) : __( 'WhatsApp', 'chess-army-knife' );
 								}
 								echo $agreed ? esc_html( implode( ', ', $agreed ) ) : '&mdash;';
 								?>
@@ -585,9 +585,9 @@ class Chess_Army_Knife_Members_Page {
 								<input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $member['whatsapp_consent_at'] ); ?> />
 								<?php esc_html_e( 'Has agreed to be added to WhatsApp groups (their phone number is visible to the group)', 'chess-army-knife' ); ?>
 							</label>
-							<?php foreach ( Chess_Army_Knife_Memberships::team_names() as $team_name ) : ?>
+							<?php foreach ( Chess_Army_Knife_Teams::choices() as $team_id => $team_name ) : ?>
 								<label style="display:block;margin-left:1.5em">
-									<input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_name ); ?>" <?php checked( in_array( $team_name, $member['whatsapp_teams'], true ) ); ?> />
+									<input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( in_array( $team_id, $member['whatsapp_teams'], true ) ); ?> />
 									<?php echo esc_html( $team_name ); ?>
 								</label>
 							<?php endforeach; ?>

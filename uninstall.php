@@ -70,10 +70,10 @@ if ( $chess_army_knife_delete_data ) {
 	}
 }
 
-// Membership types and members (personal details) are user data too: only removed if the admin opted in.
+// Membership types, teams and members (personal details) are user data too: only removed if the admin opted in.
 if ( $chess_army_knife_delete_data ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup of plugin-owned data and tables.
-	$chess_army_knife_type_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s", 'chess_army_mem_type' ) );
+	$chess_army_knife_type_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( %s, %s )", 'chess_army_mem_type', 'chess_army_team' ) );
 	foreach ( $chess_army_knife_type_ids as $chess_army_knife_type_id ) {
 		wp_delete_post( (int) $chess_army_knife_type_id, true );
 	}
@@ -81,7 +81,7 @@ if ( $chess_army_knife_delete_data ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_members" );
 
-	foreach ( array( 'mail', 'optouts' ) as $chess_army_knife_mail_table ) {
+	foreach ( array( 'mail', 'optouts', 'squad' ) as $chess_army_knife_mail_table ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_{$chess_army_knife_mail_table}" );
 	}

@@ -282,15 +282,15 @@ class Chess_Army_Knife_Membership_Store {
 	/**
 	 * Keep only the teams the club has, as the text stored for them.
 	 *
-	 * @param mixed $submitted Team names ticked on a form.
-	 * @return string JSON list of team names, or '' for none.
+	 * @param mixed $submitted Team ids ticked on a form.
+	 * @return string JSON list of team ids, or '' for none.
 	 */
 	public static function clean_teams( $submitted ) {
-		$allowed = Chess_Army_Knife_Memberships::team_names();
+		$allowed = array_keys( Chess_Army_Knife_Teams::choices() );
 		$teams   = array();
 
 		foreach ( (array) $submitted as $team ) {
-			$team = sanitize_text_field( (string) $team );
+			$team = absint( $team );
 			if ( in_array( $team, $allowed, true ) ) {
 				$teams[ $team ] = $team;
 			}
@@ -933,6 +933,7 @@ class Chess_Army_Knife_Membership_Store {
 		// What they were emailed, and their email choices, are never kept.
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
+		Chess_Army_Knife_Teams::remove_person( $id );
 
 		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) ) {
 			self::delete_member( $id );
@@ -975,6 +976,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Member_Photos::remove_member( $id );
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
+		Chess_Army_Knife_Teams::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table(), array( 'id' => (int) $id ), array( '%d' ) );
 		do_action( 'Chess_Army_Knife_members_changed' );
@@ -993,7 +995,7 @@ class Chess_Army_Knife_Membership_Store {
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
 		$row['ecf_checked_at']     = null === $row['ecf_checked_at'] ? '' : (string) $row['ecf_checked_at'];
 		$teams                     = json_decode( (string) $row['whatsapp_teams'], true );
-		$row['whatsapp_teams']     = is_array( $teams ) ? array_values( array_map( 'strval', $teams ) ) : array();
+		$row['whatsapp_teams']     = is_array( $teams ) ? Chess_Army_Knife_Teams::normalise_ids( $teams ) : array();
 
 		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];

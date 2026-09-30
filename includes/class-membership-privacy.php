@@ -86,7 +86,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Agreed to the club keeping these details (UTC)', 'chess-army-knife' ) => $member['consent_at'],
 				__( 'Agreed to receive the newsletter (UTC)', 'chess-army-knife' ) => $member['newsletter_consent_at'],
 				__( 'Agreed to be added to WhatsApp groups (UTC)', 'chess-army-knife' ) => $member['whatsapp_consent_at'],
-				__( 'WhatsApp groups for teams', 'chess-army-knife' ) => implode( ', ', $member['whatsapp_teams'] ),
+				__( 'WhatsApp groups for teams', 'chess-army-knife' ) => implode( ', ', Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) ),
 				__( 'Last renewal reminder sent (expiry date and days before it)', 'chess-army-knife' ) => $member['renewal_reminder'],
 				__( 'Record created (UTC)', 'chess-army-knife' ) => $member['created_at'],
 			);
@@ -151,6 +151,27 @@ class Chess_Army_Knife_Membership_Privacy {
 						array(
 							'name'  => __( 'Kinds of email', 'chess-army-knife' ),
 							'value' => implode( ', ', $opt_outs ),
+						),
+					),
+				);
+			}
+		}
+
+		// The teams they are in the squad of, or captain.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Teams::teams_of_person( $member['id'] ) as $team ) {
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-teams',
+					'group_label' => __( 'Club teams you are in', 'chess-army-knife' ),
+					'item_id'     => 'team-' . $team['id'] . '-' . $member['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Team', 'chess-army-knife' ),
+							'value' => $team['name'],
+						),
+						array(
+							'name'  => __( 'Captain', 'chess-army-knife' ),
+							'value' => $team['captain'] ? __( 'Yes', 'chess-army-knife' ) : '',
 						),
 					),
 				);
@@ -302,6 +323,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				'paragraphs' => array(
 					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
 					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
+					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. Only club officers can see this.', 'chess-army-knife' ),
 					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),
 				),
 			),

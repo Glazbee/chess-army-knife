@@ -16,7 +16,7 @@ $intro_text   = isset( $attributes['introText'] ) ? trim( (string) $attributes['
 $consent_text = isset( $attributes['consentText'] ) ? trim( (string) $attributes['consentText'] ) : '';
 
 $membership_types = Chess_Army_Knife_Memberships::types();
-$team_names       = Chess_Army_Knife_Memberships::team_names();
+$team_choices     = Chess_Army_Knife_Teams::choices();
 $page_url         = get_permalink();
 
 // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of a submission; nothing is changed.
@@ -131,11 +131,11 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 				<p class="cak-membership-form__check">
 					<label><input type="checkbox" name="whatsapp" value="1" /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group for the club team(s) ticked below. The other people in the group will be able to see the name and phone number.', 'chess-army-knife' ); ?></label>
 				</p>
-				<?php if ( $team_names ) : ?>
+				<?php if ( $team_choices ) : ?>
 					<p class="cak-membership-form__hint"><?php esc_html_e( 'Which team(s) do you play for?', 'chess-army-knife' ); ?></p>
-					<?php foreach ( $team_names as $team_name ) : ?>
+					<?php foreach ( $team_choices as $team_id => $team_name ) : ?>
 						<p class="cak-membership-form__check">
-							<label><input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_name ); ?>" /> <?php echo esc_html( $team_name ); ?></label>
+							<label><input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_id ); ?>" /> <?php echo esc_html( $team_name ); ?></label>
 						</p>
 					<?php endforeach; ?>
 				<?php endif; ?>
