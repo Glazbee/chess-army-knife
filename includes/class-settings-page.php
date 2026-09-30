@@ -76,6 +76,7 @@ class Chess_Army_Knife_Settings {
 			'default_org_id'           => '',
 			'default_event_name'       => '',
 			'default_domain'           => 'S',
+			'ecf_club_code'            => '', // The club's ECF code, to refresh all members' ratings in one request.
 			'default_days_back'        => 60,
 			'default_max_players'      => 12,
 			'lms_base_url'             => '',
@@ -248,6 +249,9 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['default_event_name'] ) ) {
 			$clean['default_event_name'] = sanitize_text_field( $input['default_event_name'] );
 		}
+		if ( isset( $input['ecf_club_code'] ) ) {
+			$clean['ecf_club_code'] = strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', sanitize_text_field( $input['ecf_club_code'] ) ) );
+		}
 		if ( isset( $input['default_domain'] ) ) {
 			$clean['default_domain'] = Chess_Army_Knife_ECF_Client::normalise_domain( $input['default_domain'] );
 		}
@@ -382,6 +386,13 @@ class Chess_Army_Knife_Settings {
 								}
 								?>
 							</select>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="ecf_club_code"><?php esc_html_e( 'ECF club code', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="ecf_club_code" name="<?php echo esc_attr( self::OPTION ); ?>[ecf_club_code]" value="<?php echo esc_attr( $options['ecf_club_code'] ); ?>" class="regular-text" placeholder="e.g. 4USL" />
+							<p class="description"><?php esc_html_e( 'Your club\'s ECF code. Members\' ratings are then refreshed from the ECF\'s club list in a single request instead of one request per member. Only ratings of people already on your records are kept; the rest of the list is not stored.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

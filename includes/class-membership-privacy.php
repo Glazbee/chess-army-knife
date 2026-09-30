@@ -265,7 +265,7 @@ class Chess_Army_Knife_Membership_Privacy {
 			array(
 				'heading'    => __( 'Sharing with the English Chess Federation', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'The club provides its playing members to the English Chess Federation (ECF) so that their games can be rated. For this we give the ECF your name and ECF rating code, and any other details it needs to rate your games. We also fetch your current ECF rating from the ECF regularly and keep the latest one with your record. The ECF looks after its information under its own privacy policy.', 'chess-army-knife' ),
+					__( 'The club provides its playing members to the English Chess Federation (ECF) so that their games can be rated. For this we give the ECF your name and ECF rating code, and any other details it needs to rate your games. We also fetch your current ECF rating from the ECF regularly and keep the latest one with your record. To do this we ask the ECF for the list of players at our club and keep only the ratings of people we already have a record of; the rest of that list is not stored. The ECF looks after its information under its own privacy policy.', 'chess-army-knife' ),
 				),
 			),
 			array(

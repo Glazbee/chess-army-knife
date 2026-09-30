@@ -15,6 +15,13 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_ECF_Client {
 
+	/** Which column of the ECF club list holds each rating list. */
+	const ROSTER_COLUMNS = array(
+		'S' => 'std',
+		'R' => 'rpd',
+		'B' => 'btz',
+	);
+
 	const BASE = 'https://rating.englishchess.org.uk/api';
 
 	/**
@@ -136,6 +143,88 @@ class Chess_Army_Knife_ECF_Client {
 			$ttl,
 			function () use ( $code ) {
 				return self::request( '/players/rating-code', array( 'code' => $code ) );
+			}
+		);
+	}
+
+	/**
+	 * Ratings for some of a club's players, from the ECF's club roster in one
+	 * request instead of one per player.
+	 *
+	 * The roster lists everyone at the club, including people the club holds no
+	 * record of. It is therefore fetched without being cached, and only the
+	 * players asked for (those the club already has a record of) are kept: the
+	 * rest of the list never leaves this method and is not stored anywhere.
+	 *
+	 * @param string   $club_code ECF club code, for example 4USL.
+	 * @param string   $domain    Rating list: S, R or B (the roster has no online lists).
+	 * @param string[] $wanted    ECF rating codes of the recorded players to keep.
+	 * @return array|WP_Error Rating (int, or null if unrated) by digits of the ECF code, for each wanted player the roster lists.
+	 */
+	public static function get_club_ratings( $club_code, $domain, array $wanted ) {
+		$club_code = strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', (string) $club_code ) );
+		$domain    = self::normalise_domain( $domain );
+
+		if ( '' === $club_code ) {
+			return new WP_Error( 'ecf_bad_club', __( 'Please provide an ECF club code.', 'chess-army-knife' ) );
+		}
+		if ( ! isset( self::ROSTER_COLUMNS[ $domain ] ) ) {
+			return new WP_Error( 'ecf_roster_domain', __( 'The ECF club list only has standard, rapid and blitz ratings.', 'chess-army-knife' ) );
+		}
+
+		$keep = array();
+		foreach ( $wanted as $code ) {
+			$digits = self::normalise_code( $code );
+			if ( '' !== $digits ) {
+				$keep[ $digits ] = true;
+			}
+		}
+
+		$result = self::request( '/clubs/players', array( 'code' => $club_code ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		$columns = array_flip( isset( $result['column_names'] ) ? (array) $result['column_names'] : array() );
+		$code_at = isset( $columns['ECF_code'] ) ? $columns['ECF_code'] : null;
+		$rate_at = isset( $columns[ self::ROSTER_COLUMNS[ $domain ] ] ) ? $columns[ self::ROSTER_COLUMNS[ $domain ] ] : null;
+		if ( null === $code_at || null === $rate_at ) {
+			return new WP_Error( 'ecf_bad_response', __( 'The ECF club list was not in the expected form.', 'chess-army-knife' ) );
+		}
+
+		$ratings = array();
+		foreach ( isset( $result['players'] ) ? (array) $result['players'] : array() as $row ) {
+			if ( ! isset( $row[ $code_at ] ) ) {
+				continue;
+			}
+			$digits = self::normalise_code( $row[ $code_at ] );
+			if ( ! isset( $keep[ $digits ] ) ) {
+				continue; // Someone the club holds no record of: dropped here.
+			}
+			$rating             = isset( $row[ $rate_at ] ) && is_numeric( $row[ $rate_at ] ) && (int) $row[ $rate_at ] > 0 ? (int) $row[ $rate_at ] : null;
+			$ratings[ $digits ] = $rating;
+		}
+
+		return $ratings;
+	}
+
+	/**
+	 * Fill the cached current rating for a player from a rating already fetched,
+	 * so what the blocks read is fresh without a request of their own.
+	 *
+	 * @param string $code   ECF rating code.
+	 * @param string $domain Rating list.
+	 * @param int    $rating The rating.
+	 */
+	public static function prime_rating( $code, $domain, $rating ) {
+		$key = self::cache_key_rating( $code, $domain );
+
+		Chess_Army_Knife_Cache::forget( $key );
+		Chess_Army_Knife_Cache::remember(
+			$key,
+			self::ttl( 'rating', 12 * HOUR_IN_SECONDS ),
+			function () use ( $rating ) {
+				return array( 'revised_rating' => (int) $rating );
 			}
 		);
 	}

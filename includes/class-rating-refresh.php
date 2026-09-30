@@ -2,12 +2,14 @@
 /**
  * Keeps every current member's ECF rating up to date in the background.
  *
- * An hourly job works through the members who have an ECF rating code, least
- * recently checked first, a small batch at a time. That keeps the load on the
- * ECF's API low and predictable (it limits how much processing one site may use
- * per day), and means visitors never wait for a rating to be fetched: the
- * cached copy the blocks read is always freshly filled. The latest rating is
- * also kept on the member's record.
+ * An hourly job refreshes the members who have an ECF rating code when they
+ * are due (once per cache period). With the club's ECF code set, one request
+ * for the club's roster covers every member at once; anyone it does not cover
+ * is then checked individually, least recently checked first, a small batch at
+ * a time. That keeps the load on the ECF's API low and predictable (it limits
+ * how much processing one site may use per day), and means visitors never wait
+ * for a rating: the cached copy the blocks read is always freshly filled. The
+ * latest rating is also kept on the member's record.
  *
  * Only people the club holds a record of are ever looked up, and only current
  * members are refreshed this way.
@@ -67,24 +69,36 @@ class Chess_Army_Knife_Rating_Refresh {
 	/**
 	 * Refresh the members whose rating is due.
 	 *
-	 * @param int|null $limit Most members to check, or null for the usual batch.
-	 * @return array { checked, updated, failed } counts.
+	 * @param int|null $limit Most members to check individually, or null for the usual batch.
+	 * @return array { checked, updated, failed, roster } counts; roster is how many were covered by the one club request.
 	 */
 	public static function run( $limit = null ) {
 		$options = Chess_Army_Knife_Settings::get_options();
 		$domain  = Chess_Army_Knife_ECF_Client::normalise_domain( $options['default_domain'] );
 		$minutes = max( 5, (int) $options['cache_ecf_minutes'] );
 		$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $minutes * MINUTE_IN_SECONDS );
+		$batch   = null === $limit ? self::batch_size() : (int) $limit;
 
-		$result   = array(
+		$result = array(
 			'checked' => 0,
 			'updated' => 0,
 			'failed'  => 0,
+			'roster'  => 0,
 		);
-		$in_a_row = 0;
-		$due      = Chess_Army_Knife_Membership_Store::get_due_for_rating( $cutoff, null === $limit ? self::batch_size() : (int) $limit );
 
-		foreach ( $due as $member ) {
+		// Nothing due: no request at all.
+		if ( ! Chess_Army_Knife_Membership_Store::get_due_for_rating( $cutoff, 1 ) ) {
+			return $result;
+		}
+
+		// One request for the whole club, when the club's code is known.
+		if ( '' !== (string) $options['ecf_club_code'] ) {
+			$result = self::refresh_from_roster( (string) $options['ecf_club_code'], $domain, $result );
+		}
+
+		// Whoever the roster did not cover (or everyone, without a club code), one at a time.
+		$in_a_row = 0;
+		foreach ( Chess_Army_Knife_Membership_Store::get_due_for_rating( $cutoff, $batch ) as $member ) {
 			$code = Chess_Army_Knife_ECF_Client::normalise_code( $member['ecf_code'] );
 
 			// Fetch fresh rather than reuse the cache, so the cache is refilled with today's rating.
@@ -108,6 +122,43 @@ class Chess_Army_Knife_Rating_Refresh {
 			$rating   = Chess_Army_Knife_Tournaments::rating_from_data( $data );
 			Chess_Army_Knife_Membership_Store::record_rating_check( $member['id'], $rating, $domain );
 			if ( null !== $rating ) {
+				++$result['updated'];
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Refresh every current member the club's roster lists, from one request.
+	 *
+	 * @param string $club_code ECF club code.
+	 * @param string $domain    Rating list.
+	 * @param array  $result    Counts so far.
+	 * @return array The counts, with the members covered added.
+	 */
+	protected static function refresh_from_roster( $club_code, $domain, array $result ) {
+		$members = Chess_Army_Knife_Membership_Store::get_players( '', true, 0, true );
+		$wanted  = wp_list_pluck( $members, 'ecf_code' );
+
+		// Only the ratings of people the club has a record of come back; nobody else is kept.
+		$ratings = Chess_Army_Knife_ECF_Client::get_club_ratings( $club_code, $domain, $wanted );
+		if ( is_wp_error( $ratings ) ) {
+			return $result; // The individual requests below carry on instead.
+		}
+
+		foreach ( $members as $member ) {
+			$digits = Chess_Army_Knife_ECF_Client::normalise_code( $member['ecf_code'] );
+			if ( ! array_key_exists( $digits, $ratings ) ) {
+				continue;
+			}
+
+			$rating = $ratings[ $digits ];
+			Chess_Army_Knife_Membership_Store::record_rating_check( $member['id'], $rating, $domain );
+			++$result['checked'];
+			++$result['roster'];
+			if ( null !== $rating ) {
+				Chess_Army_Knife_ECF_Client::prime_rating( $digits, $domain, $rating );
 				++$result['updated'];
 			}
 		}

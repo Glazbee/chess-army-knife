@@ -176,6 +176,79 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertFalse( $gated );
 	}
 
+	private function roster_response( array $rows, array $columns = array( 'ECF_code', 'full_name', 'std', 'rpd', 'btz' ) ) {
+		return $this->response(
+			200,
+			array(
+				'success' => true,
+				'data'    => array(
+					'column_names' => $columns,
+					'players'      => $rows,
+				),
+			)
+		);
+	}
+
+	public function test_the_club_roster_is_fetched_once_and_only_the_wanted_players_are_kept() {
+		Functions\expect( 'wp_remote_get' )
+			->once()
+			->with(
+				\Mockery::on(
+					function ( $url ) {
+						return false !== strpos( $url, 'https://rating.englishchess.org.uk/api/clubs/players?' ) && false !== strpos( $url, 'code=4USL' );
+					}
+				),
+				\Mockery::any()
+			)
+			->andReturn(
+				$this->roster_response(
+					array(
+						array( '100001A', 'Wanted One', 1650, 1500, 1400 ),
+						array( '100002B', 'Wanted Two', null, 1510, 0 ),
+						array( '999999Z', 'Not Recorded', 2100, 2000, 1900 ),
+					)
+				)
+			);
+
+		$ratings = Chess_Army_Knife_ECF_Client::get_club_ratings( ' 4usl ', 's', array( '100001A', '100002', '555555X' ) );
+
+		$this->assertSame(
+			array(
+				'100001' => 1650,
+				'100002' => null,
+			),
+			$ratings,
+			'Someone not asked for is dropped; an unrated player is listed with no rating; a wanted player the roster lacks is absent.'
+		);
+		$this->assertSame( array(), $this->transients, 'The roster is never cached.' );
+	}
+
+	public function test_the_roster_column_follows_the_rating_list() {
+		Functions\when( 'wp_remote_get' )->justReturn( $this->roster_response( array( array( '100001A', 'One', 1650, 1500, 1400 ) ) ) );
+
+		$this->assertSame( array( '100001' => 1500 ), Chess_Army_Knife_ECF_Client::get_club_ratings( '4USL', 'R', array( '100001' ) ) );
+		$this->assertSame( array( '100001' => 1400 ), Chess_Army_Knife_ECF_Client::get_club_ratings( '4USL', 'B', array( '100001' ) ) );
+	}
+
+	public function test_the_roster_refuses_without_a_request_when_it_cannot_help() {
+		Functions\expect( 'wp_remote_get' )->never();
+
+		$this->assertSame( 'ecf_bad_club', Chess_Army_Knife_ECF_Client::get_club_ratings( '  ', 'S', array( '1' ) )->get_error_code() );
+		$this->assertSame( 'ecf_roster_domain', Chess_Army_Knife_ECF_Client::get_club_ratings( '4USL', 'SW', array( '1' ) )->get_error_code() );
+	}
+
+	public function test_a_roster_without_the_expected_columns_is_an_error_and_nothing_leaks() {
+		Functions\when( 'wp_remote_get' )->justReturn( $this->roster_response( array( array( 'x', 'y' ) ), array( 'name', 'other' ) ) );
+
+		$this->assertSame( 'ecf_bad_response', Chess_Army_Knife_ECF_Client::get_club_ratings( '4USL', 'S', array( '100001' ) )->get_error_code() );
+	}
+
+	public function test_roster_errors_are_passed_on() {
+		Functions\when( 'wp_remote_get' )->justReturn( new WP_Error( 'http_request_failed', 'timeout' ) );
+
+		$this->assertSame( 'http_request_failed', Chess_Army_Knife_ECF_Client::get_club_ratings( '4USL', 'S', array( '100001' ) )->get_error_code() );
+	}
+
 	public function test_cache_ttl_follows_settings_with_one_minute_floor() {
 		$this->set_settings(
 			array(
