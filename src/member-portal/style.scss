@@ -1,0 +1,68 @@
+.wp-block-chess-army-knife-member-portal {
+	margin-bottom: 1.5em;
+
+	.cak-portal__notice {
+		margin: 0 0 1em;
+		padding: 0.6em 0.9em;
+		border-left: 4px solid currentcolor;
+		background: rgba(0, 0, 0, 0.04);
+	}
+
+	.cak-portal__notice.is-error {
+		border-left-color: #b32d2e;
+	}
+
+	.cak-portal__person {
+		margin: 0 0 2em;
+		padding: 1em 1.2em;
+		border: 1px solid rgba(0, 0, 0, 0.2);
+		border-radius: 4px;
+	}
+
+	.cak-portal__person h3 {
+		margin-top: 0;
+	}
+
+	.cak-portal__person h4 {
+		margin: 1.4em 0 0.4em;
+	}
+
+	.cak-portal__field {
+		margin: 0 0 0.8em;
+	}
+
+	.cak-portal__field label {
+		display: block;
+		font-weight: 600;
+	}
+
+	.cak-portal__check {
+		margin: 0 0 0.6em;
+	}
+
+	.cak-portal__hp {
+		position: absolute;
+		left: -9999px;
+	}
+
+	.cak-portal__danger {
+		margin-top: 1.4em;
+		padding-top: 1em;
+		border-top: 1px solid rgba(0, 0, 0, 0.2);
+	}
+
+	.cak-portal__summary {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		gap: 0.2em 1em;
+		margin: 0;
+	}
+
+	.cak-portal__summary dt {
+		font-weight: 600;
+	}
+
+	.cak-portal__summary dd {
+		margin: 0;
+	}
+}
