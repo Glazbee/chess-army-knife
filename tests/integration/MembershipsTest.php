@@ -592,11 +592,16 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertSame( $ticked, Chess_Army_Knife_Members_Page::keep_recorded_consents( $ticked, null ), 'A new member has nothing to keep.' );
 	}
 
-	public function test_the_members_page_is_refused_without_the_permission() {
+	public function test_the_members_page_tells_someone_without_the_permission_what_they_need() {
+		$this->member( array( 'name' => 'Grace Hopper' ) );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
-		$this->expectException( WPDieException::class );
+		ob_start();
 		Chess_Army_Knife_Members_Page::render_page();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'You do not have permission to use this page.', $html );
+		$this->assertStringNotContainsString( 'Grace Hopper', $html, 'Nobody\'s details are shown.' );
 	}
 
 	public function test_editing_a_member_that_does_not_exist_is_refused() {
