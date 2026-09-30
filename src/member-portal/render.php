@@ -89,6 +89,7 @@ $admin_post        = admin_url( 'admin-post.php' );
 			$is_junior     = Chess_Army_Knife_Member_Portal::is_junior( $person );
 			$has_parent    = '' !== $person['guardian_name'] . $person['guardian_email'];
 			$teams         = Chess_Army_Knife_Teams::teams_of_person( $person['id'] );
+			$picked        = Chess_Army_Knife_Selection::selections_for_person( $person['id'] );
 			$events        = array();
 			foreach ( Chess_Army_Knife_Event_Registrations::for_person( $person['id'] ) as $registration ) {
 				$event_post = get_post( $registration['event_id'] );
@@ -182,6 +183,20 @@ $admin_post        = admin_url( 'admin-post.php' );
 					<?php endforeach; ?>
 					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my choices', 'chess-army-knife' ); ?></button></p>
 				</form>
+
+				<?php if ( $picked ) : ?>
+					<h4><?php esc_html_e( 'Fixtures you are picked for', 'chess-army-knife' ); ?></h4>
+					<ul>
+						<?php foreach ( $picked as $item ) : ?>
+							<li>
+								<?php
+								/* translators: 1: fixture, 2: date, 3: team, 4: board number */
+								echo esc_html( sprintf( __( '%1$s, %2$s (%3$s, board %4$d)', 'chess-army-knife' ), $item['event']['title'], Chess_Army_Knife_Events_Display::date_label( $item['event'] ), $item['team']['name'], $item['board'] ) );
+								?>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
 
 				<?php if ( $events ) : ?>
 					<h4><?php esc_html_e( 'Events you are registered for', 'chess-army-knife' ); ?></h4>

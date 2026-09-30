@@ -157,6 +157,37 @@ class Chess_Army_Knife_Membership_Privacy {
 			}
 		}
 
+		// Whether they can play, and the line-ups they were picked for.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Selection::records_for_person( $member['id'] ) as $record ) {
+				$event   = get_post( $record['event_id'] );
+				$team    = Chess_Army_Knife_Teams::get( $record['team_id'] );
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-selection',
+					'group_label' => __( 'Club team selection', 'chess-army-knife' ),
+					'item_id'     => 'selection-' . $record['event_id'] . '-' . $record['team_id'] . '-' . $member['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Fixture', 'chess-army-knife' ),
+							'value' => $event ? get_the_title( $event ) : '',
+						),
+						array(
+							'name'  => __( 'Team', 'chess-army-knife' ),
+							'value' => $team ? $team['name'] : '',
+						),
+						array(
+							'name'  => __( 'Your reply', 'chess-army-knife' ),
+							'value' => $record['response'],
+						),
+						array(
+							'name'  => __( 'Board picked for', 'chess-army-knife' ),
+							'value' => $record['board'] ? (string) $record['board'] : '',
+						),
+					),
+				);
+			}
+		}
+
 		// The events they have registered for.
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
 			foreach ( Chess_Army_Knife_Event_Registrations::for_person( $member['id'] ) as $registration ) {
@@ -361,6 +392,7 @@ class Chess_Army_Knife_Membership_Privacy {
 					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
 					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
 					__( 'You can see and correct your details, choose what we email you, and delete your details yourself, at any time, from the members\' page on this website. You sign in with a link we email to the address we hold for you.', 'chess-army-knife' ),
+					__( 'If you play in a club team, the team captain can see your name and rating, ask you whether you can play in a fixture, and record your reply and whether they pick you. A reply or line-up is deleted with the fixture, if you ask us to delete your details, or after the retention period.', 'chess-army-knife' ),
 					__( 'If you register for a club event we record that, with the time, the number of guests you bring and whether you came. If you are not a member we keep your name and email address as a record of a non-member. Registrations are deleted after the retention period below.', 'chess-army-knife' ),
 					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. Only club officers can see this.', 'chess-army-knife' ),
 					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),

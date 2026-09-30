@@ -83,6 +83,33 @@ class Chess_Army_Knife_Teams_Admin {
 				</td>
 			</tr>
 			<tr>
+				<th scope="row"><label for="chess_army_team_boards"><?php esc_html_e( 'Boards', 'chess-army-knife' ); ?></label></th>
+				<td><input type="number" min="1" max="<?php echo esc_attr( Chess_Army_Knife_Captains::MAX_BOARDS ); ?>" id="chess_army_team_boards" name="chess_army_team_boards" value="<?php echo esc_attr( Chess_Army_Knife_Captains::boards( $post->ID ) ); ?>" class="small-text" /> <span class="description"><?php esc_html_e( 'How many players the team fields. Used when the captain builds a line-up.', 'chess-army-knife' ); ?></span></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_team_captain_user"><?php esc_html_e( 'Captain\'s website login', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<?php if ( current_user_can( 'promote_users' ) ) : ?>
+						<?php
+						wp_dropdown_users(
+							array(
+								'name'              => 'chess_army_team_captain_user',
+								'id'                => 'chess_army_team_captain_user',
+								'selected'          => Chess_Army_Knife_Captains::user_of_team( $post->ID ),
+								'show_option_none'  => __( 'None', 'chess-army-knife' ),
+								'option_none_value' => 0,
+							)
+						);
+						?>
+						<p class="description"><?php esc_html_e( 'This user can use Team Selection for this team only: see the squad, ask who can play and publish line-ups. Needs a website account.', 'chess-army-knife' ); ?></p>
+					<?php else : ?>
+						<?php $captain_user = get_userdata( Chess_Army_Knife_Captains::user_of_team( $post->ID ) ); ?>
+						<?php echo esc_html( $captain_user ? $captain_user->display_name : __( 'None', 'chess-army-knife' ) ); ?>
+						<p class="description"><?php esc_html_e( 'Only someone who can promote users can change this.', 'chess-army-knife' ); ?></p>
+					<?php endif; ?>
+				</td>
+			</tr>
+			<tr>
 				<th scope="row"><label for="chess_army_team_captain"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></label></th>
 				<td>
 					<select id="chess_army_team_captain" name="chess_army_team_captain">
@@ -152,6 +179,14 @@ class Chess_Army_Knife_Teams_Admin {
 
 		$colour = ! empty( $_POST['chess_army_team_no_colour'] ) || ! isset( $_POST['chess_army_team_colour'] ) ? '' : (string) sanitize_hex_color( wp_unslash( $_POST['chess_army_team_colour'] ) );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_COLOUR, $colour );
+
+		update_post_meta( $post_id, Chess_Army_Knife_Captains::META_BOARDS, isset( $_POST['chess_army_team_boards'] ) ? max( 1, min( Chess_Army_Knife_Captains::MAX_BOARDS, absint( $_POST['chess_army_team_boards'] ) ) ) : Chess_Army_Knife_Captains::DEFAULT_BOARDS );
+
+		// Giving someone the captain's permission needs the power to promote users.
+		if ( current_user_can( 'promote_users' ) && isset( $_POST['chess_army_team_captain_user'] ) ) {
+			$user_id = absint( $_POST['chess_army_team_captain_user'] );
+			Chess_Army_Knife_Captains::set_user( $post_id, $user_id && get_userdata( $user_id ) ? $user_id : 0 );
+		}
 
 		// Only someone the club holds a record of can captain a team.
 		$captain = isset( $_POST['chess_army_team_captain'] ) ? absint( $_POST['chess_army_team_captain'] ) : 0;
