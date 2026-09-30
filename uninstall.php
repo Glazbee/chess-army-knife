@@ -82,7 +82,7 @@ if ( $chess_army_knife_delete_data ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_members" );
 
-	foreach ( array( 'mail', 'optouts', 'squad', 'registrations', 'availability', 'lineups' ) as $chess_army_knife_mail_table ) {
+	foreach ( array( 'mail', 'optouts', 'squad', 'member_history', 'registrations', 'availability', 'lineups' ) as $chess_army_knife_mail_table ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_{$chess_army_knife_mail_table}" );
 	}

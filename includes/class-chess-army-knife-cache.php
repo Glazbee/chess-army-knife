@@ -164,6 +164,17 @@ class Chess_Army_Knife_Cache {
 	}
 
 	/**
+	 * Read a value without computing it: for screens that show what has
+	 * already been fetched and must not trigger a remote request.
+	 *
+	 * @param string $key Raw cache key.
+	 * @return mixed|null Null on cache miss.
+	 */
+	public static function peek( $key ) {
+		return self::get( self::key( $key ) );
+	}
+
+	/**
 	 * Build a namespaced, length-safe cache key.
 	 *
 	 * @param string $key Raw key.

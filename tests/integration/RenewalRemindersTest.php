@@ -25,6 +25,7 @@ class RenewalRemindersTest extends WP_UnitTestCase {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Membership_Store::install_table();
+		Chess_Army_Knife_Member_History::install_table();
 		Chess_Army_Knife_Mailer::install_table();
 		Chess_Army_Knife_Notification_Preferences::install_table();
 		reset_phpmailer_instance();

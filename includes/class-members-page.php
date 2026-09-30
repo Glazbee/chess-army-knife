@@ -21,6 +21,7 @@ class Chess_Army_Knife_Members_Page {
 		add_action( 'admin_post_chess_army_knife_member_status', array( __CLASS__, 'handle_status' ) );
 		add_action( 'admin_post_chess_army_knife_delete_member', array( __CLASS__, 'handle_delete' ) );
 		add_action( 'admin_post_chess_army_knife_refresh_ratings', array( __CLASS__, 'handle_refresh_ratings' ) );
+		add_action( 'admin_post_chess_army_knife_bulk_members', array( __CLASS__, 'handle_bulk' ) );
 	}
 
 	/**
@@ -89,6 +90,11 @@ class Chess_Army_Knife_Members_Page {
 			Chess_Army_Knife_Membership_Store::clear_rating( $saved_id );
 		}
 
+		// Any number of teams, or none: the boxes are only on the form when the club has teams.
+		if ( ! empty( $_POST['squad_teams_shown'] ) ) {
+			Chess_Army_Knife_Teams::set_teams_of_person( $saved_id, isset( $_POST['squad_teams'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['squad_teams'] ) ) : array() );
+		}
+
 		wp_safe_redirect( self::url( array( 'saved' => '1' ) ) );
 		exit;
 	}
@@ -154,6 +160,161 @@ class Chess_Army_Knife_Members_Page {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Handle the bulk actions on ticked members: change their membership type,
+	 * add them to a team or take them out of one, or export them to CSV.
+	 * The Member Checks screen uses this too, for its export.
+	 */
+	public static function handle_bulk() {
+		self::require_permission();
+		check_admin_referer( 'chess_army_knife_bulk_members' );
+
+		$ids     = isset( $_POST['members'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['members'] ) ) : array();
+		$members = Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids );
+		$action  = isset( $_POST['bulk_action'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action'] ) ) : '';
+		$back    = wp_get_referer() ? remove_query_arg( array( 'bulk', 'bulk_count', 'bulk_to', 'bulk_error' ), wp_get_referer() ) : self::url();
+
+		if ( ! $members ) {
+			wp_safe_redirect( add_query_arg( 'bulk_error', 'none', $back ) );
+			exit;
+		}
+
+		if ( 'export' === $action ) {
+			Chess_Army_Knife_Member_Export::download( $members );
+		}
+
+		$done = array(
+			'bulk'       => $action,
+			'bulk_count' => count( $members ),
+		);
+
+		if ( 'type' === $action ) {
+			$type = isset( $_POST['bulk_type'] ) ? Chess_Army_Knife_Memberships::get_type( absint( $_POST['bulk_type'] ) ) : null;
+			if ( ! $type ) {
+				wp_safe_redirect( add_query_arg( 'bulk_error', 'type', $back ) );
+				exit;
+			}
+			foreach ( $members as $member ) {
+				Chess_Army_Knife_Membership_Store::set_type( $member['id'], $type );
+			}
+			$done['bulk_to'] = $type['name'];
+		} elseif ( 'team_add' === $action || 'team_remove' === $action ) {
+			$team = isset( $_POST['bulk_team'] ) ? Chess_Army_Knife_Teams::get( absint( $_POST['bulk_team'] ) ) : null;
+			if ( ! $team ) {
+				wp_safe_redirect( add_query_arg( 'bulk_error', 'team', $back ) );
+				exit;
+			}
+			$member_ids = wp_list_pluck( $members, 'id' );
+			if ( 'team_add' === $action ) {
+				Chess_Army_Knife_Teams::add_to_squad( $team['id'], $member_ids );
+			} else {
+				Chess_Army_Knife_Teams::remove_from_squad( $team['id'], $member_ids );
+			}
+			$done['bulk_to'] = $team['name'];
+		} else {
+			wp_safe_redirect( add_query_arg( 'bulk_error', 'action', $back ) );
+			exit;
+		}
+
+		wp_safe_redirect( add_query_arg( array_map( 'rawurlencode', array_map( 'strval', $done ) ), $back ) );
+		exit;
+	}
+
+	/**
+	 * The notice for the outcome of a bulk action, from the address.
+	 *
+	 * @return array|null { type, message }, or null if there was no bulk action.
+	 */
+	public static function bulk_notice() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
+		if ( isset( $_GET['bulk_error'] ) ) {
+			$errors = array(
+				'none'   => __( 'Tick at least one member first.', 'chess-army-knife' ),
+				'type'   => __( 'Please choose a membership type.', 'chess-army-knife' ),
+				'team'   => __( 'Please choose a team.', 'chess-army-knife' ),
+				'action' => __( 'Please choose what to do with the ticked members.', 'chess-army-knife' ),
+			);
+			$code   = sanitize_key( wp_unslash( $_GET['bulk_error'] ) );
+			return array( 'error', isset( $errors[ $code ] ) ? $errors[ $code ] : $errors['action'] );
+		}
+
+		if ( ! isset( $_GET['bulk'], $_GET['bulk_count'], $_GET['bulk_to'] ) ) {
+			return null;
+		}
+		$action = sanitize_key( wp_unslash( $_GET['bulk'] ) );
+		$count  = absint( $_GET['bulk_count'] );
+		$to     = sanitize_text_field( wp_unslash( $_GET['bulk_to'] ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		if ( 'type' === $action ) {
+			/* translators: 1: number of members, 2: membership type */
+			return array( 'success', sprintf( _n( '%1$d member moved to %2$s.', '%1$d members moved to %2$s.', $count, 'chess-army-knife' ), $count, $to ) );
+		}
+		if ( 'team_add' === $action ) {
+			/* translators: 1: number of members, 2: team name */
+			return array( 'success', sprintf( _n( '%1$d member added to %2$s.', '%1$d members added to %2$s.', $count, 'chess-army-knife' ), $count, $to ) );
+		}
+		if ( 'team_remove' === $action ) {
+			/* translators: 1: number of members, 2: team name */
+			return array( 'success', sprintf( _n( '%1$d member removed from %2$s.', '%1$d members removed from %2$s.', $count, 'chess-army-knife' ), $count, $to ) );
+		}
+		return null;
+	}
+
+	/**
+	 * The start of the form around a table of members that can be ticked.
+	 */
+	public static function bulk_form_open() {
+		?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="chess_army_knife_bulk_members" />
+			<?php wp_nonce_field( 'chess_army_knife_bulk_members' ); ?>
+		<?php
+	}
+
+	/**
+	 * The controls above a table of members that can be ticked: what to do with
+	 * the ticked members, and the membership type or team it applies to.
+	 * Must be inside the form opened by bulk_form_open().
+	 *
+	 * @param bool $full False to offer only the export, as the Member Checks screen does.
+	 */
+	public static function render_bulk_controls( $full = true ) {
+		?>
+		<div class="tablenav top">
+			<div class="alignleft actions bulkactions">
+				<label for="bulk_action" class="screen-reader-text"><?php esc_html_e( 'Action for ticked members', 'chess-army-knife' ); ?></label>
+				<select name="bulk_action" id="bulk_action">
+					<?php if ( $full ) : ?>
+						<option value=""><?php esc_html_e( 'Bulk actions', 'chess-army-knife' ); ?></option>
+						<option value="type"><?php esc_html_e( 'Change membership type to…', 'chess-army-knife' ); ?></option>
+						<option value="team_add"><?php esc_html_e( 'Add to team…', 'chess-army-knife' ); ?></option>
+						<option value="team_remove"><?php esc_html_e( 'Remove from team…', 'chess-army-knife' ); ?></option>
+					<?php endif; ?>
+					<option value="export"><?php esc_html_e( 'Export to CSV', 'chess-army-knife' ); ?></option>
+				</select>
+				<?php if ( $full ) : ?>
+					<label for="bulk_type" class="screen-reader-text"><?php esc_html_e( 'Membership type', 'chess-army-knife' ); ?></label>
+					<select name="bulk_type" id="bulk_type">
+						<option value="0"><?php esc_html_e( 'Membership type', 'chess-army-knife' ); ?></option>
+						<?php foreach ( Chess_Army_Knife_Memberships::types( false ) as $type ) : ?>
+							<option value="<?php echo esc_attr( $type['id'] ); ?>"><?php echo esc_html( $type['name'] ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<label for="bulk_team" class="screen-reader-text"><?php esc_html_e( 'Team', 'chess-army-knife' ); ?></label>
+					<select name="bulk_team" id="bulk_team">
+						<option value="0"><?php esc_html_e( 'Team', 'chess-army-knife' ); ?></option>
+						<?php foreach ( Chess_Army_Knife_Teams::choices() as $team_id => $team_name ) : ?>
+							<option value="<?php echo esc_attr( $team_id ); ?>"><?php echo esc_html( $team_name ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				<?php endif; ?>
+				<input type="submit" class="button action" value="<?php esc_attr_e( 'Apply', 'chess-army-knife' ); ?>" />
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -245,6 +406,10 @@ class Chess_Army_Knife_Members_Page {
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
+		if ( ! isset( $notice ) ) {
+			$notice = self::bulk_notice();
+		}
+
 		if ( isset( $notice ) ) {
 			printf( '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>', esc_attr( $notice[0] ), esc_html( $notice[1] ) );
 		}
@@ -287,6 +452,7 @@ class Chess_Army_Knife_Members_Page {
 		$photos  = Chess_Army_Knife_Member_Photos::counts();
 		$labels  = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
 		$methods = Chess_Army_Knife_Memberships::payment_methods();
+		$squads  = Chess_Army_Knife_Teams::squad_names_by_person();
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
@@ -322,11 +488,15 @@ class Chess_Army_Knife_Members_Page {
 				</p>
 			</form>
 
+			<?php self::bulk_form_open(); ?>
+			<?php self::render_bulk_controls(); ?>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
+						<td class="manage-column column-cb check-column"><input type="checkbox" aria-label="<?php esc_attr_e( 'Select all', 'chess-army-knife' ); ?>" /></td>
 						<th><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Membership', 'chess-army-knife' ); ?></th>
+						<th><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Status', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Expires', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Contact', 'chess-army-knife' ); ?></th>
@@ -337,11 +507,12 @@ class Chess_Army_Knife_Members_Page {
 				</thead>
 				<tbody>
 					<?php if ( empty( $members ) ) : ?>
-						<tr><td colspan="8"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
+						<tr><td colspan="10"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
 					<?php endif; ?>
 					<?php foreach ( $members as $member ) : ?>
 						<?php $status = Chess_Army_Knife_Membership_Store::effective_status( $member, $today ); ?>
 						<tr>
+							<th scope="row" class="check-column"><input type="checkbox" name="members[]" value="<?php echo esc_attr( $member['id'] ); ?>" aria-label="<?php echo esc_attr( $member['name'] ); ?>" /></th>
 							<td>
 								<strong><a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php echo esc_html( $member['name'] ); ?></a></strong>
 								<div class="row-actions">
@@ -350,6 +521,7 @@ class Chess_Army_Knife_Members_Page {
 										<a href="<?php echo esc_url( self::action_url( 'member_status', $member['id'], array( 'status' => Chess_Army_Knife_Membership_Store::STATUS_REJECTED ) ) ); ?>"><?php esc_html_e( 'Decline', 'chess-army-knife' ); ?></a> |
 									<?php endif; ?>
 									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></a> |
+									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) . '#membership-history' ); ?>"><?php esc_html_e( 'History', 'chess-army-knife' ); ?></a> |
 									<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'] ) : ?>
 										<a href="<?php echo esc_url( self::action_url( 'renew_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Renew this membership for another period and note the payment as received today?', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Renew', 'chess-army-knife' ); ?></a> |
 									<?php endif; ?>
@@ -365,6 +537,7 @@ class Chess_Army_Knife_Members_Page {
 								</div>
 							</td>
 							<td><?php echo esc_html( $member['type_name'] ); ?></td>
+							<td><?php echo isset( $squads[ $member['id'] ] ) ? esc_html( implode( ', ', $squads[ $member['id'] ] ) ) : '&mdash;'; ?></td>
 							<td><?php echo esc_html( isset( $labels[ $status ] ) ? $labels[ $status ] : $status ); ?></td>
 							<td><?php echo '' === $member['expiry_date'] ? '&mdash;' : esc_html( mysql2date( get_option( 'date_format' ), $member['expiry_date'] ) ); ?></td>
 							<td>
@@ -420,7 +593,79 @@ class Chess_Army_Knife_Members_Page {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
+			</form>
 		</div>
+		<?php
+	}
+
+	/**
+	 * A member's history: when they first joined, how long they have been a
+	 * member, and each period of membership with the gaps between them.
+	 *
+	 * @param array $member Member row.
+	 */
+	protected static function render_history( array $member ) {
+		$today   = current_time( 'Y-m-d' );
+		$periods = Chess_Army_Knife_Member_History::periods( $member );
+		$summary = Chess_Army_Knife_Member_History::summarise( $periods, $today );
+		$format  = get_option( 'date_format' );
+		?>
+		<h2 id="membership-history"><?php esc_html_e( 'Membership history', 'chess-army-knife' ); ?></h2>
+		<?php if ( ! $periods ) : ?>
+			<p class="description"><?php esc_html_e( 'No membership has been recorded yet: history starts when an application is approved.', 'chess-army-knife' ); ?></p>
+			<?php return; ?>
+		<?php endif; ?>
+		<p>
+			<?php
+			/* translators: %s: date the person first became a member */
+			echo esc_html( sprintf( __( 'First became a member on %s.', 'chess-army-knife' ), mysql2date( $format, $summary['first_joined'] ) ) );
+			?>
+			<?php if ( null !== $summary['continuous_since'] ) : ?>
+				<?php
+				/* translators: 1: date the current unbroken membership began, 2: how long ago */
+				echo esc_html( sprintf( __( 'Continuously a member since %1$s (%2$s).', 'chess-army-knife' ), mysql2date( $format, $summary['continuous_since'] ), Chess_Army_Knife_Member_History::duration_label( $summary['continuous_since'], $today ) ) );
+				?>
+			<?php else : ?>
+				<?php esc_html_e( 'Not a member at the moment.', 'chess-army-knife' ); ?>
+			<?php endif; ?>
+			<?php
+			/* translators: %s: total length of time they have been a member, for example "3 years, 2 months" */
+			echo esc_html( sprintf( __( 'In all, %s as a member.', 'chess-army-knife' ), Chess_Army_Knife_Member_History::duration_label( $summary['runs'][0]['from'], gmdate( 'Y-m-d', strtotime( $summary['runs'][0]['from'] . ' UTC' ) + max( 0, $summary['days'] - 1 ) * DAY_IN_SECONDS ) ) ) );
+			?>
+		</p>
+		<?php if ( $summary['lapses'] ) : ?>
+			<p><strong><?php esc_html_e( 'Lapses', 'chess-army-knife' ); ?></strong></p>
+			<ul>
+				<?php foreach ( $summary['lapses'] as $lapse ) : ?>
+					<li>
+						<?php
+						/* translators: 1: first day without membership, 2: last day without membership, 3: length of the gap */
+						echo esc_html( sprintf( __( '%1$s to %2$s (%3$s)', 'chess-army-knife' ), mysql2date( $format, $lapse['from'] ), mysql2date( $format, $lapse['to'] ), Chess_Army_Knife_Member_History::duration_label( $lapse['from'], $lapse['to'] ) ) );
+						?>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		<?php endif; ?>
+		<table class="wp-list-table widefat fixed striped">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Membership', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Started', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Last day', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Paid', 'chess-army-knife' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( array_reverse( $periods ) as $period ) : ?>
+					<tr>
+						<td><?php echo '' === $period['type_name'] ? '&mdash;' : esc_html( $period['type_name'] ); ?></td>
+						<td><?php echo esc_html( mysql2date( $format, $period['start_date'] ) ); ?></td>
+						<td><?php echo '' === $period['expiry_date'] ? esc_html__( 'No end date', 'chess-army-knife' ) : esc_html( mysql2date( $format, $period['expiry_date'] ) ); ?></td>
+						<td><?php echo '' === $period['paid_on'] ? esc_html__( 'Not recorded', 'chess-army-knife' ) : esc_html( mysql2date( $format, $period['paid_on'] ) ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
 		<?php
 	}
 
@@ -594,6 +839,23 @@ class Chess_Army_Knife_Members_Page {
 							<p class="description"><?php esc_html_e( 'Tick only if the member, or for a junior their parent or guardian, has said yes, in person or in writing. Untick to record that they have withdrawn (members can also do this themselves on the Manage My Data page).', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
+					<?php $club_teams = Chess_Army_Knife_Teams::choices(); ?>
+					<?php if ( $club_teams ) : ?>
+						<?php $member_squads = $editing ? Chess_Army_Knife_Teams::squad_team_ids_of_person( $member['id'] ) : array(); ?>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></th>
+							<td>
+								<input type="hidden" name="squad_teams_shown" value="1" />
+								<?php foreach ( $club_teams as $team_id => $team_name ) : ?>
+									<label style="display:block">
+										<input type="checkbox" name="squad_teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( in_array( $team_id, $member_squads, true ) ); ?> />
+										<?php echo esc_html( $team_name ); ?>
+									</label>
+								<?php endforeach; ?>
+								<p class="description"><?php esc_html_e( 'The squads this person is in: any number, or none. Who captains a team is set on the team itself.', 'chess-army-knife' ); ?></p>
+							</td>
+						</tr>
+					<?php endif; ?>
 					<tr>
 						<th scope="row"><label for="notes"><?php esc_html_e( 'Notes', 'chess-army-knife' ); ?></label></th>
 						<td>
@@ -627,6 +889,9 @@ class Chess_Army_Knife_Members_Page {
 							<?php endforeach; ?>
 						</p>
 					<?php endif; ?>
+				<?php endif; ?>
+				<?php if ( $editing ) : ?>
+					<?php self::render_history( $member ); ?>
 				<?php endif; ?>
 				<?php submit_button( $editing ? __( 'Save member', 'chess-army-knife' ) : __( 'Add member', 'chess-army-knife' ) ); ?>
 				<a href="<?php echo esc_url( self::url() ); ?>"><?php esc_html_e( 'Back to members', 'chess-army-knife' ); ?></a>

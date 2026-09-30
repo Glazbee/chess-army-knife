@@ -18,6 +18,7 @@ class PluginTest extends WP_UnitTestCase {
 		global $wpdb;
 		$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Membership_Store::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		Chess_Army_Knife_Membership_Store::install_table();
+		Chess_Army_Knife_Member_History::install_table();
 	}
 
 	/**
@@ -94,6 +95,7 @@ class PluginTest extends WP_UnitTestCase {
 		global $wpdb;
 		$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Membership_Store::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		Chess_Army_Knife_Membership_Store::install_table();
+		Chess_Army_Knife_Member_History::install_table();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
 		$save = function ( $name, array $extra = array() ) {

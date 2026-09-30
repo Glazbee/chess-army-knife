@@ -440,6 +440,27 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
+	 * Several members or applications at once.
+	 *
+	 * @param int[] $ids Member ids.
+	 * @return array[] Member rows by name; ids that do not exist are left out.
+	 */
+	public static function get_members_by_ids( array $ids ) {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+		if ( ! $ids ) {
+			return array();
+		}
+
+		$table        = self::table();
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Plugin-owned custom table; the table name is internal and every id is a placeholder.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE id IN ( {$placeholders} ) ORDER BY name ASC", $ids ), ARRAY_A );
+		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
 	 * The people who can play in the club's tournaments and be chosen in the
 	 * blocks: current members and people held as not being members (guests).
 	 * Applicants, lapsed members and those who left are not offered.
@@ -853,6 +874,10 @@ class Chess_Army_Knife_Membership_Store {
 			unset( $data['id'] );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->update( self::table(), $data, array( 'id' => $id ) );
+			// Only a change to the membership itself can start or extend a period.
+			if ( array_intersect( array( 'status', 'start_date', 'expiry_date', 'membership_type_id', 'paid_on' ), array_keys( $data ) ) ) {
+				Chess_Army_Knife_Member_History::record( $id );
+			}
 			do_action( 'Chess_Army_Knife_members_changed' );
 			return $id;
 		}
@@ -865,8 +890,10 @@ class Chess_Army_Knife_Membership_Store {
 		$data['created_at'] = $data['updated_at'];
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table(), $data );
+		$id = (int) $wpdb->insert_id;
+		Chess_Army_Knife_Member_History::record( $id );
 		do_action( 'Chess_Army_Knife_members_changed' );
-		return (int) $wpdb->insert_id;
+		return $id;
 	}
 
 	/**
@@ -895,6 +922,22 @@ class Chess_Army_Knife_Membership_Store {
 			)
 		);
 		return true;
+	}
+
+	/**
+	 * Move a member to another membership type. Their dates are left as they are.
+	 *
+	 * @param int   $id   Member id.
+	 * @param array $type Membership type (see Chess_Army_Knife_Memberships::get_type()).
+	 */
+	public static function set_type( $id, array $type ) {
+		self::save_member(
+			array(
+				'id'                 => (int) $id,
+				'membership_type_id' => (int) $type['id'],
+				'type_name'          => $type['name'],
+			)
+		);
 	}
 
 	/**
@@ -935,6 +978,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		Chess_Army_Knife_Teams::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
+		Chess_Army_Knife_Member_History::remove_person( $id );
 
 		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) && ! Chess_Army_Knife_Event_Registrations::person_has_registrations( $id ) ) {
 			self::delete_member( $id );
@@ -980,6 +1024,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Teams::remove_person( $id );
 		Chess_Army_Knife_Event_Registrations::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
+		Chess_Army_Knife_Member_History::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table(), array( 'id' => (int) $id ), array( '%d' ) );
 		do_action( 'Chess_Army_Knife_members_changed' );
