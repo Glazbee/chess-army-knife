@@ -243,6 +243,31 @@ class Chess_Army_Knife_Membership_Privacy {
 			}
 		}
 
+		// Each period of membership they have held.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Member_History::periods( $member ) as $index => $period ) {
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-membership-history',
+					'group_label' => __( 'Your membership history', 'chess-army-knife' ),
+					'item_id'     => 'membership-period-' . $member['id'] . '-' . $index,
+					'data'        => array(
+						array(
+							'name'  => __( 'Membership', 'chess-army-knife' ),
+							'value' => $period['type_name'],
+						),
+						array(
+							'name'  => __( 'Started', 'chess-army-knife' ),
+							'value' => $period['start_date'],
+						),
+						array(
+							'name'  => __( 'Last day', 'chess-army-knife' ),
+							'value' => $period['expiry_date'],
+						),
+					),
+				);
+			}
+		}
+
 		// The tournaments they have been entered in.
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
 			foreach ( Chess_Army_Knife_Tournament_Store::get_tournaments_for_person( $member['id'] ) as $tournament ) {

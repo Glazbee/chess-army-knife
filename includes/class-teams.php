@@ -322,6 +322,111 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
+	 * Put people in a team's squad, leaving everyone already in it there.
+	 *
+	 * @param int   $team_id    Team id.
+	 * @param int[] $person_ids Member ids.
+	 */
+	public static function add_to_squad( $team_id, array $person_ids ) {
+		global $wpdb;
+
+		$table = self::squad_table();
+		$now   = current_time( 'mysql', true );
+		$have  = self::squad( $team_id );
+
+		foreach ( array_unique( array_map( 'absint', $person_ids ) ) as $person_id ) {
+			if ( $person_id && ! in_array( $person_id, $have, true ) && Chess_Army_Knife_Membership_Store::get_member( $person_id ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal.
+				$wpdb->insert(
+					$table,
+					array(
+						'team_id'   => (int) $team_id,
+						'person_id' => $person_id,
+						'added_at'  => $now,
+					)
+				);
+			}
+		}
+	}
+
+	/**
+	 * Take people out of a team's squad, leaving the rest of it as it is.
+	 *
+	 * @param int   $team_id    Team id.
+	 * @param int[] $person_ids Member ids.
+	 */
+	public static function remove_from_squad( $team_id, array $person_ids ) {
+		global $wpdb;
+
+		foreach ( array_unique( array_map( 'absint', $person_ids ) ) as $person_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+			$wpdb->delete(
+				self::squad_table(),
+				array(
+					'team_id'   => (int) $team_id,
+					'person_id' => $person_id,
+				),
+				array( '%d', '%d' )
+			);
+		}
+	}
+
+	/**
+	 * Set which squads a person is in: any number of teams, or none. Who
+	 * captains a team is not changed.
+	 *
+	 * @param int   $person_id Member id.
+	 * @param int[] $team_ids  Team ids; anything that is not a team is ignored.
+	 */
+	public static function set_teams_of_person( $person_id, array $team_ids ) {
+		$wanted = array_map( 'absint', $team_ids );
+
+		foreach ( array_keys( self::choices() ) as $team_id ) {
+			if ( in_array( $team_id, $wanted, true ) ) {
+				self::add_to_squad( $team_id, array( $person_id ) );
+			} else {
+				self::remove_from_squad( $team_id, array( $person_id ) );
+			}
+		}
+	}
+
+	/**
+	 * The teams whose squad a person is in (not the ones they only captain).
+	 *
+	 * @param int $person_id Member id.
+	 * @return int[] Team ids.
+	 */
+	public static function squad_team_ids_of_person( $person_id ) {
+		global $wpdb;
+
+		$table = self::squad_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT team_id FROM {$table} WHERE person_id = %d", (int) $person_id ) ) );
+	}
+
+	/**
+	 * Which squads each person is in, for showing a column in the member list.
+	 *
+	 * @return array Team names by person id, each a list.
+	 */
+	public static function squad_names_by_person() {
+		global $wpdb;
+
+		$names = self::choices();
+		$table = self::squad_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal.
+		$rows   = (array) $wpdb->get_results( "SELECT person_id, team_id FROM {$table}", ARRAY_A );
+		$people = array();
+
+		foreach ( $rows as $row ) {
+			if ( isset( $names[ (int) $row['team_id'] ] ) ) {
+				$people[ (int) $row['person_id'] ][] = $names[ (int) $row['team_id'] ];
+			}
+		}
+		return $people;
+	}
+
+	/**
 	 * The teams a person is in the squad of, or captains.
 	 *
 	 * @param int $person_id Member id.
