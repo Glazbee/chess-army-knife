@@ -70,7 +70,7 @@ class Chess_Army_Knife_Block_Help {
 
 		return array(
 			'rating-chart'         => array(
-				'use'      => __( 'A line chart of how one player\'s rating has moved over their recent rated games, with current, peak, lowest and change figures.', 'chess-army-knife' ),
+				'use'      => __( 'A line chart of how one player\'s rating has moved over their recent rated games, with current, peak, lowest and change figures There is a written summary of the chart, and the ratings can be shown as a table.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Search for the player by name: only people the club holds a record of, with an ECF code, are offered.', 'chess-army-knife' ),
 					__( 'Choose the rating list (standard, rapid, blitz or an online list), how many games to draw, the height, and whether to show the figures.', 'chess-army-knife' ),

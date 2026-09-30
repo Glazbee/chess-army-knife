@@ -25,6 +25,37 @@ The five most serious problems:
 
 ---
 
+## Status
+
+Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and covered by a unit or integration test where the code could be tested. The integration tests run in GitHub CI, not here.
+
+**Done**
+
+- F-CH1 to F-CH5: the chart is a server-drawn SVG with a summary and a table. Chart.js is gone.
+- F-CA1 to F-CA5: the fixtures block no longer moves, works without JavaScript, and says scores in words.
+- F-G1 to F-G3: text follows the theme colour, tints are made from it, and meaningful borders use the text colour. Templates refuse colours under 7:1 (text) and 3:1 (accent).
+- F-G4, F-G5: a focus ring that shows on light and dark pages, and 44px targets.
+- F-G6: real headings at a level set under Settings → Accessibility.
+- F-G7, F-G8, F-G9, F-FM1 to F-FM4: forms keep what was typed, messages take focus and link to the field, required fields are marked in words, hints are tied to fields, and buttons and links say who they are for.
+- F-G10: AAA 3.3.6 is met by the "checked, with a chance to correct" route (the form is validated and comes back with the answers kept), plus a confirm tick before deleting. Results entered in the games block can be corrected afterwards.
+- F-G11, F-G14, F-G15, F-G16, F-G19: abbreviations explained, link purposes made unique, new-tab warnings, correct `autocomplete`, localised dates and spoken scores.
+- F-G13: line spacing 1.5 and an 80-character line length on the plugin's text.
+- F-FM5: portal sessions last an hour, show when they end, warn at 15 minutes and can be extended. Saving also starts the hour again.
+- F-LT, F-CR, F-BG, F-FP, F-TS, F-ST, F-TG, F-EV, F-MT: the per-block findings above.
+- High contrast: automatic with `prefers-contrast: more`, and a site setting (off, follow device, always).
+
+**Open**
+
+- F-G12 and F-MT4: plain-language wording needs your approval. See `plain-language-drafts.md`.
+- F-G18: the honeypot fields are in `aria-hidden` containers. Axe does not flag it because the fields have `tabindex="-1"`, but a screen reader's virtual cursor may still reach them. A fix needs a change to how the spam trap is hidden.
+- 2.2.5 (re-authenticating): if a session ends while a form is half filled in, the answers are lost when the person signs in again. The warning and the extend button make this unlikely, but it is not impossible.
+- 1.4.12 text spacing, 1.4.10 reflow at 320px, and a screen-reader pass are still to be done in a real browser against a real WordPress page.
+- The admin screens and the block editor have not been audited.
+
+**Checked**
+
+- Axe (WCAG 2 A, AA, AAA and best-practice rules) reports no problems on the plugin's markup in light, dark and high-contrast pages. The page was built from the plugin's own helper code and stylesheets, not from a live WordPress render, so a run against real pages is still needed.
+
 ## Cross-cutting findings
 
 | ID | WCAG | Severity | Finding | Where | Fix |

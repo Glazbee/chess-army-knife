@@ -23,9 +23,6 @@ class Chess_Army_Knife_Form_State {
 	/** Transient name prefix. */
 	const PREFIX = 'Chess_Army_Knife_form_';
 
-	/** @var array|null Values for this request, once loaded. */
-	protected static $values = null;
-
 	/**
 	 * Keep the values of a submitted form.
 	 *
@@ -67,13 +64,10 @@ class Chess_Army_Knife_Form_State {
 	 * @return array
 	 */
 	public static function all() {
-		if ( null === self::$values ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only fills in a form; nothing is changed.
-			$key          = isset( $_GET[ self::PARAM ] ) ? preg_replace( '/[^A-Za-z0-9]/', '', sanitize_text_field( wp_unslash( $_GET[ self::PARAM ] ) ) ) : '';
-			$stored       = '' === $key ? false : get_transient( self::PREFIX . $key );
-			self::$values = is_array( $stored ) ? $stored : array();
-		}
-		return self::$values;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only fills in a form; nothing is changed.
+		$key    = isset( $_GET[ self::PARAM ] ) ? preg_replace( '/[^A-Za-z0-9]/', '', sanitize_text_field( wp_unslash( $_GET[ self::PARAM ] ) ) ) : '';
+		$stored = '' === $key ? false : get_transient( self::PREFIX . $key );
+		return is_array( $stored ) ? $stored : array();
 	}
 
 	/**

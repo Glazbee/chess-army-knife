@@ -55,7 +55,7 @@ if ( 'club-teams' === $team_source ) {
 		printf(
 			'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
 			wp_kses_post( $wrapper_attributes ),
-			esc_html__( 'ECF Team Fixtures Carousel: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
+			esc_html__( 'ECF Team Fixtures: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
 		);
 		return;
 	}
@@ -74,7 +74,7 @@ if ( 'club-teams' === $team_source ) {
 		printf(
 			'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
 			wp_kses_post( $wrapper_attributes ),
-			esc_html__( 'ECF Team Fixtures Carousel: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
+			esc_html__( 'ECF Team Fixtures: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
 		);
 		return;
 	}

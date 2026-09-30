@@ -16,17 +16,6 @@ class FormStateTest extends Chess_Army_Knife_TestCase {
 		Functions\when( 'sanitize_textarea_field' )->returnArg();
 		Functions\when( 'wp_unslash' )->returnArg();
 		$_GET = array();
-
-		$this->forget_loaded_values();
-	}
-
-	/**
-	 * Forget values loaded earlier, as a new request would.
-	 */
-	protected function forget_loaded_values() {
-		$property = new ReflectionProperty( Chess_Army_Knife_Form_State::class, 'values' );
-		$property->setAccessible( true );
-		$property->setValue( null, null );
 	}
 
 	protected function tearDown(): void {
@@ -102,7 +91,6 @@ class FormStateTest extends Chess_Army_Knife_TestCase {
 	public function test_default_applies_only_when_nothing_was_kept() {
 		$this->assertTrue( Chess_Army_Knife_Form_State::checked( 'consent', '1', true ) );
 
-		$this->forget_loaded_values();
 		Chess_Army_Knife_Form_State::save( array( 'name' => 'Ann' ) );
 		$_GET[ Chess_Army_Knife_Form_State::PARAM ] = 'abc123';
 		$this->assertFalse( Chess_Army_Knife_Form_State::checked( 'consent', '1', true ) );
