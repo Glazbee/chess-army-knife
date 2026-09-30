@@ -223,6 +223,33 @@ $admin_post        = admin_url( 'admin-post.php' );
 			</section>
 		<?php endforeach; ?>
 
+		<?php
+		$cak_seen_announcements = array();
+		foreach ( $session['people'] as $person ) {
+			foreach ( Chess_Army_Knife_Announcements::for_person( $person, 10 ) as $announcement ) {
+				$cak_seen_announcements[ $announcement['id'] ] = $announcement;
+			}
+		}
+		uasort(
+			$cak_seen_announcements,
+			function ( $a, $b ) {
+				return strcmp( $b['sent_at'], $a['sent_at'] );
+			}
+		);
+		?>
+		<?php if ( $cak_seen_announcements ) : ?>
+			<section class="cak-portal__announcements">
+				<h3><?php esc_html_e( 'Club announcements', 'chess-army-knife' ); ?></h3>
+				<?php foreach ( array_slice( $cak_seen_announcements, 0, 10 ) as $announcement ) : ?>
+					<article class="cak-portal__announcement">
+						<h4><?php echo esc_html( $announcement['title'] ); ?></h4>
+						<p class="description"><?php echo esc_html( mysql2date( $date_format, $announcement['sent_at'] ) ); ?></p>
+						<?php echo $announcement['html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Filtered with wp_kses_post() when built. ?>
+					</article>
+				<?php endforeach; ?>
+			</section>
+		<?php endif; ?>
+
 		<form method="post" action="<?php echo esc_url( $admin_post ); ?>">
 			<?php $cak_portal_fields( Chess_Army_Knife_Member_Portal::ACTION_SIGNOUT, $token, 0, $page_url ); ?>
 			<p><button type="submit" class="wp-element-button is-style-outline"><?php esc_html_e( 'Sign out', 'chess-army-knife' ); ?></button></p>

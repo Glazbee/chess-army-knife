@@ -390,7 +390,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		);
 		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
 		$this->assertSame( '2026-01-01 10:00:00', $member['newsletter_consent_at'], 'An existing agreement keeps its time.' );
-		$this->assertSame( array( 'event_notices', 'fixtures' ), Chess_Army_Knife_Notification_Preferences::get_opt_outs( $ada ) );
+		$this->assertSame( array( 'announcements', 'event_notices', 'fixtures' ), Chess_Army_Knife_Notification_Preferences::get_opt_outs( $ada ) );
 		$this->assertNotSame( '', $member['whatsapp_consent_at'] );
 		$this->assertSame( array( $team ), $member['whatsapp_teams'] );
 
@@ -399,6 +399,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 			$save(
 				array(
 					'category' => array(
+						'announcements' => '1',
 						'event_notices' => '1',
 						'fixtures'      => '1',
 						'renewals'      => '1',

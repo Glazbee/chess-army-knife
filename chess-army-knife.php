@@ -48,6 +48,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-events-feed.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-event-registrations.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-captains.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-selection.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-announcements.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-teams.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-teams-admin.php';
@@ -65,6 +66,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-members-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-event-registration-form.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-availability-reply.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-selection-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-announcements-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-portal.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-event-registrations-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-renewals-page.php';
@@ -103,6 +105,7 @@ function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Rating_Refresh::schedule();
 	Chess_Army_Knife_Mailer::schedule();
 	Chess_Army_Knife_Renewal_Reminders::schedule();
+	Chess_Army_Knife_Announcements::schedule();
 }
 register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
 
@@ -118,6 +121,7 @@ function Chess_Army_Knife_deactivate() {
 	Chess_Army_Knife_Rating_Refresh::unschedule();
 	Chess_Army_Knife_Mailer::unschedule();
 	Chess_Army_Knife_Renewal_Reminders::unschedule();
+	Chess_Army_Knife_Announcements::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 
