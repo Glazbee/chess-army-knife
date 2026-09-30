@@ -16,39 +16,14 @@ defined( 'ABSPATH' ) || exit;
 class Chess_Army_Knife_Settings {
 
 	const OPTION = 'Chess_Army_Knife_settings';
+	const PAGE   = 'chess-army-knife-settings';
 
 	/**
 	 * Boot the settings screen.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_post_ecf_lms_clear_cache', array( __CLASS__, 'handle_clear_cache' ) );
-	}
-
-	/**
-	 * Add the top-level admin menu (Settings is its first/default page;
-	 * other plugin admin screens register their own submenu under the
-	 * same top-level slug).
-	 */
-	public static function add_menu() {
-		add_menu_page(
-			__( 'Chess Army Knife', 'chess-army-knife' ),
-			__( 'ECF & LMS', 'chess-army-knife' ),
-			'manage_options',
-			'chess-army-knife',
-			array( __CLASS__, 'render_page' ),
-			'dashicons-chart-line',
-			76
-		);
-		add_submenu_page(
-			'chess-army-knife',
-			__( 'Settings', 'chess-army-knife' ),
-			__( 'Settings', 'chess-army-knife' ),
-			'manage_options',
-			'chess-army-knife',
-			array( __CLASS__, 'render_page' )
-		);
 	}
 
 	/**
@@ -319,7 +294,7 @@ class Chess_Army_Knife_Settings {
 
 		Chess_Army_Knife_Cache::flush_all();
 
-		wp_safe_redirect( add_query_arg( 'chess_army_knife_cache_cleared', '1', admin_url( 'options-general.php?page=chess-army-knife' ) ) );
+		wp_safe_redirect( add_query_arg( 'chess_army_knife_cache_cleared', '1', admin_url( 'admin.php?page=' . self::PAGE ) ) );
 		exit;
 	}
 
@@ -327,7 +302,7 @@ class Chess_Army_Knife_Settings {
 	 * Render the settings page.
 	 */
 	public static function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Chess_Army_Knife_Access::render_unless( current_user_can( 'manage_options' ), __( 'Settings', 'chess-army-knife' ), 'settings' ) ) {
 			return;
 		}
 

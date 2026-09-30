@@ -26,7 +26,6 @@ class Chess_Army_Knife_Teams {
 
 	const POST_TYPE  = 'chess_army_team';
 	const CAPABILITY = 'chess_army_manage_teams';
-	const MENU_SLUG  = 'chess-army-teams';
 
 	/** Set once the old Club Teams list has been moved onto the teams. */
 	const MIGRATED_OPTION = 'Chess_Army_Knife_club_teams_migrated';
@@ -72,7 +71,7 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * Register the team post type, under the Teams menu.
+	 * Register the team post type.
 	 */
 	public static function register() {
 		register_post_type(
@@ -90,7 +89,7 @@ class Chess_Army_Knife_Teams {
 				),
 				'public'       => false,
 				'show_ui'      => true,
-				'show_in_menu' => self::MENU_SLUG,
+				'show_in_menu' => false, // Listed in the plugin's menu (see Chess_Army_Knife_Menu).
 				'show_in_rest' => false, // Classic editing screen: the details are plain fields.
 				'supports'     => array( 'title', 'excerpt', 'page-attributes' ), // The excerpt is the description shown publicly.
 				'capabilities' => Chess_Army_Knife_Memberships::post_capabilities( self::CAPABILITY ),

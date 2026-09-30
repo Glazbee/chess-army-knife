@@ -51,7 +51,7 @@ class Chess_Army_Knife_Memberships {
 				),
 				'public'       => false,
 				'show_ui'      => true,
-				'show_in_menu' => self::MENU_SLUG,
+				'show_in_menu' => false, // Listed in the plugin's menu (see Chess_Army_Knife_Menu).
 				'show_in_rest' => false, // Classic editing screen: the details are plain fields.
 				'supports'     => array( 'title', 'page-attributes' ), // Page order sets the order they are advertised in.
 				'capabilities' => self::post_capabilities(),

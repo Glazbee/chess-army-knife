@@ -64,7 +64,7 @@ class Chess_Army_Knife_Announcements {
 				),
 				'public'       => false,
 				'show_ui'      => true,
-				'show_in_menu' => Chess_Army_Knife_Memberships::MENU_SLUG,
+				'show_in_menu' => false, // Listed in the plugin's menu (see Chess_Army_Knife_Menu).
 				'show_in_rest' => false, // Classic editing screen: the message is plain text with paragraphs.
 				'supports'     => array( 'title', 'editor' ),
 				'capabilities' => Chess_Army_Knife_Memberships::post_capabilities(),

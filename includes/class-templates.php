@@ -18,12 +18,12 @@ defined( 'ABSPATH' ) || exit;
 class Chess_Army_Knife_Templates {
 
 	const OPTION = 'Chess_Army_Knife_templates';
+	const PAGE   = 'chess-army-knife-templates';
 
 	/**
 	 * Boot admin page + handlers.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
 		add_action( 'admin_post_ecf_lms_save_template', array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_ecf_lms_delete_template', array( __CLASS__, 'handle_delete' ) );
 	}
@@ -491,20 +491,6 @@ class Chess_Army_Knife_Templates {
 	}
 
 	/**
-	 * Add the Templates submenu.
-	 */
-	public static function add_menu() {
-		add_submenu_page(
-			'chess-army-knife',
-			__( 'Templates', 'chess-army-knife' ),
-			__( 'Templates', 'chess-army-knife' ),
-			'manage_options',
-			'chess-army-knife-templates',
-			array( __CLASS__, 'render_page' )
-		);
-	}
-
-	/**
 	 * Save (create or update) a template.
 	 */
 	public static function handle_save() {
@@ -622,7 +608,7 @@ class Chess_Army_Knife_Templates {
 	 * Render the Templates admin page (list, or the edit form).
 	 */
 	public static function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Chess_Army_Knife_Access::render_unless( current_user_can( 'manage_options' ), __( 'Templates', 'chess-army-knife' ), 'settings' ) ) {
 			return;
 		}
 

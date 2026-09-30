@@ -1,6 +1,6 @@
 <?php
 /**
- * The Memberships > Member Checks screen: lists that help a membership
+ * The Chess Army Knife > Member Checks screen: lists that help a membership
  * secretary tidy the records. Members missing an ECF code, members whose code
  * is invalid, incomplete applications, expired memberships and possible
  * duplicates. Every list can be ticked and exported to CSV.
@@ -23,22 +23,7 @@ class Chess_Army_Knife_Member_Checks_Page {
 	 * Hook up the screen and its action.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 8 );
 		add_action( 'admin_post_chess_army_knife_verify_ecf_codes', array( __CLASS__, 'handle_verify' ) );
-	}
-
-	/**
-	 * Add the screen under Memberships.
-	 */
-	public static function add_menu() {
-		add_submenu_page(
-			Chess_Army_Knife_Memberships::MENU_SLUG,
-			__( 'Member Checks', 'chess-army-knife' ),
-			__( 'Member Checks', 'chess-army-knife' ),
-			Chess_Army_Knife_Memberships::CAPABILITY,
-			self::SLUG,
-			array( __CLASS__, 'render_page' )
-		);
 	}
 
 	/**
@@ -234,7 +219,9 @@ class Chess_Army_Knife_Member_Checks_Page {
 	 * Render the screen.
 	 */
 	public static function render_page() {
-		self::require_permission();
+		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Memberships::user_can_manage(), __( 'Member Checks', 'chess-army-knife' ), 'members' ) ) {
+			return;
+		}
 
 		$today   = current_time( 'Y-m-d' );
 		$members = Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'people' ) );

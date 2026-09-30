@@ -521,11 +521,13 @@ class SelectionTest extends WP_UnitTestCase {
 		unset( $ada );
 	}
 
-	public function test_someone_with_no_part_in_selection_is_refused() {
+	public function test_someone_with_no_part_in_selection_is_told_what_they_need() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 
-		$this->expectException( 'WPDieException' );
-		$this->render();
+		$html = $this->render();
+
+		$this->assertStringContainsString( 'You do not have permission to use this page.', $html );
+		$this->assertStringContainsString( 'captain', $html );
 	}
 
 	public function test_the_portal_shows_a_members_published_fixtures() {

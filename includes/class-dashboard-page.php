@@ -1,6 +1,6 @@
 <?php
 /**
- * The Memberships > Dashboard screen: a summary of the club's people.
+ * The Chess Army Knife > Dashboard screen: a summary of the club's people.
  *
  * It shows totals only (see Chess_Army_Knife_Member_Stats), never names, and
  * is for people with the membership permission like the rest of the section.
@@ -20,21 +20,6 @@ class Chess_Army_Knife_Dashboard_Page {
 	 * Hook up the screen.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 6 );
-	}
-
-	/**
-	 * Add the screen under Memberships, after Members.
-	 */
-	public static function add_menu() {
-		add_submenu_page(
-			Chess_Army_Knife_Memberships::MENU_SLUG,
-			__( 'Dashboard', 'chess-army-knife' ),
-			__( 'Dashboard', 'chess-army-knife' ),
-			Chess_Army_Knife_Memberships::CAPABILITY,
-			self::SLUG,
-			array( __CLASS__, 'render_page' )
-		);
 	}
 
 	/**
@@ -111,8 +96,8 @@ class Chess_Army_Knife_Dashboard_Page {
 	 * Render the screen.
 	 */
 	public static function render_page() {
-		if ( ! Chess_Army_Knife_Memberships::user_can_manage() ) {
-			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ), '', array( 'response' => 403 ) );
+		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Memberships::user_can_manage(), __( 'Dashboard', 'chess-army-knife' ), 'members' ) ) {
+			return;
 		}
 
 		$stats = Chess_Army_Knife_Member_Stats::get();

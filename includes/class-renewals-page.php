@@ -1,6 +1,6 @@
 <?php
 /**
- * The Memberships > Renewals screen: who the next reminder run would email,
+ * The Chess Army Knife > Renewals screen: who the next reminder run would email,
  * a button to send them now, and a test email to the signed-in user.
  *
  * @package Chess_Army_Knife
@@ -16,24 +16,9 @@ class Chess_Army_Knife_Renewals_Page {
 	 * Hook up the screen and its actions.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ), 7 );
 		add_action( 'admin_post_chess_army_knife_send_reminders', array( __CLASS__, 'handle_send' ) );
 		add_action( 'admin_post_chess_army_knife_test_reminder', array( __CLASS__, 'handle_test' ) );
 		add_action( 'admin_post_chess_army_knife_renew_member', array( __CLASS__, 'handle_renew' ) );
-	}
-
-	/**
-	 * Add the screen under Memberships.
-	 */
-	public static function add_menu() {
-		add_submenu_page(
-			Chess_Army_Knife_Memberships::MENU_SLUG,
-			__( 'Renewals', 'chess-army-knife' ),
-			__( 'Renewals', 'chess-army-knife' ),
-			Chess_Army_Knife_Memberships::CAPABILITY,
-			self::SLUG,
-			array( __CLASS__, 'render_page' )
-		);
 	}
 
 	/**
@@ -111,7 +96,9 @@ class Chess_Army_Knife_Renewals_Page {
 	 * Render the screen.
 	 */
 	public static function render_page() {
-		self::require_permission();
+		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Memberships::user_can_manage(), __( 'Renewals', 'chess-army-knife' ), 'members' ) ) {
+			return;
+		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		$notice = null;
@@ -140,7 +127,7 @@ class Chess_Army_Knife_Renewals_Page {
 					$enabled
 						/* translators: %s: list of days, for example "30, 7, 0, -7" */
 						? sprintf( __( 'Reminders are on. They go out at these days from the last day of membership: %s.', 'chess-army-knife' ), $days )
-						: __( 'Reminders are off. Turn them on, and set the days and wording, under ECF & LMS > Settings.', 'chess-army-knife' )
+						: __( 'Reminders are off. Turn them on, and set the days and wording, under Chess Army Knife > Settings.', 'chess-army-knife' )
 				);
 				?>
 			</p>

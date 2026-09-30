@@ -1,6 +1,6 @@
 /**
  * Sidebar control for choosing a saved template (managed under
- * ECF & LMS → Templates) for the current block type.
+ * Chess Army Knife → Templates) for the current block type.
  */
 import { __ } from '@wordpress/i18n';
 import { PanelBody, SelectControl, ExternalLink } from '@wordpress/components';

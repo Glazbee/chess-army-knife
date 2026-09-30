@@ -21,7 +21,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							'chess-army-knife'
 						) }
 						help={ __(
-							'The wording, retention period and contact address come from ECF & LMS → Settings.',
+							'The wording, retention period and contact address come from Chess Army Knife → Settings.',
 							'chess-army-knife'
 						) }
 						value={ title }

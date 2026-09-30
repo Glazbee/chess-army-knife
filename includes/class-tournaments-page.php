@@ -16,24 +16,9 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Boot the admin page and its form handlers.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_menu' ) );
 		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye', 'create_page' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
-	}
-
-	/**
-	 * Register the submenu page.
-	 */
-	public static function add_menu() {
-		add_submenu_page(
-			'chess-army-knife',
-			__( 'Tournaments', 'chess-army-knife' ),
-			__( 'Tournaments', 'chess-army-knife' ),
-			Chess_Army_Knife_Tournaments::capability(),
-			self::SLUG,
-			array( __CLASS__, 'render_page' )
-		);
 	}
 
 	/* -------------------------------------------------------------
@@ -330,7 +315,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Render the admin page (list or single tournament).
 	 */
 	public static function render_page() {
-		if ( ! Chess_Army_Knife_Tournaments::user_can_manage() ) {
+		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Tournaments::user_can_manage(), __( 'Tournaments', 'chess-army-knife' ), 'tournaments' ) ) {
 			return;
 		}
 

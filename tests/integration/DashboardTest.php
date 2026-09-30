@@ -63,10 +63,14 @@ class DashboardTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Ada Lovelace', $html );
 	}
 
-	public function test_someone_without_the_permission_is_refused() {
+	public function test_someone_without_the_permission_is_told_what_they_need_and_sees_no_figures() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
-		$this->expectException( 'WPDieException' );
+		ob_start();
 		Chess_Army_Knife_Dashboard_Page::render_page();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'You do not have permission to use this page.', $html );
+		$this->assertStringNotContainsString( 'cak-tile', $html );
 	}
 }
