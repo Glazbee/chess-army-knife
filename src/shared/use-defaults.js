@@ -1,6 +1,6 @@
 /**
- * Fetches the plugin's site-wide defaults (default club code, LMS org
- * id, event name, rating domain) so a block's editor UI can tell
+ * Fetches the plugin's site-wide defaults (LMS org id, event name,
+ * rating domain) so a block's editor UI can tell
  * whether leaving a field blank will still resolve to something useful
  * at render time, rather than always demanding the field be filled in.
  */

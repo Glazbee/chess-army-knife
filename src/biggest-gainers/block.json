@@ -5,7 +5,7 @@
 	"title": "ECF Biggest Rating Gainers",
 	"category": "widgets",
 	"icon": "chart-bar",
-	"description": "Showcase the club members whose ECF rating has risen the most over a recent period.",
+	"description": "Shows the club's current members whose ECF rating has risen the most recently.",
 	"keywords": [
 		"chess",
 		"ecf",
@@ -17,14 +17,6 @@
 	"version": "1.0.0",
 	"textdomain": "chess-army-knife",
 	"attributes": {
-		"clubCode": {
-			"type": "string",
-			"default": ""
-		},
-		"clubName": {
-			"type": "string",
-			"default": ""
-		},
 		"domain": {
 			"type": "string",
 			"default": ""

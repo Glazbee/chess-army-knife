@@ -1,7 +1,7 @@
 <?php
 /**
  * Registers the compiled blocks and a couple of small REST endpoints
- * that back the "find a member/club" controls in the editor.
+ * that back the "find a member" control in the editor.
  *
  * @package Chess_Army_Knife
  */
@@ -24,9 +24,8 @@ function Chess_Army_Knife_register() {
 add_action( 'init', 'Chess_Army_Knife_register' );
 
 /**
- * Register the small REST API behind the editor's search controls: the
- * club's own members (players) and, through a proxy that avoids browser CORS
- * problems and hides raw API internals, ECF clubs.
+ * Register the small REST API behind the editor's controls: searching the
+ * club's own people (players), templates and site defaults.
  */
 function Chess_Army_Knife_register_rest_routes() {
 	register_rest_route(
@@ -71,22 +70,6 @@ function Chess_Army_Knife_register_rest_routes() {
 			'permission_callback' => 'Chess_Army_Knife_rest_editor_permission',
 		)
 	);
-
-	register_rest_route(
-		'ecf-lms/v1',
-		'/clubs',
-		array(
-			'methods'             => 'GET',
-			'callback'            => 'Chess_Army_Knife_rest_search_clubs',
-			'permission_callback' => 'Chess_Army_Knife_rest_editor_permission',
-			'args'                => array(
-				'search' => array(
-					'required' => true,
-					'type'     => 'string',
-				),
-			),
-		)
-	);
 }
 add_action( 'rest_api_init', 'Chess_Army_Knife_register_rest_routes' );
 
@@ -124,7 +107,6 @@ function Chess_Army_Knife_rest_get_defaults() {
 
 	return rest_ensure_response(
 		array(
-			'clubCode'  => $options['default_club_code'],
 			'orgId'     => $options['default_org_id'],
 			'eventName' => $options['default_event_name'],
 			'domain'    => $options['default_domain'],
@@ -166,37 +148,6 @@ function Chess_Army_Knife_rest_search_players( WP_REST_Request $request ) {
 			'code' => $member['ecf_code'],
 			'name' => $member['name'],
 			'club' => Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER === $member['status'] ? __( 'not a club member', 'chess-army-knife' ) : '',
-		);
-	}
-
-	return rest_ensure_response( $suggestions );
-}
-
-/**
- * REST callback: club name search, normalised for the editor's club picker.
- *
- * @param WP_REST_Request $request Request.
- * @return WP_REST_Response|WP_Error
- */
-function Chess_Army_Knife_rest_search_clubs( WP_REST_Request $request ) {
-	$results = Chess_Army_Knife_ECF_Client::search_clubs( $request->get_param( 'search' ) );
-
-	if ( is_wp_error( $results ) ) {
-		return $results;
-	}
-
-	$suggestions = array();
-	foreach ( (array) $results as $club ) {
-		$code = Chess_Army_Knife_LMS_Client::pick( $club, array( 'club_code', 'code' ) );
-		$name = Chess_Army_Knife_LMS_Client::pick( $club, array( 'club_name', 'name' ) );
-
-		if ( '' === $code || '' === $name ) {
-			continue;
-		}
-
-		$suggestions[] = array(
-			'code' => (string) $code,
-			'name' => (string) $name,
 		);
 	}
 

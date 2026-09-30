@@ -72,6 +72,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Date of birth', 'chess-army-knife' )  => $member['date_of_birth'],
 				__( 'Parent or guardian', 'chess-army-knife' ) => $member['guardian_name'],
 				__( 'ECF rating code', 'chess-army-knife' ) => $member['ecf_code'],
+				__( 'Manual rating', 'chess-army-knife' )  => null === $member['manual_rating'] ? '' : $member['manual_rating'],
 				__( 'Membership type', 'chess-army-knife' ) => $member['type_name'],
 				__( 'Status', 'chess-army-knife' )         => isset( $labels[ $member['status'] ] ) ? $labels[ $member['status'] ] : $member['status'],
 				__( 'Membership starts', 'chess-army-knife' ) => $member['start_date'],
@@ -103,6 +104,23 @@ class Chess_Army_Knife_Membership_Privacy {
 				'item_id'     => 'membership-' . $member['id'],
 				'data'        => $data,
 			);
+		}
+
+		// The tournaments they have been entered in.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Tournament_Store::get_tournaments_for_person( $member['id'] ) as $tournament ) {
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-tournaments',
+					'group_label' => __( 'Club tournaments you have entered', 'chess-army-knife' ),
+					'item_id'     => 'tournament-' . $tournament['id'] . '-' . $member['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Tournament', 'chess-army-knife' ),
+							'value' => $tournament['name'],
+						),
+					),
+				);
+			}
 		}
 
 		// The photos they are tagged in, once each even if two of their records are tagged in the same photo.
@@ -156,6 +174,9 @@ class Chess_Army_Knife_Membership_Privacy {
 				$retained = true;
 				if ( $paid ) {
 					$messages[] = __( 'A payment record was kept for the club\'s accounts, without any personal details.', 'chess-army-knife' );
+				}
+				if ( Chess_Army_Knife_Tournament_Store::person_has_entries( $member['id'] ) ) {
+					$messages[] = __( 'Tournament entries were kept, without any personal details, so past tournaments still add up.', 'chess-army-knife' );
 				}
 				if ( $photos ) {
 					/* translators: 1: number of photos, 2: member record number */
@@ -229,7 +250,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				'heading'    => __( 'What we collect', 'chess-army-knife' ),
 				'paragraphs' => array(
 					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
-					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, marked as not being members. They are left out of our membership lists.', 'chess-army-knife' ),
+					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
 					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),
 				),
 			),

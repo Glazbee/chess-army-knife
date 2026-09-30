@@ -30,7 +30,6 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'ecf_games_120787_R_100', Chess_Army_Knife_ECF_Client::cache_key_games( '120787J', 'r', 100 ) );
 		$this->assertSame( 'ecf_player_120787', Chess_Army_Knife_ECF_Client::cache_key_player( '120787J' ) );
 		$this->assertSame( 'ecf_rating_120787_S', Chess_Army_Knife_ECF_Client::cache_key_rating( '120787J', 'bogus' ) );
-		$this->assertSame( 'ecf_club_players_9BAJ', Chess_Army_Knife_ECF_Client::cache_key_club_players( ' 9baj ' ) );
 	}
 
 	public function test_missing_identifiers_return_errors_without_http() {
@@ -39,14 +38,6 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'ecf_bad_code', Chess_Army_Knife_ECF_Client::get_rating( '' )->get_error_code() );
 		$this->assertSame( 'ecf_bad_code', Chess_Army_Knife_ECF_Client::get_player_by_code( 'xyz' )->get_error_code() );
 		$this->assertSame( 'ecf_bad_code', Chess_Army_Knife_ECF_Client::get_games( '' )->get_error_code() );
-		$this->assertSame( 'ecf_bad_club', Chess_Army_Knife_ECF_Client::get_club_players( '  ' )->get_error_code() );
-		$this->assertSame( 'ecf_bad_club', Chess_Army_Knife_ECF_Client::get_club_info( '' )->get_error_code() );
-	}
-
-	public function test_short_searches_return_empty_without_http() {
-		Functions\expect( 'wp_remote_get' )->never();
-
-		$this->assertSame( array(), Chess_Army_Knife_ECF_Client::search_clubs( ' a ' ) );
 	}
 
 	public function test_get_games_unwraps_envelope_and_sends_normalised_query() {
@@ -95,33 +86,10 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertTrue( true ); // The once() expectation is the assertion.
 	}
 
-	public function test_club_players_returns_columns_and_players() {
-		Functions\when( 'wp_remote_get' )->justReturn(
-			$this->response(
-				200,
-				array(
-					'success' => true,
-					'data'    => array(
-						'column_names' => array( 'name', 'rating' ),
-						'players'      => array( array( 'A', 1500 ) ),
-					),
-				)
-			)
-		);
-
-		$this->assertSame(
-			array(
-				'columns' => array( 'name', 'rating' ),
-				'players' => array( array( 'A', 1500 ) ),
-			),
-			Chess_Army_Knife_ECF_Client::get_club_players( '9BAJ' )
-		);
-	}
-
 	public function test_transport_error_is_returned_and_cached_briefly() {
 		Functions\when( 'wp_remote_get' )->justReturn( new WP_Error( 'http_request_failed', 'timeout' ) );
 
-		$result = Chess_Army_Knife_ECF_Client::get_club_info( '9BAJ' );
+		$result = Chess_Army_Knife_ECF_Client::get_player_by_code( '120787' );
 
 		$this->assertSame( 'http_request_failed', $result->get_error_code() );
 		$ttls = array_column( $this->transients, 'ttl' );
@@ -168,18 +136,44 @@ class EcfClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( 'status' => 500 ), $result->get_error_data() );
 	}
 
-	public function test_search_clubs_falls_back_to_raw_result_when_no_clubs_key() {
+	public function test_no_player_is_fetched_from_the_ecf_unless_the_clubs_records_allow_it() {
+		Functions\expect( 'wp_remote_get' )->never();
+		$asked = array();
+		Functions\when( 'apply_filters' )->alias(
+			function ( $hook, $value, ...$args ) use ( &$asked ) {
+				$asked[] = array( $hook, $args );
+				return 'Chess_Army_Knife_before_ecf_player_lookup' === $hook ? new WP_Error( 'ecf_unrecorded', 'Not on record.' ) : $value;
+			}
+		);
+
+		$this->assertSame( 'ecf_unrecorded', Chess_Army_Knife_ECF_Client::get_rating( '120787J' )->get_error_code() );
+		$this->assertSame( 'ecf_unrecorded', Chess_Army_Knife_ECF_Client::get_games( '120787J' )->get_error_code() );
+		$this->assertSame( 'ecf_unrecorded', Chess_Army_Knife_ECF_Client::get_player_by_code( '120787J' )->get_error_code() );
+		$this->assertSame( array( array( 'Chess_Army_Knife_before_ecf_player_lookup', array( '120787' ) ) ), array_slice( $asked, 0, 1 ), 'The gate is asked about the normalised code.' );
+	}
+
+	public function test_the_lookup_that_records_a_new_player_skips_the_gate() {
+		$gated = false;
+		Functions\when( 'apply_filters' )->alias(
+			function ( $hook, $value ) use ( &$gated ) {
+				$gated = $gated || 'Chess_Army_Knife_before_ecf_player_lookup' === $hook;
+				return $value;
+			}
+		);
 		Functions\when( 'wp_remote_get' )->justReturn(
 			$this->response(
 				200,
 				array(
 					'success' => true,
-					'data'    => array( 'x' => 1 ),
+					'data'    => array( 'full_name' => 'Test Player' ),
 				)
 			)
 		);
 
-		$this->assertSame( array( 'x' => 1 ), Chess_Army_Knife_ECF_Client::search_clubs( 'chess' ) );
+		$player = Chess_Army_Knife_ECF_Client::get_player_by_code( '120787J', false );
+
+		$this->assertSame( array( 'full_name' => 'Test Player' ), $player );
+		$this->assertFalse( $gated );
 	}
 
 	public function test_cache_ttl_follows_settings_with_one_minute_floor() {

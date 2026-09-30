@@ -2,9 +2,10 @@
 /**
  * Server-side render for the ECF Club Results block.
  *
- * Pulls the club roster, then the most recent rated games for a bounded
- * number of that roster's players, and merges them into one recent
- * results feed for the club.
+ * Takes the club's own current members who have an ECF rating code (never
+ * anyone the club holds no record of), pulls the most recent rated games for
+ * a bounded number of them and merges them into one recent results feed.
+ * Opponents are not shown: they are people the club has no record of.
  *
  * @package Chess_Army_Knife
  *
@@ -16,93 +17,30 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'club-results', $attributes );
 
-$club_code            = strtoupper( trim( Chess_Army_Knife_Settings::resolve( 'default_club_code', $attributes['clubCode'] ?? '' ) ) );
-$club_name            = isset( $attributes['clubName'] ) ? $attributes['clubName'] : '';
-$rating_domain        = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
-$max_players          = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_max_players', empty( $attributes['maxPlayers'] ) ? '' : $attributes['maxPlayers'], 12 ) );
-$games_per_player     = isset( $attributes['gamesPerPlayer'] ) ? max( 1, (int) $attributes['gamesPerPlayer'] ) : 5;
-$days_back            = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
-$max_results          = isset( $attributes['maxResults'] ) ? max( 1, (int) $attributes['maxResults'] ) : 20;
-$show_event           = ! isset( $attributes['showEvent'] ) || (bool) $attributes['showEvent'];
-$block_title          = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$show_opponent_rating = ! isset( $attributes['showOpponentRating'] ) || (bool) $attributes['showOpponentRating'];
+$rating_domain    = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$max_players      = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_max_players', empty( $attributes['maxPlayers'] ) ? '' : $attributes['maxPlayers'], 12 ) );
+$games_per_player = isset( $attributes['gamesPerPlayer'] ) ? max( 1, (int) $attributes['gamesPerPlayer'] ) : 5;
+$days_back        = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
+$max_results      = isset( $attributes['maxResults'] ) ? max( 1, (int) $attributes['maxResults'] ) : 20;
+$show_event       = ! isset( $attributes['showEvent'] ) || (bool) $attributes['showEvent'];
+$block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-results', $attributes );
 
-if ( '' === $club_code ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'ECF Club Results: no club selected yet. Edit this block and search for a club.', 'chess-army-knife' )
-	);
-	return;
-}
-
-$roster = Chess_Army_Knife_ECF_Client::get_club_players( $club_code );
-
-if ( is_wp_error( $roster ) ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-notice">%2$s %3$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'Could not load the club roster from the ECF API:', 'chess-army-knife' ),
-		esc_html( $roster->get_error_message() )
-	);
-	return;
-}
-
-$columns = isset( $roster['columns'] ) ? $roster['columns'] : array();
-$rows    = isset( $roster['players'] ) ? $roster['players'] : array();
-
-if ( empty( $rows ) || empty( $columns ) ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-empty">%2$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'No players were found for this club code.', 'chess-army-knife' )
-	);
-	return;
-}
-
-$idx = array_flip( $columns );
-
-$rating_column = array(
-	'S' => 'std',
-	'R' => 'rpd',
-	'B' => 'btz',
-)[ $rating_domain ] ?? 'std';
-
-$code_idx   = $idx['ECF_code'] ?? null;
-$name_idx   = $idx['full_name'] ?? null;
-$rating_idx = $idx[ $rating_column ] ?? null;
-
-// Build a normalised, rating-sorted roster and take the top N players
-// (most active/highest-rated members are the most useful sample and
-// keeps the number of downstream API calls bounded and predictable).
+// The club's own current members with an ECF code: nobody is looked up on the ECF without a record here.
 $players = array();
-foreach ( $rows as $row ) {
-	if ( null === $code_idx || null === $name_idx || ! isset( $row[ $code_idx ] ) ) {
-		continue;
-	}
+foreach ( Chess_Army_Knife_Membership_Store::get_players( '', true, $max_players, true ) as $member ) {
 	$players[] = array(
-		'code'   => (string) $row[ $code_idx ],
-		'name'   => (string) $row[ $name_idx ],
-		'rating' => ( null !== $rating_idx && isset( $row[ $rating_idx ] ) ) ? (int) $row[ $rating_idx ] : 0,
+		'code' => $member['ecf_code'],
+		'name' => $member['name'],
 	);
 }
-
-usort(
-	$players,
-	function ( $a, $b ) {
-		return $b['rating'] <=> $a['rating'];
-	}
-);
-
-$players = array_slice( $players, 0, $max_players );
 
 if ( empty( $players ) ) {
 	printf(
 		'<div %1$s><div class="chess-army-knife-empty">%2$s</div></div>',
 		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'No players with a usable ECF code were found for this club.', 'chess-army-knife' )
+		esc_html__( 'No current members with an ECF rating code were found.', 'chess-army-knife' )
 	);
 	return;
 }
@@ -118,7 +56,7 @@ $result_labels = array(
 );
 
 $results          = array();
-$admin_cache_keys = array( Chess_Army_Knife_ECF_Client::cache_key_club_players( $club_code ) );
+$admin_cache_keys = array();
 
 foreach ( $players as $player ) {
 	$admin_cache_keys[] = Chess_Army_Knife_ECF_Client::cache_key_games( $player['code'], $rating_domain, $games_per_player );
@@ -137,23 +75,17 @@ foreach ( $players as $player ) {
 		if ( empty( $game['game_date'] ) || $game['game_date'] < $cutoff ) {
 			continue;
 		}
-		if ( empty( $game['opponent_name'] ) ) {
-			continue;
-		}
-
 		$results[] = array(
-			'date'            => $game['game_date'],
-			'player_name'     => $player['name'],
-			'opponent_name'   => $game['opponent_name'],
-			'opponent_rating' => isset( $game['opponent_rating'] ) ? $game['opponent_rating'] : '',
-			'result_label'    => $result_labels[ $score ],
-			'result_class'    => array(
+			'date'         => $game['game_date'],
+			'player_name'  => $player['name'],
+			'result_label' => $result_labels[ $score ],
+			'result_class' => array(
 				'1' => 'ecf-result-win',
 				'5' => 'ecf-result-draw',
 				'0' => 'ecf-result-loss',
 			)[ $score ],
-			'colour'          => isset( $game['colour'] ) ? strtoupper( $game['colour'] ) : '',
-			'event_name'      => isset( $game['event_name'] ) ? $game['event_name'] : '',
+			'colour'       => isset( $game['colour'] ) ? strtoupper( $game['colour'] ) : '',
+			'event_name'   => isset( $game['event_name'] ) ? $game['event_name'] : '',
 		);
 	}
 }
@@ -167,11 +99,7 @@ usort(
 
 $results = array_slice( $results, 0, $max_results );
 
-$heading = $block_title ? $block_title : sprintf(
-	/* translators: %s: club name */
-	__( 'Recent results — %s', 'chess-army-knife' ),
-	$club_name ? $club_name : $club_code
-);
+$heading = $block_title ? $block_title : __( 'Recent club results', 'chess-army-knife' );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
@@ -181,7 +109,7 @@ $heading = $block_title ? $block_title : sprintf(
 
 	<?php if ( empty( $results ) ) : ?>
 		<div class="chess-army-knife-empty">
-			<?php esc_html_e( 'No recent rated results were found for this club in the selected time window.', 'chess-army-knife' ); ?>
+			<?php esc_html_e( 'No recent rated results were found in the selected time window.', 'chess-army-knife' ); ?>
 		</div>
 	<?php else : ?>
 		<table class="ecf-club-results__table">
@@ -190,7 +118,6 @@ $heading = $block_title ? $block_title : sprintf(
 					<th><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
-					<th><?php esc_html_e( 'Opponent', 'chess-army-knife' ); ?></th>
 					<?php
 					if ( $show_event ) :
 						?>
@@ -203,14 +130,6 @@ $heading = $block_title ? $block_title : sprintf(
 						<td><?php echo esc_html( gmdate( 'd M Y', strtotime( $row['date'] ) ) ); ?></td>
 						<td><?php echo esc_html( $row['player_name'] ); ?></td>
 						<td><span class="<?php echo esc_attr( $row['result_class'] ); ?>"><?php echo esc_html( $row['result_label'] ); ?></span></td>
-						<td>
-							<?php
-							echo esc_html( $row['opponent_name'] );
-							if ( $show_opponent_rating && '' !== $row['opponent_rating'] ) {
-								echo ' (' . esc_html( $row['opponent_rating'] ) . ')';
-							}
-							?>
-						</td>
 						<?php
 						if ( $show_event ) :
 							?>

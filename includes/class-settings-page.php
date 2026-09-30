@@ -1,11 +1,11 @@
 <?php
 /**
- * Admin settings screen: global defaults (club code, LMS org id, rating
+ * Admin settings screen: global defaults (LMS org id, rating
  * domain, LMS host override) so editors don't have to repeat them in
  * every block, plus cache duration controls and a "clear cache" action.
  *
  * Blocks store an *empty* value for anything that should follow the
- * global default (e.g. a blank "rating list" or "club code"); render.php
+ * global default (e.g. a blank "rating list" or "LMS organisation"); render.php
  * for each block resolves that via Chess_Army_Knife_Settings::resolve().
  *
  * @package Chess_Army_Knife
@@ -73,7 +73,6 @@ class Chess_Army_Knife_Settings {
 	 */
 	public static function defaults() {
 		return array(
-			'default_club_code'        => '',
 			'default_org_id'           => '',
 			'default_event_name'       => '',
 			'default_domain'           => 'S',
@@ -87,7 +86,7 @@ class Chess_Army_Knife_Settings {
 			'club_teams'               => '',  // Raw textarea: one "org | event | team" per line.
 			'fast_cache_enabled'       => 1,
 			'match_time'               => '19:30',
-			'cache_ecf_minutes'        => 360, // Player info / games / club roster.
+			'cache_ecf_minutes'        => 360, // Player info / games.
 			'cache_lms_minutes'        => 30,  // League tables / matches / fixtures.
 			'use_local_cache'          => 1,   // Persistent custom-table cache vs. plain transients.
 			'delete_data_on_uninstall' => 0, // Also delete tournaments and players when the plugin is deleted.
@@ -243,9 +242,6 @@ class Chess_Army_Knife_Settings {
 	public static function sanitize( $input ) {
 		$clean = self::defaults();
 
-		if ( isset( $input['default_club_code'] ) ) {
-			$clean['default_club_code'] = strtoupper( sanitize_text_field( $input['default_club_code'] ) );
-		}
 		if ( isset( $input['default_org_id'] ) ) {
 			$clean['default_org_id'] = preg_replace( '/[^0-9]/', '', $input['default_org_id'] );
 		}
@@ -348,13 +344,6 @@ class Chess_Army_Knife_Settings {
 					<?php esc_html_e( 'Set these once and leave the matching field blank in a block to use them automatically. Any block can still override a default individually.', 'chess-army-knife' ); ?>
 				</p>
 				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row"><label for="default_club_code"><?php esc_html_e( 'Default ECF club code', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="text" id="default_club_code" name="<?php echo esc_attr( self::OPTION ); ?>[default_club_code]" value="<?php echo esc_attr( $options['default_club_code'] ); ?>" class="regular-text" placeholder="e.g. 9BAJ" />
-							<p class="description"><?php esc_html_e( 'Used by "Club Results" and "Biggest Gainers" blocks when their own club field is left blank.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
 					<tr>
 						<th scope="row"><label for="default_org_id"><?php esc_html_e( 'Default LMS organisation ID', 'chess-army-knife' ); ?></label></th>
 						<td>

@@ -12,7 +12,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $name ) {
+		foreach ( array( 'games', 'entries', 'tournaments', 'members' ) as $name ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Tournament_Store::table( $name ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Tournament_Store::install_tables();
@@ -27,7 +27,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 	}
 
 	private function saved_player( $name, $code = '', $rating = null ) {
-		return Chess_Army_Knife_Tournament_Store::save_player(
+		return Chess_Army_Knife_Membership_Store::add_guest(
 			array(
 				'name'          => $name,
 				'ecf_code'      => $code,
@@ -83,11 +83,14 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertSame( 'active', Chess_Army_Knife_Membership_Store::get_member( $member )['status'], 'A member stays a member.' );
 	}
 
-	public function test_a_profile_can_be_found_by_its_ecf_code() {
+	public function test_a_person_can_be_found_by_their_ecf_code_with_or_without_the_letter() {
 		$id = $this->saved_player( 'Alice', '120787J' );
 
-		$this->assertSame( $id, Chess_Army_Knife_Tournament_Store::find_player_by_code( '120787J' )['id'] );
-		$this->assertNull( Chess_Army_Knife_Tournament_Store::find_player_by_code( '999999X' ) );
+		$this->assertSame( $id, Chess_Army_Knife_Membership_Store::find_by_ecf_code( '120787J' )['id'] );
+		$this->assertSame( $id, Chess_Army_Knife_Membership_Store::find_by_ecf_code( '120787' )['id'], 'The ECF lookups use only the digits.' );
+		$this->assertNull( Chess_Army_Knife_Membership_Store::find_by_ecf_code( '999999X' ) );
+		$this->assertNull( Chess_Army_Knife_Membership_Store::find_by_ecf_code( '1207870' ), 'A longer code is a different person.' );
+		$this->assertNull( Chess_Army_Knife_Membership_Store::find_by_ecf_code( '' ) );
 	}
 
 	public function test_several_players_are_entered_at_once_and_new_ones_are_saved() {
@@ -122,9 +125,9 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertTrue( Chess_Army_Knife_Player_Selector::outcome( $outcome ) );
 		$this->assertCount( 4, Chess_Army_Knife_Tournament_Store::get_entries( $tournament ) );
 
-		$cy = Chess_Army_Knife_Tournament_Store::find_player_by_code( '555555K' );
+		$cy = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '555555K' );
 		$this->assertSame( 'Cy From ECF', $cy['name'] );
-		$this->assertCount( 4, Chess_Army_Knife_Tournament_Store::get_players() ); // Alice, Bob, Cy and Di: the duplicate Alice reuses her profile.
+		$this->assertCount( 4, Chess_Army_Knife_Membership_Store::get_players() ); // Alice, Bob, Cy and Di: the duplicate Alice reuses her profile.
 	}
 
 	public function test_invalid_new_players_are_reported_and_the_rest_are_still_added() {

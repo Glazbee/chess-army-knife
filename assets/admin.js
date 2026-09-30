@@ -1,7 +1,6 @@
 /**
- * Admin behaviour for the Tournaments and Players pages:
- * - the player selector (filter saved players, search club members, add players by hand),
- * - filling a player's name and ECF code from a member search,
+ * Admin behaviour for the Tournaments page:
+ * - the player selector (filter members and guests, search club members, add players by hand),
  * - showing only the create-form fields that apply to the chosen format.
  */
 ( function () {
@@ -289,25 +288,6 @@
 	}
 
 	/**
-	 * On the Players page: choosing a member fills in the name and code fields.
-	 *
-	 * @param {Element} root The [data-cak-fill] element.
-	 */
-	function initFill( root ) {
-		bindEcfSearch( root, function ( player, li ) {
-			li.appendChild(
-				makeButton( i18n.use, function () {
-					document.getElementById( 'name' ).value = player.name;
-					document.getElementById( 'ecf_code' ).value = player.code;
-					root.querySelector( '[data-cak-results]' ).textContent = '';
-					root.querySelector( '[data-cak-ecf-search]' ).value = '';
-				} )
-			);
-			li.appendChild( document.createTextNode( ' ' + describe( player ) ) );
-		} );
-	}
-
-	/**
 	 * On the create form: show only the fields that apply to the chosen format,
 	 * and the knockout-stage settings only when the knockout stage is switched on.
 	 *
@@ -345,10 +325,6 @@
 		Array.prototype.forEach.call(
 			document.querySelectorAll( '[data-cak-selector]' ),
 			initSelector
-		);
-		Array.prototype.forEach.call(
-			document.querySelectorAll( '[data-cak-fill]' ),
-			initFill
 		);
 		Array.prototype.forEach.call(
 			document.querySelectorAll( '[data-cak-create-form]' ),

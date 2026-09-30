@@ -130,12 +130,6 @@ class Chess_Army_Knife_Templates {
 					'max'   => 100,
 				);
 				$s[] = array(
-					'key'     => 'showOpponentRating',
-					'label'   => __( "Show opponents' ratings", 'chess-army-knife' ),
-					'type'    => 'select',
-					'options' => $bool,
-				);
-				$s[] = array(
 					'key'     => 'showEvent',
 					'label'   => __( 'Show event column', 'chess-army-knife' ),
 					'type'    => 'select',

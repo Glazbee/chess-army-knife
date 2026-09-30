@@ -26,6 +26,10 @@ class Chess_Army_Knife_Membership_Store {
 	/** Shown for an active member whose expiry date has passed. */
 	const STATUS_EXPIRED = 'expired';
 
+	/** The lowest rating that can be entered by hand for someone without an ECF rating. */
+	const MIN_MANUAL_RATING = 1300;
+	const MAX_MANUAL_RATING = 4000;
+
 	const SOURCE_FORM   = 'form';
 	const SOURCE_MANUAL = 'manual';
 
@@ -61,6 +65,7 @@ class Chess_Army_Knife_Membership_Store {
 			guardian_email VARCHAR(191) NOT NULL DEFAULT '',
 			guardian_phone VARCHAR(40) NOT NULL DEFAULT '',
 			ecf_code VARCHAR(20) NOT NULL DEFAULT '',
+			manual_rating INT(11) NULL,
 			membership_type_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
 			type_name VARCHAR(191) NOT NULL DEFAULT '',
 			status VARCHAR(12) NOT NULL DEFAULT 'pending',
@@ -231,6 +236,15 @@ class Chess_Army_Knife_Membership_Store {
 			return new WP_Error( 'member_date_order', __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ) );
 		}
 
+		$rating = null;
+		if ( isset( $input['manual_rating'] ) && '' !== trim( (string) $input['manual_rating'] ) ) {
+			$rating = (int) $input['manual_rating'];
+			if ( $rating < self::MIN_MANUAL_RATING || $rating > self::MAX_MANUAL_RATING ) {
+				/* translators: 1: lowest manual rating, 2: highest manual rating */
+				return new WP_Error( 'member_rating', sprintf( __( 'A manual rating must be between %1$d and %2$d.', 'chess-army-knife' ), self::MIN_MANUAL_RATING, self::MAX_MANUAL_RATING ) );
+			}
+		}
+
 		$method = isset( $input['payment_method'] ) ? sanitize_key( $input['payment_method'] ) : '';
 		if ( '' !== $method && ! isset( Chess_Army_Knife_Memberships::payment_methods()[ $method ] ) ) {
 			$method = '';
@@ -243,6 +257,7 @@ class Chess_Army_Knife_Membership_Store {
 			'payment_method' => $method,
 			'paid_on'        => '' === $paid_on ? null : $paid_on,
 			'notes'          => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
+			'manual_rating'  => $rating,
 		);
 	}
 
@@ -397,49 +412,140 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
-	 * Current members, and people held as not being members (tournament
-	 * guests), who have an ECF rating code and whose name contains some text.
-	 * This is the club's own list of players for the block and tournament
-	 * pickers, in place of searching the ECF's whole database.
+	 * The people who can play in the club's tournaments and be chosen in the
+	 * blocks: current members and people held as not being members (guests).
+	 * Applicants, lapsed members and those who left are not offered.
 	 *
-	 * @param string $term  Part of a name.
-	 * @param int    $limit Most members to return.
-	 * @return array[] Each member row (see get_members()), by name.
+	 * @param string $term  Part of a name, or '' for everyone.
+	 * @param bool   $coded True to only include people with an ECF rating code.
+	 * @param int    $limit Most people to return (0 for no limit).
+	 * @param bool   $members_only True to leave out guests who are not members.
+	 * @return array[] Each person row (see get_members()), by name.
 	 */
-	public static function search_players( $term, $limit = 20 ) {
+	public static function get_players( $term = '', $coded = false, $limit = 0, $members_only = false ) {
 		global $wpdb;
 
-		$term = trim( (string) $term );
-		if ( strlen( $term ) < 2 ) {
-			return array();
+		$table  = self::table();
+		$where  = $members_only ? "( status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) )" : "( status = 'nonmember' OR ( status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) ) )";
+		$values = array( current_time( 'Y-m-d' ) );
+
+		if ( $coded ) {
+			$where .= " AND ecf_code <> ''";
+		}
+		if ( '' !== trim( (string) $term ) ) {
+			$where   .= ' AND name LIKE %s';
+			$values[] = '%' . $wpdb->esc_like( trim( (string) $term ) ) . '%';
 		}
 
-		$table = self::table();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE ecf_code <> '' AND name LIKE %s AND ( status = 'nonmember' OR ( status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) ) ) ORDER BY name ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
-				'%' . $wpdb->esc_like( $term ) . '%',
-				current_time( 'Y-m-d' ),
-				max( 1, (int) $limit )
-			),
-			ARRAY_A
-		);
+		$sql = "SELECT * FROM {$table} WHERE {$where} ORDER BY name ASC";
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d';
+			$values[] = (int) $limit;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Plugin-owned custom table; the table name and condition are built above from fixed strings and every value is a placeholder.
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
 	}
 
 	/**
-	 * Make sure the club has a record for someone who takes part in something
-	 * but may not be a member, such as a tournament guest: the person's existing
-	 * record if there is one (found by ECF code, or by name when there is no
-	 * code), otherwise a new one marked as not a member. A guest's record is
-	 * touched so it is not deleted as old while they are still being used.
+	 * Search the players by name, for the block and tournament pickers, in
+	 * place of searching the ECF's whole database. Only people with an ECF
+	 * rating code are offered.
 	 *
-	 * @param string $name     Name.
-	 * @param string $ecf_code ECF rating code, or ''.
-	 * @return int Member id, or 0 if there was no name.
+	 * @param string $term  Part of a name.
+	 * @param int    $limit Most people to return.
+	 * @return array[]
 	 */
-	public static function ensure_person( $name, $ecf_code ) {
+	public static function search_players( $term, $limit = 20 ) {
+		if ( strlen( trim( (string) $term ) ) < 2 ) {
+			return array();
+		}
+		return self::get_players( $term, true, max( 1, (int) $limit ) );
+	}
+
+	/**
+	 * Whether a record is someone who can play: a current member, or a guest.
+	 *
+	 * @param array $member Member row.
+	 * @return bool
+	 */
+	public static function can_play( array $member ) {
+		return self::STATUS_NONMEMBER === $member['status'] || self::STATUS_ACTIVE === self::effective_status( $member, current_time( 'Y-m-d' ) );
+	}
+
+	/**
+	 * The record that has an ECF rating code. The ECF's own lookups use just the
+	 * digits, so a code without its letter (120787) finds one stored with it
+	 * (120787J), and a code with a letter also finds one stored without.
+	 *
+	 * @param string $ecf_code ECF rating code.
+	 * @return array|null
+	 */
+	public static function find_by_ecf_code( $ecf_code ) {
+		global $wpdb;
+
+		$ecf_code = strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', (string) $ecf_code ) );
+		if ( '' === $ecf_code ) {
+			return null;
+		}
+
+		$digits = preg_replace( '/\D/', '', $ecf_code );
+		$table  = self::table();
+		$where  = 'ecf_code = %s';
+		$values = array( $ecf_code );
+
+		if ( '' !== $digits && $digits !== $ecf_code ) {
+			$where   .= ' OR ecf_code = %s';
+			$values[] = $digits;
+		} elseif ( $digits === $ecf_code ) {
+			$where   .= ' OR ( ecf_code LIKE %s AND CHAR_LENGTH( ecf_code ) = %d )';
+			$values[] = $wpdb->esc_like( $digits ) . '_';
+			$values[] = strlen( $digits ) + 1;
+		}
+
+		$sql = "SELECT * FROM {$table} WHERE {$where} ORDER BY id ASC LIMIT 1";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Plugin-owned custom table; the table name and condition are built above from fixed strings and every value is a placeholder.
+		$row = $wpdb->get_row( $wpdb->prepare( $sql, $values ), ARRAY_A );
+		return $row ? self::cast_member( $row ) : null;
+	}
+
+	/**
+	 * Record someone who is not a member, such as a tournament guest.
+	 *
+	 * @param array $data name, and optionally ecf_code and manual_rating.
+	 * @return int Record id, or 0 if there was no name.
+	 */
+	public static function add_guest( array $data ) {
+		$name = isset( $data['name'] ) ? trim( (string) $data['name'] ) : '';
+		if ( '' === $name ) {
+			return 0;
+		}
+
+		return self::save_member(
+			array(
+				'name'          => $name,
+				'ecf_code'      => isset( $data['ecf_code'] ) ? strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', (string) $data['ecf_code'] ) ) : '',
+				'manual_rating' => isset( $data['manual_rating'] ) ? $data['manual_rating'] : null,
+				'status'        => self::STATUS_NONMEMBER,
+				'source'        => self::SOURCE_MANUAL,
+			)
+		);
+	}
+
+	/**
+	 * Make sure the club has a record for someone who takes part in something
+	 * but may not be a member: their existing record if there is one (found by
+	 * ECF code, or by name when there is no code), otherwise a new one marked as
+	 * not a member. A guest's record is touched so it is not deleted as old
+	 * while they are still being used.
+	 *
+	 * @param string   $name          Name.
+	 * @param string   $ecf_code      ECF rating code, or ''.
+	 * @param int|null $manual_rating Rating to use when there is no ECF rating.
+	 * @return int Record id, or 0 if there was no name.
+	 */
+	public static function ensure_person( $name, $ecf_code, $manual_rating = null ) {
 		global $wpdb;
 
 		$name     = trim( (string) $name );
@@ -448,31 +554,80 @@ class Chess_Army_Knife_Membership_Store {
 			return 0;
 		}
 
-		$table = self::table();
+		$row = null;
 		if ( '' !== $ecf_code ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE ecf_code = %s ORDER BY id ASC LIMIT 1", $ecf_code ), ARRAY_A );
+			$row = self::find_by_ecf_code( $ecf_code );
 		} else {
+			$table = self::table();
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE name = %s ORDER BY id ASC LIMIT 1", $name ), ARRAY_A );
+			$found = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE name = %s ORDER BY id ASC LIMIT 1", $name ), ARRAY_A );
+			$row   = $found ? self::cast_member( $found ) : null;
 		}
 
 		if ( $row ) {
-			$member = self::cast_member( $row );
-			if ( self::STATUS_NONMEMBER === $member['status'] ) {
-				self::save_member( array( 'id' => $member['id'] ) ); // Only refreshes when it was last changed.
+			if ( self::STATUS_NONMEMBER === $row['status'] ) {
+				$update = array( 'id' => $row['id'] ); // Refreshes when it was last changed.
+				if ( null === $row['manual_rating'] && null !== $manual_rating ) {
+					$update['manual_rating'] = $manual_rating;
+				}
+				self::save_member( $update );
 			}
-			return $member['id'];
+			return $row['id'];
 		}
 
-		return self::save_member(
+		return self::add_guest(
 			array(
-				'name'     => $name,
-				'ecf_code' => $ecf_code,
-				'status'   => self::STATUS_NONMEMBER,
-				'source'   => self::SOURCE_MANUAL,
+				'name'          => $name,
+				'ecf_code'      => $ecf_code,
+				'manual_rating' => $manual_rating,
 			)
 		);
+	}
+
+	/**
+	 * Record a player the ECF has told us about, when their code is used
+	 * somewhere but nobody has been recorded under it. This is the one way the
+	 * club comes to hold details of someone it did not enter itself, so nothing
+	 * is ever shown or fetched about a player without a record. The name is
+	 * looked up from the ECF once and kept.
+	 *
+	 * @param string $ecf_code ECF rating code.
+	 * @return int|WP_Error Record id, or an error if the ECF does not know the code.
+	 */
+	public static function record_ecf_player( $ecf_code ) {
+		$existing = self::find_by_ecf_code( $ecf_code );
+		if ( $existing ) {
+			return $existing['id'];
+		}
+
+		$player = Chess_Army_Knife_ECF_Client::get_player_by_code( $ecf_code, false );
+		if ( is_wp_error( $player ) ) {
+			return $player;
+		}
+
+		$name = Chess_Army_Knife_LMS_Client::pick( is_array( $player ) ? $player : array(), array( 'full_name', 'name' ) );
+		if ( '' === $name ) {
+			return new WP_Error( 'ecf_no_name', __( 'The ECF did not give a name for that rating code.', 'chess-army-knife' ) );
+		}
+
+		return self::ensure_person( $name, $ecf_code );
+	}
+
+	/**
+	 * The ECF client asks this before it fetches anything about a player (see
+	 * Chess_Army_Knife_ECF_Client::gate()): the player is recorded first.
+	 *
+	 * @param true|WP_Error $allowed Result so far.
+	 * @param string        $code    ECF rating code.
+	 * @return true|WP_Error
+	 */
+	public static function allow_ecf_lookup( $allowed, $code ) {
+		if ( is_wp_error( $allowed ) ) {
+			return $allowed;
+		}
+
+		$recorded = self::record_ecf_player( $code );
+		return is_wp_error( $recorded ) ? $recorded : true;
 	}
 
 	/**
@@ -612,8 +767,9 @@ class Chess_Army_Knife_Membership_Store {
 	/**
 	 * Erase a person's details. A record with a payment on it is kept without
 	 * the person's details, because the club may need to keep its accounts, and
-	 * so is one tagged in photos, so those photos can still be found and
-	 * reviewed; any other record is deleted.
+	 * so is one tagged in photos or entered in a tournament, so those photos can
+	 * still be found and reviewed and the tournament still adds up; any other
+	 * record is deleted.
 	 *
 	 * @param int $id Member id.
 	 * @return string 'deleted', 'anonymised', or '' if there is no such member.
@@ -626,7 +782,7 @@ class Chess_Army_Knife_Membership_Store {
 
 		// A record is kept, without personal details, while it has a payment on it or is tagged
 		// in photos: the photos may show other people, so someone has to review them by hand.
-		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) ) {
+		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
 		}
@@ -642,6 +798,7 @@ class Chess_Army_Knife_Membership_Store {
 				'guardian_email'        => '',
 				'guardian_phone'        => '',
 				'ecf_code'              => '',
+				'manual_rating'         => null,
 				'notes'                 => '',
 				'consent_at'            => null,
 				'newsletter_consent_at' => null,
@@ -672,6 +829,7 @@ class Chess_Army_Knife_Membership_Store {
 	protected static function cast_member( array $row ) {
 		$row['id']                 = (int) $row['id'];
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
+		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
 
 		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];
@@ -680,3 +838,5 @@ class Chess_Army_Knife_Membership_Store {
 		return $row;
 	}
 }
+
+add_filter( 'Chess_Army_Knife_before_ecf_player_lookup', array( 'Chess_Army_Knife_Membership_Store', 'allow_ecf_lookup' ), 10, 2 );

@@ -138,7 +138,8 @@ class Chess_Army_Knife_Members_Page {
 		$id = isset( $_GET['member'] ) ? absint( $_GET['member'] ) : 0;
 		check_admin_referer( 'chess_army_knife_delete_member_' . $id );
 
-		Chess_Army_Knife_Membership_Store::delete_member( $id );
+		// Deleted outright, unless the record is tied to a payment, photos or a tournament, in which case its personal details are removed and the rest is kept.
+		Chess_Army_Knife_Membership_Store::erase_member( $id );
 
 		wp_safe_redirect( self::url( array( 'deleted' => '1' ) ) );
 		exit;
@@ -160,6 +161,7 @@ class Chess_Army_Knife_Members_Page {
 			'member_status'     => __( 'Please choose a status.', 'chess-army-knife' ),
 			'member_date'       => __( 'Please enter dates as YYYY-MM-DD.', 'chess-army-knife' ),
 			'member_date_order' => __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ),
+			'member_rating'     => __( 'That manual rating is out of range.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : Chess_Army_Knife_Membership_Form::error_message( $code );
 	}
@@ -312,7 +314,7 @@ class Chess_Army_Knife_Members_Page {
 											?>
 										</a> |
 									<?php endif; ?>
-									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this member and their details?', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
+									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details? If they have a payment, photos or tournament entries on record, those stay but without their personal details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
 								</div>
 							</td>
 							<td><?php echo esc_html( $member['type_name'] ); ?></td>
@@ -369,7 +371,7 @@ class Chess_Army_Knife_Members_Page {
 	 */
 	protected static function render_form( $member ) {
 		$editing = null !== $member;
-		$member  = $editing ? $member : array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at' ), '' ) + array(
+		$member  = $editing ? $member : array( 'manual_rating' => null ) + array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at' ), '' ) + array(
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
 			'start_date'         => current_time( 'Y-m-d' ),
@@ -426,6 +428,18 @@ class Chess_Army_Knife_Members_Page {
 					<tr>
 						<th scope="row"><label for="ecf_code"><?php esc_html_e( 'ECF rating code', 'chess-army-knife' ); ?></label></th>
 						<td><input type="text" id="ecf_code" name="ecf_code" class="regular-text" value="<?php echo esc_attr( $member['ecf_code'] ); ?>" /></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="manual_rating"><?php esc_html_e( 'Manual rating', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="number" id="manual_rating" name="manual_rating" min="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ); ?>" max="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MAX_MANUAL_RATING ); ?>" value="<?php echo esc_attr( null === $member['manual_rating'] ? '' : $member['manual_rating'] ); ?>" />
+							<p class="description">
+								<?php
+								/* translators: %d: lowest manual rating */
+								echo esc_html( sprintf( __( 'Only for someone without an ECF code: used to seed them in tournaments. %d or higher.', 'chess-army-knife' ), Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ) );
+								?>
+							</p>
+						</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="membership_type_id"><?php esc_html_e( 'Membership type', 'chess-army-knife' ); ?></label></th>

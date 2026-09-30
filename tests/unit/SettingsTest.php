@@ -123,7 +123,6 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 	public function test_sanitize_cleans_and_bounds_input() {
 		$clean = Chess_Army_Knife_Settings::sanitize(
 			array(
-				'default_club_code'   => ' 9baj ',
 				'default_org_id'      => '12ab3',
 				'default_domain'      => 'zz',
 				'default_days_back'   => '-4',
@@ -135,7 +134,6 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 			)
 		);
 
-		$this->assertSame( '9BAJ', $clean['default_club_code'] );
 		$this->assertSame( '123', $clean['default_org_id'] );
 		$this->assertSame( 'S', $clean['default_domain'] );
 		$this->assertSame( 1, $clean['default_days_back'] );

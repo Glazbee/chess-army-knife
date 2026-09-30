@@ -205,7 +205,7 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 	public function test_player_profile_validation() {
 		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
 
-		$clean = Chess_Army_Knife_Players_Page::sanitize_player(
+		$clean = Chess_Army_Knife_Player_Selector::sanitize_player(
 			array(
 				'name'          => '  Alice ',
 				'ecf_code'      => ' 120787j ',
@@ -221,10 +221,10 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 			$clean
 		);
 
-		$this->assertSame( 'player_name', Chess_Army_Knife_Players_Page::sanitize_player( array( 'name' => '  ' ) )->get_error_code() );
+		$this->assertSame( 'player_name', Chess_Army_Knife_Player_Selector::sanitize_player( array( 'name' => '  ' ) )->get_error_code() );
 		$this->assertSame(
 			'player_rating',
-			Chess_Army_Knife_Players_Page::sanitize_player(
+			Chess_Army_Knife_Player_Selector::sanitize_player(
 				array(
 					'name'          => 'A',
 					'manual_rating' => '9999',
@@ -232,7 +232,7 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 			)->get_error_code()
 		);
 		$this->assertNull(
-			Chess_Army_Knife_Players_Page::sanitize_player(
+			Chess_Army_Knife_Player_Selector::sanitize_player(
 				array(
 					'name'          => 'A',
 					'manual_rating' => '',
@@ -244,7 +244,7 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 	public function test_a_manual_rating_must_be_1300_or_higher() {
 		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
 
-		$below = Chess_Army_Knife_Players_Page::sanitize_player(
+		$below = Chess_Army_Knife_Player_Selector::sanitize_player(
 			array(
 				'name'          => 'A',
 				'manual_rating' => '1299',
@@ -255,7 +255,7 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame(
 			1300,
-			Chess_Army_Knife_Players_Page::sanitize_player(
+			Chess_Army_Knife_Player_Selector::sanitize_player(
 				array(
 					'name'          => 'A',
 					'manual_rating' => '1300',

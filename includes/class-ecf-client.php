@@ -53,6 +53,26 @@ class Chess_Army_Knife_ECF_Client {
 	}
 
 	/**
+	 * Check that a player may be looked up. Nothing is fetched about a player
+	 * the club holds no record of: the club's records are told about the code
+	 * first, and either already have the person or write them down (see
+	 * Chess_Army_Knife_Membership_Store::record_ecf_player()), or refuse.
+	 *
+	 * @param string $code Normalised ECF rating code.
+	 * @return true|WP_Error
+	 */
+	protected static function gate( $code ) {
+		/**
+		 * Filter whether a player's details may be fetched from the ECF.
+		 *
+		 * @param true|WP_Error $allowed True to go ahead, or an error to refuse.
+		 * @param string        $code    Normalised ECF rating code.
+		 */
+		$allowed = apply_filters( 'Chess_Army_Knife_before_ecf_player_lookup', true, $code );
+		return is_wp_error( $allowed ) ? $allowed : true;
+	}
+
+	/**
 	 * Fetch a player's current published rating for a rating list.
 	 *
 	 * @param string $code   ECF rating code.
@@ -65,6 +85,11 @@ class Chess_Army_Knife_ECF_Client {
 
 		if ( '' === $code ) {
 			return new WP_Error( 'ecf_bad_code', __( 'Please provide an ECF rating code.', 'chess-army-knife' ) );
+		}
+
+		$recorded = self::gate( $code );
+		if ( is_wp_error( $recorded ) ) {
+			return $recorded;
 		}
 
 		return Chess_Army_Knife_Cache::remember(
@@ -84,26 +109,24 @@ class Chess_Army_Knife_ECF_Client {
 	}
 
 	/**
-	 * Build the raw (unhashed) cache key for a club roster lookup.
-	 *
-	 * @param string $club_code ECF club code.
-	 * @return string
-	 */
-	public static function cache_key_club_players( $club_code ) {
-		return 'ecf_club_players_' . strtoupper( trim( (string) $club_code ) );
-	}
-
-	/**
 	 * Fetch general info for a player from their ECF rating code
 	 * (e.g. "120787" for 120787J).
 	 *
 	 * @param string $code Rating code, letter suffix optional.
+	 * @param bool   $gate False only for the lookup that records a player nobody has recorded yet.
 	 * @return array|WP_Error
 	 */
-	public static function get_player_by_code( $code ) {
+	public static function get_player_by_code( $code, $gate = true ) {
 		$code = self::normalise_code( $code );
 		if ( '' === $code ) {
 			return new WP_Error( 'ecf_bad_code', __( 'Please provide an ECF rating code.', 'chess-army-knife' ) );
+		}
+
+		if ( $gate ) {
+			$recorded = self::gate( $code );
+			if ( is_wp_error( $recorded ) ) {
+				return $recorded;
+			}
 		}
 
 		$ttl = self::ttl( 'player_info', 12 * HOUR_IN_SECONDS );
@@ -136,6 +159,11 @@ class Chess_Army_Knife_ECF_Client {
 			return new WP_Error( 'ecf_bad_code', __( 'Please provide an ECF rating code.', 'chess-army-knife' ) );
 		}
 
+		$recorded = self::gate( $player_no );
+		if ( is_wp_error( $recorded ) ) {
+			return $recorded;
+		}
+
 		$ttl = self::ttl( 'games', 6 * HOUR_IN_SECONDS );
 
 		return Chess_Army_Knife_Cache::remember(
@@ -154,89 +182,6 @@ class Chess_Army_Knife_ECF_Client {
 					return $result;
 				}
 				return isset( $result['games'] ) ? $result['games'] : array();
-			}
-		);
-	}
-
-	/**
-	 * Fetch the club roster (players + their latest ratings) for a club code.
-	 *
-	 * @param string $club_code ECF club code, e.g. "9BAJ".
-	 * @return array|WP_Error {
-	 *     @type string[] $columns Column names.
-	 *     @type array[]  $players Rows matching $columns order.
-	 * }
-	 */
-	public static function get_club_players( $club_code ) {
-		$club_code = strtoupper( trim( (string) $club_code ) );
-		if ( '' === $club_code ) {
-			return new WP_Error( 'ecf_bad_club', __( 'Please provide an ECF club code.', 'chess-army-knife' ) );
-		}
-
-		$ttl = self::ttl( 'club_players', 12 * HOUR_IN_SECONDS );
-
-		return Chess_Army_Knife_Cache::remember(
-			self::cache_key_club_players( $club_code ),
-			$ttl,
-			function () use ( $club_code ) {
-				$result = self::request( '/clubs/players', array( 'code' => $club_code ) );
-				if ( is_wp_error( $result ) ) {
-					return $result;
-				}
-				return array(
-					'columns' => isset( $result['column_names'] ) ? $result['column_names'] : array(),
-					'players' => isset( $result['players'] ) ? $result['players'] : array(),
-				);
-			}
-		);
-	}
-
-	/**
-	 * Fetch simple club info (name etc.) from a club code.
-	 *
-	 * @param string $club_code ECF club code.
-	 * @return array|WP_Error
-	 */
-	public static function get_club_info( $club_code ) {
-		$club_code = strtoupper( trim( (string) $club_code ) );
-		if ( '' === $club_code ) {
-			return new WP_Error( 'ecf_bad_club', __( 'Please provide an ECF club code.', 'chess-army-knife' ) );
-		}
-
-		$ttl = self::ttl( 'club_info', DAY_IN_SECONDS );
-
-		return Chess_Army_Knife_Cache::remember(
-			"ecf_club_info_{$club_code}",
-			$ttl,
-			function () use ( $club_code ) {
-				return self::request( '/clubs/code', array( 'code' => $club_code ) );
-			}
-		);
-	}
-
-	/**
-	 * Search clubs by name/word-stem. Powers the club picker in the editor.
-	 *
-	 * @param string $name Name fragment.
-	 * @return array|WP_Error
-	 */
-	public static function search_clubs( $name ) {
-		$name = trim( (string) $name );
-		if ( strlen( $name ) < 3 ) {
-			return array();
-		}
-
-		$ttl = self::ttl( 'club_search', HOUR_IN_SECONDS );
-
-		return Chess_Army_Knife_Cache::remember(
-			'ecf_club_search_' . strtolower( $name ),
-			$ttl,
-			function () use ( $name ) {
-				$result = self::request( '/clubs/name', array( 'name' => $name ) );
-				if ( is_wp_error( $result ) ) {
-					return $result;
-				}
-				return isset( $result['clubs'] ) ? $result['clubs'] : $result;
 			}
 		);
 	}

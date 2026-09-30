@@ -81,7 +81,7 @@ if ( $chess_army_knife_delete_data ) {
 
 // Tournament history is user data: only drop it if the admin opted in on the Settings page.
 if ( $chess_army_knife_delete_data ) {
-	foreach ( array( 'games', 'entries', 'tournaments', 'players' ) as $chess_army_knife_table ) {
+	foreach ( array( 'games', 'entries', 'tournaments' ) as $chess_army_knife_table ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_{$chess_army_knife_table}" );
 	}
