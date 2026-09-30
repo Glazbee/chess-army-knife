@@ -20,15 +20,15 @@ $membership_types = Chess_Army_Knife_Memberships::types();
 $payment_text     = $show_payment ? Chess_Army_Knife_Memberships::payment_instructions() : '';
 ?>
 <div <?php echo wp_kses_post( get_block_wrapper_attributes() ); ?>>
-	<p class="cak-memberships__heading"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'Membership', 'chess-army-knife' ) ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-memberships__heading', '' !== $block_title ? $block_title : __( 'Membership', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( empty( $membership_types ) ) : ?>
 		<div class="chess-army-knife-empty"><?php echo esc_html( '' !== $empty_message ? $empty_message : __( 'No memberships are available at the moment.', 'chess-army-knife' ) ); ?></div>
 	<?php else : ?>
-		<div class="cak-memberships__list">
+		<ul class="cak-memberships__list">
 			<?php foreach ( $membership_types as $membership_type ) : ?>
-				<div class="cak-membership">
-					<p class="cak-membership__name"><?php echo esc_html( $membership_type['name'] ); ?></p>
+				<li class="cak-membership">
+					<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-membership__name', $membership_type['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 					<?php if ( $show_price ) : ?>
 						<p class="cak-membership__price">
 							<span class="cak-membership__amount"><?php echo esc_html( $membership_type['price_label'] ); ?></span>
@@ -41,16 +41,16 @@ $payment_text     = $show_payment ? Chess_Army_Knife_Memberships::payment_instru
 						<p class="cak-membership__description"><?php echo esc_html( $membership_type['description'] ); ?></p>
 					<?php endif; ?>
 					<?php if ( '' !== $join_url ) : ?>
-						<p class="cak-membership__join"><a href="<?php echo esc_url( add_query_arg( 'membership_type', $membership_type['id'], $join_url ) . '#' . Chess_Army_Knife_Membership_Form::ANCHOR ); ?>"><?php esc_html_e( 'Apply for this membership', 'chess-army-knife' ); ?></a></p>
+						<p class="cak-membership__join"><a href="<?php echo esc_url( add_query_arg( 'membership_type', $membership_type['id'], $join_url ) . '#' . Chess_Army_Knife_Membership_Form::ANCHOR ); ?>"><?php esc_html_e( 'Apply for this membership', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( ': ' . $membership_type['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a></p>
 					<?php endif; ?>
-				</div>
+				</li>
 			<?php endforeach; ?>
-		</div>
+		</ul>
 	<?php endif; ?>
 
 	<?php if ( '' !== $payment_text ) : ?>
 		<div class="cak-memberships__payment">
-			<p class="cak-memberships__payment-heading"><?php esc_html_e( 'How to pay', 'chess-army-knife' ); ?></p>
+			<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-memberships__payment-heading', __( 'How to pay', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 			<?php echo wp_kses_post( wpautop( esc_html( $payment_text ) ) ); ?>
 		</div>
 	<?php endif; ?>

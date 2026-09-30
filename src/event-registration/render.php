@@ -48,20 +48,34 @@ if ( $cancel && $cancel['event_id'] !== $event_id ) {
 $is_open = Chess_Army_Knife_Event_Registrations::is_open( $event_id );
 $left    = Chess_Army_Knife_Event_Registrations::places_left( $event_id );
 $full    = null !== $left && $left < 1;
+
+$error_code   = isset( $_GET['cak_reg_error'] ) ? sanitize_key( wp_unslash( $_GET['cak_reg_error'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of a submission.
+$error_fields = array(
+	'details' => array( 'cak-reg-name', __( 'Your name', 'chess-army-knife' ) ),
+	'consent' => array( 'cak-reg-consent', __( 'The club may keep my name and email address', 'chess-army-knife' ) ),
+);
+$error_field  = isset( $error_fields[ $error_code ] ) ? $error_fields[ $error_code ] : array( '', '' );
+$notice_id    = 'cak-registration-notice';
+$attrs        = function ( $field_id ) use ( $error_field, $notice_id ) {
+	return Chess_Army_Knife_A11y::field_attrs( $field_id, $error_field[0], $notice_id );
+};
+$notice       = function ( $message ) use ( $notice_id ) {
+	return Chess_Army_Knife_A11y::notice( 'success', $notice_id, $message );
+};
 ?>
 <div <?php echo wp_kses_post( get_block_wrapper_attributes() ); ?> id="<?php echo esc_attr( Chess_Army_Knife_Event_Registration_Form::ANCHOR ); ?>">
-	<h2 class="cak-registration__heading"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'Register', 'chess-army-knife' ) ); ?></h2>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-registration__heading', '' !== $block_title ? $block_title : __( 'Register', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( '' !== $error_text ) : ?>
-		<p class="cak-registration__notice is-error" role="alert"><?php echo esc_html( $error_text ); ?></p>
+		<?php echo Chess_Army_Knife_A11y::notice( 'error', $notice_id, $error_text, $error_field[0], $error_field[1] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php elseif ( $sent ) : ?>
-		<p class="cak-registration__notice" role="status"><?php esc_html_e( 'Thank you. If the details were right, we have emailed you a link to confirm your place. It works for 24 hours.', 'chess-army-knife' ); ?></p>
+		<?php echo $notice( __( 'Thank you. If the details were right, we have emailed you a link to confirm your place. It works for 24 hours.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php elseif ( 'waiting' === $done ) : ?>
-		<p class="cak-registration__notice" role="status"><?php esc_html_e( 'The event is full, so you are on the waiting list. We will email you if a place becomes free.', 'chess-army-knife' ); ?></p>
+		<?php echo $notice( __( 'The event is full, so you are on the waiting list. We will email you if a place becomes free.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php elseif ( '' !== $done ) : ?>
-		<p class="cak-registration__notice" role="status"><?php esc_html_e( 'You are registered. We have emailed you the details, with a link to cancel if your plans change.', 'chess-army-knife' ); ?></p>
+		<?php echo $notice( __( 'You are registered. We have emailed you the details, with a link to cancel if your plans change.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php elseif ( $cancelled ) : ?>
-		<p class="cak-registration__notice" role="status"><?php esc_html_e( 'Your registration has been cancelled.', 'chess-army-knife' ); ?></p>
+		<?php echo $notice( __( 'Your registration has been cancelled.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php endif; ?>
 
 	<?php if ( $pending ) : ?>
@@ -71,7 +85,8 @@ $full    = null !== $left && $left < 1;
 			<input type="hidden" name="cak_redirect" value="<?php echo esc_url( $page_url ); ?>" />
 			<?php wp_nonce_field( Chess_Army_Knife_Event_Registration_Form::ACTION_CONFIRM, Chess_Army_Knife_Event_Registration_Form::NONCE_FIELD ); ?>
 			<?php if ( $pending['people'] ) : ?>
-				<p><?php esc_html_e( 'Who is coming?', 'chess-army-knife' ); ?></p>
+				<fieldset class="cak-registration__people">
+				<legend><?php esc_html_e( 'Who is coming?', 'chess-army-knife' ); ?></legend>
 				<?php foreach ( $pending['people'] as $person ) : ?>
 					<p class="cak-registration__field">
 						<label>
@@ -85,6 +100,7 @@ $full    = null !== $left && $left < 1;
 						<?php endif; ?>
 					</p>
 				<?php endforeach; ?>
+				</fieldset>
 			<?php else : ?>
 				<p>
 					<?php
@@ -128,14 +144,14 @@ $full    = null !== $left && $left < 1;
 			<input type="hidden" name="cak_redirect" value="<?php echo esc_url( $page_url ); ?>" />
 			<?php wp_nonce_field( Chess_Army_Knife_Event_Registration_Form::ACTION_REQUEST, Chess_Army_Knife_Event_Registration_Form::NONCE_FIELD ); ?>
 			<p class="cak-registration__hp" aria-hidden="true"><label>URL <input type="text" name="<?php echo esc_attr( Chess_Army_Knife_Event_Registration_Form::HONEYPOT ); ?>" value="" tabindex="-1" autocomplete="off" /></label></p>
-			<p class="cak-registration__field"><label for="cak-reg-name"><?php esc_html_e( 'Your name', 'chess-army-knife' ); ?></label><input type="text" id="cak-reg-name" name="name" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'name' ) ); ?>" autocomplete="name" required /></p>
-			<p class="cak-registration__field"><label for="cak-reg-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?></label><input type="email" id="cak-reg-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required /></p>
+			<p class="cak-registration__field"><label for="cak-reg-name"><?php esc_html_e( 'Your name', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label><input type="text" id="cak-reg-name" name="name" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'name' ) ); ?>" autocomplete="name" required <?php echo $attrs( 'cak-reg-name' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /></p>
+			<p class="cak-registration__field"><label for="cak-reg-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label><input type="email" id="cak-reg-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required <?php echo $attrs( 'cak-reg-email' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /></p>
 			<?php if ( $settings['max_guests'] > 0 ) : ?>
 				<p class="cak-registration__field"><label for="cak-reg-guests"><?php esc_html_e( 'Guests you are bringing', 'chess-army-knife' ); ?></label><input type="number" id="cak-reg-guests" name="guests" min="0" max="<?php echo esc_attr( $settings['max_guests'] ); ?>" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'guests', '0' ) ); ?>" /></p>
 			<?php endif; ?>
-			<p class="cak-registration__check"><label><input type="checkbox" name="consent" value="1" required /> <?php esc_html_e( 'The club may keep my name and email address to manage this registration, as set out in its data policy.', 'chess-army-knife' ); ?></label></p>
+			<p class="cak-registration__check"><label><input type="checkbox" id="cak-reg-consent" name="consent" value="1" required <?php echo $attrs( 'cak-reg-consent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /> <?php esc_html_e( 'The club may keep my name and email address to manage this registration, as set out in its data policy.', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label></p>
 			<p><button type="submit" class="wp-element-button"><?php echo esc_html( $full ? __( 'Join the waiting list', 'chess-army-knife' ) : __( 'Register', 'chess-army-knife' ) ); ?></button></p>
-			<p class="description"><?php esc_html_e( 'We will email you a link to confirm your place.', 'chess-army-knife' ); ?></p>
+			<p class="cak-registration__hint"><?php esc_html_e( 'We will email you a link to confirm your place.', 'chess-army-knife' ); ?></p>
 		</form>
 	<?php endif; ?>
 </div>

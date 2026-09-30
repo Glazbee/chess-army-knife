@@ -14,9 +14,9 @@ defined( 'ABSPATH' ) || exit;
 $block_title = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 ?>
 <div <?php echo wp_kses_post( get_block_wrapper_attributes() ); ?>>
-	<h2 class="cak-data-policy__heading"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'How we handle your data', 'chess-army-knife' ) ); ?></h2>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-data-policy__heading', '' !== $block_title ? $block_title : __( 'How we handle your data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<?php foreach ( Chess_Army_Knife_Membership_Privacy::policy_sections() as $policy_section ) : ?>
-		<h3><?php echo esc_html( $policy_section['heading'] ); ?></h3>
+		<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-data-policy__section', $policy_section['heading'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 		<?php foreach ( $policy_section['paragraphs'] as $policy_paragraph ) : ?>
 			<p><?php echo esc_html( $policy_paragraph ); ?></p>
 		<?php endforeach; ?>

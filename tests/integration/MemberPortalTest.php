@@ -698,4 +698,58 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$_GET = array( 'cak_portal_msg' => '<script>alert(1)</script>' );
 		$this->assertStringNotContainsString( '<script>', do_blocks( '<!-- wp:chess-army-knife/member-portal /-->' ) );
 	}
+
+	public function test_a_session_lasts_an_hour_and_says_when_it_ends() {
+		$this->person();
+		$token = $this->sign_in();
+
+		$session = Chess_Army_Knife_Member_Portal::session( $token );
+		$this->assertEqualsWithDelta( time() + HOUR_IN_SECONDS, $session['expires'], 5 );
+		$this->assertSame( 'ada@example.test', $session['email'] );
+	}
+
+	public function test_extending_a_session_starts_the_hour_again() {
+		$this->person();
+		$token = $this->sign_in();
+
+		// Pretend most of the hour has gone.
+		set_transient(
+			Chess_Army_Knife_Member_Portal::SESSION_KEY . $token,
+			array(
+				'email'   => 'ada@example.test',
+				'expires' => time() + 5 * MINUTE_IN_SECONDS,
+			),
+			5 * MINUTE_IN_SECONDS
+		);
+
+		$expires = Chess_Army_Knife_Member_Portal::extend_session( $token );
+
+		$this->assertEqualsWithDelta( time() + HOUR_IN_SECONDS, $expires, 5 );
+		$this->assertEqualsWithDelta( $expires, Chess_Army_Knife_Member_Portal::session( $token )['expires'], 1 );
+	}
+
+	public function test_a_session_that_is_not_there_cannot_be_extended() {
+		$this->assertSame( 0, Chess_Army_Knife_Member_Portal::extend_session( 'nope' ) );
+	}
+
+	public function test_a_session_made_before_sessions_had_an_end_time_still_works() {
+		$this->person();
+		set_transient( Chess_Army_Knife_Member_Portal::SESSION_KEY . 'oldtoken', 'ada@example.test', HOUR_IN_SECONDS );
+
+		$session = Chess_Army_Knife_Member_Portal::session( 'oldtoken' );
+
+		$this->assertSame( 'ada@example.test', $session['email'] );
+		$this->assertSame( 0, $session['expires'] );
+	}
+
+	public function test_the_block_warns_about_the_session_and_offers_to_extend_it() {
+		$this->person();
+		$_GET = array( 'cak_portal' => $this->sign_in() );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/member-portal /-->' );
+
+		$this->assertStringContainsString( 'data-cak-remaining', $html );
+		$this->assertStringContainsString( 'Keep me signed in', $html );
+		$this->assertStringContainsString( 'You are signed in until', $html );
+	}
 }

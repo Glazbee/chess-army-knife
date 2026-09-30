@@ -90,8 +90,11 @@ $score_options = array(
 							<?php endforeach; ?>
 						</select>
 					<?php endif; ?>
-					<span class="cak-games__player cak-games__player--black"><?php echo esc_html( $game['black'] ); ?> <?php echo Chess_Army_Knife_A11y::hidden( __( '(Black)', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden().
-					?></span>
+					<span class="cak-games__player cak-games__player--black"><?php echo esc_html( $game['black'] ); ?>
+					<?php
+					echo Chess_Army_Knife_A11y::hidden( __( '(Black)', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden().
+					?>
+					</span>
 				</li>
 			<?php endforeach; ?>
 		</ul>

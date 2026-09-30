@@ -63,6 +63,42 @@ $cak-scope: '[class*="wp-block-chess-army-knife-"]';
 	padding-bottom: 0.2em;
 }
 
+// The message at the top of a form after it was sent. It takes focus, so it has a clear outline when it does.
+#{$cak-scope} .cak-form-notice {
+	margin: 0 0 1em;
+	padding: 0.75em 1em;
+	border: 2px solid currentcolor;
+	border-left-width: 8px;
+	background: color-mix(in srgb, currentcolor 6%, transparent);
+
+	p:last-child {
+		margin-bottom: 0;
+	}
+
+	&--error {
+		border-style: double;
+		border-left-style: solid;
+	}
+
+	&:focus {
+		outline: 3px solid currentcolor;
+		outline-offset: 2px;
+	}
+}
+
+#{$cak-scope} .cak-required {
+	font-weight: 400;
+	font-size: 0.9em;
+}
+
+#{$cak-scope} :is(input, select, textarea)[aria-invalid="true"] {
+	border: 3px solid currentcolor;
+}
+
+#{$cak-scope} :is(.cak-hint, [class$="__hint"]) {
+	font-size: 0.95em;
+}
+
 // Rules between rows and cards are decoration.
 $cak-rule: color-mix(in srgb, currentcolor 35%, transparent);
 

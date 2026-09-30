@@ -9,5 +9,5 @@
 		'wp-i18n',
 		'wp-server-side-render'
 	),
-	'version' => '0421c5933d32f66a2524'
+	'version' => '156936500f44a6db73da'
 );

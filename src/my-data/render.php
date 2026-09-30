@@ -27,28 +27,27 @@ $token      = isset( $_GET['cak_withdraw'] ) ? preg_replace( '/[^A-Za-z0-9]/', '
 
 $team_choices = Chess_Army_Knife_Teams::choices();
 $found        = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_token( $token ) : null;
+
+$error_fields = array(
+	'email'  => array( 'cak-data-email', __( 'The email address the club holds for you', 'chess-army-knife' ) ),
+	'choice' => array( 'cak-data-choice-withdraw', __( 'What would you like to do?', 'chess-army-knife' ) ),
+);
+$error_field  = isset( $error_fields[ $error_code ] ) ? $error_fields[ $error_code ] : array( '', '' );
+$notice_id    = 'cak-data-notice';
 ?>
 <div <?php echo wp_kses_post( get_block_wrapper_attributes( array( 'id' => Chess_Army_Knife_Member_Requests::ANCHOR ) ) ); ?>>
-	<p class="cak-my-data__heading"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'Manage my data', 'chess-army-knife' ) ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-my-data__heading', '' !== $block_title ? $block_title : __( 'Manage my data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( '' !== $error_code ) : ?>
-		<div class="cak-my-data__notice cak-my-data__notice--error" role="alert">
-			<p><?php echo esc_html( Chess_Army_Knife_Member_Requests::error_message( $error_code ) ); ?></p>
-		</div>
+		<?php echo Chess_Army_Knife_A11y::notice( 'error', $notice_id, Chess_Army_Knife_Member_Requests::error_message( $error_code ), $error_field[0], $error_field[1] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php endif; ?>
 
 	<?php if ( $done ) : ?>
-		<div class="cak-my-data__notice cak-my-data__notice--success" role="status">
-			<p><?php esc_html_e( 'Thank you. Your choices have been saved.', 'chess-army-knife' ); ?></p>
-		</div>
+		<?php echo Chess_Army_Knife_A11y::notice( 'success', $notice_id, __( 'Thank you. Your choices have been saved.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php elseif ( $sent ) : ?>
-		<div class="cak-my-data__notice cak-my-data__notice--success" role="status">
-			<p><?php esc_html_e( 'Thank you. If the club holds details under that email address, we have emailed you. Please follow the link in the email to carry on. It can take a few minutes to arrive, so check your junk folder too.', 'chess-army-knife' ); ?></p>
-		</div>
+		<?php echo Chess_Army_Knife_A11y::notice( 'success', $notice_id, __( 'Thank you. If the club holds details under that email address, we have emailed you. Please follow the link in the email to carry on. It can take a few minutes to arrive, so check your junk folder too.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php elseif ( '' !== $token && ! $found ) : ?>
-		<div class="cak-my-data__notice cak-my-data__notice--error" role="alert">
-			<p><?php echo esc_html( Chess_Army_Knife_Member_Requests::error_message( 'link' ) ); ?></p>
-		</div>
+		<?php echo Chess_Army_Knife_A11y::notice( 'error', $notice_id, Chess_Army_Knife_Member_Requests::error_message( 'link' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 	<?php endif; ?>
 
 	<?php if ( $found && ! $done ) : ?>
@@ -95,13 +94,13 @@ $found        = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_tok
 			<p><?php esc_html_e( 'You can change your choices, ask for a copy of your details, or ask us to delete them. For a junior, use their parent or guardian\'s email address. We will email you a link to confirm it is you.', 'chess-army-knife' ); ?></p>
 
 			<p>
-				<label for="cak-data-email"><?php esc_html_e( 'The email address the club holds for you', 'chess-army-knife' ); ?></label>
-				<input type="email" id="cak-data-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required />
+				<label for="cak-data-email"><?php esc_html_e( 'The email address the club holds for you', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label>
+				<input type="email" id="cak-data-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required <?php echo Chess_Army_Knife_A11y::field_attrs( 'cak-data-email', $error_field[0], $notice_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> />
 			</p>
 
 			<fieldset class="cak-my-data__choices">
-				<legend><?php esc_html_e( 'What would you like to do?', 'chess-army-knife' ); ?></legend>
-				<p><label><input type="radio" name="choice" value="withdraw" <?php checked( Chess_Army_Knife_Form_State::checked( 'choice', 'withdraw' ) ); ?> required /> <?php esc_html_e( 'Change my newsletter and WhatsApp choices', 'chess-army-knife' ); ?></label></p>
+				<legend><?php esc_html_e( 'What would you like to do?', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></legend>
+				<p><label><input type="radio" id="cak-data-choice-withdraw" name="choice" value="withdraw" <?php checked( Chess_Army_Knife_Form_State::checked( 'choice', 'withdraw' ) ); ?> required /> <?php esc_html_e( 'Change my newsletter and WhatsApp choices', 'chess-army-knife' ); ?></label></p>
 				<p><label><input type="radio" name="choice" value="export" <?php checked( Chess_Army_Knife_Form_State::checked( 'choice', 'export' ) ); ?> /> <?php esc_html_e( 'Send me a copy of my details', 'chess-army-knife' ); ?></label></p>
 				<p><label><input type="radio" name="choice" value="erase" <?php checked( Chess_Army_Knife_Form_State::checked( 'choice', 'erase' ) ); ?> /> <?php esc_html_e( 'Delete my details (this ends my membership)', 'chess-army-knife' ); ?></label></p>
 			</fieldset>
@@ -112,7 +111,7 @@ $found        = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_tok
 				<input type="text" id="cak-data-url" name="<?php echo esc_attr( Chess_Army_Knife_Member_Requests::HONEYPOT ); ?>" tabindex="-1" autocomplete="off" />
 			</p>
 
-			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Continue', 'chess-army-knife' ); ?></button></p>
+			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Email me a link to continue', 'chess-army-knife' ); ?></button></p>
 		</form>
 	<?php endif; ?>
 </div>

@@ -1,29 +1,35 @@
+@use "../shared/a11y";
+
 .wp-block-chess-army-knife-member-portal {
 	margin-bottom: 1.5em;
 
-	.cak-portal__notice {
+	.cak-portal__session {
 		margin: 0 0 1em;
-		padding: 0.6em 0.9em;
-		border-left: 4px solid currentcolor;
-		background: rgba(0, 0, 0, 0.04);
+		padding: 0.75em 1em;
+		border: 1px solid currentcolor;
+		border-radius: 4px;
 	}
 
-	.cak-portal__notice.is-error {
-		border-left-color: #b32d2e;
+	.cak-portal__session-warning {
+		font-weight: 700;
+
+		&:empty {
+			display: none;
+		}
 	}
 
 	.cak-portal__person {
 		margin: 0 0 2em;
 		padding: 1em 1.2em;
-		border: 1px solid rgba(0, 0, 0, 0.2);
+		border: 1px solid currentcolor;
 		border-radius: 4px;
 	}
 
-	.cak-portal__person h3 {
+	.cak-portal__person > :first-child {
 		margin-top: 0;
 	}
 
-	.cak-portal__person h4 {
+	.cak-portal__subheading {
 		margin: 1.4em 0 0.4em;
 	}
 
@@ -36,8 +42,27 @@
 		font-weight: 600;
 	}
 
+	.cak-portal__field input[type="text"],
+	.cak-portal__field input[type="email"],
+	.cak-portal__field input[type="tel"] {
+		min-height: 44px;
+	}
+
+	.cak-portal__choices {
+		margin: 0 0 1em;
+		padding: 0;
+		border: 0;
+	}
+
 	.cak-portal__check {
 		margin: 0 0 0.6em;
+	}
+
+	.cak-portal__check label {
+		display: flex;
+		gap: 0.5em;
+		align-items: flex-start;
+		min-height: 44px;
 	}
 
 	.cak-portal__hp {
@@ -48,7 +73,7 @@
 	.cak-portal__danger {
 		margin-top: 1.4em;
 		padding-top: 1em;
-		border-top: 1px solid rgba(0, 0, 0, 0.2);
+		border-top: 2px solid currentcolor;
 	}
 
 	.cak-portal__summary {
@@ -64,5 +89,12 @@
 
 	.cak-portal__summary dd {
 		margin: 0;
+	}
+
+	.cak-portal__person a,
+	.cak-portal__announcement a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
 	}
 }
