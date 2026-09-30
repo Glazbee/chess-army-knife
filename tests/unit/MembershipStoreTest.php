@@ -63,14 +63,16 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		);
 	}
 
-	public function test_public_application_is_cleaned() {
+	public function test_an_adult_application_is_cleaned_and_keeps_no_junior_details() {
 		$member = Chess_Army_Knife_Membership_Store::sanitize_member(
 			$this->form_input(
 				array(
-					'phone'         => ' 07700 900123 ',
-					'date_of_birth' => '2015-05-01',
-					'guardian_name' => 'Charles',
-					'ecf_code'      => ' 12 34-5j ',
+					'phone'          => ' 07700 900123 ',
+					'ecf_code'       => ' 12 34-5j ',
+					'date_of_birth'  => '1980-05-01',
+					'guardian_name'  => 'Charles',
+					'guardian_email' => 'charles@example.test',
+					'guardian_phone' => '0123',
 				)
 			),
 			false
@@ -78,17 +80,134 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame(
 			array(
-				'name'               => 'Ada Lovelace',
-				'email'              => 'ada@example.test',
-				'phone'              => '07700 900123',
-				'date_of_birth'      => '2015-05-01',
-				'guardian_name'      => 'Charles',
-				'ecf_code'           => '12345J',
-				'membership_type_id' => 7,
-				'type_name'          => 'Junior',
+				'name'                  => 'Ada Lovelace',
+				'email'                 => 'ada@example.test',
+				'phone'                 => '07700 900123',
+				'date_of_birth'         => null,
+				'guardian_name'         => '',
+				'guardian_email'        => '',
+				'guardian_phone'        => '',
+				'ecf_code'              => '12345J',
+				'membership_type_id'    => 7,
+				'type_name'             => 'Junior',
+				'newsletter_consent_at' => null,
+				'whatsapp_consent_at'   => null,
 			),
 			$member
 		);
+	}
+
+	private function junior_input( array $overrides = array() ) {
+		return $overrides + array(
+			'name'               => 'Junior Player',
+			'membership_type_id' => '7',
+			'is_junior'          => '1',
+			'date_of_birth'      => '2015-05-01',
+			'guardian_name'      => 'Charles Player',
+			'guardian_email'     => 'charles@example.test',
+			'guardian_phone'     => '07700 900123',
+			'email'              => 'junior@example.test',
+			'phone'              => '07700 900456',
+		);
+	}
+
+	public function test_a_junior_is_contacted_through_their_parent_and_their_own_details_are_dropped() {
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input(), false );
+
+		$this->assertSame( '', $member['email'] );
+		$this->assertSame( '', $member['phone'] );
+		$this->assertSame( '2015-05-01', $member['date_of_birth'] );
+		$this->assertSame( 'Charles Player', $member['guardian_name'] );
+		$this->assertSame( 'charles@example.test', $member['guardian_email'] );
+		$this->assertSame( '07700 900123', $member['guardian_phone'] );
+		$this->assertSame( 'charles@example.test', Chess_Army_Knife_Membership_Store::contact_email( $member ) );
+	}
+
+	public function test_a_junior_keeps_their_own_details_only_when_the_parent_says_so() {
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'junior_contact' => '1' ) ), false );
+
+		$this->assertSame( 'junior@example.test', $member['email'] );
+		$this->assertSame( '07700 900456', $member['phone'] );
+		$this->assertSame( 'junior@example.test', Chess_Army_Knife_Membership_Store::contact_email( $member ) );
+	}
+
+	public function test_someone_whose_date_of_birth_says_under_18_is_treated_as_a_junior() {
+		$input = $this->junior_input( array( 'is_junior' => '' ) );
+
+		$this->assertSame( '', Chess_Army_Knife_Membership_Store::sanitize_member( $input, false )['email'] );
+
+		unset( $input['guardian_name'] );
+		$result = Chess_Army_Knife_Membership_Store::sanitize_member( $input, false );
+		$this->assertSame( 'member_guardian', $result->get_error_code(), 'Leaving the box unticked does not avoid the parent details.' );
+	}
+
+	public function test_someone_who_turns_18_today_is_an_adult() {
+		Functions\when( 'current_time' )->justReturn( '2033-05-01' );
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'date_of_birth' => '2015-05-01' ) ), false );
+
+		$this->assertNull( $member['date_of_birth'] );
+		$this->assertSame( 'ada@example.test', $member['email'] );
+	}
+
+	/**
+	 * @dataProvider invalid_junior_input
+	 */
+	public function test_a_junior_application_needs_the_parent_details( array $overrides, $code ) {
+		$result = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( $overrides ), false );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( $code, $result->get_error_code() );
+	}
+
+	public function invalid_junior_input() {
+		return array(
+			'no date of birth'   => array( array( 'date_of_birth' => '' ), 'member_dob' ),
+			'no guardian name'   => array( array( 'guardian_name' => '' ), 'member_guardian' ),
+			'no guardian email'  => array( array( 'guardian_email' => '' ), 'member_guardian' ),
+			'bad guardian email' => array( array( 'guardian_email' => 'nope' ), 'member_email' ),
+		);
+	}
+
+	public function test_the_optional_extras_are_recorded_separately_and_only_when_ticked() {
+		$none = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'phone' => '0123' ) ), false );
+		$both = Chess_Army_Knife_Membership_Store::sanitize_member(
+			$this->form_input(
+				array(
+					'phone'      => '0123',
+					'newsletter' => '1',
+					'whatsapp'   => '1',
+				)
+			),
+			false
+		);
+		$one  = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'newsletter' => '1' ) ), false );
+
+		$this->assertNull( $none['newsletter_consent_at'] );
+		$this->assertNull( $none['whatsapp_consent_at'] );
+		$this->assertSame( '2026-09-29', $both['newsletter_consent_at'] );
+		$this->assertSame( '2026-09-29', $both['whatsapp_consent_at'] );
+		$this->assertSame( '2026-09-29', $one['newsletter_consent_at'] );
+		$this->assertNull( $one['whatsapp_consent_at'] );
+	}
+
+	public function test_a_whatsapp_group_needs_a_phone_number() {
+		$adult = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp' => '1' ) ), false );
+		$this->assertSame( 'member_whatsapp', $adult->get_error_code() );
+
+		// A junior can use their parent's number.
+		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'whatsapp' => '1' ) ), false );
+		$this->assertSame( '2026-09-29', $junior['whatsapp_consent_at'] );
+
+		$no_number = Chess_Army_Knife_Membership_Store::sanitize_member(
+			$this->junior_input(
+				array(
+					'whatsapp'       => '1',
+					'guardian_phone' => '',
+				)
+			),
+			false
+		);
+		$this->assertSame( 'member_whatsapp', $no_number->get_error_code(), 'The junior\'s own number is not kept, so it cannot be used.' );
 	}
 
 	public function test_public_application_ignores_admin_only_fields() {

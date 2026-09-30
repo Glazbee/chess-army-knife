@@ -79,7 +79,11 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Payment received on', 'chess-army-knife' ) => $member['paid_on'],
 				__( 'Payment method', 'chess-army-knife' ) => isset( $methods[ $member['payment_method'] ] ) ? $methods[ $member['payment_method'] ] : '',
 				__( 'Club notes', 'chess-army-knife' )     => $member['notes'],
+				__( 'Parent or guardian email', 'chess-army-knife' ) => $member['guardian_email'],
+				__( 'Parent or guardian phone', 'chess-army-knife' ) => $member['guardian_phone'],
 				__( 'Agreed to the club keeping these details (UTC)', 'chess-army-knife' ) => $member['consent_at'],
+				__( 'Agreed to receive the newsletter (UTC)', 'chess-army-knife' ) => $member['newsletter_consent_at'],
+				__( 'Agreed to be added to WhatsApp groups (UTC)', 'chess-army-knife' ) => $member['whatsapp_consent_at'],
 				__( 'Record created (UTC)', 'chess-army-knife' ) => $member['created_at'],
 			);
 
@@ -157,6 +161,93 @@ class Chess_Army_Knife_Membership_Privacy {
 	}
 
 	/**
+	 * The club's data policy for members, as sections of plain text. The one
+	 * source for the wording suggested in the privacy policy guide and for the
+	 * Club Data Policy block, so the two cannot disagree and both follow the
+	 * retention period and contact set on the Settings page.
+	 *
+	 * @return array[] Each { heading, paragraphs }, all plain text.
+	 */
+	public static function policy_sections() {
+		$options = Chess_Army_Knife_Settings::get_options();
+		$months  = (int) $options['member_retention_months'];
+		$contact = (string) $options['data_contact_email'];
+
+		if ( $months > 0 ) {
+			/* translators: %d: number of months */
+			$keep = sprintf( _n( 'We keep your details while you are a member and for %d month afterwards, then delete them. If we were paid, we keep a record of the payment for our accounts, without any personal details. Applications that are declined or never completed are deleted after the same time.', 'We keep your details while you are a member and for %d months afterwards, then delete them. If we were paid, we keep a record of the payment for our accounts, without any personal details. Applications that are declined or never completed are deleted after the same time.', $months, 'chess-army-knife' ), $months );
+		} else {
+			$keep = __( 'We keep your details until you ask us to delete them.', 'chess-army-knife' );
+		}
+
+		if ( '' !== $contact ) {
+			/* translators: %s: email address */
+			$ask = sprintf( __( 'To ask about your details, contact the club at %s.', 'chess-army-knife' ), $contact );
+		} else {
+			$ask = __( 'To ask about your details, contact the club.', 'chess-army-knife' );
+		}
+
+		$sections = array(
+			array(
+				'heading'    => __( 'What we collect', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
+					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Why we use it', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'We use your details to run the chess club and your membership: to consider your application, to keep our list of members, to arrange club and team activities and to contact you about your membership. Our lawful basis is legitimate interests: running the club and looking after its members, together with providing your membership itself. We do not sell your details or use them for advertising.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Sharing with the English Chess Federation', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'The club provides its playing members to the English Chess Federation (ECF) so that their games can be rated. For this we give the ECF your name and ECF rating code, and any other details it needs to rate your games. The ECF looks after that information under its own privacy policy.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Newsletters and WhatsApp groups', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'We only send you the club newsletter, or add you to a WhatsApp group for a club team, if you have said yes. These are separate choices and you can say no to either and still be a member. If you are added to a WhatsApp group, the other members of the group can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added to a group with their parent or guardian\'s agreement, using the parent or guardian\'s number unless they say otherwise. You can change your mind at any time and we will stop.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Who can see your details', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'Only club officers who have been given access can see membership details on this website. We do not take payments on this website: if you pay by bank transfer or in cash, we note the date and method against your membership.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'How long we keep it', 'chess-army-knife' ),
+				'paragraphs' => array( $keep ),
+			),
+			array(
+				'heading'    => __( 'Your rights', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'You can ask for a copy of your details, ask us to correct or delete them, ask us to limit how we use them, object to how we use them, or withdraw a consent at any time. A parent or guardian can do this for a junior. If you are unhappy with how we have handled your details you can complain to the Information Commissioner\'s Office at ico.org.uk.', 'chess-army-knife' ),
+					$ask,
+				),
+			),
+			array(
+				'heading'    => __( 'Spam protection', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'To stop the application form being misused, it briefly remembers a scrambled version of your internet address for one hour. It is not kept after that.', 'chess-army-knife' ),
+				),
+			),
+		);
+
+		/**
+		 * Filter the sections of the club's data policy, for example to add
+		 * the club's own paragraphs.
+		 *
+		 * @param array[] $sections Each { heading, paragraphs }, all plain text.
+		 */
+		return (array) apply_filters( 'Chess_Army_Knife_data_policy_sections', $sections );
+	}
+
+	/**
 	 * Suggest wording for the site's privacy policy.
 	 */
 	public static function add_policy_content() {
@@ -164,22 +255,14 @@ class Chess_Army_Knife_Membership_Privacy {
 			return;
 		}
 
-		$options = Chess_Army_Knife_Settings::get_options();
-		$months  = (int) $options['member_retention_months'];
-
 		$text  = '<h2>' . esc_html__( 'Club membership', 'chess-army-knife' ) . '</h2>';
-		$text .= '<p class="privacy-policy-tutorial">' . esc_html__( 'Suggested wording for the club membership application form. Review it and change it to match what your club really does; it is not legal advice.', 'chess-army-knife' ) . '</p>';
-		$text .= '<p>' . esc_html__( 'If you apply for membership through our form, we collect your name, email address, date of birth, phone number and ECF rating code (if you give them) and, for junior members, a parent or guardian\'s name. We use these only to consider your application, to run your membership and to contact you about it. We keep a record of when you agreed to this.', 'chess-army-knife' ) . '</p>';
-		$text .= '<p>' . esc_html__( 'We do not take payments on this website. If you pay by bank transfer or in cash, we record the date and method of payment against your membership.', 'chess-army-knife' ) . '</p>';
-		$text .= '<p>' . esc_html__( 'Only club officers who have been given access can see membership details. We do not share them with anyone else.', 'chess-army-knife' ) . '</p>';
-		if ( $months > 0 ) {
-			/* translators: %d: number of months */
-			$text .= '<p>' . esc_html( sprintf( _n( 'We keep your details while you are a member and for %d month afterwards, then delete them. If we were paid, we keep a record of the payment for our accounts, without your personal details.', 'We keep your details while you are a member and for %d months afterwards, then delete them. If we were paid, we keep a record of the payment for our accounts, without your personal details.', $months, 'chess-army-knife' ), $months ) ) . '</p>';
-		} else {
-			$text .= '<p>' . esc_html__( 'We keep your details until you ask us to delete them.', 'chess-army-knife' ) . '</p>';
+		$text .= '<p class="privacy-policy-tutorial">' . esc_html__( 'Suggested wording, kept up to date from your settings. You can also show it on any page with the Club Data Policy block. Review it and change it to match what your club really does; it is not legal advice.', 'chess-army-knife' ) . '</p>';
+		foreach ( self::policy_sections() as $section ) {
+			$text .= '<h3>' . esc_html( $section['heading'] ) . '</h3>';
+			foreach ( $section['paragraphs'] as $paragraph ) {
+				$text .= '<p>' . esc_html( $paragraph ) . '</p>';
+			}
 		}
-		$text .= '<p>' . esc_html__( 'You can ask us for a copy of your details, ask us to correct or delete them, or withdraw your consent at any time by contacting the club.', 'chess-army-knife' ) . '</p>';
-		$text .= '<p>' . esc_html__( 'To limit repeated submissions, the form briefly remembers a scrambled version of your internet address for one hour. It is not kept after that.', 'chess-army-knife' ) . '</p>';
 
 		wp_add_privacy_policy_content( __( 'Chess Army Knife', 'chess-army-knife' ), wp_kses_post( $text ) );
 	}

@@ -217,6 +217,23 @@ class Chess_Army_Knife_Memberships {
 		return (bool) preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', (string) $date, $parts ) && checkdate( (int) $parts[2], (int) $parts[3], (int) $parts[1] );
 	}
 
+	/**
+	 * Whether someone born on a date is under 18 on another date.
+	 *
+	 * @param string $date_of_birth Date of birth, YYYY-MM-DD.
+	 * @param string $on            The date to check, YYYY-MM-DD.
+	 * @return bool False for an invalid date of birth.
+	 */
+	public static function is_under_18( $date_of_birth, $on ) {
+		if ( ! self::is_valid_date( $date_of_birth ) ) {
+			return false;
+		}
+
+		// Dates in this form compare correctly as text, so 29 February needs no special case.
+		$eighteenth = ( (int) substr( $date_of_birth, 0, 4 ) + 18 ) . substr( $date_of_birth, 4 );
+		return (string) $on < $eighteenth;
+	}
+
 	/* -------------------------------------------------------------
 	 * Membership types
 	 * ------------------------------------------------------------- */

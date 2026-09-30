@@ -74,30 +74,62 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 					<?php endforeach; ?>
 				</select>
 			</p>
-			<p>
-				<label for="cak-member-name"><?php esc_html_e( 'Full name', 'chess-army-knife' ); ?></label>
-				<input type="text" id="cak-member-name" name="name" autocomplete="name" required />
-			</p>
-			<p>
-				<label for="cak-member-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?></label>
-				<input type="email" id="cak-member-email" name="email" autocomplete="email" required />
-			</p>
-			<p>
-				<label for="cak-member-phone"><?php esc_html_e( 'Phone (optional)', 'chess-army-knife' ); ?></label>
-				<input type="tel" id="cak-member-phone" name="phone" autocomplete="tel" />
-			</p>
-			<p>
-				<label for="cak-member-dob"><?php esc_html_e( 'Date of birth (optional, needed for juniors)', 'chess-army-knife' ); ?></label>
-				<input type="date" id="cak-member-dob" name="date_of_birth" autocomplete="bday" />
-			</p>
-			<p>
-				<label for="cak-member-guardian"><?php esc_html_e( 'Parent or guardian (for juniors)', 'chess-army-knife' ); ?></label>
-				<input type="text" id="cak-member-guardian" name="guardian_name" />
-			</p>
-			<p>
-				<label for="cak-member-ecf"><?php esc_html_e( 'ECF rating code (optional)', 'chess-army-knife' ); ?></label>
-				<input type="text" id="cak-member-ecf" name="ecf_code" />
-			</p>
+			<fieldset class="cak-membership-form__group">
+				<legend><?php esc_html_e( 'About the member', 'chess-army-knife' ); ?></legend>
+				<p>
+					<label for="cak-member-name"><?php esc_html_e( 'Full name', 'chess-army-knife' ); ?></label>
+					<input type="text" id="cak-member-name" name="name" autocomplete="name" required />
+				</p>
+				<p>
+					<label for="cak-member-email"><?php esc_html_e( 'Email address (adults)', 'chess-army-knife' ); ?></label>
+					<input type="email" id="cak-member-email" name="email" autocomplete="email" />
+				</p>
+				<p>
+					<label for="cak-member-phone"><?php esc_html_e( 'Phone (optional, adults)', 'chess-army-knife' ); ?></label>
+					<input type="tel" id="cak-member-phone" name="phone" autocomplete="tel" />
+				</p>
+				<p>
+					<label for="cak-member-ecf"><?php esc_html_e( 'ECF rating code (if you have one)', 'chess-army-knife' ); ?></label>
+					<input type="text" id="cak-member-ecf" name="ecf_code" />
+				</p>
+			</fieldset>
+
+			<fieldset class="cak-membership-form__group">
+				<legend><?php esc_html_e( 'Juniors (under 18)', 'chess-army-knife' ); ?></legend>
+				<p class="cak-membership-form__hint"><?php esc_html_e( 'A parent or guardian must complete this form for a junior. We write to the parent or guardian, so please leave the email address and phone above blank unless you agree below that we may contact the junior directly.', 'chess-army-knife' ); ?></p>
+				<p class="cak-membership-form__check">
+					<label><input type="checkbox" name="is_junior" value="1" /> <?php esc_html_e( 'This application is for someone under 18', 'chess-army-knife' ); ?></label>
+				</p>
+				<p>
+					<label for="cak-member-dob"><?php esc_html_e( 'Junior\'s date of birth', 'chess-army-knife' ); ?></label>
+					<input type="date" id="cak-member-dob" name="date_of_birth" autocomplete="bday" />
+				</p>
+				<p>
+					<label for="cak-member-guardian"><?php esc_html_e( 'Parent or guardian\'s name', 'chess-army-knife' ); ?></label>
+					<input type="text" id="cak-member-guardian" name="guardian_name" />
+				</p>
+				<p>
+					<label for="cak-member-guardian-email"><?php esc_html_e( 'Parent or guardian\'s email address', 'chess-army-knife' ); ?></label>
+					<input type="email" id="cak-member-guardian-email" name="guardian_email" />
+				</p>
+				<p>
+					<label for="cak-member-guardian-phone"><?php esc_html_e( 'Parent or guardian\'s phone (optional)', 'chess-army-knife' ); ?></label>
+					<input type="tel" id="cak-member-guardian-phone" name="guardian_phone" />
+				</p>
+				<p class="cak-membership-form__check">
+					<label><input type="checkbox" name="junior_contact" value="1" /> <?php esc_html_e( 'I am the parent or guardian and the club may also contact the junior directly, using the email address and phone entered above', 'chess-army-knife' ); ?></label>
+				</p>
+			</fieldset>
+
+			<fieldset class="cak-membership-form__group">
+				<legend><?php esc_html_e( 'Optional extras', 'chess-army-knife' ); ?></legend>
+				<p class="cak-membership-form__check">
+					<label><input type="checkbox" name="newsletter" value="1" /> <?php esc_html_e( 'Send me the club newsletter by email', 'chess-army-knife' ); ?></label>
+				</p>
+				<p class="cak-membership-form__check">
+					<label><input type="checkbox" name="whatsapp" value="1" /> <?php esc_html_e( 'Add me (or my junior) to the WhatsApp group for club teams. The other group members will be able to see the phone number and name.', 'chess-army-knife' ); ?></label>
+				</p>
+			</fieldset>
 
 			<?php // Hidden from people; a bot that fills in every field gives itself away. ?>
 			<p class="cak-membership-form__trap" aria-hidden="true">
@@ -105,14 +137,17 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 				<input type="text" id="cak-member-website" name="<?php echo esc_attr( Chess_Army_Knife_Membership_Form::HONEYPOT ); ?>" tabindex="-1" autocomplete="off" />
 			</p>
 
+			<p class="cak-membership-form__hint">
+				<?php esc_html_e( 'The club uses these details to run your membership, and gives your name and ECF rating code to the English Chess Federation so your games can be rated.', 'chess-army-knife' ); ?>
+				<?php if ( get_privacy_policy_url() ) : ?>
+					<a href="<?php echo esc_url( get_privacy_policy_url() ); ?>"><?php esc_html_e( 'Read how we handle your data', 'chess-army-knife' ); ?></a>
+				<?php endif; ?>
+			</p>
 			<p class="cak-membership-form__consent">
 				<label>
 					<input type="checkbox" name="consent" value="1" required />
-					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I (or my parent or guardian, if I am under 18) agree to the club keeping these details to manage my membership.', 'chess-army-knife' ) ); ?>
+					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details. If this application is for someone under 18, I am their parent or guardian and I agree on their behalf.', 'chess-army-knife' ) ); ?>
 				</label>
-				<?php if ( get_privacy_policy_url() ) : ?>
-					<a href="<?php echo esc_url( get_privacy_policy_url() ); ?>"><?php esc_html_e( 'Read our privacy policy', 'chess-army-knife' ); ?></a>
-				<?php endif; ?>
 			</p>
 
 			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Send application', 'chess-army-knife' ); ?></button></p>

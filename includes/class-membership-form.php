@@ -97,13 +97,15 @@ class Chess_Army_Knife_Membership_Form {
 	 */
 	public static function error_message( $code ) {
 		$messages = array(
-			'expired'      => __( 'The form has expired. Please try again.', 'chess-army-knife' ),
-			'throttled'    => __( 'Too many applications from your connection. Please try again later.', 'chess-army-knife' ),
-			'consent'      => __( 'Please agree to the club keeping your details.', 'chess-army-knife' ),
-			'member_name'  => __( 'Please enter your name.', 'chess-army-knife' ),
-			'member_email' => __( 'Please enter a valid email address.', 'chess-army-knife' ),
-			'member_dob'   => __( 'Please enter a valid date of birth.', 'chess-army-knife' ),
-			'member_type'  => __( 'Please choose a membership type.', 'chess-army-knife' ),
+			'expired'         => __( 'The form has expired. Please try again.', 'chess-army-knife' ),
+			'throttled'       => __( 'Too many applications from your connection. Please try again later.', 'chess-army-knife' ),
+			'consent'         => __( 'Please agree to the club keeping your details.', 'chess-army-knife' ),
+			'member_name'     => __( 'Please enter your name.', 'chess-army-knife' ),
+			'member_email'    => __( 'Please enter a valid email address.', 'chess-army-knife' ),
+			'member_dob'      => __( 'Please enter a valid date of birth.', 'chess-army-knife' ),
+			'member_type'     => __( 'Please choose a membership type.', 'chess-army-knife' ),
+			'member_guardian' => __( 'Please give a parent or guardian\'s name and email address.', 'chess-army-knife' ),
+			'member_whatsapp' => __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : __( 'Something went wrong. Please try again.', 'chess-army-knife' );
 	}

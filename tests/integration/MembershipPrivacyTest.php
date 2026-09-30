@@ -139,6 +139,51 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( array(), Chess_Army_Knife_Membership_Store::get_members_by_email( 'ada@example.test' ), 'They can no longer be found by email.' );
 	}
 
+	private function junior() {
+		return $this->member(
+			array(
+				'name'                  => 'Junior Player',
+				'email'                 => '',
+				'date_of_birth'         => '2015-05-01',
+				'guardian_name'         => 'Charles Player',
+				'guardian_email'        => 'charles@example.test',
+				'guardian_phone'        => '07700 900123',
+				'newsletter_consent_at' => '2026-09-01 10:00:00',
+				'whatsapp_consent_at'   => '2026-09-01 10:00:00',
+				'paid_on'               => '2026-09-05',
+			)
+		);
+	}
+
+	public function test_a_junior_is_found_and_exported_by_their_parents_email() {
+		$id = $this->junior();
+
+		$data = Chess_Army_Knife_Membership_Privacy::export( 'charles@example.test' )['data'];
+
+		$this->assertCount( 1, $data );
+		$this->assertSame( 'membership-' . $id, $data[0]['item_id'] );
+		$values = wp_list_pluck( $data[0]['data'], 'value', 'name' );
+		$this->assertSame( 'Junior Player', $values['Name'] );
+		$this->assertSame( 'Charles Player', $values['Parent or guardian'] );
+		$this->assertSame( 'charles@example.test', $values['Parent or guardian email'] );
+		$this->assertSame( '2026-09-01 10:00:00', $values['Agreed to receive the newsletter (UTC)'] );
+		$this->assertSame( '2026-09-01 10:00:00', $values['Agreed to be added to WhatsApp groups (UTC)'] );
+	}
+
+	public function test_erasing_by_a_parents_email_strips_the_juniors_record_including_the_parent_and_consents() {
+		$id = $this->junior();
+
+		$result = Chess_Army_Knife_Membership_Privacy::erase( 'charles@example.test' );
+
+		$this->assertTrue( $result['items_removed'] );
+		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
+		$this->assertSame( Chess_Army_Knife_Membership_Store::erased_name(), $member['name'] );
+		foreach ( array( 'guardian_name', 'guardian_email', 'guardian_phone', 'date_of_birth', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $field ) {
+			$this->assertSame( '', $member[ $field ], "$field is erased." );
+		}
+		$this->assertSame( array(), Chess_Army_Knife_Membership_Store::get_members_by_email( 'charles@example.test' ) );
+	}
+
 	public function test_the_eraser_only_touches_the_address_it_was_asked_about() {
 		$this->member();
 		$other = $this->member(
@@ -344,8 +389,113 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		update_option( 'wp_page_for_privacy_policy', $page );
 		$with = do_blocks( '<!-- wp:chess-army-knife/membership-form /-->' );
 
-		$this->assertStringNotContainsString( 'Read our privacy policy', $without );
-		$this->assertStringContainsString( 'Read our privacy policy', $with );
+		$this->assertStringNotContainsString( 'Read how we handle your data', $without );
+		$this->assertStringContainsString( 'Read how we handle your data', $with );
 		$this->assertStringContainsString( get_permalink( $page ), $with );
+	}
+
+	/* -------------------------------------------------------------
+	 * The data policy
+	 * ------------------------------------------------------------- */
+
+	private function policy_text() {
+		$text = '';
+		foreach ( Chess_Army_Knife_Membership_Privacy::policy_sections() as $section ) {
+			$text .= $section['heading'] . "\n" . implode( "\n", $section['paragraphs'] ) . "\n";
+		}
+		return $text;
+	}
+
+	public function test_the_policy_covers_the_lawful_basis_the_ecf_juniors_and_the_optional_extras() {
+		$text = $this->policy_text();
+
+		$this->assertStringContainsString( 'legitimate interests', $text );
+		$this->assertStringContainsString( 'English Chess Federation', $text );
+		$this->assertStringContainsString( 'ECF rating code', $text );
+		$this->assertStringContainsString( 'parent or guardian', $text );
+		$this->assertStringContainsString( 'WhatsApp', $text );
+		$this->assertStringContainsString( 'newsletter', $text );
+		$this->assertStringContainsString( 'Information Commissioner', $text );
+	}
+
+	public function test_the_policy_follows_the_retention_period_and_contact_in_settings() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache'         => 0,
+				'member_retention_months' => 18,
+				'data_contact_email'      => 'secretary@club.test',
+			)
+		);
+		$text = $this->policy_text();
+		$this->assertStringContainsString( 'for 18 months afterwards', $text );
+		$this->assertStringContainsString( 'secretary@club.test', $text );
+
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache'         => 0,
+				'member_retention_months' => 0,
+			)
+		);
+		$text = $this->policy_text();
+		$this->assertStringContainsString( 'until you ask us to delete them', $text );
+		$this->assertStringContainsString( 'contact the club.', $text );
+	}
+
+	public function test_the_data_policy_block_shows_the_policy_to_anyone() {
+		wp_set_current_user( 0 );
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache'    => 0,
+				'data_contact_email' => 'secretary@club.test',
+			)
+		);
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/data-policy /-->' );
+
+		$this->assertStringContainsString( 'How we handle your data', $html );
+		$this->assertStringContainsString( 'Sharing with the English Chess Federation', $html );
+		$this->assertStringContainsString( 'secretary@club.test', $html );
+		$this->assertStringContainsString( 'Custom heading', do_blocks( '<!-- wp:chess-army-knife/data-policy {"title":"Custom heading"} /-->' ) );
+	}
+
+	public function test_the_data_policy_block_escapes_what_it_shows() {
+		add_filter(
+			'Chess_Army_Knife_data_policy_sections',
+			function ( $sections ) {
+				$sections[] = array(
+					'heading'    => '<b>Heading</b>',
+					'paragraphs' => array( '<script>alert(1)</script>' ),
+				);
+				return $sections;
+			}
+		);
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/data-policy /-->' );
+
+		$this->assertStringNotContainsString( '<script>alert', $html );
+		$this->assertStringContainsString( '&lt;script&gt;alert(1)&lt;/script&gt;', $html );
+	}
+
+	public function test_the_data_contact_setting_is_a_valid_email_or_nothing() {
+		$this->assertSame( 'secretary@club.test', Chess_Army_Knife_Settings::sanitize( array( 'data_contact_email' => ' secretary@club.test ' ) )['data_contact_email'] );
+		$this->assertSame( '', Chess_Army_Knife_Settings::sanitize( array( 'data_contact_email' => 'not an email' ) )['data_contact_email'] );
+	}
+
+	public function test_the_policy_is_added_to_the_privacy_policy_guide() {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-privacy-policy-content.php';
+		set_current_screen( 'dashboard' ); // WordPress ignores policy text outside the admin.
+		remove_all_actions( 'admin_init' ); // Only the fact that it has run matters here; its other callbacks call WordPress.org.
+		do_action( 'admin_init' ); // WordPress only accepts policy text once admin_init has run.
+
+		Chess_Army_Knife_Membership_Privacy::add_policy_content();
+		$suggested = wp_json_encode( WP_Privacy_Policy_Content::get_suggested_policy_text() );
+
+		$this->assertStringContainsString( 'Sharing with the English Chess Federation', $suggested );
+		$this->assertStringContainsString( 'legitimate interests', $suggested );
+		$this->assertStringContainsString( 'privacy-policy-tutorial', $suggested );
 	}
 }

@@ -98,6 +98,26 @@ class MembershipsTest extends Chess_Army_Knife_TestCase {
 		$this->assertFalse( Chess_Army_Knife_Memberships::is_valid_date( '' ) );
 	}
 
+	/**
+	 * @dataProvider birthdays
+	 */
+	public function test_is_under_18( $born, $on, $expected ) {
+		$this->assertSame( $expected, Chess_Army_Knife_Memberships::is_under_18( $born, $on ) );
+	}
+
+	public function birthdays() {
+		return array(
+			'child'                    => array( '2015-05-01', '2026-09-29', true ),
+			'day before 18th birthday' => array( '2008-09-30', '2026-09-29', true ),
+			'on 18th birthday'         => array( '2008-09-29', '2026-09-29', false ),
+			'adult'                    => array( '1980-01-01', '2026-09-29', false ),
+			'leap day, day before'     => array( '2008-02-29', '2026-02-28', true ),
+			'leap day, on 1 March'     => array( '2008-02-29', '2026-03-01', false ),
+			'invalid date of birth'    => array( 'never', '2026-09-29', false ),
+			'empty date of birth'      => array( '', '2026-09-29', false ),
+		);
+	}
+
 	public function test_payment_reference() {
 		$this->assertSame( 'MEM-42', Chess_Army_Knife_Memberships::payment_reference( 42 ) );
 	}

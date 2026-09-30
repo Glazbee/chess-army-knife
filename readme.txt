@@ -12,7 +12,7 @@ Gutenberg blocks for English chess clubs: ECF ratings and league data, club tour
 
 == Description ==
 
-This plugin adds fifteen blocks to the WordPress block editor, pulling live data from:
+This plugin adds sixteen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -35,6 +35,7 @@ This plugin adds fifteen blocks to the WordPress block editor, pulling live data
 13. **Next Club Event** — the next club event, optionally only one with a chosen tag.
 14. **Club Memberships** — advertise the memberships the club offers (junior, adult, senior or any others) with their prices and descriptions, and how to pay. Optionally link each one to your application form.
 15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
+16. **Club Data Policy** — how the club handles members' personal data, for any page (such as your privacy policy). It is written from your settings, so the retention period and contact address are always current.
 
 **Memberships**
 
@@ -44,14 +45,19 @@ Memberships are managed under **Memberships** in the admin menu:
 * **Members** lists everyone, with views for current members, pending applications, expired, and declined or cancelled. Approve or decline applications, and use **Add member** to enter someone who cannot use the online form. Record when a payment was received and how, and keep private notes.
 * **How to pay** is entered once under **ECF & LMS → Settings**. The website never takes payments: members pay by bank transfer, cash or whatever you describe, and each member has a payment reference (such as MEM-12) to quote so you can match transfers.
 
-Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form asks people to agree to the club keeping their details (recording when they did), links to your privacy policy if the site has one, and limits how often one visitor can apply.
+Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form is built around how a chess club uses data:
+
+* **Running the club** is the basis for the required details (name, email, phone, ECF rating code): to run the membership and to provide playing members to the ECF, who are given each member's name and ECF rating code. Applicants tick to confirm they have read how their details are used, the time is recorded, and the form links to your privacy policy if the site has one.
+* **Newsletter and WhatsApp groups** are separate optional tick boxes, each recorded with its time, because they are not needed to run the membership and a WhatsApp group shows a member's number to the rest of the group. Untick them on the member's record to record that they have withdrawn.
+* **Juniors (under 18)**: the form asks for the junior's date of birth and a parent or guardian's name, email and phone, and writes to the parent rather than the junior. The junior's own email and phone are only kept if the parent ticks that the club may contact the junior directly. Someone whose date of birth is under 18 is treated as a junior even if they do not tick the box. An adult's date of birth is not kept. The parent or guardian gives the consent for a junior.
+* It also limits how often one visitor can apply.
 
 **Data protection (GDPR)**
 
-* Members are covered by WordPress's own **Tools → Export Personal Data** and **Erase Personal Data**, found by email address. Exporting includes everything held, including your notes. Erasing deletes the record; if a payment was recorded on it, the record is kept for your accounts with all personal details removed.
-* Records are deleted automatically after the period set under **Settings → Keep old membership records for** (24 months by default, 0 to keep everything): memberships that ended, and applications that were declined, cancelled or never approved. Current members are never removed.
-* Suggested wording for your privacy policy is added under **Settings → Privacy → Policy Guide**. Review it and make sure it matches what your club actually does; it is not legal advice.
-* Only date of birth, phone, parent or guardian and ECF code are optional extras: collect only what you need. Junior details should come from, or be agreed by, a parent or guardian. Deleting the plugin removes members only if you tick the delete-data option.
+* Members are covered by WordPress's own **Tools → Export Personal Data** and **Erase Personal Data**, found by email address. A junior is found by their parent or guardian's email address as well as their own. Exporting includes everything held, including your notes. Erasing deletes the record; if a payment was recorded on it, the record is kept for your accounts with all personal details removed.
+* Records are deleted automatically after the period set under **ECF & LMS → Settings → Keep old membership records for** (24 months by default, 0 to keep everything): memberships that ended, and applications that were declined, cancelled or never approved. Current members are never removed.
+* The **Club Data Policy** block shows the club's policy to anyone, and the same wording is offered under **Settings → Privacy → Policy Guide**. Set **Data protection contact** under **ECF & LMS → Settings** so people know who to ask. Add your own paragraphs with the `Chess_Army_Knife_data_policy_sections` filter. Review the wording so it matches what your club actually does; it is not legal advice.
+* Collect only what you need: an adult's date of birth is never stored by the form. Deleting the plugin removes members only if you tick the delete-data option.
 
 **Global defaults**
 
@@ -94,7 +100,8 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 * Added: club memberships. Membership Types (name, description, price, length), a Members screen with pending applications, current, expired and cancelled members, and manual adding, editing and payment recording. New Club Memberships and Membership Application Form blocks, and a payment instructions field under Settings.
-* Added: data protection for members: personal data export and erase, a recorded consent time, automatic deletion of old records after a retention period, and suggested privacy policy wording.
+* Added: data protection for members: personal data export and erase, recorded consent, automatic deletion of old records after a retention period, suggested privacy policy wording and a public Club Data Policy block.
+* Added: junior members (under 18) are handled through a parent or guardian, and the newsletter and WhatsApp groups are separate, recorded, optional consents.
 * Added: a separate "manage members" permission for the Memberships screens, set per user on their profile rather than given to all administrators.
 * Added: Tournament Standings block, a cross-table of each player's points in every round and their total.
 * Changed: results are now entered in the Tournament Games to Play block. Everyone sees the games; administrators also get two score selectors per game (choosing 1 for one player gives the other 0, and ½ gives ½ to both) and one Save button at the top. Games are saved together, so a wrong score is not recorded by accident. Forfeits and corrections are still made on the Tournaments admin page.

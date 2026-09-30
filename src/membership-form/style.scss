@@ -12,11 +12,24 @@
 		margin: 0 0 0.9em;
 	}
 
+	.cak-membership-form__group {
+		margin: 0 0 1em;
+		padding: 0.5em 1em 0;
+		border: 1px solid #e2e2e2;
+		border-radius: 4px;
+	}
+
+	.cak-membership-form__hint {
+		font-size: 0.9em;
+		color: #555;
+	}
+
 	.cak-membership-form label {
 		display: block;
 		margin-bottom: 0.25em;
 	}
 
+	.cak-membership-form__check label,
 	.cak-membership-form__consent label {
 		display: flex;
 		gap: 0.5em;

@@ -62,6 +62,8 @@ class Chess_Army_Knife_Members_Page {
 			exit;
 		}
 
+		$clean = self::keep_recorded_consents( $clean, $previous );
+
 		// A member who becomes active with no dates starts today and lasts as long as their type says.
 		$becomes_active = Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $clean['status'] && ( ! $previous || Chess_Army_Knife_Membership_Store::STATUS_ACTIVE !== $previous['status'] );
 		if ( $becomes_active ) {
@@ -83,6 +85,23 @@ class Chess_Army_Knife_Members_Page {
 
 		wp_safe_redirect( self::url( array( 'saved' => '1' ) ) );
 		exit;
+	}
+
+	/**
+	 * A consent that was already recorded keeps its original time when its box
+	 * is still ticked; unticking it withdraws the consent.
+	 *
+	 * @param array      $clean    Cleaned form values.
+	 * @param array|null $previous The member as saved before, or null for a new one.
+	 * @return array
+	 */
+	public static function keep_recorded_consents( array $clean, $previous ) {
+		foreach ( array( 'newsletter_consent_at', 'whatsapp_consent_at' ) as $consent ) {
+			if ( $previous && '' !== $previous[ $consent ] && null !== $clean[ $consent ] ) {
+				$clean[ $consent ] = $previous[ $consent ];
+			}
+		}
+		return $clean;
 	}
 
 	/**
@@ -266,11 +285,12 @@ class Chess_Army_Knife_Members_Page {
 						<th><?php esc_html_e( 'Expires', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Contact', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Payment', 'chess-army-knife' ); ?></th>
+						<th><?php esc_html_e( 'Agreed to', 'chess-army-knife' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $members ) ) : ?>
-						<tr><td colspan="6"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
+						<tr><td colspan="7"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
 					<?php endif; ?>
 					<?php foreach ( $members as $member ) : ?>
 						<?php $status = Chess_Army_Knife_Membership_Store::effective_status( $member, $today ); ?>
@@ -290,9 +310,17 @@ class Chess_Army_Knife_Members_Page {
 							<td><?php echo esc_html( isset( $labels[ $status ] ) ? $labels[ $status ] : $status ); ?></td>
 							<td><?php echo '' === $member['expiry_date'] ? '&mdash;' : esc_html( mysql2date( get_option( 'date_format' ), $member['expiry_date'] ) ); ?></td>
 							<td>
-								<?php echo esc_html( $member['email'] ); ?>
-								<?php echo '' !== $member['email'] && '' !== $member['phone'] ? '<br />' : ''; ?>
-								<?php echo esc_html( $member['phone'] ); ?>
+								<?php echo esc_html( Chess_Army_Knife_Membership_Store::contact_email( $member ) ); ?>
+								<?php if ( '' !== $member['phone'] . $member['guardian_phone'] ) : ?>
+									<br /><?php echo esc_html( '' !== $member['phone'] ? $member['phone'] : $member['guardian_phone'] ); ?>
+								<?php endif; ?>
+								<?php if ( '' !== $member['guardian_name'] ) : ?>
+									<br />
+									<?php
+									/* translators: %s: name of a junior's parent or guardian */
+									echo esc_html( sprintf( __( 'Parent or guardian: %s', 'chess-army-knife' ), $member['guardian_name'] ) );
+									?>
+								<?php endif; ?>
 							</td>
 							<td>
 								<?php
@@ -303,6 +331,18 @@ class Chess_Army_Knife_Members_Page {
 									/* translators: 1: date the payment was received, 2: payment method */
 									echo esc_html( trim( sprintf( __( 'Paid %1$s %2$s', 'chess-army-knife' ), mysql2date( get_option( 'date_format' ), $member['paid_on'] ), $method ) ) );
 								}
+								?>
+							</td>
+							<td>
+								<?php
+								$agreed = array();
+								if ( '' !== $member['newsletter_consent_at'] ) {
+									$agreed[] = __( 'Newsletter', 'chess-army-knife' );
+								}
+								if ( '' !== $member['whatsapp_consent_at'] ) {
+									$agreed[] = __( 'WhatsApp', 'chess-army-knife' );
+								}
+								echo $agreed ? esc_html( implode( ', ', $agreed ) ) : '&mdash;';
 								?>
 							</td>
 						</tr>
@@ -320,7 +360,7 @@ class Chess_Army_Knife_Members_Page {
 	 */
 	protected static function render_form( $member ) {
 		$editing = null !== $member;
-		$member  = $editing ? $member : array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at' ), '' ) + array(
+		$member  = $editing ? $member : array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at' ), '' ) + array(
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
 			'start_date'         => current_time( 'Y-m-d' ),
@@ -362,6 +402,17 @@ class Chess_Army_Knife_Members_Page {
 					<tr>
 						<th scope="row"><label for="guardian_name"><?php esc_html_e( 'Parent or guardian', 'chess-army-knife' ); ?></label></th>
 						<td><input type="text" id="guardian_name" name="guardian_name" class="regular-text" value="<?php echo esc_attr( $member['guardian_name'] ); ?>" /></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="guardian_email"><?php esc_html_e( 'Parent or guardian email', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="email" id="guardian_email" name="guardian_email" class="regular-text" value="<?php echo esc_attr( $member['guardian_email'] ); ?>" />
+							<p class="description"><?php esc_html_e( 'For juniors: write to the parent or guardian rather than the junior, unless they have said otherwise.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="guardian_phone"><?php esc_html_e( 'Parent or guardian phone', 'chess-army-knife' ); ?></label></th>
+						<td><input type="text" id="guardian_phone" name="guardian_phone" class="regular-text" value="<?php echo esc_attr( $member['guardian_phone'] ); ?>" /></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="ecf_code"><?php esc_html_e( 'ECF rating code', 'chess-army-knife' ); ?></label></th>
@@ -436,6 +487,20 @@ class Chess_Army_Knife_Members_Page {
 							</td>
 						</tr>
 					<?php endif; ?>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Optional extras', 'chess-army-knife' ); ?></th>
+						<td>
+							<label style="display:block">
+								<input type="checkbox" name="newsletter" value="1" <?php checked( '' !== $member['newsletter_consent_at'] ); ?> />
+								<?php esc_html_e( 'Has agreed to receive the club newsletter', 'chess-army-knife' ); ?>
+							</label>
+							<label style="display:block">
+								<input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $member['whatsapp_consent_at'] ); ?> />
+								<?php esc_html_e( 'Has agreed to be added to WhatsApp groups (their phone number is visible to the group)', 'chess-army-knife' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Tick only if the member, or for a junior their parent or guardian, has said yes, in person or in writing. Untick to record that they have withdrawn.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
 					<tr>
 						<th scope="row"><label for="notes"><?php esc_html_e( 'Notes', 'chess-army-knife' ); ?></label></th>
 						<td>

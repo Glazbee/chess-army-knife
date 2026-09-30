@@ -56,6 +56,10 @@ class MembershipsTest extends WP_UnitTestCase {
 		);
 	}
 
+	private function ids_of( array $members ) {
+		return wp_list_pluck( $members, 'id' );
+	}
+
 	private function names( array $members ) {
 		return wp_list_pluck( $members, 'name' );
 	}
@@ -441,6 +445,10 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Add a member', $add );
 		$this->assertStringContainsString( 'Adult (£25 per year)', $add );
 
+		$this->assertStringContainsString( 'name="guardian_email"', $add );
+		$this->assertStringContainsString( 'name="newsletter"', $add );
+		$this->assertStringContainsString( 'name="whatsapp"', $add );
+
 		$_GET = array( 'edit' => (string) $id );
 		$edit = $this->page_html();
 		$this->assertStringContainsString( 'value="Grace Hopper"', $edit );
@@ -466,6 +474,51 @@ class MembershipsTest extends WP_UnitTestCase {
 		do_action( 'admin_menu' );
 
 		$this->assertArrayNotHasKey( Chess_Army_Knife_Memberships::MENU_SLUG, $submenu );
+	}
+
+	public function test_the_members_list_shows_a_juniors_parent_as_the_contact_and_who_agreed_to_what() {
+		$this->manager();
+		$this->member(
+			array(
+				'name'                  => 'Junior Player',
+				'email'                 => '',
+				'guardian_name'         => 'Charles Player',
+				'guardian_email'        => 'charles@example.test',
+				'guardian_phone'        => '07700 900123',
+				'newsletter_consent_at' => '2026-09-01 10:00:00',
+			)
+		);
+
+		$html = $this->page_html();
+
+		$this->assertStringContainsString( 'charles@example.test', $html );
+		$this->assertStringContainsString( '07700 900123', $html );
+		$this->assertStringContainsString( 'Parent or guardian: Charles Player', $html );
+		$this->assertStringContainsString( 'Newsletter', $html );
+		$this->assertStringNotContainsString( 'WhatsApp', $html );
+	}
+
+	public function test_a_recorded_consent_keeps_its_time_until_it_is_withdrawn() {
+		$previous = Chess_Army_Knife_Membership_Store::get_member( $this->member( array( 'newsletter_consent_at' => '2026-01-01 09:00:00' ) ) );
+		$ticked   = array(
+			'newsletter_consent_at' => '2026-09-29 12:00:00',
+			'whatsapp_consent_at'   => '2026-09-29 12:00:00',
+		);
+
+		$kept = Chess_Army_Knife_Members_Page::keep_recorded_consents( $ticked, $previous );
+		$this->assertSame( '2026-01-01 09:00:00', $kept['newsletter_consent_at'], 'Still agreed: the original time stays.' );
+		$this->assertSame( '2026-09-29 12:00:00', $kept['whatsapp_consent_at'], 'Newly agreed: now.' );
+
+		$withdrawn = Chess_Army_Knife_Members_Page::keep_recorded_consents(
+			array(
+				'newsletter_consent_at' => null,
+				'whatsapp_consent_at'   => null,
+			),
+			$previous
+		);
+		$this->assertNull( $withdrawn['newsletter_consent_at'] );
+
+		$this->assertSame( $ticked, Chess_Army_Knife_Members_Page::keep_recorded_consents( $ticked, null ), 'A new member has nothing to keep.' );
 	}
 
 	public function test_the_members_page_is_refused_without_the_permission() {
@@ -500,14 +553,15 @@ class MembershipsTest extends WP_UnitTestCase {
 	/** @var int Membership type the form tests apply for. */
 	private $type_id = 0;
 
-	public function test_a_valid_application_is_saved_as_a_pending_member() {
-		$this->type_id = $this->membership_type( 'Junior', 1000 );
+	public function test_a_valid_adult_application_is_saved_as_a_pending_member() {
+		$this->type_id = $this->membership_type( 'Adult', 2500 );
 
 		$id = Chess_Army_Knife_Membership_Form::submit(
 			$this->application(
 				array(
 					'phone'         => '01234',
-					'date_of_birth' => '2015-05-01',
+					'ecf_code'      => '12345j',
+					'date_of_birth' => '1980-05-01',
 				)
 			)
 		);
@@ -517,9 +571,57 @@ class MembershipsTest extends WP_UnitTestCase {
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
 		$this->assertSame( 'pending', $member['status'] );
 		$this->assertSame( 'form', $member['source'] );
-		$this->assertSame( 'Junior', $member['type_name'] );
-		$this->assertSame( '2015-05-01', $member['date_of_birth'] );
+		$this->assertSame( 'Adult', $member['type_name'] );
+		$this->assertSame( '12345J', $member['ecf_code'] );
+		$this->assertSame( '', $member['date_of_birth'], 'An adult\'s date of birth is not kept.' );
 		$this->assertSame( array( 'Ada Lovelace' ), $this->names( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'pending' ) ) ) );
+	}
+
+	public function test_a_junior_application_is_saved_with_the_parents_details_instead_of_their_own() {
+		$this->type_id = $this->membership_type( 'Junior', 1000 );
+
+		$id = Chess_Army_Knife_Membership_Form::submit(
+			$this->application(
+				array(
+					'name'           => 'Junior Player',
+					'is_junior'      => '1',
+					'date_of_birth'  => '2015-05-01',
+					'guardian_name'  => 'Charles Player',
+					'guardian_email' => 'charles@example.test',
+					'guardian_phone' => '07700 900123',
+					'phone'          => '07700 900456',
+					'newsletter'     => '1',
+					'whatsapp'       => '1',
+				)
+			)
+		);
+
+		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
+		$this->assertSame( '', $member['email'], 'The junior\'s own email is not kept.' );
+		$this->assertSame( '', $member['phone'] );
+		$this->assertSame( '2015-05-01', $member['date_of_birth'] );
+		$this->assertSame( 'charles@example.test', $member['guardian_email'] );
+		$this->assertSame( 'charles@example.test', Chess_Army_Knife_Membership_Store::contact_email( $member ) );
+		$this->assertNotSame( '', $member['newsletter_consent_at'] );
+		$this->assertNotSame( '', $member['whatsapp_consent_at'] );
+		$this->assertSame( array( $id ), $this->ids_of( Chess_Army_Knife_Membership_Store::get_members( array( 'search' => 'charles@' ) ) ), 'A junior can be found by their parent\'s email.' );
+	}
+
+	public function test_a_junior_application_without_a_parent_is_refused() {
+		$this->type_id = $this->membership_type( 'Junior', 1000 );
+
+		$result = Chess_Army_Knife_Membership_Form::submit(
+			$this->application(
+				array(
+					'is_junior'     => '1',
+					'date_of_birth' => '2015-05-01',
+				)
+			)
+		);
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'member_guardian', $result->get_error_code() );
+		$this->assertSame( 0, Chess_Army_Knife_Membership_Store::count_view( 'all' ) );
 	}
 
 	public function test_an_application_cannot_choose_its_own_status_or_dates() {
@@ -661,6 +763,9 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'name="' . Chess_Army_Knife_Membership_Form::NONCE_FIELD . '"', $html );
 		$this->assertStringContainsString( 'name="' . Chess_Army_Knife_Membership_Form::HONEYPOT . '"', $html );
 		$this->assertStringContainsString( 'name="consent"', $html );
+		foreach ( array( 'is_junior', 'guardian_name', 'guardian_email', 'guardian_phone', 'junior_contact', 'newsletter', 'whatsapp' ) as $field ) {
+			$this->assertStringContainsString( 'name="' . $field . '"', $html );
+		}
 		$this->assertStringContainsString( 'value="' . $type . '"', $html );
 		$this->assertStringNotContainsString( 'Hidden', $html );
 	}

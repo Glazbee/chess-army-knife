@@ -82,6 +82,7 @@ class Chess_Army_Knife_Settings {
 			'lms_base_url'             => '',
 			'default_event_location'   => '', // Used by club events that don't set their own.
 			'membership_payment_info'  => '', // How to pay for a membership (bank details, cash at the club...).
+			'data_contact_email'       => '', // Shown in the data policy as who to contact about personal data.
 			'member_retention_months'  => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
 			'club_teams'               => '',  // Raw textarea: one "org | event | team" per line.
 			'fast_cache_enabled'       => 1,
@@ -266,6 +267,9 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['membership_payment_info'] ) ) {
 			$clean['membership_payment_info'] = sanitize_textarea_field( $input['membership_payment_info'] );
 		}
+		if ( isset( $input['data_contact_email'] ) ) {
+			$clean['data_contact_email'] = sanitize_email( $input['data_contact_email'] );
+		}
 		if ( isset( $input['member_retention_months'] ) ) {
 			$clean['member_retention_months'] = max( 0, min( 120, (int) $input['member_retention_months'] ) );
 		}
@@ -416,6 +420,13 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<textarea id="membership_payment_info" name="<?php echo esc_attr( self::OPTION ); ?>[membership_payment_info]" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'e.g. Bank transfer to Any Chess Club, sort code 00-00-00, account 12345678, quoting your reference. Or pay cash at the club.', 'chess-army-knife' ); ?>"><?php echo esc_textarea( $options['membership_payment_info'] ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="data_contact_email"><?php esc_html_e( 'Data protection contact', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="email" id="data_contact_email" name="<?php echo esc_attr( self::OPTION ); ?>[data_contact_email]" value="<?php echo esc_attr( $options['data_contact_email'] ); ?>" class="regular-text" />
+							<p class="description"><?php esc_html_e( 'Shown publicly in the Club Data Policy block as who to contact to see, correct or delete personal details. Use a club address rather than a personal one.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

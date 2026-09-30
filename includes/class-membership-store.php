@@ -55,6 +55,8 @@ class Chess_Army_Knife_Membership_Store {
 			phone VARCHAR(40) NOT NULL DEFAULT '',
 			date_of_birth DATE NULL,
 			guardian_name VARCHAR(191) NOT NULL DEFAULT '',
+			guardian_email VARCHAR(191) NOT NULL DEFAULT '',
+			guardian_phone VARCHAR(40) NOT NULL DEFAULT '',
 			ecf_code VARCHAR(20) NOT NULL DEFAULT '',
 			membership_type_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
 			type_name VARCHAR(191) NOT NULL DEFAULT '',
@@ -66,11 +68,14 @@ class Chess_Army_Knife_Membership_Store {
 			paid_on DATE NULL,
 			notes TEXT NULL,
 			consent_at DATETIME NULL,
+			newsletter_consent_at DATETIME NULL,
+			whatsapp_consent_at DATETIME NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY status (status),
-			KEY email (email)
+			KEY email (email),
+			KEY guardian_email (guardian_email)
 			) {$charset};"
 		);
 	}
@@ -111,10 +116,17 @@ class Chess_Army_Knife_Membership_Store {
 	/**
 	 * Validate and clean submitted member details.
 	 *
+	 * The public form protects juniors (under 18): it asks for a parent or
+	 * guardian's details and the junior's date of birth, and keeps the junior's
+	 * own email address and phone number only if the parent says the club may
+	 * contact the junior directly. An adult's date of birth and any guardian
+	 * details are not kept.
+	 *
 	 * @param array $input    Raw (unslashed) form values.
 	 * @param bool  $is_admin True for the admin form, which may also set the status,
-	 *                        dates, payment and notes and add someone without an email
-	 *                        address. False for the public application form.
+	 *                        dates, payment and notes, and stores what it is given
+	 *                        (someone can be added without an email address). False
+	 *                        for the public application form.
 	 * @return array|WP_Error Column => value, or the first problem found.
 	 */
 	public static function sanitize_member( array $input, $is_admin ) {
@@ -123,13 +135,15 @@ class Chess_Army_Knife_Membership_Store {
 			return new WP_Error( 'member_name', __( 'Please enter a name.', 'chess-army-knife' ) );
 		}
 
-		$email = isset( $input['email'] ) ? sanitize_email( $input['email'] ) : '';
-		if ( ( '' === $email && ! $is_admin ) || ( '' !== $email && ! is_email( $email ) ) ) {
+		$email          = isset( $input['email'] ) ? sanitize_email( $input['email'] ) : '';
+		$guardian_email = isset( $input['guardian_email'] ) ? sanitize_email( $input['guardian_email'] ) : '';
+		if ( ( '' !== $email && ! is_email( $email ) ) || ( '' !== $guardian_email && ! is_email( $guardian_email ) ) ) {
 			return new WP_Error( 'member_email', __( 'Please enter a valid email address.', 'chess-army-knife' ) );
 		}
 
+		$today         = current_time( 'Y-m-d' );
 		$date_of_birth = self::clean_date( $input, 'date_of_birth' );
-		if ( null === $date_of_birth || ( '' !== $date_of_birth && $date_of_birth > current_time( 'Y-m-d' ) ) ) {
+		if ( null === $date_of_birth || ( '' !== $date_of_birth && $date_of_birth > $today ) ) {
 			return new WP_Error( 'member_dob', __( 'Please enter a valid date of birth.', 'chess-army-knife' ) );
 		}
 
@@ -140,15 +154,58 @@ class Chess_Army_Knife_Membership_Store {
 			return new WP_Error( 'member_type', __( 'Please choose a membership type.', 'chess-army-knife' ) );
 		}
 
+		$phone          = isset( $input['phone'] ) ? sanitize_text_field( $input['phone'] ) : '';
+		$guardian_name  = isset( $input['guardian_name'] ) ? sanitize_text_field( $input['guardian_name'] ) : '';
+		$guardian_phone = isset( $input['guardian_phone'] ) ? sanitize_text_field( $input['guardian_phone'] ) : '';
+
+		if ( ! $is_admin ) {
+			// Someone whose date of birth says they are under 18 is a junior even if the box was not ticked.
+			$junior = ! empty( $input['is_junior'] ) || Chess_Army_Knife_Memberships::is_under_18( $date_of_birth, $today );
+
+			if ( $junior ) {
+				if ( '' === $date_of_birth ) {
+					return new WP_Error( 'member_dob', __( 'Please enter the junior\'s date of birth.', 'chess-army-knife' ) );
+				}
+				if ( '' === $guardian_name || '' === $guardian_email ) {
+					return new WP_Error( 'member_guardian', __( 'Please give a parent or guardian\'s name and email address.', 'chess-army-knife' ) );
+				}
+				// The parent is the contact unless they have said the junior may be contacted directly.
+				if ( empty( $input['junior_contact'] ) ) {
+					$email = '';
+					$phone = '';
+				}
+			} else {
+				if ( '' === $email ) {
+					return new WP_Error( 'member_email', __( 'Please enter a valid email address.', 'chess-army-knife' ) );
+				}
+				// Only needed for juniors, so not kept.
+				$date_of_birth  = '';
+				$guardian_name  = '';
+				$guardian_email = '';
+				$guardian_phone = '';
+			}
+
+			// A WhatsApp group shows a phone number to the other members, so there must be one to add.
+			if ( ! empty( $input['whatsapp'] ) && '' === $phone . $guardian_phone ) {
+				return new WP_Error( 'member_whatsapp', __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ) );
+			}
+		}
+
+		$now    = current_time( 'mysql', true );
 		$member = array(
-			'name'               => $name,
-			'email'              => $email,
-			'phone'              => isset( $input['phone'] ) ? sanitize_text_field( $input['phone'] ) : '',
-			'date_of_birth'      => '' === $date_of_birth ? null : $date_of_birth,
-			'guardian_name'      => isset( $input['guardian_name'] ) ? sanitize_text_field( $input['guardian_name'] ) : '',
-			'ecf_code'           => isset( $input['ecf_code'] ) ? strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', $input['ecf_code'] ) ) : '',
-			'membership_type_id' => $type_id,
-			'type_name'          => $type ? $type['name'] : '',
+			'name'                  => $name,
+			'email'                 => $email,
+			'phone'                 => $phone,
+			'date_of_birth'         => '' === $date_of_birth ? null : $date_of_birth,
+			'guardian_name'         => $guardian_name,
+			'guardian_email'        => $guardian_email,
+			'guardian_phone'        => $guardian_phone,
+			'ecf_code'              => isset( $input['ecf_code'] ) ? strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', $input['ecf_code'] ) ) : '',
+			'membership_type_id'    => $type_id,
+			'type_name'             => $type ? $type['name'] : '',
+			// Optional extras, each agreed separately; blank means not agreed.
+			'newsletter_consent_at' => ! empty( $input['newsletter'] ) ? $now : null,
+			'whatsapp_consent_at'   => ! empty( $input['whatsapp'] ) ? $now : null,
 		);
 
 		if ( ! $is_admin ) {
@@ -183,6 +240,16 @@ class Chess_Army_Knife_Membership_Store {
 			'paid_on'        => '' === $paid_on ? null : $paid_on,
 			'notes'          => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
 		);
+	}
+
+	/**
+	 * The address to write to a member: their own, or a parent or guardian's for a junior.
+	 *
+	 * @param array $member Member row.
+	 * @return string '' if there is none.
+	 */
+	public static function contact_email( array $member ) {
+		return '' !== $member['email'] ? $member['email'] : $member['guardian_email'];
 	}
 
 	/**
@@ -268,7 +335,8 @@ class Chess_Army_Knife_Membership_Store {
 
 		if ( '' !== $args['search'] ) {
 			$like       = '%' . $wpdb->esc_like( $args['search'] ) . '%';
-			$condition .= ' AND ( name LIKE %s OR email LIKE %s )';
+			$condition .= ' AND ( name LIKE %s OR email LIKE %s OR guardian_email LIKE %s )';
+			$values[]   = $like;
 			$values[]   = $like;
 			$values[]   = $like;
 		}
@@ -319,7 +387,7 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
-	 * Everything held under an email address, for the privacy tools.
+	 * Everything held under an email address, for the privacy tools. A junior's record is found by their parent or guardian's address as well as their own.
 	 *
 	 * @param string $email Email address.
 	 * @return array[]
@@ -333,7 +401,7 @@ class Chess_Army_Knife_Membership_Store {
 
 		$table = self::table();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE email = %s ORDER BY id ASC", trim( (string) $email ) ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE email = %s OR guardian_email = %s ORDER BY id ASC", trim( (string) $email ), trim( (string) $email ) ), ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
 	}
 
@@ -473,15 +541,19 @@ class Chess_Army_Knife_Membership_Store {
 
 		self::save_member(
 			array(
-				'id'            => $member['id'],
-				'name'          => self::erased_name(),
-				'email'         => '',
-				'phone'         => '',
-				'date_of_birth' => null,
-				'guardian_name' => '',
-				'ecf_code'      => '',
-				'notes'         => '',
-				'consent_at'    => null,
+				'id'                    => $member['id'],
+				'name'                  => self::erased_name(),
+				'email'                 => '',
+				'phone'                 => '',
+				'date_of_birth'         => null,
+				'guardian_name'         => '',
+				'guardian_email'        => '',
+				'guardian_phone'        => '',
+				'ecf_code'              => '',
+				'notes'                 => '',
+				'consent_at'            => null,
+				'newsletter_consent_at' => null,
+				'whatsapp_consent_at'   => null,
 			)
 		);
 		return 'anonymised';
@@ -508,7 +580,7 @@ class Chess_Army_Knife_Membership_Store {
 		$row['id']                 = (int) $row['id'];
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
 
-		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at' ) as $key ) {
+		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];
 		}
 
