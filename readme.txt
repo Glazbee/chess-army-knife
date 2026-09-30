@@ -44,7 +44,14 @@ Memberships are managed under **Memberships** in the admin menu:
 * **Members** lists everyone, with views for current members, pending applications, expired, and declined or cancelled. Approve or decline applications, and use **Add member** to enter someone who cannot use the online form. Record when a payment was received and how, and keep private notes.
 * **How to pay** is entered once under **ECF & LMS → Settings**. The website never takes payments: members pay by bank transfer, cash or whatever you describe, and each member has a payment reference (such as MEM-12) to quote so you can match transfers.
 
-Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form asks people to agree to the club keeping their details, and limits how often one visitor can apply.
+Members' details are personal, so the Memberships menu is only for people with the "manage members" permission. It is **not** given to every administrator: whoever activates the plugin has it, and any administrator who can edit users can tick **Club memberships** on a user's profile to give it to (or take it from) someone else, who need not be an administrator. The application form asks people to agree to the club keeping their details (recording when they did), links to your privacy policy if the site has one, and limits how often one visitor can apply.
+
+**Data protection (GDPR)**
+
+* Members are covered by WordPress's own **Tools → Export Personal Data** and **Erase Personal Data**, found by email address. Exporting includes everything held, including your notes. Erasing deletes the record; if a payment was recorded on it, the record is kept for your accounts with all personal details removed.
+* Records are deleted automatically after the period set under **Settings → Keep old membership records for** (24 months by default, 0 to keep everything): memberships that ended, and applications that were declined, cancelled or never approved. Current members are never removed.
+* Suggested wording for your privacy policy is added under **Settings → Privacy → Policy Guide**. Review it and make sure it matches what your club actually does; it is not legal advice.
+* Only date of birth, phone, parent or guardian and ECF code are optional extras: collect only what you need. Junior details should come from, or be agreed by, a parent or guardian. Deleting the plugin removes members only if you tick the delete-data option.
 
 **Global defaults**
 
@@ -87,6 +94,7 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 * Added: club memberships. Membership Types (name, description, price, length), a Members screen with pending applications, current, expired and cancelled members, and manual adding, editing and payment recording. New Club Memberships and Membership Application Form blocks, and a payment instructions field under Settings.
+* Added: data protection for members: personal data export and erase, a recorded consent time, automatic deletion of old records after a retention period, and suggested privacy policy wording.
 * Added: a separate "manage members" permission for the Memberships screens, set per user on their profile rather than given to all administrators.
 * Added: Tournament Standings block, a cross-table of each player's points in every round and their total.
 * Changed: results are now entered in the Tournament Games to Play block. Everyone sees the games; administrators also get two score selectors per game (choosing 1 for one player gives the other 0, and ½ gives ½ to both) and one Save button at the top. Games are saved together, so a wrong score is not recorded by accident. Forfeits and corrections are still made on the Tournaments admin page.

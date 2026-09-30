@@ -65,6 +65,7 @@ class Chess_Army_Knife_Membership_Store {
 			payment_method VARCHAR(20) NOT NULL DEFAULT '',
 			paid_on DATE NULL,
 			notes TEXT NULL,
+			consent_at DATETIME NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
@@ -317,6 +318,61 @@ class Chess_Army_Knife_Membership_Store {
 		return $row ? self::cast_member( $row ) : null;
 	}
 
+	/**
+	 * Everything held under an email address, for the privacy tools.
+	 *
+	 * @param string $email Email address.
+	 * @return array[]
+	 */
+	public static function get_members_by_email( $email ) {
+		global $wpdb;
+
+		if ( '' === trim( (string) $email ) ) {
+			return array();
+		}
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE email = %s ORDER BY id ASC", trim( (string) $email ) ), ARRAY_A );
+		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
+	 * Members whose details the club no longer has a reason to keep: applications
+	 * and memberships that ended before the cutoff. A current member, or one with
+	 * no expiry date, is never included. Records already stripped of personal
+	 * details are left out.
+	 *
+	 * @param string $cutoff_utc  Applications last changed before this UTC "Y-m-d H:i:s" are included.
+	 * @param string $cutoff_date Memberships that expired before this site-local date are included.
+	 * @return array[]
+	 */
+	public static function get_stale_members( $cutoff_utc, $cutoff_date ) {
+		global $wpdb;
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE name <> %s AND ( ( status IN ( 'pending', 'rejected', 'cancelled' ) AND updated_at < %s ) OR ( status = 'active' AND expiry_date IS NOT NULL AND expiry_date < %s ) ) ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
+				self::erased_name(),
+				$cutoff_utc,
+				$cutoff_date
+			),
+			ARRAY_A
+		);
+		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
+	}
+
+	/**
+	 * The name given to a record whose personal details have been erased.
+	 *
+	 * @return string
+	 */
+	public static function erased_name() {
+		return __( 'Erased member', 'chess-army-knife' );
+	}
+
 	/* -------------------------------------------------------------
 	 * Changes
 	 * ------------------------------------------------------------- */
@@ -397,6 +453,41 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
+	 * Erase a person's details. A record with a payment on it is kept without
+	 * the person's details, because the club may need to keep its accounts;
+	 * any other record is deleted.
+	 *
+	 * @param int $id Member id.
+	 * @return string 'deleted', 'anonymised', or '' if there is no such member.
+	 */
+	public static function erase_member( $id ) {
+		$member = self::get_member( $id );
+		if ( ! $member ) {
+			return '';
+		}
+
+		if ( '' === $member['paid_on'] ) {
+			self::delete_member( $id );
+			return 'deleted';
+		}
+
+		self::save_member(
+			array(
+				'id'            => $member['id'],
+				'name'          => self::erased_name(),
+				'email'         => '',
+				'phone'         => '',
+				'date_of_birth' => null,
+				'guardian_name' => '',
+				'ecf_code'      => '',
+				'notes'         => '',
+				'consent_at'    => null,
+			)
+		);
+		return 'anonymised';
+	}
+
+	/**
 	 * Delete a member or application.
 	 *
 	 * @param int $id Member id.
@@ -417,7 +508,7 @@ class Chess_Army_Knife_Membership_Store {
 		$row['id']                 = (int) $row['id'];
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
 
-		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes' ) as $key ) {
+		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];
 		}
 

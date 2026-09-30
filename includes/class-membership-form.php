@@ -82,8 +82,9 @@ class Chess_Army_Knife_Membership_Form {
 
 		return Chess_Army_Knife_Membership_Store::save_member(
 			$member + array(
-				'status' => Chess_Army_Knife_Membership_Store::STATUS_PENDING,
-				'source' => Chess_Army_Knife_Membership_Store::SOURCE_FORM,
+				'status'     => Chess_Army_Knife_Membership_Store::STATUS_PENDING,
+				'source'     => Chess_Army_Knife_Membership_Store::SOURCE_FORM,
+				'consent_at' => current_time( 'mysql', true ), // When the applicant agreed to the club keeping their details.
 			)
 		);
 	}

@@ -108,8 +108,11 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 			<p class="cak-membership-form__consent">
 				<label>
 					<input type="checkbox" name="consent" value="1" required />
-					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I agree to the club keeping these details to manage my membership.', 'chess-army-knife' ) ); ?>
+					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I (or my parent or guardian, if I am under 18) agree to the club keeping these details to manage my membership.', 'chess-army-knife' ) ); ?>
 				</label>
+				<?php if ( get_privacy_policy_url() ) : ?>
+					<a href="<?php echo esc_url( get_privacy_policy_url() ); ?>"><?php esc_html_e( 'Read our privacy policy', 'chess-army-knife' ); ?></a>
+				<?php endif; ?>
 			</p>
 
 			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Send application', 'chess-army-knife' ); ?></button></p>

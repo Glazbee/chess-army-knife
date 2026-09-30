@@ -320,7 +320,7 @@ class Chess_Army_Knife_Members_Page {
 	 */
 	protected static function render_form( $member ) {
 		$editing = null !== $member;
-		$member  = $editing ? $member : array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date' ), '' ) + array(
+		$member  = $editing ? $member : array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at' ), '' ) + array(
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
 			'start_date'         => current_time( 'Y-m-d' ),
@@ -421,6 +421,21 @@ class Chess_Army_Knife_Members_Page {
 							<?php endif; ?>
 						</td>
 					</tr>
+					<?php if ( $editing ) : ?>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Consent', 'chess-army-knife' ); ?></th>
+							<td>
+								<?php
+								if ( '' !== $member['consent_at'] ) {
+									/* translators: %s: date and time the applicant agreed */
+									echo esc_html( sprintf( __( 'Agreed to the club keeping their details on %s (from the online form).', 'chess-army-knife' ), get_date_from_gmt( $member['consent_at'], get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) );
+								} else {
+									esc_html_e( 'Not recorded: added by the club.', 'chess-army-knife' );
+								}
+								?>
+							</td>
+						</tr>
+					<?php endif; ?>
 					<tr>
 						<th scope="row"><label for="notes"><?php esc_html_e( 'Notes', 'chess-army-knife' ); ?></label></th>
 						<td>

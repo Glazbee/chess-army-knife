@@ -48,6 +48,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-form.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-membership-privacy.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-members-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
