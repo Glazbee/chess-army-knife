@@ -24,7 +24,7 @@ Blocks are grouped in the inserter under five headings: **Chess: Ratings & Playe
 1. **ECF Rating Chart** — choose a club member and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
 2. **ECF Club Results** — a merged feed of recent rated results for the club's current members who have an ECF rating code (win/draw/loss, colour, event). Opponents are not shown.
 3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
-4. **ECF Team Fixtures Carousel** — a rotating carousel showing each team's last result and next fixture. Teams are read automatically from the league table, or you can supply your own list.
+4. **ECF Team Fixtures** — every team with its last result and next fixture. It used to be a rotating carousel; nothing moves now, so it is easier to read and works without scripts. Teams are read automatically from the league table, or you can supply your own list.
 5. **ECF Biggest Rating Gainers** — showcase the club's current members whose rating has risen the most over a recent period.
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.

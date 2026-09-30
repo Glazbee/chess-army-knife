@@ -23,6 +23,9 @@ $page_url         = get_permalink();
 $applied_id = isset( $_GET['cak_membership_applied'] ) ? absint( $_GET['cak_membership_applied'] ) : null;
 $error_code = isset( $_GET['cak_membership_error'] ) ? sanitize_key( wp_unslash( $_GET['cak_membership_error'] ) ) : '';
 $chosen_id  = isset( $_GET['membership_type'] ) ? absint( $_GET['membership_type'] ) : 0;
+if ( Chess_Army_Knife_Form_State::has_values() ) {
+	$chosen_id = absint( Chess_Army_Knife_Form_State::value( 'membership_type_id' ) );
+}
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
@@ -79,19 +82,19 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 				<legend><?php esc_html_e( 'About the member', 'chess-army-knife' ); ?></legend>
 				<p>
 					<label for="cak-member-name"><?php esc_html_e( 'Full name', 'chess-army-knife' ); ?></label>
-					<input type="text" id="cak-member-name" name="name" autocomplete="name" required />
+					<input type="text" id="cak-member-name" name="name" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'name' ) ); ?>" autocomplete="name" required />
 				</p>
 				<p>
 					<label for="cak-member-email"><?php esc_html_e( 'Email address (adults)', 'chess-army-knife' ); ?></label>
-					<input type="email" id="cak-member-email" name="email" autocomplete="email" />
+					<input type="email" id="cak-member-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" />
 				</p>
 				<p>
 					<label for="cak-member-phone"><?php esc_html_e( 'Phone (optional, adults)', 'chess-army-knife' ); ?></label>
-					<input type="tel" id="cak-member-phone" name="phone" autocomplete="tel" />
+					<input type="tel" id="cak-member-phone" name="phone" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'phone' ) ); ?>" autocomplete="tel" />
 				</p>
 				<p>
 					<label for="cak-member-ecf"><?php esc_html_e( 'ECF rating code (if you have one)', 'chess-army-knife' ); ?></label>
-					<input type="text" id="cak-member-ecf" name="ecf_code" />
+					<input type="text" id="cak-member-ecf" name="ecf_code" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'ecf_code' ) ); ?>" />
 				</p>
 			</fieldset>
 
@@ -99,26 +102,26 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 				<legend><?php esc_html_e( 'Juniors (under 18)', 'chess-army-knife' ); ?></legend>
 				<p class="cak-membership-form__hint"><?php esc_html_e( 'A parent or guardian must complete this form for a junior. We write to the parent or guardian, so please leave the email address and phone above blank unless you agree below that we may contact the junior directly.', 'chess-army-knife' ); ?></p>
 				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="is_junior" value="1" /> <?php esc_html_e( 'This application is for someone under 18', 'chess-army-knife' ); ?></label>
+					<label><input type="checkbox" name="is_junior" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'is_junior' ) ); ?> /> <?php esc_html_e( 'This application is for someone under 18', 'chess-army-knife' ); ?></label>
 				</p>
 				<p>
 					<label for="cak-member-dob"><?php esc_html_e( 'Junior\'s date of birth', 'chess-army-knife' ); ?></label>
-					<input type="date" id="cak-member-dob" name="date_of_birth" autocomplete="bday" />
+					<input type="date" id="cak-member-dob" name="date_of_birth" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'date_of_birth' ) ); ?>" />
 				</p>
 				<p>
 					<label for="cak-member-guardian"><?php esc_html_e( 'Parent or guardian\'s name', 'chess-army-knife' ); ?></label>
-					<input type="text" id="cak-member-guardian" name="guardian_name" />
+					<input type="text" id="cak-member-guardian" name="guardian_name" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'guardian_name' ) ); ?>" />
 				</p>
 				<p>
 					<label for="cak-member-guardian-email"><?php esc_html_e( 'Parent or guardian\'s email address', 'chess-army-knife' ); ?></label>
-					<input type="email" id="cak-member-guardian-email" name="guardian_email" />
+					<input type="email" id="cak-member-guardian-email" name="guardian_email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'guardian_email' ) ); ?>" />
 				</p>
 				<p>
 					<label for="cak-member-guardian-phone"><?php esc_html_e( 'Parent or guardian\'s phone (optional)', 'chess-army-knife' ); ?></label>
-					<input type="tel" id="cak-member-guardian-phone" name="guardian_phone" />
+					<input type="tel" id="cak-member-guardian-phone" name="guardian_phone" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'guardian_phone' ) ); ?>" />
 				</p>
 				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="junior_contact" value="1" /> <?php esc_html_e( 'I am the parent or guardian and the club may also contact the junior directly, using the email address and phone entered above', 'chess-army-knife' ); ?></label>
+					<label><input type="checkbox" name="junior_contact" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'junior_contact' ) ); ?> /> <?php esc_html_e( 'I am the parent or guardian and the club may also contact the junior directly, using the email address and phone entered above', 'chess-army-knife' ); ?></label>
 				</p>
 			</fieldset>
 
@@ -126,16 +129,16 @@ $payment_text = Chess_Army_Knife_Memberships::payment_instructions();
 				<legend><?php esc_html_e( 'Optional: club news and WhatsApp', 'chess-army-knife' ); ?></legend>
 				<p class="cak-membership-form__hint"><?php esc_html_e( 'These are separate choices. You can say no to both and still be a member, and change your mind at any time.', 'chess-army-knife' ); ?></p>
 				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="newsletter" value="1" /> <?php esc_html_e( 'Yes, email me the club newsletter', 'chess-army-knife' ); ?></label>
+					<label><input type="checkbox" name="newsletter" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'newsletter' ) ); ?> /> <?php esc_html_e( 'Yes, email me the club newsletter', 'chess-army-knife' ); ?></label>
 				</p>
 				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="whatsapp" value="1" /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group for the club team(s) ticked below. The other people in the group will be able to see the name and phone number.', 'chess-army-knife' ); ?></label>
+					<label><input type="checkbox" name="whatsapp" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp' ) ); ?> /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group for the club team(s) ticked below. The other people in the group will be able to see the name and phone number.', 'chess-army-knife' ); ?></label>
 				</p>
 				<?php if ( $team_choices ) : ?>
 					<p class="cak-membership-form__hint"><?php esc_html_e( 'Which team(s) do you play for?', 'chess-army-knife' ); ?></p>
 					<?php foreach ( $team_choices as $team_id => $team_name ) : ?>
 						<p class="cak-membership-form__check">
-							<label><input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_id ); ?>" /> <?php echo esc_html( $team_name ); ?></label>
+							<label><input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp_teams', (string) $team_id ) ); ?> /> <?php echo esc_html( $team_name ); ?></label>
 						</p>
 					<?php endforeach; ?>
 				<?php endif; ?>

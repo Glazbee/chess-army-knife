@@ -85,6 +85,8 @@ $admin_post        = admin_url( 'admin-post.php' );
 
 		<?php foreach ( $session['people'] as $person ) : ?>
 			<?php
+			// Fill the form back in if this person's details were the ones that came back with an error.
+			$kept_person   = Chess_Army_Knife_Form_State::has_values() && (int) Chess_Army_Knife_Form_State::value( 'person' ) === (int) $person['id'];
 			$person_status = Chess_Army_Knife_Membership_Store::effective_status( $person, $today );
 			$is_junior     = Chess_Army_Knife_Member_Portal::is_junior( $person );
 			$has_parent    = '' !== $person['guardian_name'] . $person['guardian_email'];
@@ -136,14 +138,14 @@ $admin_post        = admin_url( 'admin-post.php' );
 				<h4><?php esc_html_e( 'Your details', 'chess-army-knife' ); ?></h4>
 				<form method="post" action="<?php echo esc_url( $admin_post ); ?>">
 					<?php $cak_portal_fields( Chess_Army_Knife_Member_Portal::ACTION_DETAILS, $token, $person['id'], $page_url ); ?>
-					<p class="cak-portal__field"><label for="cak-name-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></label><input type="text" id="cak-name-<?php echo esc_attr( $person['id'] ); ?>" name="name" value="<?php echo esc_attr( $person['name'] ); ?>" required /></p>
+					<p class="cak-portal__field"><label for="cak-name-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></label><input type="text" id="cak-name-<?php echo esc_attr( $person['id'] ); ?>" name="name" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'name', $person['name'] ) : $person['name'] ); ?>" required /></p>
 					<?php if ( ! $is_junior || '' !== $person['phone'] ) : ?>
-						<p class="cak-portal__field"><label for="cak-phone-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Phone', 'chess-army-knife' ); ?></label><input type="tel" id="cak-phone-<?php echo esc_attr( $person['id'] ); ?>" name="phone" value="<?php echo esc_attr( $person['phone'] ); ?>" /></p>
+						<p class="cak-portal__field"><label for="cak-phone-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Phone', 'chess-army-knife' ); ?></label><input type="tel" id="cak-phone-<?php echo esc_attr( $person['id'] ); ?>" name="phone" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'phone', $person['phone'] ) : $person['phone'] ); ?>" /></p>
 					<?php endif; ?>
-					<p class="cak-portal__field"><label for="cak-ecf-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'ECF rating code', 'chess-army-knife' ); ?></label><input type="text" id="cak-ecf-<?php echo esc_attr( $person['id'] ); ?>" name="ecf_code" value="<?php echo esc_attr( $person['ecf_code'] ); ?>" /></p>
+					<p class="cak-portal__field"><label for="cak-ecf-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'ECF rating code', 'chess-army-knife' ); ?></label><input type="text" id="cak-ecf-<?php echo esc_attr( $person['id'] ); ?>" name="ecf_code" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'ecf_code', $person['ecf_code'] ) : $person['ecf_code'] ); ?>" /></p>
 					<?php if ( $has_parent ) : ?>
-						<p class="cak-portal__field"><label for="cak-gname-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Parent or guardian name', 'chess-army-knife' ); ?></label><input type="text" id="cak-gname-<?php echo esc_attr( $person['id'] ); ?>" name="guardian_name" value="<?php echo esc_attr( $person['guardian_name'] ); ?>" /></p>
-						<p class="cak-portal__field"><label for="cak-gphone-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Parent or guardian phone', 'chess-army-knife' ); ?></label><input type="tel" id="cak-gphone-<?php echo esc_attr( $person['id'] ); ?>" name="guardian_phone" value="<?php echo esc_attr( $person['guardian_phone'] ); ?>" /></p>
+						<p class="cak-portal__field"><label for="cak-gname-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Parent or guardian name', 'chess-army-knife' ); ?></label><input type="text" id="cak-gname-<?php echo esc_attr( $person['id'] ); ?>" name="guardian_name" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'guardian_name', $person['guardian_name'] ) : $person['guardian_name'] ); ?>" /></p>
+						<p class="cak-portal__field"><label for="cak-gphone-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Parent or guardian phone', 'chess-army-knife' ); ?></label><input type="tel" id="cak-gphone-<?php echo esc_attr( $person['id'] ); ?>" name="guardian_phone" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'guardian_phone', $person['guardian_phone'] ) : $person['guardian_phone'] ); ?>" /></p>
 					<?php endif; ?>
 					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my details', 'chess-army-knife' ); ?></button></p>
 				</form>
@@ -165,7 +167,7 @@ $admin_post        = admin_url( 'admin-post.php' );
 								);
 								?>
 							</p>
-							<p class="cak-portal__field"><label for="cak-new-<?php echo esc_attr( $person['id'] . '-' . $email_field ); ?>"><?php esc_html_e( 'New address', 'chess-army-knife' ); ?></label><input type="email" id="cak-new-<?php echo esc_attr( $person['id'] . '-' . $email_field ); ?>" name="new_email" required /></p>
+							<p class="cak-portal__field"><label for="cak-new-<?php echo esc_attr( $person['id'] . '-' . $email_field ); ?>"><?php esc_html_e( 'New address', 'chess-army-knife' ); ?></label><input type="email" id="cak-new-<?php echo esc_attr( $person['id'] . '-' . $email_field ); ?>" name="new_email" value="<?php echo esc_attr( $kept_person && Chess_Army_Knife_Form_State::value( 'field' ) === $email_field ? Chess_Army_Knife_Form_State::value( 'new_email' ) : '' ); ?>" autocomplete="email" required /></p>
 							<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Change address', 'chess-army-knife' ); ?></button> <span class="description"><?php esc_html_e( 'We will email the new address a link to confirm.', 'chess-army-knife' ); ?></span></p>
 						</form>
 					<?php endif; ?>
@@ -259,7 +261,7 @@ $admin_post        = admin_url( 'admin-post.php' );
 			<?php $cak_portal_fields( Chess_Army_Knife_Member_Portal::ACTION_LINK, '', 0, $page_url ); ?>
 			<p class="cak-portal__hp" aria-hidden="true"><label>URL <input type="text" name="<?php echo esc_attr( Chess_Army_Knife_Member_Portal::HONEYPOT ); ?>" value="" tabindex="-1" autocomplete="off" /></label></p>
 			<p><?php esc_html_e( 'Enter the email address the club has for you (a junior\'s parent or guardian uses theirs) and we will email you a private link.', 'chess-army-knife' ); ?></p>
-			<p class="cak-portal__field"><label for="cak-portal-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?></label><input type="email" id="cak-portal-email" name="email" required /></p>
+			<p class="cak-portal__field"><label for="cak-portal-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?></label><input type="email" id="cak-portal-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required /></p>
 			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Email me a link', 'chess-army-knife' ); ?></button></p>
 		</form>
 	<?php endif; ?>

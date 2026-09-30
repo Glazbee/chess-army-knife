@@ -96,14 +96,14 @@ $found        = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_tok
 
 			<p>
 				<label for="cak-data-email"><?php esc_html_e( 'The email address the club holds for you', 'chess-army-knife' ); ?></label>
-				<input type="email" id="cak-data-email" name="email" autocomplete="email" required />
+				<input type="email" id="cak-data-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required />
 			</p>
 
 			<fieldset class="cak-my-data__choices">
 				<legend><?php esc_html_e( 'What would you like to do?', 'chess-army-knife' ); ?></legend>
-				<p><label><input type="radio" name="choice" value="withdraw" required /> <?php esc_html_e( 'Change my newsletter and WhatsApp choices', 'chess-army-knife' ); ?></label></p>
-				<p><label><input type="radio" name="choice" value="export" /> <?php esc_html_e( 'Send me a copy of my details', 'chess-army-knife' ); ?></label></p>
-				<p><label><input type="radio" name="choice" value="erase" /> <?php esc_html_e( 'Delete my details (this ends my membership)', 'chess-army-knife' ); ?></label></p>
+				<p><label><input type="radio" name="choice" value="withdraw" <?php checked( Chess_Army_Knife_Form_State::checked( 'choice', 'withdraw' ) ); ?> required /> <?php esc_html_e( 'Change my newsletter and WhatsApp choices', 'chess-army-knife' ); ?></label></p>
+				<p><label><input type="radio" name="choice" value="export" <?php checked( Chess_Army_Knife_Form_State::checked( 'choice', 'export' ) ); ?> /> <?php esc_html_e( 'Send me a copy of my details', 'chess-army-knife' ); ?></label></p>
+				<p><label><input type="radio" name="choice" value="erase" <?php checked( Chess_Army_Knife_Form_State::checked( 'choice', 'erase' ) ); ?> /> <?php esc_html_e( 'Delete my details (this ends my membership)', 'chess-army-knife' ); ?></label></p>
 			</fieldset>
 
 			<?php // Hidden from people; a bot that fills in every field gives itself away. ?>

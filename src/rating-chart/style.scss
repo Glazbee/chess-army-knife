@@ -1,4 +1,5 @@
 @use "../shared/admin-bar";
+@use "../shared/a11y";
 
 .wp-block-chess-army-knife-rating-chart {
 	margin-bottom: 1.5em;
@@ -9,52 +10,117 @@
 		font-weight: 600;
 	}
 
-	.ecf-rating-chart__canvas-wrap {
-		position: relative;
+	.ecf-rating-chart__figure {
+		margin: 0;
+	}
+
+	.ecf-rating-chart__svg {
+		display: block;
 		width: 100%;
+		overflow: visible;
+	}
+
+	.ecf-rating-chart__grid {
+		stroke: currentcolor;
+		stroke-opacity: 0.25;
+		stroke-width: 1;
+	}
+
+	.ecf-rating-chart__area {
+		fill: currentcolor;
+		fill-opacity: 0.12;
+	}
+
+	.ecf-rating-chart__line {
+		fill: none;
+		stroke: currentcolor;
+		stroke-width: 3;
+		stroke-linejoin: round;
+	}
+
+	.ecf-rating-chart__dots {
+		fill: none;
+		stroke: currentcolor;
+		stroke-width: 8;
+		stroke-linecap: round;
+	}
+
+	.ecf-rating-chart__caption {
+		margin-top: 0.5em;
+	}
+
+	.ecf-rating-chart__data {
+		margin-top: 0.75em;
+
+		summary {
+			cursor: pointer;
+			padding-block: 0.75em;
+		}
+	}
+
+	.ecf-rating-chart__scroll {
+		max-height: 24em;
+		overflow: auto;
+	}
+
+	.ecf-rating-chart__table {
+		width: 100%;
+		border-collapse: collapse;
+
+		caption {
+			text-align: left;
+			font-weight: 600;
+			padding: 0.4em 0;
+		}
+
+		th,
+		td {
+			text-align: left;
+			padding: 0.4em 0.6em;
+			border-bottom: 1px solid currentcolor;
+		}
+
+		thead th {
+			border-bottom-width: 2px;
+		}
 	}
 
 	.ecf-rating-chart__stats {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1.5em;
-		margin-top: 0.75em;
-		font-size: 0.9em;
+		margin: 0.75em 0 0;
 
 		div {
 			min-width: 90px;
 		}
 
-		strong {
-			display: block;
+		dt {
+			font-weight: 400;
+		}
+
+		dd {
+			margin: 0;
 			font-size: 1.2em;
-		}
-
-		.is-up {
-			color: #1a7f37;
-		}
-
-		.is-down {
-			color: #cf222e;
+			font-weight: 700;
 		}
 	}
 
 	.chess-army-knife-notice {
 		padding: 0.75em 1em;
-		border-left: 4px solid #d63638;
-		background: #fcf0f1;
-		font-size: 0.9em;
+		border-left: 4px solid currentcolor;
+		background: color-mix(in srgb, currentcolor 8%, transparent);
 	}
 
 	.chess-army-knife-empty {
 		padding: 0.75em 1em;
-		border-left: 4px solid #dcdcde;
-		background: #f6f7f7;
-		font-size: 0.9em;
+		border-left: 4px solid currentcolor;
+		background: color-mix(in srgb, currentcolor 8%, transparent);
 	}
 }
 
 // Template colours (set via Chess Army Knife → Templates).
 .wp-block-chess-army-knife-rating-chart .ecf-rating-chart__title {
-	color: var(--ecf-accent, inherit);
+	border-bottom: 3px solid var(--ecf-accent, currentcolor);
+	padding-bottom: 0.2em;
 }

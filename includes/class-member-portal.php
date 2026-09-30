@@ -84,7 +84,7 @@ class Chess_Army_Knife_Member_Portal {
 	 */
 	protected static function page_url() {
 		$url = isset( $_POST['cak_redirect'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_POST['cak_redirect'] ) ), home_url( '/' ) ) : home_url( '/' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked by the caller before anything is changed.
-		return remove_query_arg( array( 'cak_portal', 'cak_portal_msg', 'cak_portal_sent', 'cak_portal_error', 'cak_email' ), $url );
+		return remove_query_arg( array( 'cak_portal', 'cak_portal_msg', 'cak_portal_sent', 'cak_portal_error', 'cak_email', Chess_Army_Knife_Form_State::PARAM ), $url );
 	}
 
 	/**
@@ -119,7 +119,13 @@ class Chess_Army_Knife_Member_Portal {
 	protected static function finish( $message, $result ) {
 		$token = self::posted_token();
 		if ( is_wp_error( $result ) ) {
-			self::back( array( 'cak_portal_error' => $result->get_error_code() ), self::session( $token ) ? $token : null );
+			self::back(
+				array(
+					'cak_portal_error'                 => $result->get_error_code(),
+					Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
+				),
+				self::session( $token ) ? $token : null
+			);
 		}
 		self::back( array( 'cak_portal_msg' => is_string( $result ) ? $result : $message ), self::session( $token ) ? $token : null );
 	}
@@ -129,7 +135,15 @@ class Chess_Army_Knife_Member_Portal {
 	 */
 	public static function handle_link() {
 		$result = self::request_link( wp_unslash( $_POST ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked in request_link().
-		self::back( is_wp_error( $result ) ? array( 'cak_portal_error' => $result->get_error_code() ) : array( 'cak_portal_sent' => '1' ) );
+		if ( is_wp_error( $result ) ) {
+			self::back(
+				array(
+					'cak_portal_error'                 => $result->get_error_code(),
+					Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
+				)
+			);
+		}
+		self::back( array( 'cak_portal_sent' => '1' ) );
 	}
 
 	/**

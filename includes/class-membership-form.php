@@ -33,12 +33,15 @@ class Chess_Army_Knife_Membership_Form {
 	 */
 	public static function handle() {
 		$page = isset( $_POST['cak_redirect'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_POST['cak_redirect'] ) ), home_url( '/' ) ) : home_url( '/' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked in submit().
-		$page = remove_query_arg( array( 'cak_membership_applied', 'cak_membership_error' ), $page );
+		$page = remove_query_arg( array( 'cak_membership_applied', 'cak_membership_error', Chess_Army_Knife_Form_State::PARAM ), $page );
 
 		$result = self::submit( wp_unslash( $_POST ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked in submit().
 
 		if ( is_wp_error( $result ) ) {
-			$args = array( 'cak_membership_error' => $result->get_error_code() );
+			$args = array(
+				'cak_membership_error'             => $result->get_error_code(),
+				Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
+			);
 		} else {
 			$args = array( 'cak_membership_applied' => $result );
 		}

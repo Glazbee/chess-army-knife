@@ -210,19 +210,6 @@ class Chess_Army_Knife_Templates {
 				break;
 			case 'team-carousel':
 				$s[] = array(
-					'key'     => 'autoAdvance',
-					'label'   => __( 'Auto-advance', 'chess-army-knife' ),
-					'type'    => 'select',
-					'options' => $bool,
-				);
-				$s[] = array(
-					'key'   => 'intervalSeconds',
-					'label' => __( 'Seconds per slide', 'chess-army-knife' ),
-					'type'  => 'number',
-					'min'   => 3,
-					'max'   => 30,
-				);
-				$s[] = array(
 					'key'     => 'showLocation',
 					'label'   => __( 'Show match location/venue', 'chess-army-knife' ),
 					'type'    => 'select',

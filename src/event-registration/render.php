@@ -128,10 +128,10 @@ $full    = null !== $left && $left < 1;
 			<input type="hidden" name="cak_redirect" value="<?php echo esc_url( $page_url ); ?>" />
 			<?php wp_nonce_field( Chess_Army_Knife_Event_Registration_Form::ACTION_REQUEST, Chess_Army_Knife_Event_Registration_Form::NONCE_FIELD ); ?>
 			<p class="cak-registration__hp" aria-hidden="true"><label>URL <input type="text" name="<?php echo esc_attr( Chess_Army_Knife_Event_Registration_Form::HONEYPOT ); ?>" value="" tabindex="-1" autocomplete="off" /></label></p>
-			<p class="cak-registration__field"><label for="cak-reg-name"><?php esc_html_e( 'Your name', 'chess-army-knife' ); ?></label><input type="text" id="cak-reg-name" name="name" required /></p>
-			<p class="cak-registration__field"><label for="cak-reg-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?></label><input type="email" id="cak-reg-email" name="email" required /></p>
+			<p class="cak-registration__field"><label for="cak-reg-name"><?php esc_html_e( 'Your name', 'chess-army-knife' ); ?></label><input type="text" id="cak-reg-name" name="name" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'name' ) ); ?>" autocomplete="name" required /></p>
+			<p class="cak-registration__field"><label for="cak-reg-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?></label><input type="email" id="cak-reg-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required /></p>
 			<?php if ( $settings['max_guests'] > 0 ) : ?>
-				<p class="cak-registration__field"><label for="cak-reg-guests"><?php esc_html_e( 'Guests you are bringing', 'chess-army-knife' ); ?></label><input type="number" id="cak-reg-guests" name="guests" min="0" max="<?php echo esc_attr( $settings['max_guests'] ); ?>" value="0" /></p>
+				<p class="cak-registration__field"><label for="cak-reg-guests"><?php esc_html_e( 'Guests you are bringing', 'chess-army-knife' ); ?></label><input type="number" id="cak-reg-guests" name="guests" min="0" max="<?php echo esc_attr( $settings['max_guests'] ); ?>" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'guests', '0' ) ); ?>" /></p>
 			<?php endif; ?>
 			<p class="cak-registration__check"><label><input type="checkbox" name="consent" value="1" required /> <?php esc_html_e( 'The club may keep my name and email address to manage this registration, as set out in its data policy.', 'chess-army-knife' ); ?></label></p>
 			<p><button type="submit" class="wp-element-button"><?php echo esc_html( $full ? __( 'Join the waiting list', 'chess-army-knife' ) : __( 'Register', 'chess-army-knife' ) ); ?></button></p>

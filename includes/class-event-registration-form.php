@@ -48,7 +48,7 @@ class Chess_Army_Knife_Event_Registration_Form {
 	 */
 	protected static function page_url() {
 		$url = isset( $_POST['cak_redirect'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_POST['cak_redirect'] ) ), home_url( '/' ) ) : home_url( '/' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked by the caller before anything is changed.
-		return remove_query_arg( array( 'cak_reg', 'cak_reg_sent', 'cak_reg_error', 'cak_reg_done', 'cak_cancel', 'cak_cancel_done' ), $url );
+		return remove_query_arg( array( 'cak_reg', 'cak_reg_sent', 'cak_reg_error', 'cak_reg_done', 'cak_cancel', 'cak_cancel_done', Chess_Army_Knife_Form_State::PARAM ), $url );
 	}
 
 	/**
@@ -66,7 +66,15 @@ class Chess_Army_Knife_Event_Registration_Form {
 	 */
 	public static function handle_request() {
 		$result = self::request( wp_unslash( $_POST ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked in request().
-		self::back( is_wp_error( $result ) ? array( 'cak_reg_error' => $result->get_error_code() ) : array( 'cak_reg_sent' => '1' ) );
+		if ( is_wp_error( $result ) ) {
+			self::back(
+				array(
+					'cak_reg_error'                    => $result->get_error_code(),
+					Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
+				)
+			);
+		}
+		self::back( array( 'cak_reg_sent' => '1' ) );
 	}
 
 	/**

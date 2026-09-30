@@ -4,7 +4,6 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	SelectControl,
-	RangeControl,
 	TextControl,
 	TextareaControl,
 	ToggleControl,
@@ -35,16 +34,8 @@ const SOURCE_OPTIONS = [
 ];
 
 export default function Edit( { attributes, setAttributes } ) {
-	const {
-		orgId,
-		eventName,
-		teamSource,
-		manualTeams,
-		title,
-		autoAdvance,
-		intervalSeconds,
-		highlightTeam,
-	} = attributes;
+	const { orgId, eventName, teamSource, manualTeams, title, highlightTeam } =
+		attributes;
 
 	const blockProps = useBlockProps();
 
@@ -170,7 +161,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Carousel', 'chess-army-knife' ) }
+					title={ __( 'Display', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
 					<ToggleControl
@@ -200,27 +191,6 @@ export default function Edit( { attributes, setAttributes } ) {
 							)
 						}
 					/>
-					<ToggleControl
-						label={ __( 'Auto-advance', 'chess-army-knife' ) }
-						checked={ autoAdvance }
-						onChange={ ( value ) =>
-							setAttributes( { autoAdvance: value } )
-						}
-					/>
-					{ autoAdvance && (
-						<RangeControl
-							label={ __(
-								'Seconds per slide',
-								'chess-army-knife'
-							) }
-							value={ intervalSeconds }
-							onChange={ ( value ) =>
-								setAttributes( { intervalSeconds: value } )
-							}
-							min={ 3 }
-							max={ 20 }
-						/>
-					) }
 				</PanelBody>
 			</InspectorControls>
 
