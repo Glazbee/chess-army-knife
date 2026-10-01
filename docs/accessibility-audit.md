@@ -46,6 +46,8 @@ Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and cove
 
 **Done since**
 
+- Carousel: brought back as an option (Layout: carousel). It meets AAA by being opt-in, with the list as the default and the no-script view. It has Previous, Next and a button for each team (44px, `aria-current` on the current one), a Pause/Start button that is always there, a decision not to move on by itself unless the block asks, no autoplay for visitors who prefer reduced motion, autoplay stopped for good when a visitor uses any button or the pause button, no autoplay while it is hovered or has focus, and screen-reader announcements only for changes the visitor made. Checked in a browser: buttons, dots, pause, reduced motion and no-script behave as described, and axe finds nothing.
+
 - F-G12 and F-MT4: the plain-language wording in `plain-language-drafts.md` was approved and applied.
 
 - F-G18: the spam-trap fields are now `inert` (off-screen, out of the accessibility tree and unfocusable) instead of `aria-hidden`. Bots reading the HTML still see and fill them.

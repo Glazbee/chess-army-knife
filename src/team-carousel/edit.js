@@ -4,6 +4,7 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	SelectControl,
+	RangeControl,
 	TextControl,
 	TextareaControl,
 	ToggleControl,
@@ -164,6 +165,67 @@ export default function Edit( { attributes, setAttributes } ) {
 					title={ __( 'Display', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
+					<SelectControl
+						label={ __( 'Layout', 'chess-army-knife' ) }
+						value={ attributes.layout }
+						options={ [
+							{
+								label: __(
+									'List: every team at once',
+									'chess-army-knife'
+								),
+								value: 'list',
+							},
+							{
+								label: __(
+									'Carousel: one team at a time',
+									'chess-army-knife'
+								),
+								value: 'carousel',
+							},
+						] }
+						help={ __(
+							'The list is the easiest to read. The carousel has buttons to move on and a pause button, and shows the list when scripts are off.',
+							'chess-army-knife'
+						) }
+						onChange={ ( value ) =>
+							setAttributes( { layout: value } )
+						}
+					/>
+					{ 'carousel' === attributes.layout && (
+						<>
+							<ToggleControl
+								label={ __(
+									'Move on by itself',
+									'chess-army-knife'
+								) }
+								help={ __(
+									'It stops for anyone whose device asks for less motion, and as soon as a visitor uses a button.',
+									'chess-army-knife'
+								) }
+								checked={ attributes.autoAdvance }
+								onChange={ ( value ) =>
+									setAttributes( { autoAdvance: value } )
+								}
+							/>
+							{ attributes.autoAdvance && (
+								<RangeControl
+									label={ __(
+										'Seconds per team',
+										'chess-army-knife'
+									) }
+									value={ attributes.intervalSeconds }
+									onChange={ ( value ) =>
+										setAttributes( {
+											intervalSeconds: value,
+										} )
+									}
+									min={ 5 }
+									max={ 30 }
+								/>
+							) }
+						</>
+					) }
 					<ToggleControl
 						label={ __(
 							'Show match location / venue',

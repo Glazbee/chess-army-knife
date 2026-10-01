@@ -24,7 +24,7 @@ Blocks are grouped in the inserter under five headings: **Chess: Ratings & Playe
 1. **ECF Rating Chart** — choose a club member and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
 2. **ECF Club Results** — a merged feed of recent rated results for the club's current members who have an ECF rating code (win/draw/loss, colour, event). Opponents are not shown.
 3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
-4. **ECF Team Fixtures** — every team with its last result and next fixture. It used to be a rotating carousel; nothing moves now, so it is easier to read and works without scripts. Teams are read automatically from the league table, or you can supply your own list.
+4. **ECF Team Fixtures** — every team with its last result and next fixture. Show it as a list (the default: nothing moves and it works without scripts) or as a carousel with buttons, a button for each team and a pause button. Teams are read automatically from the league table, or you can supply your own list.
 5. **ECF Biggest Rating Gainers** — showcase the club's current members whose rating has risen the most over a recent period.
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
@@ -107,7 +107,7 @@ The blocks aim to meet WCAG 2.2 Level AAA, and the audit and its progress are in
 * **Headings.** Each block's title is a real heading, so people using a screen reader can move around the page. Under **Chess Army Knife → Settings → Accessibility** choose the level that fits under your page title (H2 is right when the page title is an H1). Headings inside a block go one level lower.
 * **High contrast.** Under the same settings choose **Follow the visitor's device** (the default: used for people who have asked their device for more contrast), **Always on** or **Off**. It shows the plugin's blocks in black on white with underlined links and solid borders. It covers the plugin's blocks only; the rest of your theme is the theme's responsibility.
 * **Colours.** The blocks use your theme's text colour, so their contrast is your theme's. A template that sets its own colours is refused unless the text and background have a contrast of at least 7:1 and the accent colour at least 3:1 against the background.
-* **Nothing moves.** The fixtures block shows every team at once (it used to be a carousel), and the rating chart is a picture drawn on the server, with a written summary and a table of the ratings.
+* **Nothing moves unless you ask.** The fixtures block shows every team at once. If you choose the carousel layout it has previous, next, a button for each team and a pause button; it moves on by itself only if you turn that on, never for visitors whose device asks for less motion, and for good once a visitor uses a button. The rating chart is a picture drawn on the server, with a written summary and a table of the ratings.
 * **Forms.** After a mistake the form comes back with what was typed, a message that takes focus and links to the field, and required fields are marked in words.
 
 **Global defaults**
@@ -150,7 +150,7 @@ Yes — add as many blocks as you like, each configured independently.
 = Unreleased =
 * Changed: the blocks were reworked to meet WCAG 2.2 AAA (see `docs/accessibility-audit.md`): real headings, table captions and row headers, abbreviations explained, spoken scores, full dates in the calendar, a list of days on phones, keyboard-scrollable tables, visible focus, 44px targets, no text colour of the plugin's own, and high contrast support.
 * Changed: the rating chart is now a server-drawn SVG with a summary and a table. Chart.js is no longer used, and the chart's line colour follows the text colour unless a chosen colour is easy to see.
-* Changed: the Team Fixtures block no longer rotates; it lists every team. Its auto-advance settings are gone.
+* Changed: the Team Fixtures block shows every team as a list by default. The carousel is now an option (Layout), built to be usable with a keyboard and a screen reader, with a pause button, and it moves on by itself only if turned on.
 * Changed: the member portal session lasts one hour (was two), with a warning 15 minutes before the end and a button to extend it.
 * Added: forms keep what was typed after an error, and the message names the field.
 * Added: Settings → Accessibility for the heading level and high contrast. Templates refuse colours that are hard to read.

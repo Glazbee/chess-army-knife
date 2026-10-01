@@ -131,14 +131,17 @@ class AccessibilityTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '(required)', $html );
 	}
 
-	public function test_the_fixtures_block_and_the_chart_need_no_script() {
-		// Nothing moves in the fixtures list, and the chart is drawn on the server.
-		foreach ( array( 'team-carousel', 'rating-chart' ) as $block ) {
-			$block_json = json_decode( file_get_contents( Chess_Army_Knife_DIR . "build/{$block}/block.json" ), true );
-			$this->assertArrayNotHasKey( 'viewScript', $block_json, "{$block} needs no script." );
-			$this->assertFileDoesNotExist( Chess_Army_Knife_DIR . "build/{$block}/view.js" );
-		}
-		$this->assertArrayNotHasKey( 'autoAdvance', json_decode( file_get_contents( Chess_Army_Knife_DIR . 'build/team-carousel/block.json' ), true )['attributes'] );
+	public function test_the_chart_needs_no_script() {
+		$block_json = json_decode( file_get_contents( Chess_Army_Knife_DIR . 'build/rating-chart/block.json' ), true );
+		$this->assertArrayNotHasKey( 'viewScript', $block_json );
+		$this->assertFileDoesNotExist( Chess_Army_Knife_DIR . 'build/rating-chart/view.js' );
+	}
+
+	public function test_the_fixtures_block_is_a_list_unless_a_carousel_is_asked_for_and_never_moves_by_default() {
+		$attributes = json_decode( file_get_contents( Chess_Army_Knife_DIR . 'build/team-carousel/block.json' ), true )['attributes'];
+		$this->assertSame( 'list', $attributes['layout']['default'] );
+		$this->assertFalse( $attributes['autoAdvance']['default'] );
+		$this->assertGreaterThanOrEqual( 5, $attributes['intervalSeconds']['default'] );
 	}
 
 	public function test_the_admin_accessibility_styles_reach_only_the_plugins_screens() {

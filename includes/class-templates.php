@@ -210,6 +210,30 @@ class Chess_Army_Knife_Templates {
 				break;
 			case 'team-carousel':
 				$s[] = array(
+					'key'     => 'layout',
+					'label'   => __( 'Layout', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => array(
+						''         => __( '— Use block setting —', 'chess-army-knife' ),
+						'list'     => __( 'List: every team at once', 'chess-army-knife' ),
+						'carousel' => __( 'Carousel: one team at a time', 'chess-army-knife' ),
+					),
+				);
+				$s[] = array(
+					'key'     => 'autoAdvance',
+					'label'   => __( 'Carousel moves on by itself', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+					'help'    => __( 'Stops for anyone whose device asks for less motion, and when a visitor uses a button.', 'chess-army-knife' ),
+				);
+				$s[] = array(
+					'key'   => 'intervalSeconds',
+					'label' => __( 'Seconds per team', 'chess-army-knife' ),
+					'type'  => 'number',
+					'min'   => 5,
+					'max'   => 30,
+				);
+				$s[] = array(
 					'key'     => 'showLocation',
 					'label'   => __( 'Show match location/venue', 'chess-army-knife' ),
 					'type'    => 'select',

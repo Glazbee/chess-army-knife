@@ -57,4 +57,76 @@
 		display: block;
 		font-size: 0.9em;
 	}
+
+	// The carousel layout: one team at a time, with controls.
+	.ecf-carousel.is-carousel {
+		.ecf-carousel__list {
+			display: block;
+		}
+
+		.ecf-carousel__slide[hidden] {
+			display: none;
+		}
+	}
+
+	.ecf-carousel__controls {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75em;
+		margin: 0 0 0.75em;
+	}
+
+	.ecf-carousel__button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0 0.75em;
+		border: 2px solid currentcolor;
+		border-radius: 999px;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 1.1em;
+		cursor: pointer;
+
+		&:hover {
+			background: color-mix(in srgb, currentcolor 12%, transparent);
+		}
+	}
+
+	.ecf-carousel__dots {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0;
+		margin-top: 0.5em;
+	}
+
+	// Each dot is a 44px target with a smaller mark inside it.
+	.ecf-carousel__dot {
+		position: relative;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 14px;
+			border: 2px solid currentcolor;
+			border-radius: 50%;
+		}
+
+		// The current dot is solid, and the others are rings, so colour is not the only clue.
+		&[aria-current="true"]::before {
+			background: currentcolor;
+		}
+	}
 }

@@ -24,6 +24,9 @@ $team_source      = isset( $attributes['teamSource'] ) ? $attributes['teamSource
 $manual_teams_raw = isset( $attributes['manualTeams'] ) ? (string) $attributes['manualTeams'] : '';
 $block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $show_location    = ! empty( $attributes['showLocation'] );
+$is_carousel      = isset( $attributes['layout'] ) && 'carousel' === $attributes['layout'];
+$auto_advance     = $is_carousel && ! empty( $attributes['autoAdvance'] );
+$interval_seconds = isset( $attributes['intervalSeconds'] ) ? max( 5, (int) $attributes['intervalSeconds'] ) : 8;
 $highlight_team   = isset( $attributes['highlightTeam'] ) ? trim( (string) $attributes['highlightTeam'] ) : '';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'team-carousel', $attributes );
@@ -301,6 +304,25 @@ $date_format = get_option( 'date_format' );
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
+	<?php if ( $is_carousel ) : ?>
+		<div
+			class="ecf-carousel"
+			data-cak-carousel
+			data-auto="<?php echo $auto_advance ? '1' : '0'; ?>"
+			data-interval="<?php echo (int) $interval_seconds; ?>"
+			role="group"
+			aria-roledescription="<?php esc_attr_e( 'carousel', 'chess-army-knife' ); ?>"
+			aria-label="<?php echo esc_attr( $heading ); ?>"
+			data-msg-previous="<?php esc_attr_e( 'Previous team', 'chess-army-knife' ); ?>"
+			data-msg-next="<?php esc_attr_e( 'Next team', 'chess-army-knife' ); ?>"
+			data-msg-pause="<?php esc_attr_e( 'Pause moving on by itself', 'chess-army-knife' ); ?>"
+			data-msg-play="<?php esc_attr_e( 'Start moving on by itself', 'chess-army-knife' ); ?>"
+			data-msg-show="<?php /* translators: %s: team name */ esc_attr_e( 'Show %s', 'chess-army-knife' ); ?>"
+			data-msg-slide="<?php /* translators: 1: position, 2: number of teams, 3: team name */ esc_attr_e( 'Team %1$s of %2$s: %3$s', 'chess-army-knife' ); ?>"
+			data-msg-slide-word="<?php esc_attr_e( 'team', 'chess-army-knife' ); ?>"
+			data-msg-controls="<?php esc_attr_e( 'Carousel controls', 'chess-army-knife' ); ?>"
+		>
+	<?php endif; ?>
 	<ul class="ecf-carousel__list">
 		<?php foreach ( $slides as $slide ) : ?>
 			<?php $is_highlighted = '' !== $highlight_team && false !== stripos( $slide['team'], $highlight_team ); ?>
@@ -354,4 +376,7 @@ $date_format = get_option( 'date_format' );
 			</li>
 		<?php endforeach; ?>
 	</ul>
+	<?php if ( $is_carousel ) : ?>
+		</div>
+	<?php endif; ?>
 </div>

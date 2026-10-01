@@ -5,7 +5,7 @@
   "title": "ECF Team Fixtures",
   "category": "chess-army-knife-leagues",
   "icon": "slides",
-  "description": "Every team in a league, showing each one's last result and next fixture.",
+  "description": "Every team in a league, showing each one's last result and next fixture, as a list or as a carousel.",
   "keywords": [
     "chess",
     "ecf",
@@ -37,6 +37,18 @@
       "type": "string",
       "default": ""
     },
+    "layout": {
+      "type": "string",
+      "default": "list"
+    },
+    "autoAdvance": {
+      "type": "boolean",
+      "default": false
+    },
+    "intervalSeconds": {
+      "type": "number",
+      "default": 8
+    },
     "highlightTeam": {
       "type": "string",
       "default": ""
@@ -60,5 +72,6 @@
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",
-  "render": "file:./render.php"
+  "render": "file:./render.php",
+  "viewScript": "file:./view.js"
 }

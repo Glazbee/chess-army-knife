@@ -117,10 +117,10 @@ class Chess_Army_Knife_Block_Help {
 				'where'    => array( 'settings', 'teams' ),
 			),
 			'team-carousel'        => array(
-				'use'      => __( 'Every team, one after another, with its last result and next fixture. Nothing moves, so it is easy to read and works without scripts.', 'chess-army-knife' ),
+				'use'      => __( 'Every team with its last result and next fixture, as a list or as a carousel. The list is the default: nothing moves, and it works without scripts.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Teams come from your own teams\' league entries (the default), from every team in one event\'s league table, or from a list you type.', 'chess-army-knife' ),
-					__( 'Choose whether to show the venue.', 'chess-army-knife' ),
+					__( 'Choose a list (every team at once) or a carousel (one team at a time, with buttons and a pause button), whether the carousel may move on by itself, and whether to show the venue. A carousel that moves on by itself never starts for visitors whose device asks for less motion, and stops when they use any button.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
 					__( 'For "my club\'s teams", each team needs at least one league entry.', 'chess-army-knife' ),
