@@ -13,8 +13,5 @@
     "@wordpress/scripts": "^30.0.0",
     "prettier": "3.0.3"
   },
-  "dependencies": {
-    "chart.js": "^4.4.4"
-  },
   "prettier": "@wordpress/prettier-config"
 }

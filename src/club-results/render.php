@@ -103,7 +103,7 @@ $heading = $block_title ? $block_title : __( 'Recent club results', 'chess-army-
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="ecf-club-results__title"><?php echo esc_html( $heading ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-club-results__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Club results data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
@@ -112,23 +112,25 @@ $heading = $block_title ? $block_title : __( 'Recent club results', 'chess-army-
 			<?php esc_html_e( 'No recent rated results were found in the selected time window.', 'chess-army-knife' ); ?>
 		</div>
 	<?php else : ?>
+		<div class="cak-scroll" tabindex="0" role="region" aria-label="<?php echo esc_attr( $heading ); ?>">
 		<table class="ecf-club-results__table">
+			<caption class="cak-visually-hidden"><?php echo esc_html( $heading ); ?></caption>
 			<thead>
 				<tr>
-					<th><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
-					<th><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
-					<th><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
 					<?php
 					if ( $show_event ) :
 						?>
-						<th><?php esc_html_e( 'Event', 'chess-army-knife' ); ?></th><?php endif; ?>
+						<th scope="col"><?php esc_html_e( 'Event', 'chess-army-knife' ); ?></th><?php endif; ?>
 				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $results as $row ) : ?>
 					<tr>
-						<td><?php echo esc_html( gmdate( 'd M Y', strtotime( $row['date'] ) ) ); ?></td>
-						<td><?php echo esc_html( $row['player_name'] ); ?></td>
+						<td><?php echo Chess_Army_Knife_A11y::date( $row['date'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in date(). ?></td>
+						<th scope="row"><?php echo esc_html( $row['player_name'] ); ?></th>
 						<td><span class="<?php echo esc_attr( $row['result_class'] ); ?>"><?php echo esc_html( $row['result_label'] ); ?></span></td>
 						<?php
 						if ( $show_event ) :
@@ -138,5 +140,6 @@ $heading = $block_title ? $block_title : __( 'Recent club results', 'chess-army-
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		</div>
 	<?php endif; ?>
 </div>

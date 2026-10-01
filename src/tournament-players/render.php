@@ -31,20 +31,22 @@ $started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="cak-players__title"><?php echo esc_html( $tournament['name'] ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-players__title', $tournament['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( empty( $players ) ) : ?>
 		<div class="chess-army-knife-empty"><?php esc_html_e( 'No players have been entered yet.', 'chess-army-knife' ); ?></div>
 	<?php else : ?>
+		<div class="cak-scroll" tabindex="0" role="region" aria-label="<?php echo esc_attr( $tournament['name'] ); ?>">
 		<table class="cak-players__table">
+			<caption class="cak-visually-hidden"><?php echo esc_html( sprintf( /* translators: %s: tournament name */ __( 'Players in %s', 'chess-army-knife' ), $tournament['name'] ) ); ?></caption>
 			<thead>
 				<tr>
 					<?php if ( $started ) : ?>
-						<th class="is-numeric">#</th>
+						<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( '#', __( 'Seed', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
 					<?php endif; ?>
-					<th><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
-					<th><?php esc_html_e( 'ECF code', 'chess-army-knife' ); ?></th>
-					<th class="is-numeric"><?php esc_html_e( 'Rating', 'chess-army-knife' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
+					<th scope="col"><?php echo Chess_Army_Knife_A11y::abbr( __( 'ECF code', 'chess-army-knife' ), __( 'English Chess Federation rating code', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
+					<th scope="col" class="is-numeric"><?php esc_html_e( 'Rating', 'chess-army-knife' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -53,12 +55,12 @@ $started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
 						<?php if ( $started ) : ?>
 							<td class="is-numeric"><?php echo esc_html( null === $player['seed'] ? '' : $player['seed'] ); ?></td>
 						<?php endif; ?>
-						<td>
+						<th scope="row">
 							<?php echo esc_html( $player['name'] ); ?>
 							<?php if ( $player['withdrawn'] ) : ?>
 								<em>(<?php esc_html_e( 'withdrawn', 'chess-army-knife' ); ?>)</em>
 							<?php endif; ?>
-						</td>
+						</th>
 						<td><?php echo esc_html( $player['ecf_code'] ); ?></td>
 						<td class="is-numeric">
 							<?php
@@ -75,5 +77,6 @@ $started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		</div>
 	<?php endif; ?>
 </div>

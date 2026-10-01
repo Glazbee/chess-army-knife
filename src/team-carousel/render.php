@@ -1,6 +1,7 @@
 <?php
 /**
- * Server-side render for the ECF Team Fixtures Carousel block.
+ * Server-side render for the ECF Team Fixtures block (once a carousel: nothing moves, and every
+ * team is shown, so it works without scripts and for everyone).
  *
  * Teams come from "auto" (every team in one event's league table), "manual"
  * (typed team names within one event) or "club-teams" (the Settings list,
@@ -22,9 +23,10 @@ $event_name       = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_
 $team_source      = isset( $attributes['teamSource'] ) ? $attributes['teamSource'] : 'club-teams';
 $manual_teams_raw = isset( $attributes['manualTeams'] ) ? (string) $attributes['manualTeams'] : '';
 $block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$auto_advance     = ! isset( $attributes['autoAdvance'] ) || (bool) $attributes['autoAdvance'];
-$interval_seconds = isset( $attributes['intervalSeconds'] ) ? max( 3, (int) $attributes['intervalSeconds'] ) : 6;
 $show_location    = ! empty( $attributes['showLocation'] );
+$is_carousel      = isset( $attributes['layout'] ) && 'carousel' === $attributes['layout'];
+$auto_advance     = $is_carousel && ! empty( $attributes['autoAdvance'] );
+$interval_seconds = isset( $attributes['intervalSeconds'] ) ? max( 5, (int) $attributes['intervalSeconds'] ) : 8;
 $highlight_team   = isset( $attributes['highlightTeam'] ) ? trim( (string) $attributes['highlightTeam'] ) : '';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'team-carousel', $attributes );
@@ -56,7 +58,7 @@ if ( 'club-teams' === $team_source ) {
 		printf(
 			'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
 			wp_kses_post( $wrapper_attributes ),
-			esc_html__( 'ECF Team Fixtures Carousel: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
+			esc_html__( 'ECF Team Fixtures: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
 		);
 		return;
 	}
@@ -75,7 +77,7 @@ if ( 'club-teams' === $team_source ) {
 		printf(
 			'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
 			wp_kses_post( $wrapper_attributes ),
-			esc_html__( 'ECF Team Fixtures Carousel: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
+			esc_html__( 'ECF Team Fixtures: enter an LMS organisation ID and event name in the block settings.', 'chess-army-knife' )
 		);
 		return;
 	}
@@ -264,110 +266,117 @@ foreach ( $team_specs as $spec ) {
 
 $heading     = $block_title ? $block_title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
 $multi_event = count( array_unique( wp_list_pluck( $team_specs, 'event' ) ) ) > 1;
+$team_tag    = Chess_Army_Knife_Headings::tag( 1 );
+
+/**
+ * A match as a sentence, for example "Home against Bath, 3 to 1, on 4 March 2025".
+ *
+ * @param array $side       The side from $describe_side().
+ * @param array $match      The normalised match row.
+ * @param bool  $with_score Whether to say the score.
+ * @return string
+ */
+$match_text = function ( $side, $match, $with_score ) {
+	$text = __( 'Home', 'chess-army-knife' ) === $side['venue']
+		/* translators: %s: opponent */
+		? sprintf( __( 'Home against %s', 'chess-army-knife' ), $side['opponent'] )
+		/* translators: %s: opponent */
+		: sprintf( __( 'Away against %s', 'chess-army-knife' ), $side['opponent'] );
+
+	if ( $with_score ) {
+		$score = ( '' !== $match['home_score'] || '' !== $match['away_score'] )
+			/* translators: 1: home score, 2: away score */
+			? sprintf( __( '%1$s to %2$s', 'chess-army-knife' ), $match['home_score'], $match['away_score'] )
+			: $match['result_text'];
+		if ( '' !== $score ) {
+			$text .= ', ' . $score;
+		}
+	}
+
+	return $text;
+};
+
+$date_format = get_option( 'date_format' );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="ecf-carousel__title"><?php echo esc_html( $heading ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-carousel__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
-	<div
-		class="ecf-carousel"
-		data-ecf-carousel
-		data-auto-advance="<?php echo $auto_advance ? '1' : '0'; ?>"
-		data-interval="<?php echo (int) $interval_seconds; ?>"
-	>
-		<div class="ecf-carousel__track">
-			<?php foreach ( $slides as $i => $slide ) : ?>
-				<?php
-				$is_highlighted = '' !== $highlight_team && false !== stripos( $slide['team'], $highlight_team );
-				$classes        = array( 'ecf-carousel__slide' );
-				if ( 0 === $i ) {
-					$classes[] = 'is-active';
-				}
-				if ( $is_highlighted ) {
-					$classes[] = 'is-highlighted';
-				}
-				?>
-				<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
-					<p class="ecf-carousel__team-name">
-						<?php echo esc_html( $slide['team'] ); ?>
-						<?php if ( $multi_event ) : ?>
-							<span class="ecf-carousel__event-name"><?php echo esc_html( $slide['event'] ); ?></span>
-						<?php endif; ?>
-					</p>
-
-					<?php if ( $slide['error'] ) : ?>
-						<p class="ecf-carousel__row">
-							<span class="ecf-carousel__value"><?php echo esc_html( $slide['error'] ); ?></span>
-						</p>
-					<?php else : ?>
-						<?php if ( $slide['last_result'] ) : ?>
-							<?php $side = $describe_side( $slide['last_result'], $slide['team'] ); ?>
-							<p class="ecf-carousel__row">
-								<span class="ecf-carousel__label"><?php esc_html_e( 'Last result:', 'chess-army-knife' ); ?></span>
-								<span class="ecf-carousel__value">
-									<?php echo esc_html( $side['venue'] . ' v ' . $side['opponent'] ); ?>
-									<?php if ( $show_location && '' !== $side['location'] ) : ?>
-										<span class="ecf-carousel__location">@ <?php echo esc_html( $side['location'] ); ?></span>
-									<?php endif; ?>
-									<?php
-									$score = ( '' !== $slide['last_result']['home_score'] || '' !== $slide['last_result']['away_score'] )
-										? $slide['last_result']['home_score'] . ' – ' . $slide['last_result']['away_score']
-										: $slide['last_result']['result_text'];
-									if ( $score ) {
-										echo ' (' . esc_html( $score ) . ')';
-									}
-									if ( '' !== $slide['last_result']['date'] ) {
-										echo ' — ' . esc_html( $slide['last_result']['date'] );
-									}
-									?>
-								</span>
-							</p>
-						<?php else : ?>
-							<p class="ecf-carousel__row">
-								<span class="ecf-carousel__label"><?php esc_html_e( 'Last result:', 'chess-army-knife' ); ?></span>
-								<span class="ecf-carousel__value"><?php esc_html_e( 'None played yet', 'chess-army-knife' ); ?></span>
-							</p>
-						<?php endif; ?>
-
-						<?php if ( $slide['next_fixture'] ) : ?>
-							<?php $side = $describe_side( $slide['next_fixture'], $slide['team'] ); ?>
-							<p class="ecf-carousel__row">
-								<span class="ecf-carousel__label"><?php esc_html_e( 'Next fixture:', 'chess-army-knife' ); ?></span>
-								<span class="ecf-carousel__value">
-									<?php echo esc_html( $side['venue'] . ' v ' . $side['opponent'] ); ?>
-									<?php if ( $show_location && '' !== $side['location'] ) : ?>
-										<span class="ecf-carousel__location">@ <?php echo esc_html( $side['location'] ); ?></span>
-									<?php endif; ?>
-									<?php if ( '' !== $slide['next_fixture']['date'] ) : ?>
-										— <?php echo esc_html( $slide['next_fixture']['date'] ); ?>
-									<?php endif; ?>
-								</span>
-							</p>
-						<?php else : ?>
-							<p class="ecf-carousel__row">
-								<span class="ecf-carousel__label"><?php esc_html_e( 'Next fixture:', 'chess-army-knife' ); ?></span>
-								<span class="ecf-carousel__value"><?php esc_html_e( 'None scheduled', 'chess-army-knife' ); ?></span>
-							</p>
-						<?php endif; ?>
+	<?php if ( $is_carousel ) : ?>
+		<div
+			class="ecf-carousel"
+			data-cak-carousel
+			data-auto="<?php echo $auto_advance ? '1' : '0'; ?>"
+			data-interval="<?php echo (int) $interval_seconds; ?>"
+			role="group"
+			aria-roledescription="<?php esc_attr_e( 'carousel', 'chess-army-knife' ); ?>"
+			aria-label="<?php echo esc_attr( $heading ); ?>"
+			data-msg-previous="<?php esc_attr_e( 'Previous team', 'chess-army-knife' ); ?>"
+			data-msg-next="<?php esc_attr_e( 'Next team', 'chess-army-knife' ); ?>"
+			data-msg-pause="<?php esc_attr_e( 'Pause moving on by itself', 'chess-army-knife' ); ?>"
+			data-msg-play="<?php esc_attr_e( 'Start moving on by itself', 'chess-army-knife' ); ?>"
+			data-msg-show="<?php /* translators: %s: team name */ esc_attr_e( 'Show %s', 'chess-army-knife' ); ?>"
+			data-msg-slide="<?php /* translators: 1: position, 2: number of teams, 3: team name */ esc_attr_e( 'Team %1$s of %2$s: %3$s', 'chess-army-knife' ); ?>"
+			data-msg-slide-word="<?php esc_attr_e( 'team', 'chess-army-knife' ); ?>"
+			data-msg-controls="<?php esc_attr_e( 'Carousel controls', 'chess-army-knife' ); ?>"
+		>
+	<?php endif; ?>
+	<ul class="ecf-carousel__list">
+		<?php foreach ( $slides as $slide ) : ?>
+			<?php $is_highlighted = '' !== $highlight_team && false !== stripos( $slide['team'], $highlight_team ); ?>
+			<li class="ecf-carousel__slide<?php echo $is_highlighted ? ' is-highlighted' : ''; ?>">
+				<<?php echo esc_attr( $team_tag ); ?> class="ecf-carousel__team-name">
+					<?php echo esc_html( $slide['team'] ); ?>
+					<?php if ( $is_highlighted ) : ?>
+						<span class="cak-visually-hidden"><?php esc_html_e( '(our team)', 'chess-army-knife' ); ?></span>
 					<?php endif; ?>
-				</div>
-			<?php endforeach; ?>
-		</div>
+					<?php if ( $multi_event ) : ?>
+						<span class="ecf-carousel__event-name"><?php echo esc_html( $slide['event'] ); ?></span>
+					<?php endif; ?>
+				</<?php echo esc_attr( $team_tag ); ?>>
 
-		<?php if ( count( $slides ) > 1 ) : ?>
-			<button type="button" class="ecf-carousel__nav ecf-carousel__prev" aria-label="<?php esc_attr_e( 'Previous team', 'chess-army-knife' ); ?>">‹</button>
-			<button type="button" class="ecf-carousel__nav ecf-carousel__next" aria-label="<?php esc_attr_e( 'Next team', 'chess-army-knife' ); ?>">›</button>
-			<div class="ecf-carousel__dots">
-				<?php foreach ( $slides as $i => $slide ) : ?>
-					<button
-						type="button"
-						class="ecf-carousel__dot <?php echo 0 === $i ? 'is-active' : ''; ?>"
-						aria-label="<?php echo esc_attr( $slide['team'] ); ?>"
-					></button>
-				<?php endforeach; ?>
-			</div>
-		<?php endif; ?>
-	</div>
+				<?php if ( $slide['error'] ) : ?>
+					<p class="ecf-carousel__row"><?php echo esc_html( $slide['error'] ); ?></p>
+				<?php else : ?>
+					<dl class="ecf-carousel__details">
+						<dt><?php esc_html_e( 'Last result', 'chess-army-knife' ); ?></dt>
+						<dd>
+							<?php if ( $slide['last_result'] ) : ?>
+								<?php $side = $describe_side( $slide['last_result'], $slide['team'] ); ?>
+								<?php echo esc_html( $match_text( $side, $slide['last_result'], true ) ); ?>
+								<?php if ( '' !== $slide['last_result']['date'] ) : ?>
+									<time datetime="<?php echo esc_attr( $slide['last_result']['date'] ); ?>"><?php echo esc_html( mysql2date( $date_format, $slide['last_result']['date'] ) ); ?></time>
+								<?php endif; ?>
+								<?php if ( $show_location && '' !== $side['location'] ) : ?>
+									<span class="ecf-carousel__location"><?php echo esc_html( $side['location'] ); ?></span>
+								<?php endif; ?>
+							<?php else : ?>
+								<?php esc_html_e( 'None played yet', 'chess-army-knife' ); ?>
+							<?php endif; ?>
+						</dd>
+						<dt><?php esc_html_e( 'Next fixture', 'chess-army-knife' ); ?></dt>
+						<dd>
+							<?php if ( $slide['next_fixture'] ) : ?>
+								<?php $side = $describe_side( $slide['next_fixture'], $slide['team'] ); ?>
+								<?php echo esc_html( $match_text( $side, $slide['next_fixture'], false ) ); ?>
+								<?php if ( '' !== $slide['next_fixture']['date'] ) : ?>
+									<time datetime="<?php echo esc_attr( $slide['next_fixture']['date'] ); ?>"><?php echo esc_html( mysql2date( $date_format, $slide['next_fixture']['date'] ) ); ?></time>
+								<?php endif; ?>
+								<?php if ( $show_location && '' !== $side['location'] ) : ?>
+									<span class="ecf-carousel__location"><?php echo esc_html( $side['location'] ); ?></span>
+								<?php endif; ?>
+							<?php else : ?>
+								<?php esc_html_e( 'None scheduled', 'chess-army-knife' ); ?>
+							<?php endif; ?>
+						</dd>
+					</dl>
+				<?php endif; ?>
+			</li>
+		<?php endforeach; ?>
+	</ul>
+	<?php if ( $is_carousel ) : ?>
+		</div>
+	<?php endif; ?>
 </div>

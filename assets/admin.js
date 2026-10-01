@@ -38,7 +38,17 @@
 			return;
 		}
 
+		var searchStatus = root.querySelector( '[data-cak-search-status]' );
+
+		// Say it aloud as well, for people who cannot see the list change.
+		function announce( text ) {
+			if ( searchStatus ) {
+				searchStatus.textContent = text;
+			}
+		}
+
 		function message( text ) {
+			announce( text );
 			results.textContent = '';
 			var li = document.createElement( 'li' );
 			li.className = 'description';
@@ -68,6 +78,12 @@
 							message( i18n.noResults );
 							return;
 						}
+						announce(
+							i18n.found.replace(
+								'%d',
+								Math.min( players.length, 12 )
+							)
+						);
 						players.slice( 0, 12 ).forEach( function ( player ) {
 							var li = document.createElement( 'li' );
 							render( player, li );
@@ -144,7 +160,10 @@
 
 		function findSaved( code ) {
 			for ( var i = 0; i < items.length; i++ ) {
-				if ( code && items[ i ].getAttribute( 'data-cak-code' ) === code ) {
+				if (
+					code &&
+					items[ i ].getAttribute( 'data-cak-code' ) === code
+				) {
 					return items[ i ];
 				}
 			}
@@ -167,18 +186,22 @@
 				li.setAttribute( 'data-cak-new-code', code );
 			}
 			li.appendChild(
-				document.createTextNode( name + ( detail ? ' (' + detail + ') ' : ' ' ) )
+				document.createTextNode(
+					name + ( detail ? ' (' + detail + ') ' : ' ' )
+				)
 			);
 
-			[ [ 'name', name ], [ 'ecf_code', code ], [ 'manual_rating', rating ] ].forEach(
-				function ( pair ) {
-					var hidden = document.createElement( 'input' );
-					hidden.type = 'hidden';
-					hidden.name = 'new_players[' + index + '][' + pair[ 0 ] + ']';
-					hidden.value = pair[ 1 ] || '';
-					li.appendChild( hidden );
-				}
-			);
+			[
+				[ 'name', name ],
+				[ 'ecf_code', code ],
+				[ 'manual_rating', rating ],
+			].forEach( function ( pair ) {
+				var hidden = document.createElement( 'input' );
+				hidden.type = 'hidden';
+				hidden.name = 'new_players[' + index + '][' + pair[ 0 ] + ']';
+				hidden.value = pair[ 1 ] || '';
+				li.appendChild( hidden );
+			} );
 			li.appendChild(
 				makeButton( i18n.remove, function () {
 					li.remove();
@@ -195,7 +218,9 @@
 				items.forEach( function ( item ) {
 					item.hidden =
 						term !== '' &&
-						item.getAttribute( 'data-cak-search' ).indexOf( term ) === -1;
+						item
+							.getAttribute( 'data-cak-search' )
+							.indexOf( term ) === -1;
 				} );
 			} );
 			filter.addEventListener( 'keydown', function ( event ) {
@@ -254,7 +279,9 @@
 			li.appendChild( button );
 			li.appendChild(
 				document.createTextNode(
-					' ' + describe( player ) + ( saved ? ' — ' + i18n.saved : '' )
+					' ' +
+						describe( player ) +
+						( saved ? ' — ' + i18n.saved : '' )
 				)
 			);
 		} );
@@ -306,9 +333,14 @@
 			Array.prototype.forEach.call(
 				form.querySelectorAll( '[data-cak-formats]' ),
 				function ( row ) {
-					var formats = row.getAttribute( 'data-cak-formats' ).split( ' ' );
+					var formats = row
+						.getAttribute( 'data-cak-formats' )
+						.split( ' ' );
 					var visible = formats.indexOf( format.value ) !== -1;
-					if ( visible && row.hasAttribute( 'data-cak-needs-knockout' ) ) {
+					if (
+						visible &&
+						row.hasAttribute( 'data-cak-needs-knockout' )
+					) {
 						visible = knockout.checked;
 					}
 					toggle( row, visible );

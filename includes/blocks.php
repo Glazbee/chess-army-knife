@@ -179,3 +179,21 @@ function Chess_Army_Knife_rest_search_players( WP_REST_Request $request ) {
 
 	return rest_ensure_response( $suggestions );
 }
+
+/**
+ * Tell the stylesheets whether high contrast is forced on or off. When it is neither, the
+ * stylesheets follow the visitor's own device setting (prefers-contrast).
+ *
+ * @param string[] $classes Body classes.
+ * @return string[]
+ */
+function Chess_Army_Knife_contrast_body_class( $classes ) {
+	$mode = Chess_Army_Knife_Settings::get_options()['contrast_mode'];
+	if ( 'always' === $mode ) {
+		$classes[] = 'cak-contrast-always';
+	} elseif ( 'off' === $mode ) {
+		$classes[] = 'cak-contrast-off';
+	}
+	return $classes;
+}
+add_filter( 'body_class', 'Chess_Army_Knife_contrast_body_class' );

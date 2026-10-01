@@ -120,7 +120,7 @@ $heading = $block_title ? $block_title : __( 'Biggest improvers', 'chess-army-kn
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="ecf-gainers__title"><?php echo esc_html( $heading ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-gainers__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Ratings data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
@@ -132,17 +132,20 @@ $heading = $block_title ? $block_title : __( 'Biggest improvers', 'chess-army-kn
 		<ol class="ecf-gainers__list">
 			<?php foreach ( $movers as $i => $mover ) : ?>
 				<li class="ecf-gainers__item">
-					<span class="ecf-gainers__rank">#<?php echo (int) ( $i + 1 ); ?></span>
+					<span class="ecf-gainers__rank" aria-hidden="true">#<?php echo (int) ( $i + 1 ); ?></span>
 					<span class="ecf-gainers__name"><?php echo esc_html( $mover['name'] ); ?></span>
 					<?php
 					if ( $show_detail ) :
 						?>
 						<span class="ecf-gainers__detail">
-						<?php echo esc_html( (int) $mover['from'] . ' → ' . (int) $mover['to'] ); ?>
+						<?php
+						/* translators: 1: rating before, 2: rating after */
+						echo esc_html( sprintf( __( 'from %1$d to %2$d', 'chess-army-knife' ), (int) $mover['from'], (int) $mover['to'] ) );
+						?>
 						<?php /* translators: %d: number of games */ ?>
 						(<?php echo esc_html( sprintf( _n( '%d game', '%d games', $mover['games'], 'chess-army-knife' ), $mover['games'] ) ); ?>)
 					</span><?php endif; ?>
-					<span class="ecf-gainers__change"><?php echo esc_html( ( $mover['gain'] >= 0 ? '+' : '' ) . (int) $mover['gain'] ); ?></span>
+					<span class="ecf-gainers__change"><?php echo Chess_Army_Knife_A11y::hidden( __( 'Gain:', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?> <?php echo esc_html( ( $mover['gain'] >= 0 ? '+' : '' ) . (int) $mover['gain'] ); ?></span>
 				</li>
 			<?php endforeach; ?>
 		</ol>

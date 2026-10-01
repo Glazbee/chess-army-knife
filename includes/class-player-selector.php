@@ -48,6 +48,8 @@ class Chess_Army_Knife_Player_Selector {
 					'select'      => __( 'Select', 'chess-army-knife' ),
 					'saved'       => __( 'already listed', 'chess-army-knife' ),
 					'remove'      => __( 'Remove', 'chess-army-knife' ),
+					/* translators: %d: number of members found */
+					'found'       => __( '%d members found. Use Tab to move to them.', 'chess-army-knife' ),
 					'noResults'   => __( 'No matching members found. Only current members with an ECF code are listed.', 'chess-army-knife' ),
 					'searchError' => __( 'The member search is not available right now.', 'chess-army-knife' ),
 					'needName'    => __( 'Please enter a name.', 'chess-army-knife' ),
@@ -232,13 +234,16 @@ class Chess_Army_Knife_Player_Selector {
 				<input type="search" id="cak-ecf-search" class="regular-text" data-cak-ecf-search autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing a name…', 'chess-army-knife' ); ?>" />
 				<span class="spinner" data-cak-spinner></span>
 			</p>
+			<p class="screen-reader-text" role="status" aria-live="polite" data-cak-search-status></p>
 			<ul class="cak-selector__results" data-cak-results></ul>
 
 			<details>
 				<summary><?php esc_html_e( 'Player without an ECF code?', 'chess-army-knife' ); ?></summary>
 				<p>
-					<input type="text" class="regular-text" data-cak-manual-name placeholder="<?php esc_attr_e( 'Name', 'chess-army-knife' ); ?>" />
-					<input type="number" class="small-text" data-cak-manual-rating min="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ); ?>" max="4000" placeholder="<?php esc_attr_e( 'Rating', 'chess-army-knife' ); ?>" />
+					<label class="screen-reader-text" for="cak-manual-name"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></label>
+					<input type="text" id="cak-manual-name" class="regular-text" data-cak-manual-name placeholder="<?php esc_attr_e( 'Name', 'chess-army-knife' ); ?>" />
+					<label class="screen-reader-text" for="cak-manual-rating"><?php esc_html_e( 'Rating', 'chess-army-knife' ); ?></label>
+					<input type="number" id="cak-manual-rating" class="small-text" data-cak-manual-rating min="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ); ?>" max="4000" placeholder="<?php esc_attr_e( 'Rating', 'chess-army-knife' ); ?>" />
 					<button type="button" class="button" data-cak-manual-add><?php esc_html_e( 'Add', 'chess-army-knife' ); ?></button>
 				</p>
 				<p class="description">

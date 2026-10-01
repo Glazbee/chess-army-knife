@@ -1,4 +1,5 @@
 @use "../shared/admin-bar";
+@use "../shared/a11y";
 
 .wp-block-chess-army-knife-club-results {
 	margin-bottom: 1.5em;
@@ -18,51 +19,27 @@
 		td {
 			text-align: left;
 			padding: 0.4em 0.6em;
-			border-bottom: 1px solid #e2e2e2;
+			border-bottom: 1px solid a11y.$cak-rule;
 			vertical-align: top;
 		}
 
 		th {
 			font-weight: 600;
-			border-bottom: 2px solid var(--ecf-accent, #c3c4c7);
 		}
 
-		tr:last-child td {
+		thead th {
+			border-bottom: 3px solid var(--ecf-accent, currentcolor);
+		}
+
+		tr:last-child :is(th, td) {
 			border-bottom: none;
 		}
 	}
 
-	.ecf-result-win {
-		color: #1a7f37;
-		font-weight: 600;
-	}
-
-	.ecf-result-loss {
-		color: #cf222e;
-		font-weight: 600;
-	}
-
+	// The result is written out as a word; it needs no colour to be understood.
+	.ecf-result-win,
+	.ecf-result-loss,
 	.ecf-result-draw {
-		color: #9a6700;
-		font-weight: 600;
+		font-weight: 700;
 	}
-
-	.chess-army-knife-notice {
-		padding: 0.75em 1em;
-		border-left: 4px solid #d63638;
-		background: #fcf0f1;
-		font-size: 0.9em;
-	}
-
-	.chess-army-knife-empty {
-		padding: 0.75em 1em;
-		border-left: 4px solid #dcdcde;
-		background: #f6f7f7;
-		font-size: 0.9em;
-	}
-}
-
-// Template colours (set via Chess Army Knife → Templates).
-.wp-block-chess-army-knife-club-results .ecf-club-results__title {
-	color: var(--ecf-accent, inherit);
 }

@@ -1,0 +1,1 @@
+(()=>{"use strict";var e;e=function(){const e=document.querySelector(".cak-form-notice");e&&e.focus()},"loading"===document.readyState?document.addEventListener("DOMContentLoaded",e):e()})();

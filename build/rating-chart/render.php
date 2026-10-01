@@ -21,7 +21,7 @@ $games_limit   = isset( $attributes['gamesLimit'] ) ? (int) $attributes['gamesLi
 $block_title   = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $height        = isset( $attributes['height'] ) ? max( 120, (int) $attributes['height'] ) : 320;
 $show_stats    = ! isset( $attributes['showStats'] ) || (bool) $attributes['showStats'];
-$line_color    = ! empty( $attributes['lineColor'] ) ? $attributes['lineColor'] : '#1e3a5f';
+$line_color    = isset( $attributes['lineColor'] ) ? (string) $attributes['lineColor'] : '';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'rating-chart', $attributes );
 
@@ -108,47 +108,124 @@ $heading = $block_title ? $block_title : sprintf(
 	isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : $rating_domain
 );
 
-$chart_payload = array(
-	'labels'       => $labels,
-	'values'       => $values,
-	'color'        => $line_color,
-	'unratedLabel' => isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : __( 'Rating', 'chess-army-knife' ),
-);
+// The chart is decorative: the summary below it and the table carry the same information.
+// Use the chosen line colour only if it stands out enough; otherwise follow the text colour.
+$line_colour = sanitize_hex_color( $line_color );
+if ( ! $line_colour || ! Chess_Army_Knife_Contrast::meets( $line_colour, '#ffffff', Chess_Army_Knife_Contrast::GRAPHIC ) ) {
+	$line_colour = 'currentColor';
+}
 
-$canvas_id       = 'ecf-rating-chart-' . wp_unique_id();
+$date_format = get_option( 'date_format' );
+$format_date = function ( $date ) use ( $date_format ) {
+	return mysql2date( $date_format, $date );
+};
+
+$first_point = reset( $points );
+$last_point  = end( $points );
+$peak_point  = $points[ array_search( $peak, $values, true ) ];
+$low_point   = $points[ array_search( $low, $values, true ) ];
+
+$list_label = isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : __( 'Rating', 'chess-army-knife' );
+if ( 1 === count( $points ) ) {
+	$summary = sprintf(
+		/* translators: 1: rating list e.g. Standard, 2: date, 3: rating */
+		__( '%1$s rating: one rating, on %2$s, of %3$d.', 'chess-army-knife' ),
+		$list_label,
+		$format_date( $first_point['date'] ),
+		(int) $first
+	);
+} else {
+	$summary = sprintf(
+		/* translators: 1: rating list e.g. Standard, 2: number of ratings, 3: first date, 4: last date, 5: first rating, 6: last rating, 7: highest rating, 8: its date, 9: lowest rating, 10: its date */
+		__( '%1$s rating: %2$d ratings from %3$s to %4$s. It went from %5$d to %6$d. The highest was %7$d on %8$s and the lowest was %9$d on %10$s.', 'chess-army-knife' ),
+		$list_label,
+		count( $points ),
+		$format_date( $first_point['date'] ),
+		$format_date( $last_point['date'] ),
+		(int) $first,
+		(int) $current,
+		(int) $peak,
+		$format_date( $peak_point['date'] ),
+		(int) $low,
+		$format_date( $low_point['date'] )
+	);
+}
+
+$geometry        = Chess_Army_Knife_Rating_Chart::geometry( $values );
 $admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $rating_domain, $games_limit );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="ecf-rating-chart__title"><?php echo esc_html( $heading ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-rating-chart__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( array( $admin_cache_key ), __( 'Games data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
-	<div class="ecf-rating-chart__canvas-wrap" data-ecf-rating-chart style="height: <?php echo (int) $height; ?>px;">
-		<canvas id="<?php echo esc_attr( $canvas_id ); ?>"></canvas>
-		<script type="application/json"><?php echo wp_json_encode( $chart_payload ); ?></script>
-	</div>
+	<figure class="ecf-rating-chart__figure">
+		<svg
+			class="ecf-rating-chart__svg"
+			style="height: <?php echo (int) $height; ?>px; color: <?php echo esc_attr( $line_colour ); ?>;"
+			viewBox="0 0 <?php echo (int) Chess_Army_Knife_Rating_Chart::WIDTH; ?> <?php echo (int) Chess_Army_Knife_Rating_Chart::HEIGHT; ?>"
+			preserveAspectRatio="none"
+			aria-hidden="true"
+			focusable="false"
+		>
+			<?php foreach ( $geometry['grid'] as $grid_y ) : ?>
+				<line class="ecf-rating-chart__grid" x1="0" x2="<?php echo (int) Chess_Army_Knife_Rating_Chart::WIDTH; ?>" y1="<?php echo (int) $grid_y; ?>" y2="<?php echo (int) $grid_y; ?>" vector-effect="non-scaling-stroke" />
+			<?php endforeach; ?>
+			<path class="ecf-rating-chart__area" d="<?php echo esc_attr( $geometry['area'] ); ?>" />
+			<path class="ecf-rating-chart__line" d="<?php echo esc_attr( $geometry['line'] ); ?>" vector-effect="non-scaling-stroke" />
+			<?php if ( '' !== $geometry['dots'] ) : ?>
+				<path class="ecf-rating-chart__dots" d="<?php echo esc_attr( $geometry['dots'] ); ?>" vector-effect="non-scaling-stroke" />
+			<?php endif; ?>
+		</svg>
+		<figcaption class="ecf-rating-chart__caption"><?php echo esc_html( $summary ); ?></figcaption>
+	</figure>
+
+	<details class="ecf-rating-chart__data">
+		<summary><?php esc_html_e( 'Show the ratings as a table', 'chess-army-knife' ); ?></summary>
+		<div class="ecf-rating-chart__scroll" tabindex="0" role="region" aria-label="<?php esc_attr_e( 'Ratings table', 'chess-army-knife' ); ?>">
+			<table class="ecf-rating-chart__table">
+				<caption><?php echo esc_html( $heading ); ?></caption>
+				<thead>
+					<tr>
+						<th scope="col"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Rating', 'chess-army-knife' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Event', 'chess-army-knife' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( array_reverse( $points ) as $point ) : ?>
+						<tr>
+							<th scope="row"><time datetime="<?php echo esc_attr( $point['date'] ); ?>"><?php echo esc_html( $format_date( $point['date'] ) ); ?></time></th>
+							<td><?php echo esc_html( (int) $point['rating'] ); ?></td>
+							<td><?php echo esc_html( $point['event'] ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+	</details>
 
 	<?php if ( $show_stats ) : ?>
-		<div class="ecf-rating-chart__stats">
+		<dl class="ecf-rating-chart__stats">
 			<div>
-				<?php esc_html_e( 'Current', 'chess-army-knife' ); ?>
-				<strong><?php echo esc_html( (int) $current ); ?></strong>
+				<dt><?php esc_html_e( 'Current', 'chess-army-knife' ); ?></dt>
+				<dd><?php echo esc_html( (int) $current ); ?></dd>
 			</div>
 			<div>
-				<?php esc_html_e( 'Peak', 'chess-army-knife' ); ?>
-				<strong><?php echo esc_html( (int) $peak ); ?></strong>
+				<dt><?php esc_html_e( 'Peak', 'chess-army-knife' ); ?></dt>
+				<dd><?php echo esc_html( (int) $peak ); ?></dd>
 			</div>
 			<div>
-				<?php esc_html_e( 'Lowest', 'chess-army-knife' ); ?>
-				<strong><?php echo esc_html( (int) $low ); ?></strong>
+				<dt><?php esc_html_e( 'Lowest', 'chess-army-knife' ); ?></dt>
+				<dd><?php echo esc_html( (int) $low ); ?></dd>
 			</div>
 			<div>
-				<?php esc_html_e( 'Change over period', 'chess-army-knife' ); ?>
-				<strong class="<?php echo esc_attr( $change >= 0 ? 'is-up' : 'is-down' ); ?>">
+				<dt><?php esc_html_e( 'Change over period', 'chess-army-knife' ); ?></dt>
+				<dd class="<?php echo esc_attr( $change >= 0 ? 'is-up' : 'is-down' ); ?>">
 					<?php echo esc_html( ( $change >= 0 ? '+' : '' ) . (int) $change ); ?>
-				</strong>
+				</dd>
 			</div>
-		</div>
+		</dl>
 	<?php endif; ?>
 </div>

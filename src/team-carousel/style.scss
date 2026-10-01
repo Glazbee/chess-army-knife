@@ -1,4 +1,5 @@
 @use "../shared/admin-bar";
+@use "../shared/a11y";
 
 .wp-block-chess-army-knife-team-carousel {
 	margin-bottom: 1.5em;
@@ -9,136 +10,123 @@
 		font-weight: 600;
 	}
 
-	.ecf-carousel {
-		position: relative;
-		border: 1px solid #e2e2e2;
-		border-radius: 6px;
-		overflow: hidden;
-	}
-
-	.ecf-carousel__track {
-		position: relative;
-		min-height: 140px;
+	.ecf-carousel__list {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 18em), 1fr));
+		gap: 1em;
+		margin: 0;
+		padding: 0;
+		list-style: none;
 	}
 
 	.ecf-carousel__slide {
-		display: none;
-		padding: 1.25em 3em;
-		text-align: center;
+		padding: 1em;
+		border: 1px solid currentcolor;
+		border-radius: 6px;
 
-		&.is-active {
-			display: block;
-		}
-
-		&.is-highlighted .ecf-carousel__team-name {
-			text-decoration: underline;
+		&.is-highlighted {
+			border-width: 3px;
 		}
 	}
 
 	.ecf-carousel__team-name {
-		font-size: 1.15em;
+		margin: 0 0 0.5em;
+		font-size: 1.1em;
 		font-weight: 700;
-		margin: 0 0 0.75em;
 	}
 
 	.ecf-carousel__event-name {
 		display: block;
-		font-size: 0.7em;
+		font-size: 0.85em;
 		font-weight: 400;
-		color: #888;
-		margin-top: 0.15em;
 	}
 
-	.ecf-carousel__row {
+	.ecf-carousel__details {
+		margin: 0;
+
+		dt {
+			font-weight: 600;
+		}
+
+		dd {
+			margin: 0 0 0.6em;
+		}
+	}
+
+	.ecf-carousel__location {
+		display: block;
+		font-size: 0.9em;
+	}
+
+	// The carousel layout: one team at a time, with controls.
+	.ecf-carousel.is-carousel {
+		.ecf-carousel__list {
+			display: block;
+		}
+
+		.ecf-carousel__slide[hidden] {
+			display: none;
+		}
+	}
+
+	.ecf-carousel__controls {
 		display: flex;
+		align-items: center;
 		justify-content: center;
-		gap: 0.5em;
-		flex-wrap: wrap;
-		margin: 0.35em 0;
-		font-size: 0.95em;
+		gap: 0.75em;
+		margin: 0 0 0.75em;
 	}
 
-	.ecf-carousel__label {
-		font-weight: 600;
-		color: #666;
-		min-width: 6.5em;
-		text-align: right;
-	}
-
-	.ecf-carousel__value {
-		text-align: left;
-	}
-
-	.ecf-carousel__nav {
-		position: absolute;
-		top: 50%;
-		transform: translateY(-50%);
-		background: rgba(255, 255, 255, 0.9);
-		border: 1px solid #ccc;
-		border-radius: 50%;
-		width: 2.2em;
-		height: 2.2em;
-		line-height: 1;
+	.ecf-carousel__button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0 0.75em;
+		border: 2px solid currentcolor;
+		border-radius: 999px;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 1.1em;
 		cursor: pointer;
-		font-size: 1em;
 
 		&:hover {
-			background: #fff;
-		}
-
-		&.ecf-carousel__prev {
-			left: 0.5em;
-		}
-
-		&.ecf-carousel__next {
-			right: 0.5em;
+			background: color-mix(in srgb, currentcolor 12%, transparent);
 		}
 	}
 
 	.ecf-carousel__dots {
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: center;
-		gap: 0.4em;
-		padding: 0.6em 0;
-		background: #fafafa;
+		gap: 0;
+		margin-top: 0.5em;
 	}
 
+	// Each dot is a 44px target with a smaller mark inside it.
 	.ecf-carousel__dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: #ccc;
-		border: none;
+		position: relative;
+		width: 44px;
+		height: 44px;
 		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
 		cursor: pointer;
 
-		&.is-active {
-			background: var(--ecf-accent, #1e3a5f);
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 14px;
+			border: 2px solid currentcolor;
+			border-radius: 50%;
+		}
+
+		// The current dot is solid, and the others are rings, so colour is not the only clue.
+		&[aria-current="true"]::before {
+			background: currentcolor;
 		}
 	}
-
-	.chess-army-knife-notice {
-		padding: 0.75em 1em;
-		border-left: 4px solid #d63638;
-		background: #fcf0f1;
-		font-size: 0.9em;
-	}
-
-	.chess-army-knife-empty {
-		padding: 0.75em 1em;
-		border-left: 4px solid #dcdcde;
-		background: #f6f7f7;
-		font-size: 0.9em;
-	}
-}
-
-// Template colours (set via Chess Army Knife → Templates).
-.wp-block-chess-army-knife-team-carousel .ecf-carousel__title {
-	color: var(--ecf-accent, inherit);
-}
-
-.wp-block-chess-army-knife-team-carousel .ecf-carousel__location {
-	display: block;
-	font-size: 0.85em;
-	opacity: 0.7;
 }

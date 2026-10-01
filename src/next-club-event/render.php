@@ -26,7 +26,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'next-club
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="cak-event__heading"><?php echo esc_html( '' !== $block_title ? $block_title : __( 'Next club event', 'chess-army-knife' ) ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-event__heading', '' !== $block_title ? $block_title : __( 'Next club event', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( empty( $events ) ) : ?>
 		<div class="chess-army-knife-empty"><?php echo esc_html( '' !== $empty_message ? $empty_message : __( 'No upcoming events.', 'chess-army-knife' ) ); ?></div>

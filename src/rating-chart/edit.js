@@ -10,45 +10,8 @@ import {
 	Placeholder,
 	ColorPalette,
 } from '@wordpress/components';
-import { useRef, useEffect } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import PlayerPicker from '../shared/player-picker';
-import { drawRatingCharts } from '../shared/rating-chart-canvas';
-
-/**
- * ServerSideRender injects PHP-rendered HTML via innerHTML, so the
- * <canvas> it produces is never automatically drawn on - the block's
- * viewScript (view.js) that does that only runs on the published
- * front end, not inside this editor preview. This watches the preview
- * container and (re)draws the chart into it directly whenever
- * ServerSideRender swaps in new markup (e.g. after a settings change).
- */
-function useLivePreviewChart( attributes ) {
-	const containerRef = useRef( null );
-
-	useEffect( () => {
-		const node = containerRef.current;
-		if ( ! node ) {
-			return;
-		}
-
-		// Initial draw, then keep re-drawing whenever the preview's
-		// markup changes underneath us.
-		drawRatingCharts( node );
-
-		const observer = new window.MutationObserver( () => {
-			drawRatingCharts( node );
-		} );
-		observer.observe( node, { childList: true, subtree: true } );
-
-		return () => observer.disconnect();
-		// Re-attach whenever the attributes that affect the preview change,
-		// so a fresh MutationObserver watches the freshly-mounted preview.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ attributes.playerCode, attributes.domain, attributes.gamesLimit ] );
-
-	return containerRef;
-}
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -73,7 +36,6 @@ export default function Edit( { attributes, setAttributes } ) {
 	} = attributes;
 
 	const blockProps = useBlockProps();
-	const previewRef = useLivePreviewChart( attributes );
 
 	return (
 		<div { ...blockProps }>
@@ -180,11 +142,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						<p style={ { marginBottom: '4px' } }>
 							{ __( 'Line colour', 'chess-army-knife' ) }
 						</p>
+						<p className="description">
+							{ __(
+								'Leave this empty to follow the text colour. A colour that is hard to see against white is ignored.',
+								'chess-army-knife'
+							) }
+						</p>
 						<ColorPalette
 							value={ lineColor }
 							onChange={ ( value ) =>
 								setAttributes( {
-									lineColor: value || '#1e3a5f',
+									lineColor: value || '',
 								} )
 							}
 						/>
@@ -212,7 +180,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</Placeholder>
 			) : (
-				<div ref={ previewRef }>
+				<div>
 					<ServerSideRender
 						block="chess-army-knife/rating-chart"
 						attributes={ attributes }

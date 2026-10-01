@@ -21,6 +21,9 @@ function pending( block ) {
 	);
 }
 
+// Where the message waits while the page reloads, so it can be read afterwards.
+const SAVED_KEY = 'cakGamesSaved';
+
 function setStatus( block, text, isError ) {
 	const status = block.querySelector( '.cak-games__status' );
 	status.textContent = text;
@@ -32,6 +35,7 @@ function showRowError( row, message ) {
 	if ( ! note ) {
 		note = document.createElement( 'span' );
 		note.className = 'cak-games__row-error';
+		note.setAttribute( 'role', 'alert' );
 		row.appendChild( note );
 	}
 	note.textContent = message;
@@ -46,7 +50,7 @@ function save( block, button ) {
 	} );
 
 	button.disabled = true;
-	setStatus( block, '…' );
+	setStatus( block, block.dataset.msgSaving );
 
 	return window
 		.fetch( block.dataset.restUrl, {
@@ -63,7 +67,7 @@ function save( block, button ) {
 		)
 		.then( ( { ok, body } ) => {
 			if ( ! ok ) {
-				throw new Error( body.message || 'Could not save' );
+				throw new Error( body.message || block.dataset.msgError );
 			}
 
 			( body.saved || [] ).forEach( ( id ) => {
@@ -72,6 +76,10 @@ function save( block, button ) {
 				);
 				row.dataset.saved = '1';
 				row.classList.add( 'cak-games__game--saved' );
+				const saved = document.createElement( 'span' );
+				saved.className = 'cak-games__row-saved';
+				saved.textContent = block.dataset.msgRowSaved;
+				row.appendChild( saved );
 				row.querySelectorAll( 'select' ).forEach( ( select ) => {
 					select.disabled = true;
 				} );
@@ -79,8 +87,17 @@ function save( block, button ) {
 
 			const failed = Object.keys( body.errors || {} );
 			if ( failed.length === 0 ) {
-				// Reload so the list, standings and any new round or bracket are up to date.
-				setStatus( block, '✓' );
+				// Reload so the list, standings and any new round or bracket are up to date,
+				// and say so afterwards: the reload would otherwise hide the message.
+				try {
+					window.sessionStorage.setItem(
+						SAVED_KEY,
+						block.dataset.msgSaved
+					);
+				} catch ( e ) {
+					// Private browsing: the page reloads without a message.
+				}
+				setStatus( block, block.dataset.msgSaved );
 				window.location.reload();
 				return;
 			}
@@ -91,13 +108,40 @@ function save( block, button ) {
 				);
 				showRowError( row, body.errors[ id ] );
 			} );
-			setStatus( block, 'Some results could not be saved.', true );
+			setStatus( block, block.dataset.msgSomeFailed, true );
 			button.disabled = pending( block ).length === 0;
 		} )
 		.catch( ( error ) => {
 			setStatus( block, error.message, true );
 			button.disabled = pending( block ).length === 0;
 		} );
+}
+
+// Tell the person that the other player's score changed with theirs.
+function announcePartner( block, other ) {
+	const template = block.dataset.msgPartner;
+	const label = other.getAttribute( 'aria-label' ) || '';
+	const score = other.options[ other.selectedIndex ].text;
+	setStatus(
+		block,
+		template.replace( '%1$s', label ).replace( '%2$s', score )
+	);
+}
+
+// After a reload that followed a save, say it was saved and put focus on the message.
+function showSavedMessage( block ) {
+	let message = null;
+	try {
+		message = window.sessionStorage.getItem( SAVED_KEY );
+		window.sessionStorage.removeItem( SAVED_KEY );
+	} catch ( e ) {
+		return;
+	}
+	if ( message ) {
+		const status = block.querySelector( '.cak-games__status' );
+		setStatus( block, message );
+		status.focus();
+	}
 }
 
 function init() {
@@ -107,6 +151,7 @@ function init() {
 		)
 		.forEach( ( block ) => {
 			const button = block.querySelector( '.cak-games__save' );
+			showSavedMessage( block );
 
 			block.addEventListener( 'change', ( event ) => {
 				const select = event.target;
@@ -121,6 +166,7 @@ function init() {
 							'"])'
 					);
 				other.value = PARTNER[ select.value ];
+				announcePartner( block, other );
 
 				const row = select.closest( '.cak-games__game' );
 				const note = row.querySelector( '.cak-games__row-error' );

@@ -177,13 +177,13 @@ foreach ( $event_names as $event_name ) {
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="ecf-league__title"><?php echo esc_html( $heading ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-league__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'League data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<?php foreach ( $events as $event ) : ?>
 		<?php if ( count( $events ) > 1 ) : ?>
-			<h3 class="ecf-league__event-heading"><?php echo esc_html( $event['name'] ); ?></h3>
+			<?php echo Chess_Army_Knife_A11y::heading( 1, 'ecf-league__event-heading', $event['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 		<?php endif; ?>
 
 		<?php if ( $show_table ) : ?>
@@ -194,23 +194,32 @@ foreach ( $event_names as $event_name ) {
 			<?php elseif ( empty( $event['table_rows'] ) ) : ?>
 				<div class="chess-army-knife-empty"><?php esc_html_e( 'No table rows were found for this event.', 'chess-army-knife' ); ?></div>
 			<?php else : ?>
+				<div class="cak-scroll" tabindex="0" role="region" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: event or division name */ __( 'League table: %s', 'chess-army-knife' ), $event['name'] ) ); ?>">
 				<table class="ecf-league__table">
+					<caption class="cak-visually-hidden"><?php echo esc_html( sprintf( /* translators: %s: event or division name */ __( 'League table: %s', 'chess-army-knife' ), $event['name'] ) ); ?></caption>
 					<thead>
 						<tr>
-							<th class="is-numeric">#</th>
-							<th><?php esc_html_e( 'Team', 'chess-army-knife' ); ?></th>
-							<th class="is-numeric"><?php esc_html_e( 'P', 'chess-army-knife' ); ?></th>
-							<th class="is-numeric"><?php esc_html_e( 'W', 'chess-army-knife' ); ?></th>
-							<th class="is-numeric"><?php esc_html_e( 'D', 'chess-army-knife' ); ?></th>
-							<th class="is-numeric"><?php esc_html_e( 'L', 'chess-army-knife' ); ?></th>
-							<th class="is-numeric"><?php esc_html_e( 'Pts', 'chess-army-knife' ); ?></th>
+							<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( '#', __( 'Position', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
+							<th scope="col"><?php esc_html_e( 'Team', 'chess-army-knife' ); ?></th>
+							<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( __( 'P', 'chess-army-knife' ), __( 'Played', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
+							<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( __( 'W', 'chess-army-knife' ), __( 'Won', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
+							<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( __( 'D', 'chess-army-knife' ), __( 'Drawn', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
+							<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( __( 'L', 'chess-army-knife' ), __( 'Lost', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
+							<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( __( 'Pts', 'chess-army-knife' ), __( 'Points', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
 						</tr>
 					</thead>
 					<tbody>
 						<?php foreach ( $event['table_rows'] as $i => $row ) : ?>
 							<tr class="<?php echo $is_highlighted( $row['team'], $event['name'] ) ? 'is-highlighted' : ''; ?>">
 								<td class="is-numeric"><?php echo esc_html( '' !== $row['position'] ? $row['position'] : ( $i + 1 ) ); ?></td>
-								<td><?php echo esc_html( $row['team'] ); ?></td>
+								<th scope="row">
+									<?php echo esc_html( $row['team'] ); ?>
+									<?php
+									if ( $is_highlighted( $row['team'], $event['name'] ) ) {
+										echo Chess_Army_Knife_A11y::hidden( __( '(our team)', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden().
+									}
+									?>
+								</th>
 								<td class="is-numeric"><?php echo esc_html( $row['played'] ); ?></td>
 								<td class="is-numeric"><?php echo esc_html( $row['won'] ); ?></td>
 								<td class="is-numeric"><?php echo esc_html( $row['drawn'] ); ?></td>
@@ -220,11 +229,13 @@ foreach ( $event_names as $event_name ) {
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+				</div>
+				<p class="ecf-league__legend"><?php esc_html_e( 'P played, W won, D drawn, L lost, Pts points.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
 		<?php endif; ?>
 
 		<?php if ( $show_matches ) : ?>
-			<p class="ecf-league__subheading"><?php esc_html_e( 'Matchups', 'chess-army-knife' ); ?></p>
+			<?php echo Chess_Army_Knife_A11y::heading( count( $events ) > 1 ? 2 : 1, 'ecf-league__subheading', __( 'Matchups', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 			<?php if ( $event['match_error'] ) : ?>
 				<div class="chess-army-knife-notice">
 					<?php esc_html_e( 'Could not load matchups:', 'chess-army-knife' ); ?> <?php echo esc_html( $event['match_error']->get_error_message() ); ?>
@@ -240,18 +251,23 @@ foreach ( $event_names as $event_name ) {
 						?>
 						<li>
 							<?php if ( '' !== $row['date'] ) : ?>
-								<span class="ecf-league__match-date"><?php echo esc_html( $row['date'] ); ?></span>
+								<span class="ecf-league__match-date"><?php echo Chess_Army_Knife_A11y::date( $row['date'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in date(). ?></span>
 							<?php endif; ?>
 							<span class="ecf-league__match-teams <?php echo $highlighted ? 'is-highlighted' : ''; ?>">
-								<?php echo esc_html( $row['home'] ); ?> v <?php echo esc_html( $row['away'] ); ?>
+								<?php echo esc_html( $row['home'] ); ?> <?php echo esc_html_x( 'against', 'Home team against away team', 'chess-army-knife' ); ?> <?php echo esc_html( $row['away'] ); ?>
+								<?php
+								if ( $highlighted ) {
+									echo Chess_Army_Knife_A11y::hidden( __( '(our team)', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden().
+								}
+								?>
 							</span>
 							<?php if ( $show_location && '' !== $row['venue'] ) : ?>
-								<span class=\"ecf-league__match-venue\"><?php echo esc_html( $row['venue'] ); ?></span>
+								<span class="ecf-league__match-venue"><?php echo esc_html( $row['venue'] ); ?></span>
 							<?php endif; ?>
 							<span class="ecf-league__match-score">
 								<?php
 								if ( $has_score ) {
-									echo esc_html( $row['home_score'] . ' – ' . $row['away_score'] );
+									echo Chess_Army_Knife_A11y::score( $row['home_score'], $row['away_score'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in score().
 								} elseif ( '' !== $row['result_text'] ) {
 									echo esc_html( $row['result_text'] );
 								} else {

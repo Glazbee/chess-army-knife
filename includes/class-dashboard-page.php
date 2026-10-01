@@ -64,10 +64,9 @@ class Chess_Army_Knife_Dashboard_Page {
 		echo '<ul class="cak-bars">';
 		foreach ( $rows as $row ) {
 			printf(
-				'<li><span class="cak-bar-label">%1$s</span><span class="cak-bar-track"><span class="cak-bar-fill" style="width:%2$d%%" title="%3$s"></span></span><span class="cak-bar-count">%4$s</span></li>',
+				'<li><span class="cak-bar-label">%1$s</span><span class="cak-bar-track" aria-hidden="true"><span class="cak-bar-fill" style="width:%2$d%%"></span></span><span class="cak-bar-count">%3$s</span></li>',
 				esc_html( $row[0] ),
 				$max > 0 ? (int) ceil( 100 * $row[1] / $max ) : 0, // A small count still shows; zero shows nothing.
-				esc_attr( $row[0] . ': ' . $row[1] ),
 				esc_html( number_format_i18n( $row[1] ) )
 			);
 		}
@@ -84,7 +83,7 @@ class Chess_Army_Knife_Dashboard_Page {
 	protected static function meter( $label, $count, $total ) {
 		$percent = self::percent( $count, $total );
 		printf(
-			'<div class="cak-meter"><div class="cak-meter-head"><span>%1$s</span><strong>%2$s</strong></div><div class="cak-bar-track"><span class="cak-bar-fill" style="width:%3$d%%"></span></div></div>',
+			'<div class="cak-meter"><div class="cak-meter-head"><span>%1$s</span><strong>%2$s</strong></div><div class="cak-bar-track" aria-hidden="true"><span class="cak-bar-fill" style="width:%3$d%%"></span></div></div>',
 			esc_html( $label ),
 			/* translators: 1: percentage, 2: number of members, 3: number of current members */
 			esc_html( sprintf( __( '%1$d%% (%2$d of %3$d)', 'chess-army-knife' ), $percent, $count, $total ) ),

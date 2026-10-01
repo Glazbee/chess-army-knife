@@ -177,6 +177,7 @@ class Chess_Army_Knife_Member_Checks_Page {
 		Chess_Army_Knife_Members_Page::render_bulk_controls( false );
 		?>
 		<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'Members to check', 'chess-army-knife' ); ?></caption>
 			<thead>
 				<tr>
 					<td class="manage-column column-cb check-column"><input type="checkbox" aria-label="<?php esc_attr_e( 'Select all', 'chess-army-knife' ); ?>" /></td>
@@ -192,7 +193,7 @@ class Chess_Army_Knife_Member_Checks_Page {
 						<?php continue; ?>
 					<?php endif; ?>
 					<tr>
-						<th scope="row" class="check-column"><input type="checkbox" name="members[]" value="<?php echo esc_attr( $row['id'] ); ?>" /></th>
+						<th scope="row" class="check-column"><label class="cak-check"><input type="checkbox" name="members[]" value="<?php echo esc_attr( $row['id'] ); ?>" /><span class="screen-reader-text"><?php echo esc_html( isset( $row['cells'][0] ) ? wp_strip_all_tags( $row['cells'][0] ) : __( 'Select this person', 'chess-army-knife' ) ); ?></span></label></th>
 						<?php foreach ( $row['cells'] as $cell ) : ?>
 							<td><?php echo wp_kses_post( $cell ); ?></td>
 						<?php endforeach; ?>

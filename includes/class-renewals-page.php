@@ -134,6 +134,7 @@ class Chess_Army_Knife_Renewals_Page {
 
 			<h2><?php esc_html_e( 'Due at the next run', 'chess-army-knife' ); ?></h2>
 			<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'Members due a reminder', 'chess-army-knife' ); ?></caption>
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Member', 'chess-army-knife' ); ?></th>

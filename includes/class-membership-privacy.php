@@ -414,32 +414,32 @@ class Chess_Army_Knife_Membership_Privacy {
 			array(
 				'heading'    => __( 'What we collect', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'When you apply for membership we collect your name, the membership you want, your email address, your phone number (if you give one) and your ECF rating code (if you have one). We record the date and method of any payment, and club officers may add notes to your record.', 'chess-army-knife' ),
+					__( 'When you apply, we collect your name, the membership you want and your email address. We also collect your phone number and ECF rating code, if you give them. We record when and how you paid. Club officers may add notes to your record.', 'chess-army-knife' ),
 					__( 'We also keep the name and ECF rating code of people who take part in club events or tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
 					__( 'You can see and correct your details, choose what we email you, and delete your details yourself, at any time, from the members\' page on this website. You sign in with a link we email to the address we hold for you.', 'chess-army-knife' ),
-					__( 'If you play in a club team, the team captain can see your name and rating, ask you whether you can play in a fixture, and record your reply and whether they pick you. A reply or line-up is deleted with the fixture, if you ask us to delete your details, or after the retention period.', 'chess-army-knife' ),
+					__( 'If you play in a club team, the team captain can see your name and rating. The captain can ask if you can play in a match, and can record your reply and whether they pick you. We delete a reply or line-up when we delete the match, when you ask us to delete your details, or after the retention period.', 'chess-army-knife' ),
 					__( 'If you register for a club event we record that, with the time, the number of guests you bring and whether you came. If you are not a member we keep your name and email address as a record of a non-member. Registrations are deleted after the retention period below.', 'chess-army-knife' ),
 					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. Only club officers can see this.', 'chess-army-knife' ),
-					__( 'For members under 18 we collect the junior\'s date of birth and a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not the junior, and only keep the junior\'s own email address or phone number if their parent or guardian has said we may contact them directly.', 'chess-army-knife' ),
+					__( 'For members under 18, we collect the junior\'s date of birth. We also collect a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not to the junior. We keep the junior\'s own email address or phone number only if their parent or guardian says we may contact the junior.', 'chess-army-knife' ),
 				),
 			),
 			array(
 				'heading'    => __( 'Why we use it', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'We use your details to run the chess club and your membership: to consider your application, to keep our list of members, to arrange club and team activities and to contact you about your membership. Our lawful basis is legitimate interests: running the club and looking after its members, together with providing your membership itself. We do not sell your details or use them for advertising.', 'chess-army-knife' ),
+					__( 'We use your details to run the club and your membership. That means deciding on your application, keeping our list of members, arranging club and team activities, and contacting you about your membership. The law lets us do this because of our legitimate interests: running the club and looking after its members. We do not sell your details or use them for advertising.', 'chess-army-knife' ),
 				),
 			),
 			array(
 				'heading'    => __( 'Sharing with the English Chess Federation', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'The club provides its playing members to the English Chess Federation (ECF) so that their games can be rated. For this we give the ECF your name and ECF rating code, and any other details it needs to rate your games. We also fetch your current ECF rating from the ECF regularly and keep the latest one with your record. To do this we ask the ECF for the list of players at our club and keep only the ratings of people we already have a record of; the rest of that list is not stored. The ECF looks after its information under its own privacy policy.', 'chess-army-knife' ),
+					__( 'The club gives the names of its playing members to the English Chess Federation (ECF), so that their games can be rated. We give the ECF your name and ECF rating code, and anything else it needs to rate your games. We also ask the ECF for your latest rating, and keep it with your record. To do that, we ask for the ECF\'s list of players at our club. We keep only the ratings of people we already have a record of. We do not keep the rest of the list. The ECF looks after its own information under its own privacy policy.', 'chess-army-knife' ),
 				),
 			),
 			array(
 				'heading'    => __( 'Newsletters and WhatsApp groups', 'chess-army-knife' ),
 				'paragraphs' => array(
 					__( 'We only send you the club newsletter, or add you to a WhatsApp group for a club team, if you have said yes on the application form or to a club officer. These are separate choices: you can say no to either and still be a member. For WhatsApp we also record which team\'s group you asked to join. If you are added to a group, the other members can see your name and phone number, and WhatsApp itself handles the messages under its own terms. A junior is only added using their parent or guardian\'s agreement and number unless they say otherwise. You can change your mind at any time: use the Manage My Data page on this website, or contact us, and we will stop.', 'chess-army-knife' ),
-					__( 'We also email members about their membership, such as renewal reminders, about club events and fixtures, and with club announcements. Announcements are also kept so members can read past ones after signing in to their member page. These are service messages, so they do not need a separate opt-in, but every email has a link to stop that kind of email. We keep a log of the emails we send (the subject and the time, not the text) for a limited time, and delete it if your details are erased. Emails for a junior go to their parent or guardian.', 'chess-army-knife' ),
+					__( 'We also email members about their membership (for example, renewal reminders), club events and matches, and club announcements. Members can read past announcements after signing in to their member page. These emails do not need a separate yes from you, because they are part of running your membership. Every one has a link to stop that kind of email. We keep a log of the emails we send. It has the subject and the time, but not the text. We keep it for a limited time, and delete it if your details are erased. Emails for a junior go to their parent or guardian.', 'chess-army-knife' ),
 				),
 			),
 			array(
@@ -461,7 +461,7 @@ class Chess_Army_Knife_Membership_Privacy {
 			array(
 				'heading'    => __( 'Your rights', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'You can ask for a copy of your details, ask us to correct or delete them, ask us to limit how we use them, object to how we use them, or withdraw a consent at any time. A parent or guardian can do this for a junior. If you are unhappy with how we have handled your details you can complain to the Information Commissioner\'s Office at ico.org.uk.', 'chess-army-knife' ),
+					__( 'You can ask for a copy of your details. You can ask us to correct them or delete them. You can ask us to limit how we use them, or object to how we use them. You can take back a consent at any time. A parent or guardian can do this for a junior. If you are not happy with how we have handled your details, you can complain to the Information Commissioner\'s Office at ico.org.uk.', 'chess-army-knife' ),
 					$ask,
 				),
 			),

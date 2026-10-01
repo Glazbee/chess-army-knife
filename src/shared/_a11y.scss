@@ -1,0 +1,180 @@
+// Accessibility helpers shared by every block (WCAG 2.2 AAA).
+$cak-scope: '[class*="wp-block-chess-army-knife-"]';
+
+// Text for screen readers only.
+#{$cak-scope} .cak-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+// Line spacing of at least 1.5 and a readable line length (1.4.8).
+#{$cak-scope} {
+	line-height: 1.5;
+
+	p,
+	li,
+	dd {
+		max-width: 80ch;
+	}
+}
+
+// A focus ring that shows on light and dark pages alike (2.4.7, 2.4.13).
+#{$cak-scope}
+	:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+	outline: 3px solid #000;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 2px #fff;
+}
+
+// Keep focus clear of sticky headers (2.4.11, 2.4.12).
+#{$cak-scope} :is(a, button, input, select, textarea, summary, [tabindex]) {
+	scroll-margin-block: 6rem;
+}
+
+// Targets are at least 44 by 44 pixels (2.5.5).
+#{$cak-scope} :is(button, select, .cak-target) {
+	min-width: 44px;
+	min-height: 44px;
+}
+
+// A table too wide for the page scrolls, and can be scrolled with the keyboard (2.1.1).
+#{$cak-scope} .cak-scroll {
+	overflow-x: auto;
+}
+
+// Messages that stand in for a block (nothing chosen, nothing found, an error).
+// They follow the theme's text colour, so their contrast is the theme's.
+#{$cak-scope} :is(.chess-army-knife-notice, .chess-army-knife-empty) {
+	padding: 0.75em 1em;
+	border-left: 4px solid currentcolor;
+	background: color-mix(in srgb, currentcolor 8%, transparent);
+}
+
+// Titles take the accent as an underline, not as text colour, so the text keeps the theme's contrast.
+#{$cak-scope} .cak-block-title {
+	border-bottom: 3px solid var(--ecf-accent, currentcolor);
+	padding-bottom: 0.2em;
+}
+
+// The message at the top of a form after it was sent. It takes focus, so it has a clear outline when it does.
+#{$cak-scope} .cak-form-notice {
+	margin: 0 0 1em;
+	padding: 0.75em 1em;
+	border: 2px solid currentcolor;
+	border-left-width: 8px;
+	background: color-mix(in srgb, currentcolor 6%, transparent);
+
+	p:last-child {
+		margin-bottom: 0;
+	}
+
+	&--error {
+		border-style: double;
+		border-left-style: solid;
+	}
+
+	&:focus {
+		outline: 3px solid currentcolor;
+		outline-offset: 2px;
+	}
+}
+
+#{$cak-scope} .cak-required {
+	font-weight: 400;
+	font-size: 0.9em;
+}
+
+#{$cak-scope} :is(input, select, textarea)[aria-invalid="true"] {
+	border: 3px solid currentcolor;
+}
+
+#{$cak-scope} :is(.cak-hint, [class$="__hint"]) {
+	font-size: 0.95em;
+}
+
+// Rules between rows and cards are decoration.
+$cak-rule: color-mix(in srgb, currentcolor 35%, transparent);
+
+// Windows High Contrast and similar.
+@media (forced-colors: active) {
+	#{$cak-scope}
+		:is(
+			a,
+			button,
+			input,
+			select,
+			textarea,
+			summary,
+			[tabindex]
+		):focus-visible {
+		outline-color: Highlight;
+		box-shadow: none;
+	}
+}
+
+// High contrast: black on white, underlined links, solid borders (1.4.6).
+// It wins over the theme and the block's own styles on purpose, because
+// the person asked for it.
+@mixin cak-high-contrast {
+	color: #000 !important;
+	background-color: #fff !important;
+
+	*,
+	*::before,
+	*::after {
+		background-color: transparent !important;
+		color: inherit !important;
+		opacity: 1 !important;
+		box-shadow: none !important;
+		text-shadow: none !important;
+	}
+
+	:is(th, td, li, fieldset, details, figure, dl) {
+		border-color: #000 !important;
+	}
+
+	a {
+		color: #0000c8 !important;
+		text-decoration: underline !important;
+	}
+
+	:is(button, .wp-element-button) {
+		background-color: #000 !important;
+		color: #fff !important;
+		border: 2px solid #000 !important;
+	}
+
+	:is(input, select, textarea) {
+		background-color: #fff !important;
+		color: #000 !important;
+		border: 2px solid #000 !important;
+	}
+
+	:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+		outline: 4px solid #000 !important;
+		box-shadow: 0 0 0 2px #fff !important;
+	}
+
+	.chess-army-knife-notice,
+	.chess-army-knife-empty,
+	[class*="__notice"] {
+		border: 2px solid #000 !important;
+	}
+}
+
+.cak-contrast-always #{$cak-scope} {
+	@include cak-high-contrast;
+}
+
+@media (prefers-contrast: more) {
+	body:not(.cak-contrast-off) #{$cak-scope} {
+		@include cak-high-contrast;
+	}
+}

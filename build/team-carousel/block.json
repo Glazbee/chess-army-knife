@@ -2,10 +2,10 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
   "name": "chess-army-knife/team-carousel",
-  "title": "ECF Team Fixtures Carousel",
+  "title": "ECF Team Fixtures",
   "category": "chess-army-knife-leagues",
   "icon": "slides",
-  "description": "A carousel that scrolls through a league's teams, showing each one's last result and next fixture.",
+  "description": "Every team in a league, showing each one's last result and next fixture, as a list or as a carousel.",
   "keywords": [
     "chess",
     "ecf",
@@ -37,13 +37,17 @@
       "type": "string",
       "default": ""
     },
+    "layout": {
+      "type": "string",
+      "default": "list"
+    },
     "autoAdvance": {
       "type": "boolean",
-      "default": true
+      "default": false
     },
     "intervalSeconds": {
       "type": "number",
-      "default": 6
+      "default": 8
     },
     "highlightTeam": {
       "type": "string",

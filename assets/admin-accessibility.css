@@ -1,0 +1,117 @@
+/*
+ * Accessibility overrides for the plugin's own admin screens (WCAG 2.2 AAA).
+ * WordPress's admin colours and sizes meet AA; these raise them to AAA, and only
+ * where the body has the cak-admin-screen class, so no other screen is touched.
+ */
+
+/* Links and help text at 7:1 or more. */
+.cak-admin-screen #wpbody-content a:not(.button):not(.page-title-action):not(.nav-tab) {
+	color: #0b3d73;
+	text-decoration: underline;
+}
+
+.cak-admin-screen #wpbody-content a:not(.button):hover {
+	color: #000;
+}
+
+.cak-admin-screen .description,
+.cak-admin-screen p.description,
+.cak-admin-screen .form-table td p.description,
+.cak-admin-screen .row-actions,
+.cak-admin-screen .displaying-num,
+.cak-admin-screen .subsubsub a {
+	color: #2c3338;
+}
+
+.cak-admin-screen .row-actions a {
+	display: inline-block;
+	padding: 12px 4px;
+}
+
+/* Errors in a darker red. */
+.cak-admin-screen .cak-selector__error,
+.cak-admin-screen .error-message,
+.cak-admin-screen .notice-error p {
+	color: #8a1f1f;
+}
+
+/* Buttons at 7:1, and large enough to press. */
+.cak-admin-screen .button,
+.cak-admin-screen .button-secondary {
+	min-height: 44px;
+	min-width: 44px;
+	padding: 0 16px;
+	line-height: 42px;
+	color: #0b3d73;
+	border-color: #0b3d73;
+	border-width: 2px;
+}
+
+.cak-admin-screen .button-primary {
+	color: #fff;
+	background: #0b3d73;
+	border-color: #0b3d73;
+}
+
+.cak-admin-screen .button-primary:hover {
+	background: #000;
+	border-color: #000;
+	color: #fff;
+}
+
+.cak-admin-screen .button.button-small,
+.cak-admin-screen .button-link {
+	min-height: 44px;
+}
+
+.cak-admin-screen input[type="text"],
+.cak-admin-screen input[type="email"],
+.cak-admin-screen input[type="tel"],
+.cak-admin-screen input[type="number"],
+.cak-admin-screen input[type="date"],
+.cak-admin-screen input[type="time"],
+.cak-admin-screen input[type="search"],
+.cak-admin-screen select,
+.cak-admin-screen textarea {
+	min-height: 44px;
+	border: 2px solid #1d2327;
+}
+
+/* A tick is pressed through its label, which is at least 44 pixels square. */
+.cak-admin-screen label:has(> input[type="checkbox"]),
+.cak-admin-screen label:has(> input[type="radio"]),
+.cak-admin-screen .cak-check {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 44px;
+	min-width: 44px;
+}
+
+.cak-admin-screen .cak-check {
+	justify-content: center;
+}
+
+.cak-admin-screen .check-column {
+	width: 3.2em;
+}
+
+/* A focus ring that shows on every admin colour scheme (2.4.7, 2.4.13). */
+.cak-admin-screen :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+	outline: 3px solid #000;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 2px #fff;
+}
+
+/* Table headings and striped rows keep their text at 7:1. */
+.cak-admin-screen .widefat th,
+.cak-admin-screen .widefat td {
+	color: #1d2327;
+}
+
+@media (forced-colors: active) {
+	.cak-admin-screen :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+		outline-color: Highlight;
+		box-shadow: none;
+	}
+}

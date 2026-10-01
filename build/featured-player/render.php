@@ -109,7 +109,7 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<?php if ( '' !== $heading ) : ?>
-		<p class="ecf-featured__heading"><?php echo esc_html( $heading ); ?></p>
+		<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-featured__heading', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<?php endif; ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_keys, __( 'Player data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
@@ -119,16 +119,17 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 			<div class="ecf-featured__photo">
 				<?php
 				if ( $image_id && wp_attachment_is_image( $image_id ) ) {
-					echo wp_get_attachment_image( $image_id, 'medium', false, array( 'alt' => $name ) );
+					// The photo is decorative next to the name, so it only has an alt if the media library has one.
+					echo wp_get_attachment_image( $image_id, 'medium' );
 				} else {
-					printf( '<img src="%1$s" alt="%2$s" loading="lazy" />', esc_url( $image_url ), esc_attr( $name ) );
+					printf( '<img src="%1$s" alt="" loading="lazy" />', esc_url( $image_url ) );
 				}
 				?>
 			</div>
 		<?php endif; ?>
 
 		<div class="ecf-featured__body">
-			<p class="ecf-featured__name"><?php echo esc_html( trim( $player_title . ' ' . $name ) ); ?></p>
+			<?php echo Chess_Army_Knife_A11y::heading( '' !== $heading ? 1 : 0, 'ecf-featured__name', trim( $player_title . ' ' . $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 			<?php if ( '' !== $rating || ( $show_club && '' !== $club ) ) : ?>
 				<p class="ecf-featured__meta">
@@ -139,7 +140,7 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 					<?php
 					if ( '' !== $rating && $show_club && '' !== $club ) :
 						?>
-						· <?php endif; ?>
+						<span aria-hidden="true">·</span> <?php endif; ?>
 					<?php if ( $show_club && '' !== $club ) : ?>
 						<?php echo esc_html( $club ); ?>
 					<?php endif; ?>
@@ -153,10 +154,10 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 			<?php if ( $has_links ) : ?>
 				<div class="ecf-featured__links">
 					<?php if ( '' !== $chess_com ) : ?>
-						<a class="ecf-featured__link" href="<?php echo esc_url( 'https://www.chess.com/member/' . $chess_com ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'chess.com profile', 'chess-army-knife' ); ?></a>
+						<a class="ecf-featured__link" href="<?php echo esc_url( 'https://www.chess.com/member/' . $chess_com ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'chess.com profile', 'chess-army-knife' ); ?> <?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: player name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
 					<?php endif; ?>
 					<?php if ( '' !== $lichess ) : ?>
-						<a class="ecf-featured__link" href="<?php echo esc_url( 'https://lichess.org/@/' . $lichess ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Lichess profile', 'chess-army-knife' ); ?></a>
+						<a class="ecf-featured__link" href="<?php echo esc_url( 'https://lichess.org/@/' . $lichess ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Lichess profile', 'chess-army-knife' ); ?> <?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: player name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>

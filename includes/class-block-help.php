@@ -70,7 +70,7 @@ class Chess_Army_Knife_Block_Help {
 
 		return array(
 			'rating-chart'         => array(
-				'use'      => __( 'A line chart of how one player\'s rating has moved over their recent rated games, with current, peak, lowest and change figures.', 'chess-army-knife' ),
+				'use'      => __( 'A line chart of how one player\'s rating has moved over their recent rated games, with current, peak, lowest and change figures There is a written summary of the chart, and the ratings can be shown as a table.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Search for the player by name: only people the club holds a record of, with an ECF code, are offered.', 'chess-army-knife' ),
 					__( 'Choose the rating list (standard, rapid, blitz or an online list), how many games to draw, the height, and whether to show the figures.', 'chess-army-knife' ),
@@ -117,10 +117,10 @@ class Chess_Army_Knife_Block_Help {
 				'where'    => array( 'settings', 'teams' ),
 			),
 			'team-carousel'        => array(
-				'use'      => __( 'A rotating carousel showing each team\'s last result and next fixture.', 'chess-army-knife' ),
+				'use'      => __( 'Every team with its last result and next fixture, as a list or as a carousel. The list is the default: nothing moves, and it works without scripts.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Teams come from your own teams\' league entries (the default), from every team in one event\'s league table, or from a list you type.', 'chess-army-knife' ),
-					__( 'Choose whether it advances by itself and how often, and whether to show the venue.', 'chess-army-knife' ),
+					__( 'Choose a list (every team at once) or a carousel (one team at a time, with buttons and a pause button), whether the carousel may move on by itself, and whether to show the venue. A carousel that moves on by itself never starts for visitors whose device asks for less motion, and stops when they use any button.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
 					__( 'For "my club\'s teams", each team needs at least one league entry.', 'chess-army-knife' ),

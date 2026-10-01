@@ -251,24 +251,27 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 			array( 'show_location' => true )
 		);
 
-		$this->assertStringContainsString( '<caption class="screen-reader-text">October 2026</caption>', $html );
-		$this->assertStringContainsString( '<th scope="col">Mon</th>', $html );
-		$this->assertLessThan( strpos( $html, '<th scope="col">Tue</th>' ), strpos( $html, '<th scope="col">Mon</th>' ) );
+		$this->assertStringContainsString( '<caption class="cak-visually-hidden">October 2026</caption>', $html );
+		$this->assertStringContainsString( '<th scope="col"><abbr title="Monday">Mon</abbr></th>', $html );
+		$this->assertLessThan( strpos( $html, '<abbr title="Tuesday">Tue</abbr>' ), strpos( $html, '<abbr title="Monday">Mon</abbr>' ) );
 		$this->assertStringContainsString( 'cak-month__day has-events is-today', $html );
-		$this->assertStringContainsString( '<span class="cak-month__daynum">5</span><ul class="cak-month__events">', $html );
+		$this->assertStringContainsString( '<span class="cak-month__daynum"><span aria-hidden="true">5</span>', $html );
+		$this->assertStringContainsString( '<span class="cak-visually-hidden">', $html );
 		$this->assertStringContainsString( 'Club &lt;night&gt;', $html );
 		$this->assertStringNotContainsString( '<night>', $html );
-		$this->assertStringContainsString( 'title="Town &quot;Hall&quot;"', $html );
-		$this->assertSame( 1, substr_count( $html, 'cak-month__event"' ), 'Only the one event is shown.' );
+		$this->assertStringContainsString( '<span class="cak-month__location">Town &quot;Hall&quot;</span>', $html );
+		$this->assertStringNotContainsString( 'title="Town', $html );
+		// The event is in the table and, for a phone, in the list of days.
+		$this->assertSame( 2, substr_count( $html, 'cak-month__event"' ) );
 	}
 
-	public function test_month_html_hides_the_tooltip_when_location_is_off() {
+	public function test_month_html_leaves_the_location_out_when_it_is_off() {
 		Functions\when( 'current_time' )->justReturn( '2026-10-05' );
 		Functions\when( 'esc_url' )->returnArg();
 
 		$html = Chess_Army_Knife_Events_Display::month_html( 2026, 10, array( $this->event() ), array( 'show_location' => false ) );
 
-		$this->assertStringNotContainsString( 'title=', $html );
+		$this->assertStringNotContainsString( 'cak-month__location', $html );
 	}
 
 	public function test_month_html_with_no_events_is_still_a_full_grid() {
@@ -276,7 +279,7 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 
 		$html = Chess_Army_Knife_Events_Display::month_html( 2026, 10, array(), array() );
 
-		$this->assertSame( 31, substr_count( $html, 'cak-month__daynum' ) );
+		$this->assertSame( 31, substr_count( $html, 'class="cak-month__daynum"' ) );
 		$this->assertStringNotContainsString( 'has-events', $html );
 	}
 

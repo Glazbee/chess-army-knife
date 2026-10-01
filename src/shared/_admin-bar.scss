@@ -1,3 +1,4 @@
+// The note only administrators see on a block, about its cached data.
 .chess-army-knife-admin-bar {
 	display: flex;
 	align-items: center;
@@ -5,18 +6,16 @@
 	gap: 0.5em;
 	margin: 0 0 1em;
 	padding: 0.4em 0.7em;
-	font-size: 0.8em;
-	color: #555;
-	background: #fff8e5;
-	border: 1px dashed #e0b83d;
+	font-size: 0.9em;
+	background: color-mix(in srgb, currentcolor 8%, transparent);
+	border: 2px dashed currentcolor;
 	border-radius: 4px;
 
 	&__badge {
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		font-weight: 700;
-		font-size: 0.75em;
-		color: #8a6d1a;
+		font-size: 0.8em;
 	}
 
 	&__label {

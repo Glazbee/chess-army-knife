@@ -1,4 +1,5 @@
 @use "../shared/admin-bar";
+@use "../shared/a11y";
 
 .wp-block-chess-army-knife-league-table {
 	margin-bottom: 1.5em;
@@ -14,7 +15,7 @@
 		font-size: 1em;
 		font-weight: 700;
 		padding-top: 0.75em;
-		border-top: 1px solid #e2e2e2;
+		border-top: 1px solid currentcolor;
 
 		&:first-of-type {
 			border-top: none;
@@ -37,12 +38,15 @@
 		td {
 			text-align: left;
 			padding: 0.4em 0.6em;
-			border-bottom: 1px solid #e2e2e2;
+			border-bottom: 1px solid a11y.$cak-rule;
 		}
 
 		th {
 			font-weight: 600;
-			border-bottom: 2px solid var(--ecf-accent, #c3c4c7);
+		}
+
+		thead th {
+			border-bottom: 3px solid var(--ecf-accent, currentcolor);
 		}
 
 		td.is-numeric,
@@ -50,14 +54,26 @@
 			text-align: center;
 		}
 
-		tr.is-highlighted td {
-			background: var(--ecf-accent-soft, #f0f6fc);
-			font-weight: 600;
+		tr.is-highlighted :is(th, td) {
+			background: var(
+				--ecf-accent-soft,
+				color-mix(in srgb, currentcolor 10%, transparent)
+			);
+			font-weight: 700;
 		}
 
-		tr:last-child td {
+		tr:last-child :is(th, td) {
 			border-bottom: none;
 		}
+
+		abbr {
+			text-decoration: none;
+		}
+	}
+
+	.ecf-league__legend {
+		margin: 0.5em 0 0;
+		font-size: 0.9em;
 	}
 
 	.ecf-league__matches {
@@ -71,7 +87,7 @@
 			align-items: baseline;
 			gap: 0.5em;
 			padding: 0.5em 0;
-			border-bottom: 1px solid #e2e2e2;
+			border-bottom: 1px solid a11y.$cak-rule;
 
 			&:last-child {
 				border-bottom: none;
@@ -80,9 +96,8 @@
 
 		.ecf-league__match-date {
 			flex: 0 0 auto;
-			color: #666;
-			font-size: 0.85em;
-			min-width: 5em;
+			font-size: 0.9em;
+			min-width: 7em;
 		}
 
 		.ecf-league__match-teams {
@@ -94,23 +109,14 @@
 			font-weight: 600;
 		}
 
+		.ecf-league__match-venue {
+			flex: 0 0 100%;
+			font-size: 0.9em;
+		}
+
 		.is-highlighted {
 			font-weight: 700;
 		}
-	}
-
-	.chess-army-knife-notice {
-		padding: 0.75em 1em;
-		border-left: 4px solid #d63638;
-		background: #fcf0f1;
-		font-size: 0.9em;
-	}
-
-	.chess-army-knife-empty {
-		padding: 0.75em 1em;
-		border-left: 4px solid #dcdcde;
-		background: #f6f7f7;
-		font-size: 0.9em;
 	}
 
 	.ecf-league__debug {
@@ -118,30 +124,19 @@
 
 		summary {
 			cursor: pointer;
-			font-size: 0.85em;
-			color: #666;
+			font-size: 0.9em;
+			padding-block: 0.75em;
 		}
 
 		pre {
 			max-height: 400px;
 			overflow: auto;
 			background: #1e1e1e;
-			color: #d4d4d4;
+			color: #f5f5f5;
 			padding: 1em;
-			font-size: 0.8em;
+			font-size: 0.85em;
 			white-space: pre-wrap;
 			word-break: break-word;
 		}
 	}
-}
-
-// Template colours (set via Chess Army Knife → Templates).
-.wp-block-chess-army-knife-league-table .ecf-league__title {
-	color: var(--ecf-accent, inherit);
-}
-
-.wp-block-chess-army-knife-league-table .ecf-league__match-venue {
-	flex: 0 0 100%;
-	font-size: 0.8em;
-	opacity: 0.7;
 }

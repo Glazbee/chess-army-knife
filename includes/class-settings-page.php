@@ -70,6 +70,8 @@ class Chess_Army_Knife_Settings {
 			'cache_lms_minutes'         => 30,  // League tables / matches / fixtures.
 			'use_local_cache'           => 1,   // Persistent custom-table cache vs. plain transients.
 			'delete_data_on_uninstall'  => 0, // Also delete tournaments and players when the plugin is deleted.
+			'heading_level'             => 2, // Level of each block's main title, 1 to 5; its sub-headings follow.
+			'contrast_mode'             => 'device', // High contrast for the blocks: 'off', 'device' (follow the visitor's device) or 'always'.
 		);
 	}
 
@@ -278,6 +280,12 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['cache_lms_minutes'] ) ) {
 			$clean['cache_lms_minutes'] = max( 5, (int) $input['cache_lms_minutes'] );
 		}
+		if ( isset( $input['heading_level'] ) ) {
+			$clean['heading_level'] = max( 1, min( 5, (int) $input['heading_level'] ) );
+		}
+		if ( isset( $input['contrast_mode'] ) && in_array( $input['contrast_mode'], array( 'off', 'device', 'always' ), true ) ) {
+			$clean['contrast_mode'] = $input['contrast_mode'];
+		}
 		$clean['use_local_cache']          = ! empty( $input['use_local_cache'] ) ? 1 : 0;
 		$clean['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
 
@@ -329,6 +337,32 @@ class Chess_Army_Knife_Settings {
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'Chess_Army_Knife' ); ?>
+
+				<h2><?php esc_html_e( 'Accessibility', 'chess-army-knife' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="heading_level"><?php esc_html_e( 'Heading level for block titles', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<select id="heading_level" name="<?php echo esc_attr( self::OPTION ); ?>[heading_level]">
+								<?php for ( $level = 1; $level <= 5; $level++ ) : ?>
+									<option value="<?php echo (int) $level; ?>" <?php selected( (int) $options['heading_level'], $level ); ?>><?php echo esc_html( 'H' . $level ); ?></option>
+								<?php endfor; ?>
+							</select>
+							<p class="description"><?php esc_html_e( 'Each block\'s title is a heading, so people using a screen reader can move around the page. Choose the level that fits under your page title: use H2 if the page title is an H1. Headings inside a block go one level below this.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="contrast_mode"><?php esc_html_e( 'High contrast', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<select id="contrast_mode" name="<?php echo esc_attr( self::OPTION ); ?>[contrast_mode]">
+								<option value="device" <?php selected( $options['contrast_mode'], 'device' ); ?>><?php esc_html_e( 'Follow the visitor\'s device (recommended)', 'chess-army-knife' ); ?></option>
+								<option value="always" <?php selected( $options['contrast_mode'], 'always' ); ?>><?php esc_html_e( 'Always on', 'chess-army-knife' ); ?></option>
+								<option value="off" <?php selected( $options['contrast_mode'], 'off' ); ?>><?php esc_html_e( 'Off', 'chess-army-knife' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'High contrast shows the plugin\'s blocks in black on white with underlined links and solid borders. It applies to the plugin\'s blocks only, not the rest of your theme. "Follow the visitor\'s device" uses it for people who have asked their device for more contrast.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+				</table>
 
 				<h2><?php esc_html_e( 'Global defaults', 'chess-army-knife' ); ?></h2>
 				<p class="description">

@@ -31,7 +31,7 @@ $started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $summary['status'];
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<p class="cak-status__title"><?php echo esc_html( $tournament['name'] ); ?></p>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-status__title', $tournament['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<dl class="cak-status__list">
 		<dt><?php esc_html_e( 'Status', 'chess-army-knife' ); ?></dt>
 		<dd><?php echo esc_html( $summary['status_label'] ); ?></dd>

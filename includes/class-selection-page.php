@@ -141,6 +141,7 @@ class Chess_Army_Knife_Selection_Page {
 				<p><?php esc_html_e( 'You do not captain any team yet. Ask a club officer to set you as a team\'s captain.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
 			<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'Fixtures', 'chess-army-knife' ); ?></caption>
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
@@ -266,6 +267,7 @@ class Chess_Army_Knife_Selection_Page {
 				<p><?php esc_html_e( 'This team\'s squad has no current members. Ask a club officer to add them on the team\'s page under Teams.', 'chess-army-knife' ); ?></p>
 			<?php else : ?>
 				<table class="widefat striped" style="max-width:640px">
+<caption class="screen-reader-text"><?php esc_html_e( 'Availability', 'chess-army-knife' ); ?></caption>
 					<thead><tr><th><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th><th><?php esc_html_e( 'Rating', 'chess-army-knife' ); ?></th><th><?php esc_html_e( 'Reply', 'chess-army-knife' ); ?></th></tr></thead>
 					<tbody>
 						<?php foreach ( $pool as $person ) : ?>

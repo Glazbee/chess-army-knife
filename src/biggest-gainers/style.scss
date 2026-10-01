@@ -1,4 +1,5 @@
 @use "../shared/admin-bar";
+@use "../shared/a11y";
 
 .wp-block-chess-army-knife-biggest-gainers {
 	margin-bottom: 1.5em;
@@ -17,10 +18,11 @@
 
 	.ecf-gainers__item {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: baseline;
-		gap: 0.75em;
+		gap: 0.25em 0.75em;
 		padding: 0.5em 0;
-		border-bottom: 1px solid #e2e2e2;
+		border-bottom: 1px solid a11y.$cak-rule;
 
 		&:last-child {
 			border-bottom: none;
@@ -30,8 +32,7 @@
 	.ecf-gainers__rank {
 		flex: 0 0 auto;
 		font-weight: 700;
-		color: #999;
-		min-width: 1.5em;
+		min-width: 2em;
 	}
 
 	.ecf-gainers__name {
@@ -41,34 +42,13 @@
 
 	.ecf-gainers__detail {
 		flex: 0 0 auto;
-		font-size: 0.85em;
-		color: #666;
+		font-size: 0.9em;
 	}
 
 	.ecf-gainers__change {
 		flex: 0 0 auto;
 		font-weight: 700;
-		color: #1a7f37;
 		min-width: 3.5em;
 		text-align: right;
 	}
-
-	.chess-army-knife-notice {
-		padding: 0.75em 1em;
-		border-left: 4px solid #d63638;
-		background: #fcf0f1;
-		font-size: 0.9em;
-	}
-
-	.chess-army-knife-empty {
-		padding: 0.75em 1em;
-		border-left: 4px solid #dcdcde;
-		background: #f6f7f7;
-		font-size: 0.9em;
-	}
-}
-
-// Template colours (set via Chess Army Knife → Templates).
-.wp-block-chess-army-knife-biggest-gainers .ecf-gainers__title {
-	color: var(--ecf-accent, inherit);
 }

@@ -21,8 +21,55 @@ class Chess_Army_Knife_Menu {
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'register' ) );
+		add_filter( 'admin_body_class', array( __CLASS__, 'body_class' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_accessibility_styles' ) );
 		foreach ( array( 'edit.php', 'post.php', 'post-new.php' ) as $screen ) {
 			add_action( 'load-' . $screen, array( __CLASS__, 'maybe_deny_post_screen' ) );
+		}
+	}
+
+	/**
+	 * Whether the screen being shown is one of the plugin's: its own pages, or the lists and
+	 * editors of the post types it adds.
+	 *
+	 * @return bool
+	 */
+	public static function is_plugin_screen() {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen ) {
+			return false;
+		}
+		if ( false !== strpos( (string) $screen->id, self::SLUG ) ) {
+			return true;
+		}
+		return in_array(
+			(string) $screen->post_type,
+			array(
+				Chess_Army_Knife_Teams::POST_TYPE,
+				Chess_Army_Knife_Events::POST_TYPE,
+				Chess_Army_Knife_Memberships::POST_TYPE,
+				Chess_Army_Knife_Announcements::POST_TYPE,
+			),
+			true
+		);
+	}
+
+	/**
+	 * Mark the plugin's screens, so the accessibility styles reach only them.
+	 *
+	 * @param string $classes Space-separated body classes.
+	 * @return string
+	 */
+	public static function body_class( $classes ) {
+		return self::is_plugin_screen() ? $classes . ' cak-admin-screen' : $classes;
+	}
+
+	/**
+	 * Load the AAA colour, size and focus overrides on the plugin's screens.
+	 */
+	public static function enqueue_accessibility_styles() {
+		if ( self::is_plugin_screen() ) {
+			wp_enqueue_style( 'chess-army-knife-admin-accessibility', Chess_Army_Knife_URL . 'assets/admin-accessibility.css', array(), Chess_Army_Knife_VERSION );
 		}
 	}
 

@@ -3,7 +3,8 @@
  * picking up their ECF rating code, backed by the plugin's own REST
  * route, which searches the club's member list (not the ECF's).
  */
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
+import { speak } from '@wordpress/a11y';
 import { TextControl, Spinner, Button } from '@wordpress/components';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
@@ -33,10 +34,39 @@ export default function PlayerPicker( { value, label, onSelect } ) {
 				) }`,
 			} )
 				.then( ( items ) => {
-					setResults( items || [] );
+					const found = items || [];
+					setResults( found );
 					setIsOpen( true );
+					// Say what the search found, for people who cannot see the list change.
+					speak(
+						found.length
+							? sprintf(
+									/* translators: %d: number of members found */
+									_n(
+										'%d member found.',
+										'%d members found.',
+										Math.min( found.length, 8 ),
+										'chess-army-knife'
+									),
+									Math.min( found.length, 8 )
+							  )
+							: __(
+									'No matching members found.',
+									'chess-army-knife'
+							  ),
+						'polite'
+					);
 				} )
-				.catch( () => setResults( [] ) )
+				.catch( () => {
+					setResults( [] );
+					speak(
+						__(
+							'The search failed. Please try again.',
+							'chess-army-knife'
+						),
+						'assertive'
+					);
+				} )
 				.finally( () => setIsSearching( false ) );
 		}, 400 );
 
@@ -67,6 +97,17 @@ export default function PlayerPicker( { value, label, onSelect } ) {
 								variant="tertiary"
 								onClick={ () => {
 									onSelect( player );
+									speak(
+										sprintf(
+											/* translators: %s: member's name */
+											__(
+												'Selected %s.',
+												'chess-army-knife'
+											),
+											player.name
+										),
+										'polite'
+									);
 									setQuery( '' );
 									setIsOpen( false );
 									setResults( [] );
