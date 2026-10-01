@@ -1,16 +1,16 @@
-# Safeguarding policy: plain-language drafts for approval
+# Safeguarding policy: plain-language wording (applied)
+
+This wording was approved and is now in the plugin. It is kept here as a record of what changed.
 
 The safeguarding example is a general version of a real club's policy, and it keeps that policy's wording. An approximate Flesch-Kincaid scan puts 43 of its sentences above grade 9, which is roughly the lower-secondary reading level that WCAG 2.2 AAA (3.1.5) asks for. The scan counts long words such as "safeguarding" heavily, so treat the grades as a guide.
 
-**Nothing here has been applied to the plugin.** These are shorter, plainer versions that keep each sentence's meaning. Because this is safeguarding wording, please check each one says what your club means, and ideally have your safeguarding officer read them. Where I have added something, it is marked.
+These are shorter, plainer versions that keep each sentence's meaning. Because this is safeguarding wording, please check each one says what your club means, and ideally have your safeguarding officer read them. Where I have added something, it is marked.
 
 Things worth knowing:
 
 * Sentence 1 adds one line that was not in the original: "Safeguarding means keeping people safe from harm." AAA (3.1.3) asks for unusual words to be explained, and this is the main one.
 * Where the original gave a long list of rules in one sentence, the draft splits it into short sentences.
 * The proposed grades are the same rough estimate; a few stay above 9 because words like "safeguarding", "Disclosure and Barring Service" and "Federation" are unavoidable.
-
-Say "apply all", or name the ones to leave out or change.
 
 
 ### 1. (grade 13.0 → 7.0)

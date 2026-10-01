@@ -292,6 +292,10 @@ class PoliciesTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '[add the name', $text );
 	}
 
+	public function test_the_safeguarding_policy_explains_the_word_safeguarding() {
+		$this->assertStringContainsString( 'Safeguarding means keeping people safe from harm', Chess_Army_Knife_Policies::content( 'safeguarding' ) );
+	}
+
 	public function test_the_safeguarding_settings_are_cleaned() {
 		$clean = Chess_Army_Knife_Settings::sanitize(
 			array(
