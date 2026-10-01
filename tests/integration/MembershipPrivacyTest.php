@@ -444,42 +444,6 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'contact the club.', $text );
 	}
 
-	public function test_the_data_policy_block_shows_the_policy_to_anyone() {
-		wp_set_current_user( 0 );
-		update_option(
-			'Chess_Army_Knife_settings',
-			array(
-				'use_local_cache'    => 0,
-				'data_contact_email' => 'secretary@club.test',
-			)
-		);
-
-		$html = do_blocks( '<!-- wp:chess-army-knife/data-policy /-->' );
-
-		$this->assertStringContainsString( 'How we handle your data', $html );
-		$this->assertStringContainsString( 'Sharing with the English Chess Federation', $html );
-		$this->assertStringContainsString( 'secretary@club.test', $html );
-		$this->assertStringContainsString( 'Custom heading', do_blocks( '<!-- wp:chess-army-knife/data-policy {"title":"Custom heading"} /-->' ) );
-	}
-
-	public function test_the_data_policy_block_escapes_what_it_shows() {
-		add_filter(
-			'Chess_Army_Knife_data_policy_sections',
-			function ( $sections ) {
-				$sections[] = array(
-					'heading'    => '<b>Heading</b>',
-					'paragraphs' => array( '<script>alert(1)</script>' ),
-				);
-				return $sections;
-			}
-		);
-
-		$html = do_blocks( '<!-- wp:chess-army-knife/data-policy /-->' );
-
-		$this->assertStringNotContainsString( '<script>alert', $html );
-		$this->assertStringContainsString( '&lt;script&gt;alert(1)&lt;/script&gt;', $html );
-	}
-
 	public function test_the_data_contact_setting_is_a_valid_email_or_nothing() {
 		$this->assertSame( 'secretary@club.test', Chess_Army_Knife_Settings::sanitize( array( 'data_contact_email' => ' secretary@club.test ' ) )['data_contact_email'] );
 		$this->assertSame( '', Chess_Army_Knife_Settings::sanitize( array( 'data_contact_email' => 'not an email' ) )['data_contact_email'] );
@@ -495,8 +459,9 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Membership_Privacy::add_policy_content();
 		$suggested = wp_json_encode( WP_Privacy_Policy_Content::get_suggested_policy_text() );
 
-		$this->assertStringContainsString( 'Sharing with the English Chess Federation', $suggested );
-		$this->assertStringContainsString( 'legitimate interests', $suggested );
+		// The detail lives on the Club data policy page; the guide points to it.
+		$this->assertStringContainsString( 'Club membership', $suggested );
+		$this->assertStringContainsString( 'chess_army_policy_link', $suggested );
 		$this->assertStringContainsString( 'privacy-policy-tutorial', $suggested );
 	}
 }

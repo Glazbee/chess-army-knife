@@ -224,17 +224,9 @@ class Chess_Army_Knife_Block_Help {
 			),
 			'my-data'              => array(
 				'use'      => __( 'Lets a member stop the newsletter or WhatsApp groups, ask for a copy of their data or ask for it to be deleted, with each request confirmed by an emailed link.', 'chess-army-knife' ),
-				'settings' => array( __( 'Put it on a page, for example linked from your privacy policy.', 'chess-army-knife' ) ),
+				'settings' => array( __( 'Put it on a page, for example linked from your privacy policy or club data policy.', 'chess-army-knife' ) ),
 				'needs'    => array(),
 				'where'    => array(),
-			),
-			'data-policy'          => array(
-				'use'      => __( 'How the club handles members\' personal data, in the same wording as the suggested privacy policy.', 'chess-army-knife' ),
-				'settings' => array( __( 'Nothing to choose: it follows your settings.', 'chess-army-knife' ) ),
-				'needs'    => array(
-					__( 'The retention period and data protection contact, under Settings.', 'chess-army-knife' ),
-				),
-				'where'    => array( 'settings' ),
 			),
 		);
 	}

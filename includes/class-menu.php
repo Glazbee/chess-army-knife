@@ -235,6 +235,18 @@ class Chess_Army_Knife_Menu {
 				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
 			),
 			array(
+				'group'       => $club_group,
+				'title'       => __( 'Policies', 'chess-army-knife' ),
+				'description' => __( 'The club data policy, safeguarding policy and privacy policy, as pages you can edit.', 'chess-army-knife' ),
+				'key'         => 'policies',
+				'slug'        => Chess_Army_Knife_Policies::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Policies', 'render_page' ),
+				'kind'        => 'pages',
+				'can'         => function () {
+					return current_user_can( Chess_Army_Knife_Policies::REQUIRED_CAP );
+				},
+			),
+			array(
 				'group'       => $setup_group,
 				'title'       => __( 'Templates', 'chess-army-knife' ),
 				'description' => __( 'Saved looks for the plugin\'s blocks.', 'chess-army-knife' ),
