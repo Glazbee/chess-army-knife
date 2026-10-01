@@ -372,8 +372,19 @@ class EventRegistrationTest extends WP_UnitTestCase {
 	 * ------------------------------------------------------------- */
 
 	public function test_the_block_shows_the_form_places_left_and_closed_states() {
-		$event = $this->event( array( Chess_Army_Knife_Event_Registrations::META_CAPACITY => 5 ) );
-		$this->go_to( get_permalink( $event ) );
+		$page  = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+			)
+		);
+		$event = $this->event(
+			array(
+				Chess_Army_Knife_Event_Registrations::META_CAPACITY => 5,
+				Chess_Army_Knife_Events::META_PAGE => $page,
+			)
+		);
+		$this->go_to( get_permalink( $page ) ); // The block finds its event from the page it is on.
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/event-registration /-->' );
 

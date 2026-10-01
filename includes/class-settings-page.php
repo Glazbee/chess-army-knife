@@ -55,6 +55,7 @@ class Chess_Army_Knife_Settings {
 			'default_days_back'         => 60,
 			'default_max_players'       => 12,
 			'lms_base_url'              => '',
+			'lms_api_key'               => '', // Key for the LMS v2 API, used by Import Events.
 			'default_event_location'    => '', // Used by club events that don't set their own.
 			'membership_payment_info'   => '', // How to pay for a membership (bank details, cash at the club...).
 			'data_contact_email'        => '', // Shown in the data policy as who to contact about personal data.
@@ -276,6 +277,9 @@ class Chess_Army_Knife_Settings {
 		}
 		if ( isset( $input['lms_base_url'] ) ) {
 			$clean['lms_base_url'] = esc_url_raw( trim( $input['lms_base_url'] ) );
+		}
+		if ( isset( $input['lms_api_key'] ) ) {
+			$clean['lms_api_key'] = sanitize_text_field( $input['lms_api_key'] );
 		}
 		// The old free-text team list no longer has a field on this page;
 		// keep whatever was stored so the one-off migration into the Club
@@ -525,6 +529,13 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<input type="text" id="lms_base_url" name="<?php echo esc_attr( self::OPTION ); ?>[lms_base_url]" value="<?php echo esc_attr( $options['lms_base_url'] ); ?>" class="regular-text" placeholder="https://lms.englishchess.org.uk/lms/lmsrest/league" />
 							<p class="description"><?php esc_html_e( 'Only needed if the ECF changes their LMS API host again. Leave blank to use the built-in default (with an automatic fallback to the legacy host if needed).', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lms_api_key"><?php esc_html_e( 'LMS API key', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="password" id="lms_api_key" name="<?php echo esc_attr( self::OPTION ); ?>[lms_api_key]" value="<?php echo esc_attr( $options['lms_api_key'] ); ?>" class="regular-text" autocomplete="off" />
+							<p class="description"><?php esc_html_e( 'Needed by Import Events. Create a key on your LMS account\'s "API keys" page; it can see the same data you can.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

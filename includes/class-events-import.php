@@ -10,8 +10,9 @@
  * left alone once someone has edited it by hand, and one that was moved to
  * the trash stays deleted.
  *
- * The LMS is not documented to give start times, so a fixture without one
- * starts at the usual kick-off time from Settings.
+ * Fixtures are read from version 2 of the LMS API, which needs an API key
+ * (Settings). A fixture without a start time starts at the usual kick-off
+ * time from Settings.
  *
  * @package Chess_Army_Knife
  */
@@ -205,20 +206,18 @@ class Chess_Army_Knife_Events_Import {
 				continue;
 			}
 
-			// An import is a manual refresh, so don't use the cached copy.
-			Chess_Army_Knife_Cache::forget( Chess_Army_Knife_LMS_Client::cache_key( 'match', $team['org'], $team['event'] ) );
-			$raw = Chess_Army_Knife_LMS_Client::get_matches( $team['org'], $team['event'] );
+			// An import is a manual refresh, so don't use the cached copies.
+			$rows = Chess_Army_Knife_LMS_Client::get_fixtures( $team['org'], $team['event'], true );
 
 			$by_league[ $group ] = array();
-			if ( is_wp_error( $raw ) ) {
+			if ( is_wp_error( $rows ) ) {
 				/* translators: 1: league / division name, 2: error message */
-				$errors[] = sprintf( __( '%1$s: %2$s', 'chess-army-knife' ), $team['event'], $raw->get_error_message() );
+				$errors[] = sprintf( __( '%1$s: %2$s', 'chess-army-knife' ), $team['event'], $rows->get_error_message() );
 				continue;
 			}
 
-			foreach ( Chess_Army_Knife_LMS_Client::find_rows( $raw, array( 'matches' ) ) as $row ) {
-				$match = Chess_Army_Knife_LMS_Client::normalise_match_row( $row );
-				if ( $match && ( '' !== $match['home'] || '' !== $match['away'] ) ) {
+			foreach ( $rows as $match ) {
+				if ( '' !== $match['home'] || '' !== $match['away'] ) {
 					$by_league[ $group ][] = $match;
 				}
 			}
@@ -433,6 +432,18 @@ class Chess_Army_Knife_Events_Import {
 				<?php foreach ( $result['errors'] as $error ) : ?>
 					<div class="notice notice-error"><p><?php echo esc_html( $error ); ?></p></div>
 				<?php endforeach; ?>
+			<?php endif; ?>
+
+			<?php if ( '' === Chess_Army_Knife_LMS_Client::api_key() ) : ?>
+				<div class="notice notice-warning inline"><p>
+					<?php
+					printf(
+						/* translators: %s: link to the Settings screen */
+						wp_kses_post( __( 'Add your LMS API key on the %s screen before importing.', 'chess-army-knife' ) ),
+						'<a href="' . esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Settings::PAGE ) ) . '">' . esc_html__( 'Settings', 'chess-army-knife' ) . '</a>'
+					);
+					?>
+				</p></div>
 			<?php endif; ?>
 
 			<p><?php esc_html_e( 'Creates an event for each upcoming fixture of your club teams, tagged "League match" and linked to its league. Running it again never duplicates events. An imported event you have edited, or moved to the trash, is left alone.', 'chess-army-knife' ); ?></p>

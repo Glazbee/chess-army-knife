@@ -16,7 +16,13 @@ class EventsImportTest extends WP_UnitTestCase {
 	public function set_up() {
 		parent::set_up();
 
-		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'lms_api_key'     => 'lmsk_test',
+			)
+		);
 		Chess_Army_Knife_Teams::assign_league_entries(
 			array(
 				array(
@@ -32,46 +38,71 @@ class EventsImportTest extends WP_UnitTestCase {
 		add_filter(
 			'pre_http_request',
 			function ( $preempt, $args, $url ) {
-				if ( false === strpos( $url, '/lmsrest/league/match' ) ) {
+				$pos = strpos( $url, '/lmsrest/v2/' );
+				if ( false === $pos ) {
 					return $preempt;
 				}
-				++$this->requests;
-				$name   = json_decode( $args['body'], true )['name'];
-				$answer = isset( $this->lms[ $name ] ) ? $this->lms[ $name ] : array();
-				if ( is_int( $answer ) ) {
-					return array(
-						'headers'  => array(),
-						'body'     => '',
-						'response' => array(
-							'code'    => $answer,
-							'message' => '',
-						),
-						'cookies'  => array(),
-						'filename' => null,
+				$path  = substr( $url, $pos + strlen( '/lmsrest/v2/' ) );
+				$names = array_keys( $this->lms );
+
+				if ( 'org/613/seasons' === $path ) {
+					return $this->answer(
+						200,
+						array(
+							'seasons' => array(
+								array(
+									'id'     => 1,
+									'name'   => '2099-00',
+									'status' => 'active',
+								),
+							),
+						)
 					);
 				}
-				return array(
-					'headers'  => array(),
-					'body'     => wp_json_encode( array( 'matches' => $answer ) ),
-					'response' => array(
-						'code'    => 200,
-						'message' => '',
-					),
-					'cookies'  => array(),
-					'filename' => null,
-				);
+				if ( 'season/1/events' === $path ) {
+					$events = array();
+					foreach ( $names as $index => $name ) {
+						$events[] = array(
+							'id'   => $index + 1,
+							'name' => $name,
+							'type' => 'team_league',
+						);
+					}
+					return $this->answer( 200, array( 'events' => $events ) );
+				}
+				if ( preg_match( '#^event/(\d+)/results$#', $path, $m ) ) {
+					++$this->requests;
+					$answer = $this->lms[ $names[ (int) $m[1] - 1 ] ];
+					return is_int( $answer ) ? $this->answer( $answer, array( 'error' => 'failed' ) ) : $this->answer( 200, array( 'fixtures' => $answer ) );
+				}
+				return $this->answer( 404, array( 'error' => 'Not found' ) );
 			},
 			10,
 			3
 		);
 	}
 
+	private function answer( $code, array $body ) {
+		return array(
+			'headers'  => array(),
+			'body'     => wp_json_encode( $body ),
+			'response' => array(
+				'code'    => $code,
+				'message' => '',
+			),
+			'cookies'  => array(),
+			'filename' => null,
+		);
+	}
+
 	private function fixture( $home, $away, $date, array $extra = array() ) {
 		return array_merge(
 			array(
-				'date'  => $date,
-				'left'  => array( 'name' => $home ),
-				'right' => array( 'name' => $away ),
+				'date'      => $date,
+				'time'      => null,
+				'home_team' => $home,
+				'away_team' => $away,
+				'games'     => array(),
 			),
 			$extra
 		);
@@ -83,7 +114,7 @@ class EventsImportTest extends WP_UnitTestCase {
 
 	public function test_fixtures_of_the_club_teams_become_events() {
 		$this->lms['Division 1'] = array(
-			$this->fixture( 'Our A', 'Rivals', '2099-10-05', array( 'venue' => array( 'name' => 'Town Hall' ) ) ),
+			$this->fixture( 'Our A', 'Rivals', '2099-10-05', array() ),
 			$this->fixture( 'Others', 'Elsewhere', '2099-10-05' ),
 			$this->fixture( 'Rivals', 'Our A', '2099-11-02', array( 'time' => '20:00' ) ),
 		);
@@ -95,7 +126,6 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertCount( 2, $events );
 		$this->assertSame( 'Our A v Rivals', $events[0]['title'] );
 		$this->assertSame( '2099-10-05 19:30:00', $events[0]['start'], 'No LMS time: the usual kick-off from Settings.' );
-		$this->assertSame( 'Town Hall', $events[0]['location'] );
 		$this->assertSame( array( 'League match' ), wp_list_pluck( $events[0]['tags'], 'name' ) );
 		$this->assertSame(
 			array(
@@ -140,16 +170,13 @@ class EventsImportTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Events_Import::import();
 		$id = $this->imported()[0]['id'];
 
-		// The LMS gives a start time and a venue later.
+		// The LMS gives a start time later.
 		$this->lms['Division 1'] = array(
 			$this->fixture(
 				'Our A',
 				'Rivals',
 				'2099-10-05',
-				array(
-					'time'  => '20:15',
-					'venue' => array( 'name' => 'Library' ),
-				)
+				array( 'time' => '20:15' )
 			),
 		);
 		$summary                 = Chess_Army_Knife_Events_Import::import();
@@ -158,7 +185,6 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $summary['updated'] );
 		$this->assertSame( $id, $event['id'], 'The same event is refreshed.' );
 		$this->assertSame( '2099-10-05 20:15:00', $event['start'] );
-		$this->assertSame( 'Library', $event['location'] );
 	}
 
 	public function test_an_event_edited_by_hand_is_left_alone() {
@@ -229,6 +255,18 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $summary['created'] );
 		$this->assertCount( 1, $summary['errors'] );
 		$this->assertStringContainsString( 'Division 1', $summary['errors'][0] );
+	}
+
+	public function test_without_an_api_key_nothing_is_requested_and_the_error_says_why() {
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		$this->lms['Division 1'] = array( $this->fixture( 'Our A', 'Rivals', '2099-10-05' ) );
+
+		$summary = Chess_Army_Knife_Events_Import::import();
+
+		$this->assertSame( 0, $summary['created'] );
+		$this->assertSame( 0, $this->requests );
+		$this->assertCount( 1, $summary['errors'] );
+		$this->assertStringContainsString( 'API key', $summary['errors'][0] );
 	}
 
 	public function test_a_manual_import_bypasses_the_lms_cache() {

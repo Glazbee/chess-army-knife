@@ -13,8 +13,8 @@ defined( 'ABSPATH' ) || exit;
 
 $block_title = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $event_id    = isset( $attributes['eventId'] ) ? absint( $attributes['eventId'] ) : 0;
-if ( ! $event_id && Chess_Army_Knife_Events::POST_TYPE === get_post_type() ) {
-	$event_id = (int) get_the_ID();
+if ( ! $event_id ) {
+	$event_id = Chess_Army_Knife_Events::for_page( (int) get_the_ID() ); // On the page attached to an event.
 }
 $event_post = $event_id ? get_post( $event_id ) : null;
 if ( ! $event_post || Chess_Army_Knife_Events::POST_TYPE !== $event_post->post_type ) {
@@ -35,7 +35,7 @@ $cancelled   = isset( $_GET['cak_cancel_done'] );
 $error_text  = isset( $_GET['cak_reg_error'] ) ? Chess_Army_Knife_Event_Registration_Form::error_message( sanitize_key( wp_unslash( $_GET['cak_reg_error'] ) ) ) : '';
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-$page_url = get_permalink( $event_post );
+$page_url = get_permalink(); // The page the block is on.
 $pending  = '' !== $token ? Chess_Army_Knife_Event_Registration_Form::pending( $token ) : null;
 $cancel   = '' !== $cancel_link ? Chess_Army_Knife_Event_Registration_Form::registration_for_link( $cancel_link ) : null;
 if ( $pending && $pending['event_id'] !== $event_id ) {

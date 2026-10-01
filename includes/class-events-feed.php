@@ -124,7 +124,7 @@ class Chess_Army_Knife_Events_Feed {
 			}
 
 			$lines[] = 'BEGIN:VEVENT';
-			$lines[] = 'UID:' . $event['id'] . '@' . $host;
+			$lines[] = 'UID:' . $event['id'] . '-' . gmdate( 'Ymd', $event['start_ts'] ) . '@' . $host; // A repeating event has an id for each occurrence.
 			$lines[] = 'DTSTAMP:' . gmdate( 'Ymd\THis\Z', $now );
 			$lines[] = 'DTSTART:' . gmdate( 'Ymd\THis\Z', $event['start_ts'] );
 			$lines[] = 'DTEND:' . gmdate( 'Ymd\THis\Z', $end_ts );
@@ -135,7 +135,9 @@ class Chess_Army_Knife_Events_Feed {
 			if ( $description ) {
 				$lines[] = 'DESCRIPTION:' . self::escape_text( implode( "\n", $description ) );
 			}
-			$lines[] = 'URL:' . $event['url'];
+			if ( '' !== $event['url'] ) {
+				$lines[] = 'URL:' . $event['url'];
+			}
 			$lines[] = 'END:VEVENT';
 		}
 

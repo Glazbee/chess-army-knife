@@ -189,7 +189,7 @@ class Chess_Army_Knife_Block_Help {
 			'event-registration'   => array(
 				'use'      => __( 'A form to register for a club event, with places, a waiting list and confirmation by an emailed link. Visitors need no account.', 'chess-army-knife' ),
 				'settings' => array(
-					__( 'Put it on the event\'s own page, or choose the event in the block\'s settings.', 'chess-army-knife' ),
+					__( 'Put it on the page attached to the event, or choose the event in the block\'s settings.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
 					__( 'On the event, tick "Take registrations" (and set places and a closing time if you want them).', 'chess-army-knife' ),

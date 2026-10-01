@@ -62,12 +62,34 @@ class EventsFeedTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertStringStartsWith( "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n", $ics );
 		$this->assertStringEndsWith( "END:VCALENDAR\r\n", $ics );
-		$this->assertStringContainsString( "UID:7@example.test\r\n", $ics );
+		$this->assertStringContainsString( "UID:7-20261005@example.test\r\n", $ics );
 		$this->assertStringContainsString( "DTSTART:20261005T193000Z\r\n", $ics );
 		$this->assertStringContainsString( "DTEND:20261005T223000Z\r\n", $ics, 'No end time: three hours.' );
 		$this->assertStringContainsString( 'SUMMARY:Club A v Rivals\\, Round 1', $ics );
 		$this->assertStringContainsString( 'LOCATION:Town Hall\; High Street', $ics );
 		$this->assertStringContainsString( 'DESCRIPTION:Club A (home)\\nDivision 1', $ics );
+	}
+
+	public function test_an_event_without_a_page_has_no_url_and_each_occurrence_its_own_uid() {
+		$ics = Chess_Army_Knife_Events_Feed::build(
+			array(
+				$this->event( array( 'url' => '' ) ),
+				$this->event(
+					array(
+						'url'      => '',
+						'start'    => '2026-10-12 19:30:00',
+						'start_ts' => gmmktime( 19, 30, 0, 10, 12, 2026 ),
+					)
+				),
+			),
+			'Our Club',
+			'example.test',
+			gmmktime( 12, 0, 0, 9, 30, 2026 )
+		);
+
+		$this->assertStringNotContainsString( 'URL:', $ics );
+		$this->assertStringContainsString( "UID:7-20261005@example.test\r\n", $ics );
+		$this->assertStringContainsString( "UID:7-20261012@example.test\r\n", $ics );
 	}
 
 	public function test_an_events_own_end_time_is_used_and_one_without_a_start_is_left_out() {

@@ -149,7 +149,7 @@ class Chess_Army_Knife_Event_Registration_Form {
 
 		$event = Chess_Army_Knife_Events::data( get_post( $event_id ) );
 		$site  = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		$link  = add_query_arg( 'cak_reg', $token, get_permalink( $event_id ) ) . '#' . self::ANCHOR;
+		$link  = add_query_arg( 'cak_reg', $token, self::event_url( $event_id ) ) . '#' . self::ANCHOR;
 
 		/* translators: 1: site name, 2: event name */
 		$subject = sprintf( __( '[%1$s] Confirm your place: %2$s', 'chess-army-knife' ), $site, $event['title'] );
@@ -256,13 +256,24 @@ class Chess_Army_Knife_Event_Registration_Form {
 	}
 
 	/**
+	 * The page emailed links open: the event's page, which holds the registration form.
+	 *
+	 * @param int $event_id Event id.
+	 * @return string The home page if the event has no published page.
+	 */
+	protected static function event_url( $event_id ) {
+		$url = Chess_Army_Knife_Events::page_url( $event_id );
+		return '' !== $url ? $url : home_url( '/' );
+	}
+
+	/**
 	 * The link in an email that cancels a registration.
 	 *
 	 * @param array $registration Registration row.
 	 * @return string
 	 */
 	public static function cancel_url( array $registration ) {
-		return add_query_arg( 'cak_cancel', rawurlencode( $registration['id'] . '.' . self::sign( $registration ) ), get_permalink( $registration['event_id'] ) ) . '#' . self::ANCHOR;
+		return add_query_arg( 'cak_cancel', rawurlencode( $registration['id'] . '.' . self::sign( $registration ) ), self::event_url( $registration['event_id'] ) ) . '#' . self::ANCHOR;
 	}
 
 	/**

@@ -331,11 +331,21 @@ class Chess_Army_Knife_Events_Display {
 			// The team colour only ever comes with the team's name, so colour is never the only clue.
 			$colour = '' !== $team ? self::colour_style( $event ) : '';
 			$html  .= '<li class="cak-month__event"' . $colour . '><span class="cak-month__time">' . esc_html( self::time_label( $event ) ) . '</span> '
-				. '<a href="' . esc_url( $event['url'] ) . '">' . esc_html( $event['title'] ) . '</a>'
+				. self::title_html( $event )
 				. ( '' !== $team ? ' <span class="cak-month__team">' . esc_html( $team ) . '</span>' : '' )
 				. ( '' !== $location ? ' <span class="cak-month__location">' . esc_html( $location ) . '</span>' : '' ) . '</li>';
 		}
 		return $html . '</ul>';
+	}
+
+	/**
+	 * An event's title, linked to its page if it has one.
+	 *
+	 * @param array $event Event data.
+	 * @return string Escaped HTML.
+	 */
+	public static function title_html( array $event ) {
+		return '' !== $event['url'] ? '<a href="' . esc_url( $event['url'] ) . '">' . esc_html( $event['title'] ) . '</a>' : esc_html( $event['title'] );
 	}
 
 	/**

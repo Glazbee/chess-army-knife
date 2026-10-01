@@ -103,4 +103,53 @@ class EventsTest extends Chess_Army_Knife_TestCase {
 	public function test_default_time_is_filterable_but_starts_at_seven() {
 		$this->assertSame( '19:00', Chess_Army_Knife_Events::default_time() );
 	}
+
+	public function test_a_one_off_event_has_one_occurrence_if_in_the_window() {
+		$first = '2026-10-05 19:00:00';
+
+		$this->assertSame( array( $first ), Chess_Army_Knife_Events::occurrence_starts( $first, '', '', '2026-10-01 00:00:00', '2026-11-01 00:00:00' ) );
+		$this->assertSame( array(), Chess_Army_Knife_Events::occurrence_starts( $first, '', '', '2026-10-06 00:00:00', '' ) );
+		$this->assertSame( array(), Chess_Army_Knife_Events::occurrence_starts( $first, '', '', '', '2026-10-05 19:00:00' ), 'The end of the window is exclusive.' );
+	}
+
+	public function test_weekly_events_repeat_on_the_same_weekday() {
+		$starts = Chess_Army_Knife_Events::occurrence_starts( '2026-10-05 19:00:00', 'weekly', '', '2026-10-10 00:00:00', '2026-11-02 00:00:00' );
+
+		$this->assertSame( array( '2026-10-12 19:00:00', '2026-10-19 19:00:00', '2026-10-26 19:00:00' ), $starts );
+	}
+
+	public function test_a_stop_date_is_the_last_day_an_event_can_happen() {
+		$starts = Chess_Army_Knife_Events::occurrence_starts( '2026-10-05 19:00:00', 'weekly', '2026-10-12', '', '2027-01-01 00:00:00' );
+
+		$this->assertSame( array( '2026-10-05 19:00:00', '2026-10-12 19:00:00' ), $starts );
+	}
+
+	public function test_monthly_events_use_the_last_day_of_a_shorter_month() {
+		$starts = Chess_Army_Knife_Events::occurrence_starts( '2026-01-31 18:30:00', 'monthly', '', '', '2026-05-01 00:00:00' );
+
+		$this->assertSame( array( '2026-01-31 18:30:00', '2026-02-28 18:30:00', '2026-03-31 18:30:00', '2026-04-30 18:30:00' ), $starts );
+	}
+
+	public function test_annual_events_keep_their_date_and_move_a_leap_day() {
+		$this->assertSame(
+			array( '2027-03-14 10:00:00', '2028-03-14 10:00:00' ),
+			Chess_Army_Knife_Events::occurrence_starts( '2026-03-14 10:00:00', 'annually', '', '2027-01-01 00:00:00', '2029-01-01 00:00:00' )
+		);
+		$this->assertSame(
+			array( '2027-02-28 10:00:00', '2028-02-29 10:00:00' ),
+			Chess_Army_Knife_Events::occurrence_starts( '2024-02-29 10:00:00', 'annually', '', '2027-01-01 00:00:00', '2029-01-01 00:00:00' )
+		);
+	}
+
+	public function test_a_repeating_event_with_no_end_is_worked_out_a_year_ahead() {
+		$starts = Chess_Army_Knife_Events::occurrence_starts( '2026-10-05 19:00:00', 'weekly', '', '2026-10-05 00:00:00', '' );
+
+		$this->assertCount( 53, $starts );
+		$this->assertSame( '2026-10-05 19:00:00', $starts[0] );
+	}
+
+	public function test_an_unknown_repeat_is_a_one_off_and_a_bad_start_has_no_occurrences() {
+		$this->assertSame( array( '2026-10-05 19:00:00' ), Chess_Army_Knife_Events::occurrence_starts( '2026-10-05 19:00:00', 'daily', '', '', '' ) );
+		$this->assertSame( array(), Chess_Army_Knife_Events::occurrence_starts( 'soon', 'weekly', '', '', '' ) );
+	}
 }

@@ -98,7 +98,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-even
 					<?php foreach ( $day_events as $event ) : ?>
 						<li class="cak-event"<?php echo $options['show_teams'] && '' !== Chess_Army_Knife_Events_Display::team_label( $event ) ? Chess_Army_Knife_Events_Display::colour_style( $event ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in colour_style(). ?>>
 							<p class="cak-event__when"><span class="cak-event__time"><?php echo esc_html( Chess_Army_Knife_Events_Display::time_label( $event ) ); ?></span></p>
-							<p class="cak-event__title"><a href="<?php echo esc_url( $event['url'] ); ?>"><?php echo esc_html( $event['title'] ); ?></a></p>
+							<p class="cak-event__title"><?php echo Chess_Army_Knife_Events_Display::title_html( $event ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in title_html(). ?></p>
 							<?php echo Chess_Army_Knife_Events_Display::details_html( $event, $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in details_html(). ?>
 						</li>
 					<?php endforeach; ?>

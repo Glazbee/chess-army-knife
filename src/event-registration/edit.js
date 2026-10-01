@@ -33,7 +33,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							'chess-army-knife'
 						) }
 						help={ __(
-							"Leave at 0 on an event's own page. Elsewhere, enter the event's ID (shown in its edit address).",
+							"Leave at 0 on the page attached to the event. Elsewhere, enter the event's ID (shown in its edit address).",
 							'chess-army-knife'
 						) }
 						value={ eventId }

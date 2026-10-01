@@ -1,8 +1,8 @@
 <?php
 /**
  * Admin side of club events: the "Event details" box on the edit screen
- * (date, time, location, tournaments and leagues) and the When / Location
- * columns on the events list.
+ * (repeat, dates, times, location, page, tournaments and leagues) and the
+ * When / Location columns on the events list.
  *
  * Tags use WordPress's own tag box.
  *
@@ -43,6 +43,20 @@ class Chess_Army_Knife_Events_Admin {
 	}
 
 	/**
+	 * How an event can repeat.
+	 *
+	 * @return string[] Value => label; the empty value is a one-off.
+	 */
+	public static function repeat_options() {
+		return array(
+			''         => __( 'Does not repeat', 'chess-army-knife' ),
+			'weekly'   => __( 'Every week', 'chess-army-knife' ),
+			'monthly'  => __( 'Every month', 'chess-army-knife' ),
+			'annually' => __( 'Every year', 'chess-army-knife' ),
+		);
+	}
+
+	/**
 	 * Leagues the club can attach: each distinct division among the teams' league entries.
 	 *
 	 * @return array[] Each { ref, label }.
@@ -74,6 +88,10 @@ class Chess_Army_Knife_Events_Admin {
 		$end      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_END, true );
 		$location = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_LOCATION, true );
 
+		$repeat = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_REPEAT, true );
+		$until  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_UNTIL, true );
+		$page   = (int) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_PAGE, true );
+
 		$date       = '' !== $start ? substr( $start, 0, 10 ) : '';
 		$start_time = '' !== $start ? substr( $start, 11, 5 ) : Chess_Army_Knife_Events::default_time();
 		$end_time   = '' !== $end ? substr( $end, 11, 5 ) : '';
@@ -88,16 +106,33 @@ class Chess_Army_Knife_Events_Admin {
 		?>
 		<table class="form-table" role="presentation">
 			<tr>
-				<th scope="row"><label for="chess_army_event_date"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></label></th>
+				<th scope="row"><label for="chess_army_event_repeat"><?php esc_html_e( 'Repeats', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<select id="chess_army_event_repeat" name="chess_army_event_repeat">
+						<?php foreach ( self::repeat_options() as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $repeat, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_date"><?php esc_html_e( 'Start date', 'chess-army-knife' ); ?></label></th>
 				<td><input type="date" id="chess_army_event_date" name="chess_army_event_date" value="<?php echo esc_attr( $date ); ?>" required /></td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="chess_army_event_start_time"><?php esc_html_e( 'Starts', 'chess-army-knife' ); ?></label></th>
+				<th scope="row"><label for="chess_army_event_until"><?php esc_html_e( 'Stop date', 'chess-army-knife' ); ?></label></th>
 				<td>
-					<input type="time" id="chess_army_event_start_time" name="chess_army_event_start_time" value="<?php echo esc_attr( $start_time ); ?>" required />
-					<label for="chess_army_event_end_time"><?php esc_html_e( 'Ends (optional)', 'chess-army-knife' ); ?></label>
-					<input type="time" id="chess_army_event_end_time" name="chess_army_event_end_time" value="<?php echo esc_attr( $end_time ); ?>" />
+					<input type="date" id="chess_army_event_until" name="chess_army_event_until" value="<?php echo esc_attr( $until ); ?>" />
+					<p class="description"><?php esc_html_e( 'For a repeating event: the last day it can happen. Leave blank to repeat with no end.', 'chess-army-knife' ); ?></p>
 				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_start_time"><?php esc_html_e( 'Start time', 'chess-army-knife' ); ?></label></th>
+				<td><input type="time" id="chess_army_event_start_time" name="chess_army_event_start_time" value="<?php echo esc_attr( $start_time ); ?>" required /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_end_time"><?php esc_html_e( 'Stop time', 'chess-army-knife' ); ?></label></th>
+				<td><input type="time" id="chess_army_event_end_time" name="chess_army_event_end_time" value="<?php echo esc_attr( $end_time ); ?>" /> <span class="description"><?php esc_html_e( 'Optional.', 'chess-army-knife' ); ?></span></td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="chess_army_event_location"><?php esc_html_e( 'Location', 'chess-army-knife' ); ?></label></th>
@@ -113,6 +148,34 @@ class Chess_Army_Knife_Events_Admin {
 						}
 						?>
 					</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_page"><?php esc_html_e( 'Page', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<?php
+					// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Core escapes the dropdown it prints.
+					wp_dropdown_pages(
+						array(
+							'name'              => 'chess_army_event_page',
+							'id'                => 'chess_army_event_page',
+							'selected'          => $page,
+							'show_option_none'  => __( 'No page', 'chess-army-knife' ),
+							'option_none_value' => '0',
+						)
+					);
+					// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+					?>
+					<?php if ( $page && get_edit_post_link( $page ) ) : ?>
+						<a href="<?php echo esc_url( get_edit_post_link( $page ) ); ?>"><?php esc_html_e( 'Edit page', 'chess-army-knife' ); ?></a>
+					<?php endif; ?>
+					<?php if ( current_user_can( 'edit_pages' ) ) : ?>
+						<label style="display:block">
+							<input type="checkbox" name="chess_army_event_create_page" value="1" />
+							<?php esc_html_e( 'Create a draft page for this event when I save', 'chess-army-knife' ); ?>
+						</label>
+					<?php endif; ?>
+					<p class="description"><?php esc_html_e( 'An event has no page of its own. Attach a page to link the event to it wherever it is listed.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -172,6 +235,16 @@ class Chess_Army_Knife_Events_Admin {
 			$end = '';
 		}
 
+		// Only a real repeat is kept, and a stop date only makes sense for one, on or after the start date.
+		$repeat = isset( $_POST['chess_army_event_repeat'] ) ? sanitize_key( wp_unslash( $_POST['chess_army_event_repeat'] ) ) : '';
+		if ( ! array_key_exists( $repeat, self::repeat_options() ) ) {
+			$repeat = '';
+		}
+		$until = isset( $_POST['chess_army_event_until'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_event_until'] ) ) : '';
+		if ( '' === $repeat || '' === Chess_Army_Knife_Events::combine_datetime( $until, '00:00' ) || $until < $date ) {
+			$until = '';
+		}
+
 		// An imported event that is edited by hand is no longer overwritten by imports.
 		if ( '' !== (string) get_post_meta( $post_id, Chess_Army_Knife_Events_Import::META_LMS_KEY, true ) ) {
 			update_post_meta( $post_id, Chess_Army_Knife_Events_Import::META_EDITED, 1 );
@@ -179,6 +252,9 @@ class Chess_Army_Knife_Events_Admin {
 
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_START, $start );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_END, $end );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_REPEAT, $repeat );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_UNTIL, $until );
+		self::save_page( $post_id );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_LOCATION, isset( $_POST['chess_army_event_location'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_event_location'] ) ) : '' );
 
 		// Only tournaments that exist can be attached.
@@ -201,6 +277,33 @@ class Chess_Army_Knife_Events_Admin {
 			}
 		}
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_LEAGUES, array_values( array_unique( $leagues ) ) );
+	}
+
+	/**
+	 * Attach the chosen page to the event, or make a draft one if asked.
+	 *
+	 * @param int $post_id Event id.
+	 */
+	protected static function save_page( $post_id ) {
+		// The nonce was checked in save().
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		$page_id = isset( $_POST['chess_army_event_page'] ) ? absint( $_POST['chess_army_event_page'] ) : 0;
+
+		if ( ! empty( $_POST['chess_army_event_create_page'] ) && ! $page_id && current_user_can( 'edit_pages' ) ) {
+			$created = wp_insert_post(
+				array(
+					'post_type'   => 'page',
+					'post_status' => 'draft',
+					'post_title'  => get_the_title( $post_id ),
+				)
+			);
+			$page_id = is_wp_error( $created ) ? 0 : (int) $created;
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		// Only an existing page can be attached.
+		$page = $page_id ? get_post( $page_id ) : null;
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_PAGE, $page && 'page' === $page->post_type ? $page_id : '' );
 	}
 
 	/**
@@ -247,6 +350,12 @@ class Chess_Army_Knife_Events_Admin {
 			$start = (string) get_post_meta( $post_id, Chess_Army_Knife_Events::META_START, true );
 			$ts    = Chess_Army_Knife_Events::to_timestamp( $start );
 			echo $ts ? esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $ts ) ) : esc_html__( 'No date set', 'chess-army-knife' );
+
+			$repeat  = (string) get_post_meta( $post_id, Chess_Army_Knife_Events::META_REPEAT, true );
+			$options = self::repeat_options();
+			if ( '' !== $repeat && isset( $options[ $repeat ] ) ) {
+				echo '<br />' . esc_html( $options[ $repeat ] );
+			}
 		} elseif ( 'chess_army_location' === $column ) {
 			$location = trim( (string) get_post_meta( $post_id, Chess_Army_Knife_Events::META_LOCATION, true ) );
 			echo esc_html( '' !== $location ? $location : Chess_Army_Knife_Events::default_location() );

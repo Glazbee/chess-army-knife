@@ -282,4 +282,153 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '3-1', $row['result_text'] );
 		$this->assertSame( '', $row['home_score'] );
 	}
+
+	/**
+	 * Answer v2 requests from a map of path (after the v2 base) => body, recording the calls.
+	 */
+	private function serve_v2( array $bodies, array &$calls = array() ) {
+		Functions\when( 'wp_remote_get' )->alias(
+			function ( $url, $args ) use ( $bodies, &$calls ) {
+				$calls[] = array(
+					'url'  => $url,
+					'args' => $args,
+				);
+				$path    = substr( $url, strlen( Chess_Army_Knife_LMS_Client::V2_BASE ) + 1 );
+				return isset( $bodies[ $path ] ) ? $this->response( 200, $bodies[ $path ] ) : $this->response( 404, array( 'error' => 'nope' ) );
+			}
+		);
+	}
+
+	private function v2_league() {
+		return array(
+			'org/702/seasons'  => array(
+				'seasons' => array(
+					array(
+						'id'     => 1,
+						'name'   => '2024-25',
+						'status' => 'old',
+					),
+					array(
+						'id'     => 2,
+						'name'   => '2025-26',
+						'status' => 'active',
+					),
+				),
+			),
+			'season/2/events'  => array(
+				'events' => array(
+					array(
+						'id'   => 20,
+						'name' => 'Division Two',
+						'type' => 'team_league',
+					),
+					array(
+						'id'   => 21,
+						'name' => 'Division One',
+						'type' => 'team_league',
+					),
+				),
+			),
+			'event/21/results' => array(
+				'event_name' => 'Division One',
+				'event_type' => 'team_league',
+				'fixtures'   => array(
+					array(
+						'fixture_id' => 5,
+						'round'      => 1,
+						'date'       => '2026-10-05',
+						'time'       => '19:30',
+						'home_team'  => 'Central Birmingham-1',
+						'away_team'  => 'Solihull-1',
+						'games'      => array(),
+					),
+					array(
+						'fixture_id' => 6,
+						'round'      => 2,
+						'date'       => null,
+						'time'       => null,
+						'home_team'  => 'Solihull-1',
+						'away_team'  => 'Central Birmingham-1',
+						'games'      => array(),
+					),
+				),
+			),
+		);
+	}
+
+	public function test_fixtures_need_an_api_key_and_make_no_request_without_one() {
+		Functions\expect( 'wp_remote_get' )->never();
+
+		$this->assertSame( 'lms_no_api_key', Chess_Army_Knife_LMS_Client::get_fixtures( '702', 'Division One' )->get_error_code() );
+	}
+
+	public function test_fixtures_are_found_through_the_active_season_and_named_event() {
+		$this->set_settings(
+			array(
+				'lms_api_key'        => 'lmsk_secret',
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
+		$calls = array();
+		$this->serve_v2( $this->v2_league(), $calls );
+
+		$rows = Chess_Army_Knife_LMS_Client::get_fixtures( '702', ' division  one ' );
+
+		$this->assertCount( 3, $calls );
+		$this->assertSame( 'Bearer lmsk_secret', $calls[0]['args']['headers']['Authorization'] );
+		$this->assertSame( Chess_Army_Knife_LMS_Client::V2_BASE . '/event/21/results', $calls[2]['url'] );
+		$this->assertCount( 2, $rows );
+		$this->assertSame( 'Central Birmingham-1', $rows[0]['home'] );
+		$this->assertSame( 'Solihull-1', $rows[0]['away'] );
+		$this->assertSame( '2026-10-05', $rows[0]['date'] );
+		$this->assertSame( '19:30', $rows[0]['time'] );
+		$this->assertSame( '', $rows[1]['date'], 'An unscheduled fixture has no date.' );
+	}
+
+	public function test_an_event_missing_from_the_active_season_is_an_error() {
+		$this->set_settings(
+			array(
+				'lms_api_key'        => 'lmsk_secret',
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
+		$this->serve_v2( $this->v2_league() );
+
+		$this->assertSame( 'lms_event_not_found', Chess_Army_Knife_LMS_Client::get_fixtures( '702', 'Division Three' )->get_error_code() );
+	}
+
+	public function test_a_rejected_key_is_reported() {
+		$this->set_settings(
+			array(
+				'lms_api_key'        => 'wrong',
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
+		Functions\when( 'wp_remote_get' )->justReturn( $this->response( 401, array( 'error' => 'Unauthenticated' ) ) );
+
+		$this->assertSame( 'lms_unauthorised', Chess_Army_Knife_LMS_Client::get_fixtures( '702', 'Division One' )->get_error_code() );
+	}
+
+	public function test_an_unknown_organisation_is_reported() {
+		$this->set_settings(
+			array(
+				'lms_api_key'        => 'lmsk_secret',
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
+		$this->serve_v2( array() );
+
+		$this->assertSame( 'lms_not_found', Chess_Army_Knife_LMS_Client::get_fixtures( '999', 'Division One' )->get_error_code() );
+	}
+
+	public function test_the_v2_base_follows_a_settings_override() {
+		$this->assertSame( Chess_Army_Knife_LMS_Client::V2_BASE, Chess_Army_Knife_LMS_Client::v2_base() );
+
+		$this->set_settings( array( 'lms_base_url' => 'https://lms.example.test/lms/lmsrest/league/' ) );
+		$this->assertSame( 'https://lms.example.test/lms/lmsrest/v2', Chess_Army_Knife_LMS_Client::v2_base() );
+	}
 }
