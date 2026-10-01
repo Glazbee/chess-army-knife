@@ -378,4 +378,70 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( ' style="--cak-event-colour:#d62a2a"', Chess_Army_Knife_Events_Display::colour_style( $both, false ) );
 		$this->assertSame( '', Chess_Army_Knife_Events_Display::colour_style( $this->event( array( 'colour' => 'red;x' ) ) ) );
 	}
+
+	public function test_a_title_links_to_the_events_page_only_if_it_has_one() {
+		Functions\when( 'esc_url' )->returnArg();
+
+		$this->assertSame( '<a href="https://example.test/event">Club night</a>', Chess_Army_Knife_Events_Display::title_html( $this->event() ) );
+		$this->assertSame( 'Club night', Chess_Army_Knife_Events_Display::title_html( $this->event( array( 'url' => '' ) ) ) );
+	}
+
+	public function test_an_event_takes_its_first_tags_colour_when_it_has_no_other() {
+		Functions\when( 'sanitize_hex_color' )->alias(
+			function ( $colour ) {
+				return preg_match( '/^#[0-9a-f]{6}$/i', $colour ) ? $colour : '';
+			}
+		);
+		Functions\when( 'esc_attr' )->alias( 'htmlspecialchars' );
+
+		$tagged = $this->event(
+			array(
+				'tags' => array(
+					array(
+						'name'   => 'Coaching',
+						'slug'   => 'coaching',
+						'colour' => '#2a9d5c',
+					),
+					array(
+						'name'   => 'Juniors',
+						'slug'   => 'juniors',
+						'colour' => '#d62a8f',
+					),
+				),
+			)
+		);
+		$this->assertSame( ' style="--cak-event-colour:#2a9d5c"', Chess_Army_Knife_Events_Display::colour_style( $tagged ) );
+
+		$own           = $tagged;
+		$own['colour'] = '#d62a2a';
+		$this->assertSame( ' style="--cak-event-colour:#d62a2a"', Chess_Army_Knife_Events_Display::colour_style( $own ), 'Its own colour comes first.' );
+
+		$team          = $tagged;
+		$team['teams'] = array( $this->side( 1, 'A', 'home', '#2a78d6' ) );
+		$this->assertSame( ' style="--cak-event-colour:#2a78d6"', Chess_Army_Knife_Events_Display::colour_style( $team ), 'A team colour comes before a tag colour.' );
+		$this->assertSame( ' style="--cak-event-colour:#2a9d5c"', Chess_Army_Knife_Events_Display::colour_style( $team, false ) );
+	}
+
+	public function test_the_key_lists_each_tag_with_its_colour() {
+		Functions\when( 'sanitize_hex_color' )->returnArg();
+		Functions\when( 'esc_attr' )->alias( 'htmlspecialchars' );
+		Functions\when( 'get_term_meta' )->justReturn( '#2a9d5c' );
+		Functions\when( 'get_terms' )->justReturn(
+			array(
+				(object) array(
+					'term_id' => 3,
+					'name'    => 'Coaching',
+					'slug'    => 'coaching',
+				),
+			)
+		);
+
+		$html = Chess_Army_Knife_Events_Display::key_html();
+
+		$this->assertStringContainsString( 'style="--cak-event-colour:#2a9d5c"', $html );
+		$this->assertStringContainsString( 'Coaching', $html );
+
+		Functions\when( 'get_terms' )->justReturn( array() );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::key_html(), 'No tags, no key.' );
+	}
 }

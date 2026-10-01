@@ -149,7 +149,54 @@ class Chess_Army_Knife_Events_Display {
 			}
 		}
 
+		// Then the colour of its first tag, which the key explains.
+		if ( ! $colour ) {
+			foreach ( $event['tags'] as $tag ) {
+				$colour = isset( $tag['colour'] ) ? sanitize_hex_color( $tag['colour'] ) : '';
+				if ( $colour ) {
+					break;
+				}
+			}
+		}
+
 		return $colour ? ' style="--cak-event-colour:' . esc_attr( $colour ) . '"' : '';
+	}
+
+	/**
+	 * The key to the colours: each tag in use, with its colour.
+	 *
+	 * @param string[] $tag_slugs Only these tags; none means every tag in use.
+	 * @return string Escaped HTML, or '' if no tag is in use.
+	 */
+	public static function key_html( array $tag_slugs = array() ) {
+		$args = array(
+			'taxonomy'   => Chess_Army_Knife_Events::TAXONOMY,
+			'hide_empty' => true,
+		);
+		if ( $tag_slugs ) {
+			$args['slug'] = $tag_slugs;
+		}
+
+		$terms = get_terms( $args );
+		if ( ! is_array( $terms ) || ! $terms ) {
+			return '';
+		}
+
+		$html = '<ul class="cak-key" aria-label="' . esc_attr__( 'Key to event colours', 'chess-army-knife' ) . '">';
+		foreach ( $terms as $term ) {
+			$html .= '<li class="cak-key__item" style="--cak-event-colour:' . esc_attr( Chess_Army_Knife_Events::tag_colour( $term ) ) . '"><span class="cak-bubble__dot" aria-hidden="true"></span> ' . esc_html( $term->name ) . '</li>';
+		}
+		return $html . '</ul>';
+	}
+
+	/**
+	 * An event's title, linked to its page if it has one.
+	 *
+	 * @param array $event Event data.
+	 * @return string Escaped HTML.
+	 */
+	public static function title_html( array $event ) {
+		return '' !== $event['url'] ? '<a href="' . esc_url( $event['url'] ) . '">' . esc_html( $event['title'] ) . '</a>' : esc_html( $event['title'] );
 	}
 
 	/**

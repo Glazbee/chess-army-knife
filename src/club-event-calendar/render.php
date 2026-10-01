@@ -23,6 +23,8 @@ $tag_slugs     = Chess_Army_Knife_Events_Display::tag_slugs( isset( $attributes[
 $team_ids      = isset( $attributes['teamIds'] ) ? array_values( array_filter( array_map( 'absint', (array) $attributes['teamIds'] ) ) ) : array();
 $venue         = isset( $attributes['venue'] ) && in_array( $attributes['venue'], array( 'home', 'away' ), true ) ? $attributes['venue'] : 'all';
 $subscribe_url = ! isset( $attributes['showSubscribe'] ) || $attributes['showSubscribe'] ? Chess_Army_Knife_Events_Feed::url( $team_ids, $venue, $tag_slugs ) : '';
+$show_key      = ! isset( $attributes['showKey'] ) || $attributes['showKey'];
+$key_html      = $show_key ? Chess_Army_Knife_Events_Display::key_html( $tag_slugs ) : '';
 $layout        = isset( $attributes['layout'] ) && 'month' === $attributes['layout'] ? 'month' : 'agenda';
 
 if ( 'month' === $layout ) {
@@ -58,6 +60,7 @@ if ( 'month' === $layout ) {
 				<?php echo Chess_Army_Knife_Events_Display::month_html( $event_year, $month, Chess_Army_Knife_Events_Display::month_events( $event_year, $month, $tag_slugs, $team_ids, $venue ), $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in month_html(). ?>
 			</div>
 		</div>
+		<?php echo $key_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in key_html(). ?>
 		<?php if ( '' !== $subscribe_url ) : ?>
 			<p class="cak-event__subscribe"><a href="<?php echo esc_url( $subscribe_url ); ?>"><?php esc_html_e( 'Subscribe to this calendar (.ics)', 'chess-army-knife' ); ?></a></p>
 		<?php endif; ?>
@@ -106,6 +109,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-even
 			</section>
 		<?php endforeach; ?>
 	<?php endif; ?>
+	<?php echo $key_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in key_html(). ?>
 	<?php if ( '' !== $subscribe_url ) : ?>
 		<p class="cak-event__subscribe"><a href="<?php echo esc_url( $subscribe_url ); ?>"><?php esc_html_e( 'Subscribe to this calendar (.ics)', 'chess-army-knife' ); ?></a></p>
 	<?php endif; ?>

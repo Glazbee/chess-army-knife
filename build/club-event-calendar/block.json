@@ -62,6 +62,10 @@
       "type": "string",
       "default": "all"
     },
+    "showKey": {
+      "type": "boolean",
+      "default": true
+    },
     "showSubscribe": {
       "type": "boolean",
       "default": true

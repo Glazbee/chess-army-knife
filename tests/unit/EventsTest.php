@@ -152,4 +152,40 @@ class EventsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( '2026-10-05 19:00:00' ), Chess_Army_Knife_Events::occurrence_starts( '2026-10-05 19:00:00', 'daily', '', '', '' ) );
 		$this->assertSame( array(), Chess_Army_Knife_Events::occurrence_starts( 'soon', 'weekly', '', '', '' ) );
 	}
+
+	public function test_a_tag_without_a_chosen_colour_gets_a_steady_one_from_the_palette() {
+		Brain\Monkey\Functions\when( 'get_term_meta' )->justReturn( '' );
+		Brain\Monkey\Functions\when( 'sanitize_hex_color' )->alias(
+			function ( $colour ) {
+				return preg_match( '/^#[0-9a-f]{6}$/i', $colour ) ? $colour : '';
+			}
+		);
+		$term = (object) array(
+			'term_id' => 5,
+			'slug'    => 'club-night',
+		);
+
+		$colour = Chess_Army_Knife_Events::tag_colour( $term );
+
+		$this->assertContains( $colour, Chess_Army_Knife_Events::tag_palette() );
+		$this->assertSame( $colour, Chess_Army_Knife_Events::tag_colour( $term ), 'The same tag always has the same colour.' );
+	}
+
+	public function test_a_chosen_tag_colour_wins_and_an_invalid_one_is_ignored() {
+		Brain\Monkey\Functions\when( 'sanitize_hex_color' )->alias(
+			function ( $colour ) {
+				return preg_match( '/^#[0-9a-f]{6}$/i', $colour ) ? $colour : '';
+			}
+		);
+		$term = (object) array(
+			'term_id' => 5,
+			'slug'    => 'club-night',
+		);
+
+		Brain\Monkey\Functions\when( 'get_term_meta' )->justReturn( '#123456' );
+		$this->assertSame( '#123456', Chess_Army_Knife_Events::tag_colour( $term ) );
+
+		Brain\Monkey\Functions\when( 'get_term_meta' )->justReturn( 'red;x' );
+		$this->assertContains( Chess_Army_Knife_Events::tag_colour( $term ), Chess_Army_Knife_Events::tag_palette() );
+	}
 }

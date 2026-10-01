@@ -146,6 +146,8 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Fixed: the list ("agenda") layout of the Club Event Calendar and the Next Club Event block failed to load, and events without a page of their own linked to the page being viewed.
+* Added: event colours follow the event's tag, so no event is grey. Each tag has a colour (Club Events > Event tags, or one is chosen for it), and the Club Event Calendar shows a key to the colours that you can switch off in the block's settings. An event's own colour, then a team's, still come first.
 * Added: Setup (Chess Army Knife → Setup), offered once after the plugin is turned on. It asks for the club's name and venue, lets you tick the regular weekly events (club night, coaching, competitive games) to add to the calendar, and asks for your ECF club code and LMS details.
 * Changed: Settings is simpler and grouped under Your club, ECF ratings, LMS and Membership. New: **Club name**, used in emails and policies; **Club venue** replaces "Default event location". Removed: the LMS API address override, the default event/division name (teams carry their own leagues), and the safeguarding and data protection contact fields (fill those in on the policy page). "Days to look back" and "Members to check" now sit together under ECF ratings.
 * Changed: how long old membership records are kept is now set on the Policies screen only.

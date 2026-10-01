@@ -26,6 +26,63 @@ class Chess_Army_Knife_Events_Admin {
 		add_action( 'manage_' . Chess_Army_Knife_Events::POST_TYPE . '_posts_custom_column', array( __CLASS__, 'render_column' ), 10, 2 );
 		add_filter( 'manage_edit-' . Chess_Army_Knife_Events::POST_TYPE . '_sortable_columns', array( __CLASS__, 'sortable_columns' ) );
 		add_action( 'pre_get_posts', array( __CLASS__, 'sort_list' ) );
+		add_action( Chess_Army_Knife_Events::TAXONOMY . '_add_form_fields', array( __CLASS__, 'render_new_tag_colour' ) );
+		add_action( Chess_Army_Knife_Events::TAXONOMY . '_edit_form_fields', array( __CLASS__, 'render_tag_colour' ) );
+		add_action( 'created_' . Chess_Army_Knife_Events::TAXONOMY, array( __CLASS__, 'save_tag_colour' ) );
+		add_action( 'edited_' . Chess_Army_Knife_Events::TAXONOMY, array( __CLASS__, 'save_tag_colour' ) );
+	}
+
+	/**
+	 * The colour field on the "add tag" form.
+	 */
+	public static function render_new_tag_colour() {
+		wp_nonce_field( 'chess_army_knife_tag_colour', 'chess_army_knife_tag_colour_nonce' );
+		?>
+		<div class="form-field">
+			<label for="chess_army_tag_colour"><?php esc_html_e( 'Colour', 'chess-army-knife' ); ?></label>
+			<input type="color" id="chess_army_tag_colour" name="chess_army_tag_colour" value="#2a78d6" />
+			<label><input type="checkbox" name="chess_army_tag_colour_default" value="1" checked="checked" /> <?php esc_html_e( 'Choose a colour for me', 'chess-army-knife' ); ?></label>
+			<p><?php esc_html_e( 'Events with this tag are this colour in the calendar, and the calendar\'s key shows it.', 'chess-army-knife' ); ?></p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * The colour field on the "edit tag" form.
+	 *
+	 * @param WP_Term $term Tag being edited.
+	 */
+	public static function render_tag_colour( $term ) {
+		$chosen = (string) sanitize_hex_color( (string) get_term_meta( $term->term_id, Chess_Army_Knife_Events::TAG_COLOUR_META, true ) );
+		wp_nonce_field( 'chess_army_knife_tag_colour', 'chess_army_knife_tag_colour_nonce' );
+		?>
+		<tr class="form-field">
+			<th scope="row"><label for="chess_army_tag_colour"><?php esc_html_e( 'Colour', 'chess-army-knife' ); ?></label></th>
+			<td>
+				<input type="color" id="chess_army_tag_colour" name="chess_army_tag_colour" value="<?php echo esc_attr( '' !== $chosen ? $chosen : Chess_Army_Knife_Events::tag_colour( $term ) ); ?>" />
+				<label><input type="checkbox" name="chess_army_tag_colour_default" value="1" <?php checked( '' === $chosen ); ?> /> <?php esc_html_e( 'Choose a colour for me', 'chess-army-knife' ); ?></label>
+				<p class="description"><?php esc_html_e( 'Events with this tag are this colour in the calendar, and the calendar\'s key shows it.', 'chess-army-knife' ); ?></p>
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * Save a tag's colour.
+	 *
+	 * @param int $term_id Tag id.
+	 */
+	public static function save_tag_colour( $term_id ) {
+		if ( ! isset( $_POST['chess_army_knife_tag_colour_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['chess_army_knife_tag_colour_nonce'] ) ), 'chess_army_knife_tag_colour' ) || ! current_user_can( 'edit_term', $term_id ) ) {
+			return;
+		}
+
+		$colour = ( ! empty( $_POST['chess_army_tag_colour_default'] ) || ! isset( $_POST['chess_army_tag_colour'] ) ) ? '' : (string) sanitize_hex_color( sanitize_text_field( wp_unslash( $_POST['chess_army_tag_colour'] ) ) );
+		if ( '' === $colour ) {
+			delete_term_meta( $term_id, Chess_Army_Knife_Events::TAG_COLOUR_META );
+		} else {
+			update_term_meta( $term_id, Chess_Army_Knife_Events::TAG_COLOUR_META, $colour );
+		}
 	}
 
 	/**

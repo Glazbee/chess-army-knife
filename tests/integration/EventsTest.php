@@ -585,4 +585,36 @@ class EventsTest extends WP_UnitTestCase {
 		);
 		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_COLOUR, true ), 'The default colour box clears it.' );
 	}
+
+	public function test_an_event_with_no_page_does_not_link_to_the_page_being_viewed() {
+		$viewed = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+			)
+		);
+		$id     = $this->event( 'Night', '2099-01-01 19:00:00' );
+		$this->go_to( get_permalink( $viewed ) );
+
+		$this->assertSame( '', Chess_Army_Knife_Events::page_url( $id ) );
+		$this->assertSame( '', Chess_Army_Knife_Events::query()[0]['url'] );
+		$this->assertStringNotContainsString( get_permalink( $viewed ), do_blocks( '<!-- wp:chess-army-knife/club-event-calendar /-->' ) );
+	}
+
+	public function test_a_tagged_event_gets_its_tags_colour_and_the_calendar_has_a_key() {
+		$id = $this->event( 'Night', '2099-01-01 19:00:00' );
+		wp_set_object_terms( $id, array( 'Coaching' ), Chess_Army_Knife_Events::TAXONOMY );
+		$term = get_term_by( 'name', 'Coaching', Chess_Army_Knife_Events::TAXONOMY );
+
+		$event = Chess_Army_Knife_Events::query()[0];
+		$this->assertSame( Chess_Army_Knife_Events::tag_colour( $term ), $event['tags'][0]['colour'] );
+
+		update_term_meta( $term->term_id, Chess_Army_Knife_Events::TAG_COLOUR_META, '#123456' );
+		$html = do_blocks( '<!-- wp:chess-army-knife/club-event-calendar /-->' );
+		$this->assertStringContainsString( '--cak-event-colour:#123456', $html );
+		$this->assertStringContainsString( 'class="cak-key"', $html );
+
+		$hidden = do_blocks( '<!-- wp:chess-army-knife/club-event-calendar {"showKey":false} /-->' );
+		$this->assertStringNotContainsString( 'cak-key', $hidden );
+	}
 }

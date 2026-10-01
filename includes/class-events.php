@@ -34,6 +34,9 @@ class Chess_Army_Knife_Events {
 	const META_TEAM        = '_chess_army_event_team'; // One row per club team playing in the fixture.
 	const META_SIDES       = '_chess_army_event_sides'; // Team id => 'home' or 'away'.
 
+	/** Term meta holding a tag's colour, a hex code. */
+	const TAG_COLOUR_META = 'chess_army_tag_colour';
+
 	/** How far ahead, in days, a repeating event is worked out when a query has no end. */
 	const HORIZON_DAYS = 366;
 
@@ -93,6 +96,32 @@ class Chess_Army_Knife_Events {
 				'rewrite'      => false,
 			)
 		);
+	}
+
+	/**
+	 * Colours given to tags that have none chosen, so no event is left grey.
+	 *
+	 * @return string[] Hex colours, distinguishable from one another.
+	 */
+	public static function tag_palette() {
+		return array( '#2a78d6', '#d62a2a', '#2a9d5c', '#c77d0a', '#8a4fd6', '#d62a8f', '#0f9aa8', '#7a5c2e' );
+	}
+
+	/**
+	 * A tag's colour: the one chosen for it, or one from the palette picked by its name,
+	 * so the same tag always has the same colour.
+	 *
+	 * @param WP_Term $term Event tag.
+	 * @return string Hex colour.
+	 */
+	public static function tag_colour( $term ) {
+		$colour = sanitize_hex_color( (string) get_term_meta( $term->term_id, self::TAG_COLOUR_META, true ) );
+		if ( $colour ) {
+			return $colour;
+		}
+
+		$palette = self::tag_palette();
+		return $palette[ crc32( (string) $term->slug ) % count( $palette ) ];
 	}
 
 	/**
@@ -349,7 +378,9 @@ class Chess_Army_Knife_Events {
 	 * @return string The page's address, or '' if the event has no published page.
 	 */
 	public static function page_url( $event_id ) {
-		$page = get_post( (int) get_post_meta( $event_id, self::META_PAGE, true ) );
+		$page_id = (int) get_post_meta( $event_id, self::META_PAGE, true );
+		// get_post( 0 ) would give the page being viewed, so an event with no page must not ask.
+		$page = $page_id ? get_post( $page_id ) : null;
 
 		return ( $page && 'page' === $page->post_type && 'publish' === $page->post_status ) ? (string) get_permalink( $page ) : '';
 	}
@@ -369,7 +400,7 @@ class Chess_Army_Knife_Events {
 	 *     @type string   $repeat              'weekly', 'monthly', 'annually' or ''.
 	 *     @type string   $colour              The event's own colour, a hex code, or ''.
 	 *     @type string   $location            The event's own location, or the default.
-	 *     @type array[]  $tags                Each { name, slug }.
+	 *     @type array[]  $tags                Each { name, slug, colour }.
 	 *     @type array[]  $tournaments         Each { id, name, url } (url '' unless it has a published page).
 	 *     @type array[]  $leagues             Each { org, event }.
 	 *     @type array[]  $teams               The club teams playing, each { id, name, colour, side }.
@@ -386,8 +417,9 @@ class Chess_Army_Knife_Events {
 		$terms = get_the_terms( $id, self::TAXONOMY );
 		foreach ( is_array( $terms ) ? $terms : array() as $term ) {
 			$tags[] = array(
-				'name' => $term->name,
-				'slug' => $term->slug,
+				'name'   => $term->name,
+				'slug'   => $term->slug,
+				'colour' => self::tag_colour( $term ),
 			);
 		}
 
