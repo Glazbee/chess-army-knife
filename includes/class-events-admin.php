@@ -149,6 +149,8 @@ class Chess_Army_Knife_Events_Admin {
 		$until  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_UNTIL, true );
 		$page   = (int) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_PAGE, true );
 		$colour = (string) sanitize_hex_color( (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_COLOUR, true ) );
+		$map    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_MAP, true );
+		$w3w    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_W3W, true );
 
 		$date       = '' !== $start ? substr( $start, 0, 10 ) : '';
 		$start_time = '' !== $start ? substr( $start, 11, 5 ) : Chess_Army_Knife_Events::default_time();
@@ -217,6 +219,15 @@ class Chess_Army_Knife_Events_Admin {
 						}
 						?>
 					</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_map"><?php esc_html_e( 'Location on a map', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<input type="url" id="chess_army_event_map" name="chess_army_event_map" value="<?php echo esc_attr( $map ); ?>" class="regular-text" placeholder="https://maps.app.goo.gl/..." />
+					<label for="chess_army_event_w3w"><?php esc_html_e( 'what3words', 'chess-army-knife' ); ?></label>
+					<input type="text" id="chess_army_event_w3w" name="chess_army_event_w3w" value="<?php echo esc_attr( $w3w ); ?>" placeholder="index.home.raft" />
+					<p class="description"><?php esc_html_e( 'Optional: a Google Maps link and/or a what3words address. Leave all the location boxes blank to use the club venue.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -328,6 +339,8 @@ class Chess_Army_Knife_Events_Admin {
 		// The colour picker always sends a value, so "default" has its own box.
 		$colour = ( ! empty( $_POST['chess_army_event_colour_default'] ) || ! isset( $_POST['chess_army_event_colour'] ) ) ? '' : (string) sanitize_hex_color( sanitize_text_field( wp_unslash( $_POST['chess_army_event_colour'] ) ) );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_COLOUR, $colour );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_MAP, isset( $_POST['chess_army_event_map'] ) ? Chess_Army_Knife_Events::clean_map_url( sanitize_text_field( wp_unslash( $_POST['chess_army_event_map'] ) ) ) : '' );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_W3W, isset( $_POST['chess_army_event_w3w'] ) ? Chess_Army_Knife_Events::clean_what3words( sanitize_text_field( wp_unslash( $_POST['chess_army_event_w3w'] ) ) ) : '' );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_LOCATION, isset( $_POST['chess_army_event_location'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_event_location'] ) ) : '' );
 
 		// Only tournaments that exist can be attached.

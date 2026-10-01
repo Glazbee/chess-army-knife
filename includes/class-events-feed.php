@@ -118,6 +118,12 @@ class Chess_Army_Knife_Events_Feed {
 			foreach ( $event['tournaments'] as $tournament ) {
 				$description[] = $tournament['name'];
 			}
+			if ( ! empty( $event['map_url'] ) ) {
+				$description[] = $event['map_url'];
+			}
+			if ( ! empty( $event['what3words'] ) ) {
+				$description[] = '///' . $event['what3words'];
+			}
 			$team_label = Chess_Army_Knife_Events_Display::team_label( $event );
 			if ( '' !== $team_label ) {
 				array_unshift( $description, $team_label );

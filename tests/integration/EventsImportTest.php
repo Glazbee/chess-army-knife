@@ -369,4 +369,112 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $again['updated'] );
 		$this->assertCount( 1, get_post_meta( $events[0]['id'], Chess_Army_Knife_Events::META_TEAM, false ), 'Links are not duplicated.' );
 	}
+
+	private function event_titled( $title ) {
+		foreach ( $this->imported() as $event ) {
+			if ( $title === $event['title'] ) {
+				return $event;
+			}
+		}
+		$this->fail( 'No event called ' . $title );
+	}
+
+	public function test_a_home_fixture_is_held_at_the_teams_venue_and_an_away_one_has_none_until_the_club_is_known() {
+		$team_id = Chess_Army_Knife_Teams::all()[0]['id'];
+		update_post_meta( $team_id, Chess_Army_Knife_Teams::META_VENUE, 'Our Hall, High Street' );
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'lms_api_key'     => 'lmsk_test',
+				'club_venue'      => 'The Club Room',
+			)
+		);
+		$this->lms['Division 1'] = array(
+			$this->fixture( 'Our A', 'Stroud Otters', '2099-10-05' ),
+			$this->fixture( 'Stroud Otters', 'Our A', '2099-11-02' ),
+		);
+
+		$summary = Chess_Army_Knife_Events_Import::import();
+
+		$this->assertSame( 'Our Hall, High Street', $this->event_titled( 'Our A v Stroud Otters' )['location'] );
+		$away = $this->event_titled( 'Stroud Otters v Our A' );
+		$this->assertSame( '', $away['location'], 'An away fixture is not at our club venue.' );
+		$this->assertSame( 1, $summary['unsorted'], 'Stroud Otters is waiting to be put in a club.' );
+		$this->assertSame( array( 'Stroud Otters' ), Chess_Army_Knife_Clubs::unsorted() );
+
+		// The admin says where Stroud play; the next import gives the away fixture that venue.
+		Chess_Army_Knife_Clubs::add_teams_to_club(
+			array( 'Stroud Otters' ),
+			0,
+			'Stroud Chess Club',
+			array(
+				'venue'      => 'Stroud Library',
+				'map_url'    => 'https://maps.app.goo.gl/stroud',
+				'what3words' => 'index.home.raft',
+			)
+		);
+		$summary = Chess_Army_Knife_Events_Import::import();
+
+		$away = $this->event_titled( 'Stroud Otters v Our A' );
+		$this->assertSame( 1, $summary['updated'] );
+		$this->assertSame( 'Stroud Library', $away['location'] );
+		$this->assertSame( 'https://maps.app.goo.gl/stroud', $away['map_url'] );
+		$this->assertSame( 'index.home.raft', $away['what3words'] );
+		$this->assertSame( 0, $summary['unsorted'] );
+	}
+
+	public function test_an_event_edited_by_hand_keeps_its_own_location_when_a_venue_is_learned() {
+		$this->lms['Division 1'] = array( $this->fixture( 'Stroud Otters', 'Our A', '2099-10-05' ) );
+		Chess_Army_Knife_Events_Import::import();
+		$id = $this->imported()[0]['id'];
+		update_post_meta( $id, Chess_Army_Knife_Events_Import::META_EDITED, 1 );
+		update_post_meta( $id, Chess_Army_Knife_Events::META_LOCATION, 'Changed by hand' );
+
+		Chess_Army_Knife_Clubs::add_teams_to_club(
+			array( 'Stroud Otters' ),
+			0,
+			'Stroud',
+			array(
+				'venue'      => 'Stroud Library',
+				'map_url'    => '',
+				'what3words' => '',
+			)
+		);
+		Chess_Army_Knife_Events_Import::import();
+
+		$this->assertSame( 'Changed by hand', $this->imported()[0]['location'] );
+	}
+
+	public function test_a_club_is_found_by_any_of_its_team_names_and_keeps_its_venue_when_teams_are_added() {
+		$club = Chess_Army_Knife_Clubs::add_teams_to_club(
+			array( 'Stroud Otters' ),
+			0,
+			'Stroud',
+			array(
+				'venue'      => 'Stroud Library',
+				'map_url'    => '',
+				'what3words' => '',
+			)
+		);
+		Chess_Army_Knife_Clubs::note_seen( array( 'Stroud Otters', 'stroud badgers', 'Our A' ) );
+
+		$this->assertSame( 'Stroud', Chess_Army_Knife_Clubs::find_by_team( 'STROUD OTTERS' )['name'] );
+		$this->assertNull( Chess_Army_Knife_Clubs::find_by_team( 'Stroud Badgers' ) );
+		$this->assertSame( array( 'stroud badgers' ), Chess_Army_Knife_Clubs::unsorted(), 'Our own team and a sorted team are not waiting.' );
+
+		Chess_Army_Knife_Clubs::add_teams_to_club(
+			array( 'stroud badgers' ),
+			$club,
+			'Ignored',
+			array(
+				'venue'      => 'Ignored',
+				'map_url'    => '',
+				'what3words' => '',
+			)
+		);
+
+		$this->assertSame( 'Stroud Library', Chess_Army_Knife_Clubs::venue_of_team( 'Stroud Badgers' )['location'] );
+		$this->assertSame( array(), Chess_Army_Knife_Clubs::unsorted() );
+	}
 }

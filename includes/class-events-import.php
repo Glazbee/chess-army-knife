@@ -136,7 +136,7 @@ class Chess_Army_Knife_Events_Import {
 	 * @param string  $today              Today, "Y-m-d" (earlier fixtures are ignored).
 	 * @param string  $default_time       Start time for a fixture with none, "HH:MM".
 	 * @return array {
-	 *     @type array[] $candidates Each { key, title, start, location, league, club_teams }, where club_teams maps a league entry key to 'home' or 'away'.
+	 *     @type array[] $candidates Each { key, title, start, location, home_team, away_team, league, club_teams }, where club_teams maps a league entry key to 'home' or 'away'.
 	 *     @type int     $skipped    Fixtures ignored because their date couldn't be read.
 	 * }
 	 */
@@ -178,6 +178,8 @@ class Chess_Army_Knife_Events_Import {
 					'title'      => $match['home'] . ' v ' . $match['away'],
 					'start'      => $start,
 					'location'   => $match['venue'],
+					'home_team'  => $match['home'],
+					'away_team'  => $match['away'],
 					'league'     => Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ),
 					'club_teams' => $club_teams,
 				);
@@ -188,6 +190,62 @@ class Chess_Army_Knife_Events_Import {
 			'candidates' => array_values( $candidates ),
 			'skipped'    => $skipped,
 		);
+	}
+
+	/**
+	 * A venue as event meta: only what is known, so an unknown venue changes nothing.
+	 *
+	 * @param string[] $venue { location, map_url, what3words }.
+	 * @return string[] Meta key => value.
+	 */
+	protected static function venue_meta( array $venue ) {
+		$meta = array();
+		foreach ( array(
+			Chess_Army_Knife_Events::META_LOCATION => 'location',
+			Chess_Army_Knife_Events::META_MAP      => 'map_url',
+			Chess_Army_Knife_Events::META_W3W      => 'what3words',
+		) as $key => $field ) {
+			if ( '' !== $venue[ $field ] ) {
+				$meta[ $key ] = $venue[ $field ];
+			}
+		}
+
+		return $meta;
+	}
+
+	/**
+	 * Where a fixture is played, as far as the plugin knows: the club's own team's venue for
+	 * a home game, or the venue of the club that hosts it for an away game.
+	 *
+	 * @param array $candidate A candidate from plan().
+	 * @return string[] { location, map_url, what3words }; all '' if the venue is not known.
+	 */
+	public static function venue_for( array $candidate ) {
+		$none    = array(
+			'location'   => '',
+			'map_url'    => '',
+			'what3words' => '',
+		);
+		$default = Chess_Army_Knife_Events::default_venue();
+
+		foreach ( $candidate['club_teams'] as $season_key => $side ) {
+			if ( 'home' !== $side ) {
+				continue;
+			}
+
+			// The club's own team is at home: where that team plays, or the club venue.
+			$team  = Chess_Army_Knife_Teams::team_for_season( $season_key );
+			$venue = $team ? trim( $team['venue'] ) : '';
+			if ( '' === $venue || 0 === strcasecmp( $venue, $default['location'] ) ) {
+				return $default;
+			}
+
+			return array_merge( $none, array( 'location' => $venue ) );
+		}
+
+		$away = Chess_Army_Knife_Clubs::venue_of_team( $candidate['home_team'] );
+
+		return $away ? $away : $none;
 	}
 
 	/**
@@ -287,6 +345,7 @@ class Chess_Army_Knife_Events_Import {
 	 *     @type int      $updated   Untouched imported events that were refreshed.
 	 *     @type int      $unchanged Events that already matched.
 	 *     @type int      $kept      Events left alone (edited by hand, or trashed).
+	 *     @type int      $unsorted  Team names seen that are not in a club yet, so their home fixtures have no venue.
 	 *     @type int      $skipped   Fixtures with a date that couldn't be read.
 	 *     @type string[] $errors    Leagues that couldn't be loaded.
 	 * }
@@ -297,6 +356,7 @@ class Chess_Army_Knife_Events_Import {
 			'updated'   => 0,
 			'unchanged' => 0,
 			'kept'      => 0,
+			'unsorted'  => 0,
 			'skipped'   => 0,
 			'errors'    => array(),
 		);
@@ -316,8 +376,20 @@ class Chess_Army_Knife_Events_Import {
 
 		$summary['skipped'] = $plan['skipped'];
 
+		// Remember every team name seen, so the Sort Clubs screen can ask where they play.
+		$names = array();
+		foreach ( $matches as $rows ) {
+			foreach ( $rows as $row ) {
+				$names[] = $row['home'];
+				$names[] = $row['away'];
+			}
+		}
+		Chess_Army_Knife_Clubs::note_seen( $names );
+		$summary['unsorted'] = count( Chess_Army_Knife_Clubs::unsorted() );
+
 		foreach ( $plan['candidates'] as $candidate ) {
 			$existing = self::find_event( $candidate['key'] );
+			$venue    = self::venue_for( $candidate );
 
 			if ( ! $existing ) {
 				$post_id = wp_insert_post(
@@ -329,7 +401,7 @@ class Chess_Army_Knife_Events_Import {
 							self::META_LMS_KEY => $candidate['key'],
 							Chess_Army_Knife_Events::META_START => $candidate['start'],
 							Chess_Army_Knife_Events::META_LEAGUES => array( $candidate['league'] ),
-						) + ( '' !== $candidate['location'] ? array( Chess_Army_Knife_Events::META_LOCATION => $candidate['location'] ) : array() ),
+						) + self::venue_meta( $venue ),
 					),
 					true
 				);
@@ -351,9 +423,11 @@ class Chess_Army_Knife_Events_Import {
 				update_post_meta( $existing->ID, Chess_Army_Knife_Events::META_START, $candidate['start'] );
 				$changed = true;
 			}
-			if ( '' !== $candidate['location'] && get_post_meta( $existing->ID, Chess_Army_Knife_Events::META_LOCATION, true ) !== $candidate['location'] ) {
-				update_post_meta( $existing->ID, Chess_Army_Knife_Events::META_LOCATION, $candidate['location'] );
-				$changed = true;
+			foreach ( self::venue_meta( $venue ) as $meta_key => $value ) {
+				if ( get_post_meta( $existing->ID, $meta_key, true ) !== $value ) {
+					update_post_meta( $existing->ID, $meta_key, $value );
+					$changed = true;
+				}
 			}
 			if ( $existing->post_title !== $candidate['title'] ) {
 				wp_update_post(
@@ -429,6 +503,17 @@ class Chess_Army_Knife_Events_Import {
 					);
 					?>
 				</p></div>
+				<?php if ( ! empty( $result['unsorted'] ) ) : ?>
+					<div class="notice notice-info"><p>
+						<?php
+						echo esc_html(
+							/* translators: %d: number of team names */
+							sprintf( _n( '%d team name has not been put in a club, so its home fixtures have no venue.', '%d team names have not been put in a club, so their home fixtures have no venue.', $result['unsorted'], 'chess-army-knife' ), $result['unsorted'] )
+						);
+						?>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Clubs::PAGE ) ); ?>"><?php esc_html_e( 'Sort them into clubs', 'chess-army-knife' ); ?></a>
+					</p></div>
+				<?php endif; ?>
 				<?php foreach ( $result['errors'] as $error ) : ?>
 					<div class="notice notice-error"><p><?php echo esc_html( $error ); ?></p></div>
 				<?php endforeach; ?>

@@ -200,6 +200,31 @@ class Chess_Army_Knife_Events_Display {
 	}
 
 	/**
+	 * An event's venue: its name, with links to it on a map and its what3words address.
+	 *
+	 * @param array $event Event data.
+	 * @return string Escaped HTML, or '' if the event has no venue.
+	 */
+	public static function location_html( array $event ) {
+		$map = isset( $event['map_url'] ) ? (string) $event['map_url'] : '';
+		$w3w = isset( $event['what3words'] ) ? (string) $event['what3words'] : '';
+		if ( '' === $event['location'] && '' === $map && '' === $w3w ) {
+			return '';
+		}
+
+		$html = '<p class="cak-event__location">' . esc_html( $event['location'] );
+		if ( '' !== $map ) {
+			/* translators: %s: venue name */
+			$label = '' !== $event['location'] ? sprintf( __( 'Map of %s', 'chess-army-knife' ), $event['location'] ) : __( 'Map of the venue', 'chess-army-knife' );
+			$html .= ( '' !== $event['location'] ? ' ' : '' ) . '<a class="cak-event__map" href="' . esc_url( $map ) . '" aria-label="' . esc_attr( $label ) . '">' . esc_html__( 'Map', 'chess-army-knife' ) . '</a>';
+		}
+		if ( '' !== $w3w ) {
+			$html .= ( '' !== $event['location'] || '' !== $map ? ' ' : '' ) . '<a class="cak-event__w3w" href="' . esc_url( 'https://what3words.com/' . rawurlencode( $w3w ) ) . '" aria-label="' . esc_attr( sprintf( /* translators: %s: three words */ __( 'what3words address %s', 'chess-army-knife' ), $w3w ) ) . '">///' . esc_html( $w3w ) . '</a>';
+		}
+		return $html . '</p>';
+	}
+
+	/**
 	 * The location, tags and attached tournaments/leagues of an event.
 	 *
 	 * @param array $event   Event data.
@@ -214,8 +239,8 @@ class Chess_Army_Knife_Events_Display {
 			$html .= '<p class="cak-event__team">' . esc_html( $team_label ) . '</p>';
 		}
 
-		if ( ! empty( $options['show_location'] ) && '' !== $event['location'] ) {
-			$html .= '<p class="cak-event__location">' . esc_html( $event['location'] ) . '</p>';
+		if ( ! empty( $options['show_location'] ) ) {
+			$html .= self::location_html( $event );
 		}
 
 		if ( ! empty( $options['show_links'] ) ) {

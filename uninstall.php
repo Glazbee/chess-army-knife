@@ -22,6 +22,7 @@ wp_clear_scheduled_hook( 'Chess_Army_Knife_send_renewal_reminders' );
 wp_clear_scheduled_hook( 'Chess_Army_Knife_send_announcements' );
 delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
+delete_option( 'Chess_Army_Knife_clubs_seen' );
 delete_option( 'Chess_Army_Knife_club_teams_migrated' );
 delete_option( 'Chess_Army_Knife_templates' );
 // The policy pages are the club's own text, so they stay; only the plugin's note of which pages they are goes.
@@ -80,7 +81,7 @@ if ( $chess_army_knife_delete_data ) {
 // Membership types, teams and members (personal details) are user data too: only removed if the admin opted in.
 if ( $chess_army_knife_delete_data ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup of plugin-owned data and tables.
-	$chess_army_knife_type_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( %s, %s, %s )", 'chess_army_mem_type', 'chess_army_team', 'chess_army_announce' ) );
+	$chess_army_knife_type_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( %s, %s, %s, %s )", 'chess_army_mem_type', 'chess_army_team', 'chess_army_announce', 'chess_army_club' ) );
 	foreach ( $chess_army_knife_type_ids as $chess_army_knife_type_id ) {
 		wp_delete_post( (int) $chess_army_knife_type_id, true );
 	}

@@ -49,6 +49,8 @@ class Chess_Army_Knife_Settings {
 	public static function defaults() {
 		return array(
 			'club_name'                 => '', // The club's name; the site's title is used until it is set.
+			'club_venue_map'            => '', // Link to the venue on a map.
+			'club_venue_w3w'            => '', // The venue's what3words address.
 			'club_venue'                => '', // Where the club meets: used by club events that don't set their own location.
 			'default_org_id'            => '',
 			'default_domain'            => 'S',
@@ -269,6 +271,12 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['club_name'] ) ) {
 			$clean['club_name'] = sanitize_text_field( $input['club_name'] );
 		}
+		if ( isset( $input['club_venue_map'] ) ) {
+			$clean['club_venue_map'] = Chess_Army_Knife_Events::clean_map_url( $input['club_venue_map'] );
+		}
+		if ( isset( $input['club_venue_w3w'] ) ) {
+			$clean['club_venue_w3w'] = Chess_Army_Knife_Events::clean_what3words( $input['club_venue_w3w'] );
+		}
 		if ( isset( $input['club_venue'] ) ) {
 			$clean['club_venue'] = sanitize_text_field( $input['club_venue'] );
 		}
@@ -392,6 +400,20 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<input type="text" id="club_venue" name="<?php echo esc_attr( self::OPTION ); ?>[club_venue]" value="<?php echo esc_attr( $options['club_venue'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. The Village Hall, High Street', 'chess-army-knife' ); ?>" />
 							<p class="description"><?php esc_html_e( 'Where the club meets. A club event with no location of its own is held here.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="club_venue_map"><?php esc_html_e( 'Venue on a map', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="url" id="club_venue_map" name="<?php echo esc_attr( self::OPTION ); ?>[club_venue_map]" value="<?php echo esc_attr( $options['club_venue_map'] ); ?>" class="regular-text" placeholder="https://maps.app.goo.gl/..." />
+							<p class="description"><?php esc_html_e( 'A Google Maps (or similar) link to the venue. Shown beside the venue on events.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="club_venue_w3w"><?php esc_html_e( 'Venue what3words address', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="club_venue_w3w" name="<?php echo esc_attr( self::OPTION ); ?>[club_venue_w3w]" value="<?php echo esc_attr( $options['club_venue_w3w'] ); ?>" class="regular-text" placeholder="index.home.raft" />
+							<p class="description"><?php esc_html_e( 'The three words for the venue\'s entrance, for example index.home.raft. You can paste it with or without the ///.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>

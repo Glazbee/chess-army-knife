@@ -29,6 +29,8 @@ class Chess_Army_Knife_Events {
 	const META_PAGE        = '_chess_army_event_page'; // Id of the page attached to the event.
 	const META_COLOUR      = '_chess_army_event_colour'; // Hex colour of the event's bubble in the calendar; absent for the default.
 	const META_LOCATION    = '_chess_army_event_location';
+	const META_MAP         = '_chess_army_event_map'; // Link to the venue on a map (Google Maps or similar).
+	const META_W3W         = '_chess_army_event_w3w'; // The venue's what3words address, "word.word.word".
 	const META_TOURNAMENTS = '_chess_army_event_tournaments';
 	const META_LEAGUES     = '_chess_army_event_leagues';
 	const META_TEAM        = '_chess_army_event_team'; // One row per club team playing in the fixture.
@@ -95,6 +97,48 @@ class Chess_Army_Knife_Events {
 				'taxonomies'   => array( self::TAXONOMY ),
 				'rewrite'      => false,
 			)
+		);
+	}
+
+	/**
+	 * A map link: an http or https address, or ''.
+	 *
+	 * @param string $url Raw address.
+	 * @return string
+	 */
+	public static function clean_map_url( $url ) {
+		$url = esc_url_raw( trim( (string) $url ), array( 'http', 'https' ) );
+
+		return $url;
+	}
+
+	/**
+	 * A what3words address as "word.word.word", from what people type or paste:
+	 * "///index.home.raft", "index.home.raft" or a what3words.com link.
+	 *
+	 * @param string $raw What was entered.
+	 * @return string The cleaned address, or '' if it is not three words.
+	 */
+	public static function clean_what3words( $raw ) {
+		$raw = strtolower( trim( (string) $raw ) );
+		$raw = preg_replace( '#^https?://(?:www\.)?what3words\.com/#', '', $raw );
+		$raw = ltrim( $raw, '/' );
+
+		return preg_match( '/^[\p{L}\p{N}\-]+\.[\p{L}\p{N}\-]+\.[\p{L}\p{N}\-]+$/u', $raw ) ? $raw : '';
+	}
+
+	/**
+	 * The club venue's map link and what3words address from Settings, with its name.
+	 *
+	 * @return string[] { location, map_url, what3words }.
+	 */
+	public static function default_venue() {
+		$options = Chess_Army_Knife_Settings::get_options();
+
+		return array(
+			'location'   => trim( (string) $options['club_venue'] ),
+			'map_url'    => (string) $options['club_venue_map'],
+			'what3words' => (string) $options['club_venue_w3w'],
 		);
 	}
 
@@ -399,7 +443,9 @@ class Chess_Army_Knife_Events {
 	 *     @type string   $end                 Site-local "Y-m-d H:i:s", or ''.
 	 *     @type string   $repeat              'weekly', 'monthly', 'annually' or ''.
 	 *     @type string   $colour              The event's own colour, a hex code, or ''.
-	 *     @type string   $location            The event's own location, or the default.
+	 *     @type string   $location            The event's own location, or the club venue.
+	 *     @type string   $map_url             Link to it on a map, or ''.
+	 *     @type string   $what3words          Its what3words address, "word.word.word", or ''.
 	 *     @type array[]  $tags                Each { name, slug, colour }.
 	 *     @type array[]  $tournaments         Each { id, name, url } (url '' unless it has a published page).
 	 *     @type array[]  $leagues             Each { org, event }.
@@ -407,11 +453,21 @@ class Chess_Army_Knife_Events {
 	 * }
 	 */
 	public static function data( $post, $start = '' ) {
-		$id       = (int) $post->ID;
-		$first    = (string) get_post_meta( $id, self::META_START, true );
-		$end      = (string) get_post_meta( $id, self::META_END, true );
-		$start    = '' !== $start ? (string) $start : $first;
-		$location = trim( (string) get_post_meta( $id, self::META_LOCATION, true ) );
+		$id    = (int) $post->ID;
+		$first = (string) get_post_meta( $id, self::META_START, true );
+		$end   = (string) get_post_meta( $id, self::META_END, true );
+		$start = '' !== $start ? (string) $start : $first;
+		$venue = array(
+			'location'   => trim( (string) get_post_meta( $id, self::META_LOCATION, true ) ),
+			'map_url'    => (string) get_post_meta( $id, self::META_MAP, true ),
+			'what3words' => (string) get_post_meta( $id, self::META_W3W, true ),
+		);
+		// An event with no venue of its own is held at the club venue, unless it is an away fixture.
+		$sides = array_values( (array) get_post_meta( $id, self::META_SIDES, true ) );
+		$away  = $sides && ! in_array( 'home', $sides, true );
+		if ( '' === implode( '', $venue ) && ! $away ) {
+			$venue = self::default_venue();
+		}
 
 		$tags  = array();
 		$terms = get_the_terms( $id, self::TAXONOMY );
@@ -475,7 +531,9 @@ class Chess_Army_Knife_Events {
 			'end'         => $end,
 			'repeat'      => (string) get_post_meta( $id, self::META_REPEAT, true ),
 			'colour'      => (string) sanitize_hex_color( (string) get_post_meta( $id, self::META_COLOUR, true ) ),
-			'location'    => '' !== $location ? $location : self::default_location(),
+			'location'    => $venue['location'],
+			'map_url'     => $venue['map_url'],
+			'what3words'  => $venue['what3words'],
 			'tags'        => $tags,
 			'tournaments' => $tournaments,
 			'leagues'     => $leagues,

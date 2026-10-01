@@ -444,4 +444,28 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 		Functions\when( 'get_terms' )->justReturn( array() );
 		$this->assertSame( '', Chess_Army_Knife_Events_Display::key_html(), 'No tags, no key.' );
 	}
+
+	public function test_the_location_links_to_a_map_and_what3words_when_they_are_known() {
+		Functions\when( 'esc_url' )->returnArg();
+		Functions\when( 'esc_attr' )->alias( 'htmlspecialchars' );
+
+		$html = Chess_Army_Knife_Events_Display::location_html(
+			$this->event(
+				array(
+					'location'   => 'Town Hall',
+					'map_url'    => 'https://maps.app.goo.gl/abc',
+					'what3words' => 'index.home.raft',
+				)
+			)
+		);
+
+		$this->assertStringContainsString( 'Town Hall <a class="cak-event__map" href="https://maps.app.goo.gl/abc" aria-label="Map of Town Hall">Map</a>', $html );
+		$this->assertStringContainsString( 'href="https://what3words.com/index.home.raft"', $html );
+		$this->assertStringContainsString( '>///index.home.raft</a>', $html );
+	}
+
+	public function test_a_location_with_only_a_name_is_plain_text_and_none_is_nothing() {
+		$this->assertSame( '<p class="cak-event__location">Town Hall</p>', Chess_Army_Knife_Events_Display::location_html( $this->event( array( 'location' => 'Town Hall' ) ) ) );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::location_html( $this->event( array( 'location' => '' ) ) ) );
+	}
 }

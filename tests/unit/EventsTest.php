@@ -188,4 +188,36 @@ class EventsTest extends Chess_Army_Knife_TestCase {
 		Brain\Monkey\Functions\when( 'get_term_meta' )->justReturn( 'red;x' );
 		$this->assertContains( Chess_Army_Knife_Events::tag_colour( $term ), Chess_Army_Knife_Events::tag_palette() );
 	}
+
+	/**
+	 * @dataProvider what3words
+	 */
+	public function test_what3words_addresses_are_cleaned( $raw, $expected ) {
+		$this->assertSame( $expected, Chess_Army_Knife_Events::clean_what3words( $raw ) );
+	}
+
+	public function what3words() {
+		return array(
+			'plain'      => array( 'index.home.raft', 'index.home.raft' ),
+			'slashes'    => array( '///Index.Home.Raft', 'index.home.raft' ),
+			'link'       => array( 'https://what3words.com/index.home.raft', 'index.home.raft' ),
+			'padded'     => array( '  index.home.raft ', 'index.home.raft' ),
+			'accented'   => array( 'café.été.à', 'café.été.à' ),
+			'two words'  => array( 'index.home', '' ),
+			'four words' => array( 'a.b.c.d', '' ),
+			'sentence'   => array( 'the village hall', '' ),
+			'empty'      => array( '', '' ),
+		);
+	}
+
+	public function test_map_links_must_be_web_addresses() {
+		Brain\Monkey\Functions\when( 'esc_url_raw' )->alias(
+			function ( $url ) {
+				return preg_match( '#^https?://#', $url ) ? $url : '';
+			}
+		);
+
+		$this->assertSame( 'https://maps.app.goo.gl/abc', Chess_Army_Knife_Events::clean_map_url( ' https://maps.app.goo.gl/abc ' ) );
+		$this->assertSame( '', Chess_Army_Knife_Events::clean_map_url( 'javascript:alert(1)' ) );
+	}
 }
