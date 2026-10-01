@@ -477,4 +477,36 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertSame( 'Stroud Library', Chess_Army_Knife_Clubs::venue_of_team( 'Stroud Badgers' )['location'] );
 		$this->assertSame( array(), Chess_Army_Knife_Clubs::unsorted() );
 	}
+
+	public function test_a_fixture_is_tagged_league_match_and_with_its_teams_own_tag() {
+		$team_id = Chess_Army_Knife_Teams::all()[0]['id'];
+		update_post_meta( $team_id, Chess_Army_Knife_Teams::META_TAG, 'Lions' );
+		$this->lms['Division 1'] = array( $this->fixture( 'Our A', 'Rivals', '2099-10-05' ) );
+
+		Chess_Army_Knife_Events_Import::import();
+
+		$tags = wp_list_pluck( $this->imported()[0]['tags'], 'name' );
+		sort( $tags );
+		$this->assertSame( array( 'League match', 'Lions' ), $tags );
+		$this->assertCount( 1, Chess_Army_Knife_Events::query( array( 'tags' => array( 'lions' ) ) ), 'A calendar can show just this team.' );
+		$this->assertCount( 0, Chess_Army_Knife_Events::query( array( 'tags' => array( 'zebras' ) ) ) );
+	}
+
+	public function test_a_tag_added_to_a_team_later_reaches_its_existing_events_without_removing_others() {
+		$this->lms['Division 1'] = array( $this->fixture( 'Our A', 'Rivals', '2099-10-05' ) );
+		Chess_Army_Knife_Events_Import::import();
+		$id = $this->imported()[0]['id'];
+		wp_set_object_terms( $id, array( 'Juniors' ), Chess_Army_Knife_Events::TAXONOMY, true );
+
+		update_post_meta( Chess_Army_Knife_Teams::all()[0]['id'], Chess_Army_Knife_Teams::META_TAG, 'Lions' );
+		$summary = Chess_Army_Knife_Events_Import::import();
+
+		$tags = wp_list_pluck( $this->imported()[0]['tags'], 'name' );
+		sort( $tags );
+		$this->assertSame( array( 'Juniors', 'League match', 'Lions' ), $tags );
+		$this->assertSame( 1, $summary['updated'] );
+
+		$again = Chess_Army_Knife_Events_Import::import();
+		$this->assertSame( 0, $again['updated'], 'Nothing more to add.' );
+	}
 }

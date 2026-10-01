@@ -193,6 +193,25 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
+	 * The tags of a fixture: "League match", then each of the club's teams in it that has a tag of its own.
+	 *
+	 * @param string[] $club_teams League entry key => 'home' or 'away'.
+	 * @return string[] Tag names, without repeats.
+	 */
+	public static function tags_for( array $club_teams ) {
+		$tags = array( self::TAG );
+
+		foreach ( array_keys( $club_teams ) as $season_key ) {
+			$team = Chess_Army_Knife_Teams::team_for_season( $season_key );
+			if ( $team && '' !== $team['tag'] ) {
+				$tags[] = $team['tag'];
+			}
+		}
+
+		return array_values( array_unique( $tags ) );
+	}
+
+	/**
 	 * A venue as event meta: only what is known, so an unknown venue changes nothing.
 	 *
 	 * @param string[] $venue { location, map_url, what3words }.
@@ -406,7 +425,7 @@ class Chess_Army_Knife_Events_Import {
 					true
 				);
 				if ( ! is_wp_error( $post_id ) ) {
-					wp_set_object_terms( $post_id, array( self::TAG ), Chess_Army_Knife_Events::TAXONOMY );
+					wp_set_object_terms( $post_id, self::tags_for( $candidate['club_teams'] ), Chess_Army_Knife_Events::TAXONOMY );
 					self::sync_teams( $post_id, $candidate['club_teams'] );
 					++$summary['created'];
 				}
@@ -419,6 +438,19 @@ class Chess_Army_Knife_Events_Import {
 			}
 
 			$changed = self::sync_teams( $existing->ID, $candidate['club_teams'] );
+
+			// Add any tag the fixture is missing; tags added by hand are never taken away.
+			$has = array_map( 'strtolower', wp_list_pluck( (array) wp_get_object_terms( $existing->ID, Chess_Army_Knife_Events::TAXONOMY ), 'name' ) );
+			$new = array_filter(
+				self::tags_for( $candidate['club_teams'] ),
+				function ( $tag ) use ( $has ) {
+					return ! in_array( strtolower( $tag ), $has, true );
+				}
+			);
+			if ( $new ) {
+				wp_set_object_terms( $existing->ID, array_values( $new ), Chess_Army_Knife_Events::TAXONOMY, true );
+				$changed = true;
+			}
 			if ( get_post_meta( $existing->ID, Chess_Army_Knife_Events::META_START, true ) !== $candidate['start'] ) {
 				update_post_meta( $existing->ID, Chess_Army_Knife_Events::META_START, $candidate['start'] );
 				$changed = true;

@@ -63,6 +63,7 @@ class Chess_Army_Knife_Teams_Admin {
 		$venue   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
 		$captain = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
 		$colour  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
+		$tag     = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_TAG, true );
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
@@ -70,6 +71,13 @@ class Chess_Army_Knife_Teams_Admin {
 			<tr>
 				<th scope="row"><label for="chess_army_team_venue"><?php esc_html_e( 'Home venue', 'chess-army-knife' ); ?></label></th>
 				<td><input type="text" id="chess_army_team_venue" name="chess_army_team_venue" value="<?php echo esc_attr( $venue ); ?>" class="regular-text" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_team_tag"><?php esc_html_e( 'Calendar tag', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<input type="text" id="chess_army_team_tag" name="chess_army_team_tag" value="<?php echo esc_attr( $tag ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. Lions', 'chess-army-knife' ); ?>" />
+					<p class="description"><?php esc_html_e( 'Added to this team\'s imported fixtures, besides "League match", so a calendar can show only this team\'s matches and key them by colour. Leave blank for none.', 'chess-army-knife' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="chess_army_team_colour"><?php esc_html_e( 'Calendar colour', 'chess-army-knife' ); ?></label></th>
@@ -205,6 +213,7 @@ class Chess_Army_Knife_Teams_Admin {
 			return;
 		}
 
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_TAG, isset( $_POST['chess_army_team_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_tag'] ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_VENUE, isset( $_POST['chess_army_team_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_venue'] ) ) : '' );
 
 		$colour = ! empty( $_POST['chess_army_team_no_colour'] ) || ! isset( $_POST['chess_army_team_colour'] ) ? '' : (string) sanitize_hex_color( wp_unslash( $_POST['chess_army_team_colour'] ) );

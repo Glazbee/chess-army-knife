@@ -36,6 +36,7 @@ class Chess_Army_Knife_Teams {
 	const META_SEASONS = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
 	const META_LEAGUES = '_chess_army_team_leagues';
 	const META_COLOUR  = '_chess_army_team_colour';
+	const META_TAG     = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
 
 	/**
 	 * Hook up registration and cleanup.
@@ -136,7 +137,7 @@ class Chess_Army_Knife_Teams {
 	/**
 	 * The teams on offer, in their page order.
 	 *
-	 * @return array[] Each { id, name, description, venue, captain_id, colour, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
+	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
 		$posts = get_posts(
@@ -180,6 +181,7 @@ class Chess_Army_Knife_Teams {
 			'venue'       => (string) get_post_meta( $post->ID, self::META_VENUE, true ),
 			'captain_id'  => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
+			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
