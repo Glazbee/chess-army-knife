@@ -73,8 +73,57 @@ function initMonth( root ) {
 	next.hidden = false;
 }
 
+/**
+ * Event bubbles are details elements, so they open and close without scripts.
+ * This only keeps one open at a time, and closes it on a click elsewhere or Escape.
+ */
+function initBubbles() {
+	const closeOthers = ( keep ) => {
+		document
+			.querySelectorAll( '.cak-bubble[open]' )
+			.forEach( ( bubble ) => {
+				if ( bubble !== keep ) {
+					bubble.open = false;
+				}
+			} );
+	};
+
+	// The toggle event does not bubble, so listen while it travels down.
+	document.addEventListener(
+		'toggle',
+		( event ) => {
+			if (
+				event.target.classList &&
+				event.target.classList.contains( 'cak-bubble' ) &&
+				event.target.open
+			) {
+				closeOthers( event.target );
+			}
+		},
+		true
+	);
+
+	document.addEventListener( 'click', ( event ) => {
+		if ( ! event.target.closest( '.cak-bubble' ) ) {
+			closeOthers( null );
+		}
+	} );
+
+	document.addEventListener( 'keydown', ( event ) => {
+		if ( event.key !== 'Escape' ) {
+			return;
+		}
+		const open = document.querySelector( '.cak-bubble[open]' );
+		if ( open ) {
+			open.open = false;
+			open.querySelector( 'summary' ).focus();
+		}
+	} );
+}
+
 function initAll() {
 	document.querySelectorAll( '[data-cak-month]' ).forEach( initMonth );
+	initBubbles();
 }
 
 if ( document.readyState === 'loading' ) {

@@ -91,6 +91,7 @@ class Chess_Army_Knife_Events_Admin {
 		$repeat = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_REPEAT, true );
 		$until  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_UNTIL, true );
 		$page   = (int) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_PAGE, true );
+		$colour = (string) sanitize_hex_color( (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_COLOUR, true ) );
 
 		$date       = '' !== $start ? substr( $start, 0, 10 ) : '';
 		$start_time = '' !== $start ? substr( $start, 11, 5 ) : Chess_Army_Knife_Events::default_time();
@@ -133,6 +134,17 @@ class Chess_Army_Knife_Events_Admin {
 			<tr>
 				<th scope="row"><label for="chess_army_event_end_time"><?php esc_html_e( 'Stop time', 'chess-army-knife' ); ?></label></th>
 				<td><input type="time" id="chess_army_event_end_time" name="chess_army_event_end_time" value="<?php echo esc_attr( $end_time ); ?>" /> <span class="description"><?php esc_html_e( 'Optional.', 'chess-army-knife' ); ?></span></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_colour"><?php esc_html_e( 'Colour', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<input type="color" id="chess_army_event_colour" name="chess_army_event_colour" value="<?php echo esc_attr( '' !== $colour ? $colour : '#2a78d6' ); ?>" />
+					<label>
+						<input type="checkbox" name="chess_army_event_colour_default" value="1" <?php checked( '' === $colour ); ?> />
+						<?php esc_html_e( 'Use the default colour', 'chess-army-knife' ); ?>
+					</label>
+					<p class="description"><?php esc_html_e( 'Colours this event\'s bubble in the calendar. The default is the team\'s colour for a fixture, or none.', 'chess-army-knife' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="chess_army_event_location"><?php esc_html_e( 'Location', 'chess-army-knife' ); ?></label></th>
@@ -255,6 +267,10 @@ class Chess_Army_Knife_Events_Admin {
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_REPEAT, $repeat );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_UNTIL, $until );
 		self::save_page( $post_id );
+
+		// The colour picker always sends a value, so "default" has its own box.
+		$colour = ( ! empty( $_POST['chess_army_event_colour_default'] ) || ! isset( $_POST['chess_army_event_colour'] ) ) ? '' : (string) sanitize_hex_color( sanitize_text_field( wp_unslash( $_POST['chess_army_event_colour'] ) ) );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_COLOUR, $colour );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_LOCATION, isset( $_POST['chess_army_event_location'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_event_location'] ) ) : '' );
 
 		// Only tournaments that exist can be attached.

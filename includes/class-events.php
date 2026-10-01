@@ -27,6 +27,7 @@ class Chess_Army_Knife_Events {
 	const META_REPEAT      = '_chess_army_event_repeat'; // 'weekly', 'monthly' or 'annually'; absent for a one-off.
 	const META_UNTIL       = '_chess_army_event_until'; // Last date a repeating event can occur, "Y-m-d"; absent for no end.
 	const META_PAGE        = '_chess_army_event_page'; // Id of the page attached to the event.
+	const META_COLOUR      = '_chess_army_event_colour'; // Hex colour of the event's bubble in the calendar; absent for the default.
 	const META_LOCATION    = '_chess_army_event_location';
 	const META_TOURNAMENTS = '_chess_army_event_tournaments';
 	const META_LEAGUES     = '_chess_army_event_leagues';
@@ -366,6 +367,7 @@ class Chess_Army_Knife_Events {
 	 *     @type int|null $start_ts            Unix timestamp of the start.
 	 *     @type string   $end                 Site-local "Y-m-d H:i:s", or ''.
 	 *     @type string   $repeat              'weekly', 'monthly', 'annually' or ''.
+	 *     @type string   $colour              The event's own colour, a hex code, or ''.
 	 *     @type string   $location            The event's own location, or the default.
 	 *     @type array[]  $tags                Each { name, slug }.
 	 *     @type array[]  $tournaments         Each { id, name, url } (url '' unless it has a published page).
@@ -440,6 +442,7 @@ class Chess_Army_Knife_Events {
 			'start_ts'    => $start_ts,
 			'end'         => $end,
 			'repeat'      => (string) get_post_meta( $id, self::META_REPEAT, true ),
+			'colour'      => (string) sanitize_hex_color( (string) get_post_meta( $id, self::META_COLOUR, true ) ),
 			'location'    => '' !== $location ? $location : self::default_location(),
 			'tags'        => $tags,
 			'tournaments' => $tournaments,

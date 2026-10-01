@@ -45,15 +45,10 @@
 		font-weight: 600;
 	}
 
-	// A team colour is only used beside the team's name.
-	.cak-event[style*="--cak-team-colour"] {
-		border-left: 4px solid var(--cak-team-colour);
+	// An event's colour; a team's colour is only used beside the team's name.
+	.cak-event[style*="--cak-event-colour"] {
+		border-left: 4px solid var(--cak-event-colour);
 		padding-left: 0.6em;
-	}
-
-	.cak-month__event[style*="--cak-team-colour"] {
-		border-left: 3px solid var(--cak-team-colour);
-		padding-left: 0.3em;
 	}
 
 	.cak-event__subscribe {
@@ -194,16 +189,103 @@
 	.cak-month__event {
 		margin: 0 0 0.2em;
 		line-height: 1.25;
-		overflow-wrap: anywhere;
 	}
 
-	.cak-month__time {
+	// An event is a bubble: its start time and title on one line. Selecting it opens a panel.
+	.cak-bubble {
+		position: relative;
+	}
+
+	.cak-bubble__summary {
+		display: flex;
+		align-items: center;
+		gap: 0.3em;
+		min-height: 1.6em;
+		padding: 0.1em 0.35em;
+		border-radius: 4px;
+		background: color-mix(
+			in srgb,
+			var(--cak-event-colour, currentcolor) 14%,
+			transparent
+		);
+		white-space: nowrap;
+		cursor: pointer;
+		list-style: none;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+
+		&:hover {
+			background: color-mix(
+				in srgb,
+				var(--cak-event-colour, currentcolor) 26%,
+				transparent
+			);
+		}
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: 1px;
+		}
+	}
+
+	.cak-bubble__dot {
+		flex: none;
+		width: 0.65em;
+		height: 0.65em;
+		border-radius: 50%;
+		background: var(--cak-event-colour, currentcolor);
+	}
+
+	.cak-bubble__time {
+		flex: none;
 		font-weight: 600;
 	}
 
-	.cak-month__location {
-		display: block;
-		font-size: 0.9em;
+	.cak-bubble__title {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.cak-bubble__panel {
+		position: absolute;
+		z-index: 20;
+		top: 100%;
+		left: 0;
+		box-sizing: border-box;
+		width: 16em;
+		max-width: 80vw;
+		margin-top: 0.2em;
+		padding: 0.75em;
+		border: 2px solid currentcolor;
+		border-radius: 6px;
+		background: var(--ecf-bg, Canvas);
+		color: var(--ecf-text, CanvasText);
+		box-shadow: 0 4px 12px rgb(0 0 0 / 25%);
+		font-size: 0.95em;
+		white-space: normal;
+
+		p {
+			margin: 0.2em 0;
+		}
+	}
+
+	// Near the right edge the panel opens leftwards so it stays on screen.
+	.cak-month__table td:nth-child(n + 5) .cak-bubble__panel {
+		right: 0;
+		left: auto;
+	}
+
+	.cak-bubble__name {
+		font-weight: 700;
+	}
+
+	.cak-bubble__more a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
 	}
 
 	// The list of days is for a phone; the table is for everything wider.
@@ -224,6 +306,14 @@
 	@media (max-width: 600px) {
 		.cak-month__table {
 			display: none;
+		}
+
+		// On a phone the panel opens in the list, not over it.
+		.cak-bubble__panel {
+			position: static;
+			width: auto;
+			max-width: none;
+			box-shadow: none;
 		}
 
 		.cak-month__list {

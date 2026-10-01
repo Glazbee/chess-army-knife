@@ -559,4 +559,30 @@ class EventsTest extends WP_UnitTestCase {
 		$this->assertSame( 36, $options['member_retention_months'] );
 		$this->assertSame( 0, $options['use_local_cache'] );
 	}
+
+	public function test_saving_stores_an_events_colour_or_clears_it() {
+		$id    = $this->event( 'Night', '' );
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$base  = array(
+			'chess_army_event_date'       => '2099-10-05',
+			'chess_army_event_start_time' => '19:30',
+		);
+
+		$this->submit_details( $admin, $id, $base + array( 'chess_army_event_colour' => '#d62a2a' ) );
+		$this->assertSame( '#d62a2a', get_post_meta( $id, Chess_Army_Knife_Events::META_COLOUR, true ) );
+		$this->assertSame( '#d62a2a', Chess_Army_Knife_Events::data( get_post( $id ) )['colour'] );
+
+		$this->submit_details( $admin, $id, $base + array( 'chess_army_event_colour' => 'red;x' ) );
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_COLOUR, true ), 'Only a hex colour is kept.' );
+
+		$this->submit_details(
+			$admin,
+			$id,
+			$base + array(
+				'chess_army_event_colour'         => '#d62a2a',
+				'chess_army_event_colour_default' => '1',
+			)
+		);
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_COLOUR, true ), 'The default colour box clears it.' );
+	}
 }

@@ -69,6 +69,7 @@ class EventCalendarMonthTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Late night', $html );
 		$this->assertStringNotContainsString( 'Next month night', $html );
 		$this->assertStringContainsString( '<table class="cak-month__table">', $html );
+		$this->assertStringContainsString( 'cak-bubble__summary', $html, 'Each event is a bubble.' );
 	}
 
 	public function test_the_month_layout_respects_the_tag_filter() {
