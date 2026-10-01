@@ -91,7 +91,7 @@ $notice_id    = 'cak-data-notice';
 			<input type="hidden" name="cak_redirect" value="<?php echo esc_url( $page_url ? $page_url : home_url( '/' ) ); ?>" />
 			<?php wp_nonce_field( Chess_Army_Knife_Member_Requests::ACTION_REQUEST, Chess_Army_Knife_Member_Requests::NONCE_FIELD, false ); ?>
 
-			<p><?php esc_html_e( 'You can change your choices, ask for a copy of your details, or ask us to delete them. For a junior, use their parent or guardian\'s email address. We will email you a link to confirm it is you.', 'chess-army-knife' ); ?></p>
+			<p><?php esc_html_e( 'You can change your choices, ask for a copy of your details, or ask us to delete them. For a junior, use their parent or guardian\'s email address. We will email you a link to check it is you.', 'chess-army-knife' ); ?></p>
 
 			<p>
 				<label for="cak-data-email"><?php esc_html_e( 'The email address the club holds for you', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label>

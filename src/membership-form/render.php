@@ -116,7 +116,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 
 			<fieldset class="cak-membership-form__group" aria-describedby="cak-junior-hint">
 				<legend><?php esc_html_e( 'Juniors (under 18)', 'chess-army-knife' ); ?></legend>
-				<p id="cak-junior-hint" class="cak-membership-form__hint"><?php esc_html_e( 'A parent or guardian must complete this form for a junior. We write to the parent or guardian, so please leave the email address and phone above blank unless you agree below that we may contact the junior directly.', 'chess-army-knife' ); ?></p>
+				<p id="cak-junior-hint" class="cak-membership-form__hint"><?php esc_html_e( 'A parent or guardian must fill in this form for a junior. We write to the parent or guardian. Leave the email and phone boxes above empty, unless you tick the last box below to say we may contact the junior.', 'chess-army-knife' ); ?></p>
 				<p class="cak-membership-form__check">
 					<label><input type="checkbox" name="is_junior" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'is_junior' ) ); ?> /> <?php esc_html_e( 'This application is for someone under 18', 'chess-army-knife' ); ?></label>
 				</p>
@@ -137,7 +137,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 					<input type="tel" id="cak-member-guardian-phone" name="guardian_phone" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'guardian_phone' ) ); ?>" />
 				</p>
 				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="junior_contact" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'junior_contact' ) ); ?> /> <?php esc_html_e( 'I am the parent or guardian and the club may also contact the junior directly, using the email address and phone entered above', 'chess-army-knife' ); ?></label>
+					<label><input type="checkbox" name="junior_contact" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'junior_contact' ) ); ?> /> <?php esc_html_e( 'I am the parent or guardian. The club may also contact the junior, using the email address and phone number entered above.', 'chess-army-knife' ); ?></label>
 				</p>
 			</fieldset>
 
@@ -148,7 +148,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 					<label><input type="checkbox" name="newsletter" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'newsletter' ) ); ?> /> <?php esc_html_e( 'Yes, email me the club newsletter', 'chess-army-knife' ); ?></label>
 				</p>
 				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="whatsapp" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp' ) ); ?> /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group for the club team(s) ticked below. The other people in the group will be able to see the name and phone number.', 'chess-army-knife' ); ?></label>
+					<label><input type="checkbox" name="whatsapp" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp' ) ); ?> /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group for the teams I tick below. Everyone in the group can see the name and phone number.', 'chess-army-knife' ); ?></label>
 				</p>
 				<?php if ( $team_choices ) : ?>
 					<fieldset class="cak-membership-form__teams">
@@ -177,7 +177,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 			<p class="cak-membership-form__consent">
 				<label>
 					<input type="checkbox" id="cak-member-consent" name="consent" value="1" required <?php echo $attrs( 'cak-member-consent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> />
-					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details. If this application is for someone under 18, I am their parent or guardian and I agree on their behalf.', 'chess-army-knife' ) ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?>
+					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details. If this is for someone under 18, I am their parent or guardian, and I agree for them.', 'chess-army-knife' ) ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?>
 				</label>
 			</p>
 

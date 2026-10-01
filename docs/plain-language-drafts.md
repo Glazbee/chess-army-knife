@@ -1,4 +1,6 @@
-# Plain-language drafts for approval
+# Plain-language wording (applied)
+
+The wording below was approved and is now in the plugin. It is kept here as a record of what changed and why.
 
 WCAG 3.1.5 (AAA) asks for text that does not need more than lower-secondary reading ability, which is roughly a Flesch-Kincaid grade of 9 or below.
 
@@ -38,7 +40,7 @@ Reply with which ones to apply, or edit the "Proposed" text below.
 
 **Now:** We use your details to run the chess club and your membership: to consider your application, to keep our list of members, to arrange club and team activities and to contact you about your membership. Our lawful basis is legitimate interests: running the club and looking after its members, together with providing your membership itself. We do not sell your details or use them for advertising.
 
-**Proposed:** We use your details to run the club and your membership. That means deciding on your application, keeping our list of members, arranging club and team activities, and contacting you about your membership. The law lets us do this because it is a legitimate interest: running the club and looking after its members. We do not sell your details or use them for advertising.
+**Proposed:** We use your details to run the club and your membership. That means deciding on your application, keeping our list of members, arranging club and team activities, and contacting you about your membership. The law lets us do this because of our legitimate interests: running the club and looking after its members. We do not sell your details or use them for advertising.
 
 ### Policy: Your rights (grade 9.5 → 4.8)
 

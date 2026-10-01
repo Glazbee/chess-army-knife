@@ -46,6 +46,8 @@ Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and cove
 
 **Done since**
 
+- F-G12 and F-MT4: the plain-language wording in `plain-language-drafts.md` was approved and applied.
+
 - F-G18: the spam-trap fields are now `inert` (off-screen, out of the accessibility tree and unfocusable) instead of `aria-hidden`. Bots reading the HTML still see and fill them.
 
 **Accepted by the site owner**
@@ -54,12 +56,12 @@ Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and cove
 
 **Open**
 
-- F-G12 and F-MT4: plain-language wording needs your approval. See `plain-language-drafts.md`.
-- 1.4.12 text spacing, 1.4.10 reflow at 320px, and a screen-reader pass are still to be done in a real browser against a real WordPress page.
+- A screen-reader pass against a real WordPress page.
 - The admin screens and the block editor have not been audited.
 
 **Checked**
 
+- Reflow at 320px wide: nothing overflows the page outside the scrollable table regions. Text spacing (line height 1.5, letter spacing 0.12em, word spacing 0.16em, paragraph spacing 2em): nothing is clipped. Both on a page built from the plugin's own markup and stylesheets.
 - Axe (WCAG 2 A, AA, AAA and best-practice rules) reports no problems on the plugin's markup in light, dark and high-contrast pages. The page was built from the plugin's own helper code and stylesheets, not from a live WordPress render, so a run against real pages is still needed.
 
 ## Cross-cutting findings
