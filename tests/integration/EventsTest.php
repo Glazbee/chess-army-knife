@@ -547,6 +547,8 @@ class EventsTest extends WP_UnitTestCase {
 			array(
 				'club_name'      => 'Central Birmingham Chess Club',
 				'club_venue'     => 'The Hall',
+				'club_venue_map' => 'https://maps.app.goo.gl/hall',
+				'club_venue_w3w' => '///Index.Home.Raft',
 				'default_org_id' => '702',
 				'lms_api_key'    => 'lmsk_x',
 			)
@@ -555,6 +557,8 @@ class EventsTest extends WP_UnitTestCase {
 		$options = Chess_Army_Knife_Settings::get_options();
 		$this->assertSame( 'Central Birmingham Chess Club', $options['club_name'] );
 		$this->assertSame( 'The Hall', Chess_Army_Knife_Events::default_location() );
+		$this->assertSame( 'https://maps.app.goo.gl/hall', $options['club_venue_map'] );
+		$this->assertSame( 'index.home.raft', $options['club_venue_w3w'], 'Cleaned like an address typed in Settings.' );
 		$this->assertSame( '702', $options['default_org_id'] );
 		$this->assertSame( 36, $options['member_retention_months'] );
 		$this->assertSame( 0, $options['use_local_cache'] );

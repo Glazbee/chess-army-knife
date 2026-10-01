@@ -274,6 +274,20 @@ class Chess_Army_Knife_Setup {
 							<p class="description"><?php esc_html_e( 'Where the club meets. Events are held here unless they say otherwise.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
+					<tr>
+						<th scope="row"><label for="cak-setup-club-map"><?php esc_html_e( 'Venue on a map', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="url" id="cak-setup-club-map" name="club_venue_map" value="<?php echo esc_attr( $options['club_venue_map'] ); ?>" class="regular-text" placeholder="https://maps.app.goo.gl/..." />
+							<p class="description"><?php esc_html_e( 'A Google Maps link to the venue (optional).', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="cak-setup-club-w3w"><?php esc_html_e( 'Venue what3words address', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="cak-setup-club-w3w" name="club_venue_w3w" value="<?php echo esc_attr( $options['club_venue_w3w'] ); ?>" class="regular-text" placeholder="index.home.raft" />
+							<p class="description"><?php esc_html_e( 'The three words for the venue\'s entrance (optional).', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
 				</table>
 
 				<h2><?php esc_html_e( 'Regular events', 'chess-army-knife' ); ?></h2>
@@ -412,7 +426,7 @@ class Chess_Army_Knife_Setup {
 		}
 
 		$changes = array();
-		foreach ( array( 'club_name', 'club_venue', 'ecf_club_code', 'default_domain', 'lms_api_key', 'default_org_id' ) as $name ) {
+		foreach ( array( 'club_name', 'club_venue', 'club_venue_map', 'club_venue_w3w', 'ecf_club_code', 'default_domain', 'lms_api_key', 'default_org_id' ) as $name ) {
 			if ( isset( $_POST[ $name ] ) ) {
 				$changes[ $name ] = sanitize_text_field( wp_unslash( $_POST[ $name ] ) );
 			}
