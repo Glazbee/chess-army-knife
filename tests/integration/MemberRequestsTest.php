@@ -190,8 +190,9 @@ class MemberRequestsTest extends WP_UnitTestCase {
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/membership-form /-->' );
 
-		$this->assertStringContainsString( 'name="newsletter" value="1" />', $html );
-		$this->assertStringContainsString( 'name="whatsapp" value="1" />', $html );
+		// Unticked: the markup has no checked attribute (the space before the closing tag is where it would go).
+		$this->assertMatchesRegularExpression( '/name="newsletter" value="1"\s*\/>/', $html );
+		$this->assertMatchesRegularExpression( '/name="whatsapp" value="1"\s*\/>/', $html );
 		$this->assertDoesNotMatchRegularExpression( '/name="(newsletter|whatsapp)"[^>]*checked/', $html, 'Nothing is pre-ticked.' );
 		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="' . $this->team_a . '"', $html );
 		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="' . $this->team_b . '"', $html );

@@ -618,6 +618,6 @@ class RatingRefreshTest extends WP_UnitTestCase {
 			$text .= implode( ' ', $section['paragraphs'] );
 		}
 
-		$this->assertStringContainsString( 'fetch your current ECF rating from the ECF regularly', $text );
+		$this->assertStringContainsString( 'ask the ECF for your latest rating', $text );
 	}
 }
