@@ -90,9 +90,10 @@ class PoliciesTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_new_policy_is_not_finished_until_it_has_been_marked_as_reviewed() {
-		Chess_Army_Knife_Policies::set_up( 'data', true );
+		self::all_set_up();
 		$this->assertSame( 'review', Chess_Army_Knife_Policies::status( 'data' ) );
-		$this->assertStringContainsString( 'not yet reviewed', Chess_Army_Knife_Policies::attention_notice() );
+		$this->assertStringContainsString( 'marked as reviewed', Chess_Army_Knife_Policies::attention_notice() );
+		$this->assertStringNotContainsString( 'not set up yet', Chess_Army_Knife_Policies::attention_notice() );
 
 		Chess_Army_Knife_Policies::mark_reviewed( 'data', true );
 		$this->assertSame( 'done', Chess_Army_Knife_Policies::status( 'data' ) );
@@ -159,6 +160,12 @@ class PoliciesTest extends WP_UnitTestCase {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-privacy-policy-content.php';
 		set_current_screen( 'dashboard' );
+		// WordPress keeps the suggested text for the whole run, so start from none.
+		if ( property_exists( 'WP_Privacy_Policy_Content', 'policy_text' ) ) {
+			$text = new ReflectionProperty( 'WP_Privacy_Policy_Content', 'policy_text' );
+			$text->setAccessible( true );
+			$text->setValue( null, array() );
+		}
 		remove_all_actions( 'admin_init' );
 		do_action( 'admin_init' );
 		Chess_Army_Knife_Membership_Privacy::add_policy_content();
