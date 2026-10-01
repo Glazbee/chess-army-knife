@@ -72,6 +72,7 @@ class Chess_Army_Knife_Settings {
 			'delete_data_on_uninstall'  => 0, // Also delete tournaments and players when the plugin is deleted.
 			'safeguarding_officer'      => '', // Named in the safeguarding policy's starting text.
 			'safeguarding_email'        => '', // How to reach them, in the same text.
+			'safeguarding_phone'        => '',
 			'heading_level'             => 2, // Level of each block's main title, 1 to 5; its sub-headings follow.
 			'contrast_mode'             => 'device', // High contrast for the blocks: 'off', 'device' (follow the visitor's device) or 'always'.
 		);
@@ -253,6 +254,9 @@ class Chess_Army_Knife_Settings {
 		}
 		if ( isset( $input['safeguarding_officer'] ) ) {
 			$clean['safeguarding_officer'] = sanitize_text_field( $input['safeguarding_officer'] );
+		}
+		if ( isset( $input['safeguarding_phone'] ) ) {
+			$clean['safeguarding_phone'] = sanitize_text_field( $input['safeguarding_phone'] );
 		}
 		if ( isset( $input['safeguarding_email'] ) ) {
 			$clean['safeguarding_email'] = sanitize_email( $input['safeguarding_email'] );
@@ -462,6 +466,12 @@ class Chess_Army_Knife_Settings {
 						<th scope="row"><label for="safeguarding_email"><?php esc_html_e( 'Safeguarding contact email', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="email" id="safeguarding_email" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_email]" value="<?php echo esc_attr( $options['safeguarding_email'] ); ?>" class="regular-text" />
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="safeguarding_phone"><?php esc_html_e( 'Safeguarding contact phone', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="safeguarding_phone" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_phone]" value="<?php echo esc_attr( $options['safeguarding_phone'] ); ?>" class="regular-text" />
 						</td>
 					</tr>
 					<tr>

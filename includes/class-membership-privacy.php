@@ -486,7 +486,8 @@ class Chess_Army_Knife_Membership_Privacy {
 	 * holds the detail and can be edited on its own.
 	 */
 	public static function add_policy_content() {
-		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+		// Only once the club has made its data policy page: otherwise there is nothing to point to.
+		if ( ! function_exists( 'wp_add_privacy_policy_content' ) || null === Chess_Army_Knife_Policies::page( 'data' ) ) {
 			return;
 		}
 

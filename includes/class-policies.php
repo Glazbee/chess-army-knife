@@ -9,27 +9,34 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Each policy is a real WordPress page, so a club can edit it in the block
- * editor, publish it, put it in a menu and link to it from anywhere on the site.
- * The plugin writes the starting text once, as a draft, and never overwrites a
- * page again unless someone asks for the plugin's wording to be put back.
+ * Each policy is a real WordPress page, so a club can edit it in the block editor,
+ * publish it, put it in a menu and link to it from anywhere on the site.
+ *
+ * Policies are specific to each club, so nothing is made without being asked. The
+ * Policies screen asks, for each one, whether the club wants it, and for the few details
+ * the starting text needs. The plugin then writes the text once, as a draft, and the policy
+ * stays "not finished" until someone has read it and marked it as reviewed. The plugin
+ * never overwrites a page again unless asked to put its wording back.
  */
 class Chess_Army_Knife_Policies {
 
 	const PAGE           = 'chess-army-knife-policies';
 	const OPTION         = 'Chess_Army_Knife_policy_pages';
-	const ACTION_CREATE  = 'chess_army_knife_policy_create';
+	const ACTION_SETUP   = 'chess_army_knife_policy_setup';
+	const ACTION_REVIEW  = 'chess_army_knife_policy_review';
 	const ACTION_RESTORE = 'chess_army_knife_policy_restore';
 	const SHORTCODE      = 'chess_army_policy_link';
 	const PRIVACY_OPTION = 'wp_page_for_privacy_policy';
 	const REQUIRED_CAP   = 'edit_pages';
 
 	/**
-	 * Hook up the screen's actions and the link shortcode.
+	 * Hook up the screen's actions, the link shortcode and the reminder on a policy's own page.
 	 */
 	public static function init() {
-		add_action( 'admin_post_' . self::ACTION_CREATE, array( __CLASS__, 'handle_create' ) );
+		add_action( 'admin_post_' . self::ACTION_SETUP, array( __CLASS__, 'handle_setup' ) );
+		add_action( 'admin_post_' . self::ACTION_REVIEW, array( __CLASS__, 'handle_review' ) );
 		add_action( 'admin_post_' . self::ACTION_RESTORE, array( __CLASS__, 'handle_restore' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'edit_screen_notice' ) );
 		add_action( 'init', array( __CLASS__, 'register_shortcode' ) );
 	}
 
@@ -66,13 +73,35 @@ class Chess_Army_Knife_Policies {
 	}
 
 	/**
-	 * Which page each policy lives on.
+	 * What the club has decided about each policy.
 	 *
-	 * @return array[] By policy: { id, adopted } where adopted means the page was there before the plugin and is not the plugin's to rewrite.
+	 * @return array[] By policy: { choice: 'use' or 'skip', id, adopted, reviewed_at }. adopted means the page was
+	 *                 on the site before the plugin and is not the plugin's to rewrite or to ask about.
 	 */
 	protected static function saved() {
 		$saved = get_option( self::OPTION, array() );
 		return is_array( $saved ) ? $saved : array();
+	}
+
+	/**
+	 * Remember something about one policy.
+	 *
+	 * @param string $key    Policy, a key of policies().
+	 * @param array  $values Values to set.
+	 */
+	protected static function remember( $key, array $values ) {
+		$saved         = self::saved();
+		$saved[ $key ] = array_merge(
+			array(
+				'choice'      => '',
+				'id'          => 0,
+				'adopted'     => false,
+				'reviewed_at' => 0,
+			),
+			isset( $saved[ $key ] ) ? $saved[ $key ] : array(),
+			$values
+		);
+		update_option( self::OPTION, $saved );
 	}
 
 	/**
@@ -88,6 +117,50 @@ class Chess_Army_Knife_Policies {
 		}
 		$post = get_post( (int) $saved[ $key ]['id'] );
 		return $post && 'page' === $post->post_type && 'trash' !== $post->post_status ? $post : null;
+	}
+
+	/**
+	 * Where a policy stands.
+	 *
+	 * @param string $key Policy, a key of policies().
+	 * @return string 'undecided' (not asked yet, or the page was removed), 'skipped' (the club will do it itself),
+	 *                'review' (a page exists that nobody has marked as reviewed) or 'done'.
+	 */
+	public static function status( $key ) {
+		$saved = self::saved();
+		if ( isset( $saved[ $key ]['choice'] ) && 'skip' === $saved[ $key ]['choice'] ) {
+			return 'skipped';
+		}
+		if ( null === self::page( $key ) ) {
+			return 'undecided';
+		}
+		return ! empty( $saved[ $key ]['adopted'] ) || ! empty( $saved[ $key ]['reviewed_at'] ) ? 'done' : 'review';
+	}
+
+	/**
+	 * When a policy was marked as reviewed.
+	 *
+	 * @param string $key Policy, a key of policies().
+	 * @return int Unix time, or 0 if it has not been.
+	 */
+	public static function reviewed_at( $key ) {
+		$saved = self::saved();
+		return isset( $saved[ $key ]['reviewed_at'] ) ? (int) $saved[ $key ]['reviewed_at'] : 0;
+	}
+
+	/**
+	 * How many policies still need the club's attention: not yet decided, or not yet reviewed.
+	 *
+	 * @return int
+	 */
+	public static function attention_count() {
+		$count = 0;
+		foreach ( array_keys( self::policies() ) as $key ) {
+			if ( in_array( self::status( $key ), array( 'undecided', 'review' ), true ) ) {
+				++$count;
+			}
+		}
+		return $count;
 	}
 
 	/**
@@ -134,19 +207,8 @@ class Chess_Army_Knife_Policies {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * Make a page for every policy that has none. Pages are drafts, so nothing goes public
-	 * before the club has read it.
-	 */
-	public static function create_missing() {
-		foreach ( array_keys( self::policies() ) as $key ) {
-			if ( null === self::page( $key ) ) {
-				self::create( $key );
-			}
-		}
-	}
-
-	/**
 	 * Make the page for one policy, or adopt the site's own privacy policy page if it has one.
+	 * The page is a draft, and the policy is marked as needing review.
 	 *
 	 * @param string $key Policy, a key of policies().
 	 * @return int|WP_Error The page id.
@@ -157,17 +219,18 @@ class Chess_Army_Knife_Policies {
 			return new WP_Error( 'policy_unknown', __( 'That policy is not known.', 'chess-army-knife' ) );
 		}
 
-		$saved = self::saved();
-
 		// A site that already has a privacy policy keeps it: it is the owner's text, so it is not rewritten.
 		if ( 'privacy' === $key ) {
 			$existing = get_post( (int) get_option( self::PRIVACY_OPTION ) );
 			if ( $existing && 'page' === $existing->post_type && 'trash' !== $existing->post_status ) {
-				$saved[ $key ] = array(
-					'id'      => (int) $existing->ID,
-					'adopted' => true,
+				self::remember(
+					$key,
+					array(
+						'choice'  => 'use',
+						'id'      => (int) $existing->ID,
+						'adopted' => true,
+					)
 				);
-				update_option( self::OPTION, $saved );
 				return (int) $existing->ID;
 			}
 		}
@@ -186,11 +249,15 @@ class Chess_Army_Knife_Policies {
 			return $id;
 		}
 
-		$saved[ $key ] = array(
-			'id'      => (int) $id,
-			'adopted' => false,
+		self::remember(
+			$key,
+			array(
+				'choice'      => 'use',
+				'id'          => (int) $id,
+				'adopted'     => false,
+				'reviewed_at' => 0,
+			)
 		);
-		update_option( self::OPTION, $saved );
 
 		// The site's privacy policy page, for the link WordPress and other plugins show.
 		if ( 'privacy' === $key && ! get_option( self::PRIVACY_OPTION ) ) {
@@ -201,7 +268,8 @@ class Chess_Army_Knife_Policies {
 	}
 
 	/**
-	 * Put the plugin's wording back on a policy's page. The earlier text stays in the page's revisions.
+	 * Put the plugin's wording back on a policy's page. The earlier text stays in the page's
+	 * revisions, and the policy needs reviewing again.
 	 *
 	 * @param string $key Policy, a key of policies().
 	 * @return int|WP_Error The page id.
@@ -222,7 +290,121 @@ class Chess_Army_Knife_Policies {
 			),
 			true
 		);
-		return is_wp_error( $id ) ? $id : (int) $id;
+		if ( is_wp_error( $id ) ) {
+			return $id;
+		}
+
+		self::remember( $key, array( 'reviewed_at' => 0 ) );
+		return (int) $id;
+	}
+
+	/**
+	 * Answer the question for one policy: the club wants it (with the details the text needs), or will do it itself.
+	 *
+	 * @param string $key     Policy, a key of policies().
+	 * @param bool   $use     Whether the club wants the plugin to make the page.
+	 * @param array  $details Values for the policy's fields(), by field name.
+	 * @return int|true|WP_Error The page id when one was made, true when skipped.
+	 */
+	public static function set_up( $key, $use, array $details = array() ) {
+		$policies = self::policies();
+		if ( ! isset( $policies[ $key ] ) ) {
+			return new WP_Error( 'policy_unknown', __( 'That policy is not known.', 'chess-army-knife' ) );
+		}
+
+		if ( ! $use ) {
+			self::remember( $key, array( 'choice' => 'skip' ) );
+			return true;
+		}
+
+		self::save_details( $key, $details );
+
+		// Asking twice does not make a second page.
+		$existing = self::page( $key );
+		if ( $existing ) {
+			self::remember( $key, array( 'choice' => 'use' ) );
+			return (int) $existing->ID;
+		}
+		return self::create( $key );
+	}
+
+	/**
+	 * Say whether the club has read a policy and found that it matches what the club does.
+	 *
+	 * @param string $key      Policy, a key of policies().
+	 * @param bool   $reviewed True to mark it reviewed, false to ask for another review.
+	 */
+	public static function mark_reviewed( $key, $reviewed ) {
+		self::remember( $key, array( 'reviewed_at' => $reviewed ? time() : 0 ) );
+	}
+
+	/**
+	 * The details a policy's starting text asks the club for. They are saved in the plugin's settings,
+	 * so they are also found there.
+	 *
+	 * @param string $key Policy, a key of policies().
+	 * @return array[] Each { name, label, type, help }.
+	 */
+	public static function fields( $key ) {
+		if ( 'data' === $key ) {
+			return array(
+				array(
+					'name'  => 'data_contact_email',
+					'label' => __( 'Who should people contact about their personal details? (an email address)', 'chess-army-knife' ),
+					'type'  => 'email',
+					'help'  => __( 'Use a club address rather than a personal one.', 'chess-army-knife' ),
+				),
+				array(
+					'name'  => 'member_retention_months',
+					'label' => __( 'How many months do you keep details after someone stops being a member?', 'chess-army-knife' ),
+					'type'  => 'number',
+					'help'  => __( 'Use 0 to keep them until the person asks you to delete them.', 'chess-army-knife' ),
+				),
+			);
+		}
+		if ( 'safeguarding' === $key ) {
+			return array(
+				array(
+					'name'  => 'safeguarding_officer',
+					'label' => __( 'Name of the club\'s safeguarding officer', 'chess-army-knife' ),
+					'type'  => 'text',
+					'help'  => '',
+				),
+				array(
+					'name'  => 'safeguarding_email',
+					'label' => __( 'Their email address', 'chess-army-knife' ),
+					'type'  => 'email',
+					'help'  => '',
+				),
+				array(
+					'name'  => 'safeguarding_phone',
+					'label' => __( 'Their phone number (optional)', 'chess-army-knife' ),
+					'type'  => 'text',
+					'help'  => '',
+				),
+			);
+		}
+		return array();
+	}
+
+	/**
+	 * Save the details a policy asked for into the plugin's settings.
+	 *
+	 * @param string $key     Policy, a key of policies().
+	 * @param array  $details Values by field name.
+	 */
+	protected static function save_details( $key, array $details ) {
+		$options = Chess_Army_Knife_Settings::get_options();
+		$changed = false;
+		foreach ( self::fields( $key ) as $field ) {
+			if ( isset( $details[ $field['name'] ] ) ) {
+				$options[ $field['name'] ] = $details[ $field['name'] ];
+				$changed                   = true;
+			}
+		}
+		if ( $changed ) {
+			update_option( Chess_Army_Knife_Settings::OPTION, $options );
+		}
 	}
 
 	/* -------------------------------------------------------------
@@ -282,6 +464,7 @@ class Chess_Army_Knife_Policies {
 		$club    = '' !== $club ? $club : __( 'The club', 'chess-army-knife' );
 		$name    = trim( (string) $options['safeguarding_officer'] );
 		$email   = trim( (string) $options['safeguarding_email'] );
+		$phone   = trim( (string) $options['safeguarding_phone'] );
 
 		if ( '' !== $name ) {
 			/* translators: 1: the safeguarding officer's name */
@@ -289,9 +472,10 @@ class Chess_Army_Knife_Policies {
 		} else {
 			$officer = __( 'The club\'s safeguarding officer is [add the name of your safeguarding officer].', 'chess-army-knife' );
 		}
-		if ( '' !== $email ) {
-			/* translators: %s: email address */
-			$officer .= ' ' . sprintf( __( 'You can contact them at %s.', 'chess-army-knife' ), $email );
+		$reach = array_filter( array( $email, $phone ) );
+		if ( $reach ) {
+			/* translators: %s: how to reach them, such as an email address, or an email address and a phone number */
+			$officer .= ' ' . sprintf( __( 'You can contact them at %s.', 'chess-army-knife' ), implode( ' / ', $reach ) );
 		} else {
 			$officer .= ' ' . __( 'You can contact them at [add their email address or phone number].', 'chess-army-knife' );
 		}
@@ -430,33 +614,119 @@ class Chess_Army_Knife_Policies {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * A short name for a page's status.
-	 *
-	 * @param WP_Post|null $post The page.
-	 * @return string
-	 */
-	protected static function status_label( $post ) {
-		if ( ! $post ) {
-			return __( 'No page yet', 'chess-army-knife' );
-		}
-		$labels = array(
-			'publish' => __( 'Published', 'chess-army-knife' ),
-			'draft'   => __( 'Draft: not public yet', 'chess-army-knife' ),
-			'pending' => __( 'Waiting for review', 'chess-army-knife' ),
-			'private' => __( 'Private', 'chess-army-knife' ),
-			'future'  => __( 'Scheduled', 'chess-army-knife' ),
-		);
-		return isset( $labels[ $post->post_status ] ) ? $labels[ $post->post_status ] : $post->post_status;
-	}
-
-	/**
 	 * The address of this screen.
 	 *
 	 * @param array $args Extra query arguments.
 	 * @return string
 	 */
-	protected static function screen_url( array $args = array() ) {
+	public static function screen_url( array $args = array() ) {
 		return add_query_arg( array_merge( array( 'page' => self::PAGE ), $args ), admin_url( 'admin.php' ) );
+	}
+
+	/**
+	 * A message for the top of the Overview and the Policies screen while policies are not finished.
+	 *
+	 * @return string Escaped HTML, or '' if everything is done or skipped.
+	 */
+	public static function attention_notice() {
+		$count = self::attention_count();
+		if ( 0 === $count ) {
+			return '';
+		}
+
+		$undecided = 0;
+		foreach ( array_keys( self::policies() ) as $key ) {
+			if ( 'undecided' === self::status( $key ) ) {
+				++$undecided;
+			}
+		}
+
+		$message = $undecided
+			? __( 'Your club\'s policies are not set up yet. Each club\'s policies are different, so the plugin makes nothing until you say what you want. For each policy you can have a draft page made from an example, or say that you will do it yourself.', 'chess-army-knife' )
+			: __( 'A policy page is a draft from a general example and has not been marked as reviewed. Read it, change it to match what your club really does, and then mark it as reviewed. Until then it is not finished.', 'chess-army-knife' );
+
+		return '<div class="notice notice-warning inline"><p><strong>' . esc_html__( 'Your club\'s policies need your attention.', 'chess-army-knife' ) . '</strong> ' . esc_html( $message ) . ' <a href="' . esc_url( self::screen_url() ) . '">' . esc_html__( 'Go to Policies', 'chess-army-knife' ) . '</a></p></div>';
+	}
+
+	/**
+	 * Remind whoever opens a policy page that nobody has said it is finished.
+	 */
+	public static function edit_screen_notice() {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || 'post' !== $screen->base || 'page' !== $screen->post_type ) {
+			return;
+		}
+		$post_id = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: chooses whether to show a reminder.
+		foreach ( self::policies() as $key => $policy ) {
+			$page = self::page( $key );
+			if ( $page && $page->ID === $post_id && 'review' === self::status( $key ) ) {
+				echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'This policy is not finished.', 'chess-army-knife' ) . '</strong> ';
+				echo esc_html__( 'It started as a general example. Make sure it matches what your club really does before you publish it, then mark it as reviewed.', 'chess-army-knife' );
+				echo ' <a href="' . esc_url( self::screen_url() ) . '">' . esc_html__( 'Go to Policies', 'chess-army-knife' ) . '</a></p></div>';
+				return;
+			}
+		}
+	}
+
+	/**
+	 * A policy's example wording, as plain text to read before deciding.
+	 *
+	 * @param string $key Policy, a key of policies().
+	 * @return array[] Each { heading, paragraphs, items? }.
+	 */
+	protected static function example( $key ) {
+		if ( 'data' === $key ) {
+			return Chess_Army_Knife_Membership_Privacy::policy_sections();
+		}
+		if ( 'safeguarding' === $key ) {
+			return self::safeguarding_sections();
+		}
+		return array(
+			array(
+				'heading'    => __( 'The site\'s privacy policy', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'WordPress\'s own suggested privacy policy text, which gathers what each plugin on the site says about the data it holds, followed by a short note pointing to the club data policy and the safeguarding policy. If the site already has a privacy policy page, the plugin uses that page and does not change it.', 'chess-army-knife' ),
+				),
+			),
+		);
+	}
+
+	/**
+	 * The text of a message on this screen.
+	 *
+	 * @param string $code Code from the address.
+	 * @return string
+	 */
+	protected static function message( $code ) {
+		$messages = array(
+			'created'  => __( 'The draft page has been made. Read it and change it to match your club, then mark it as reviewed.', 'chess-army-knife' ),
+			'skipped'  => __( 'Noted. The plugin will not make that page. You can change your mind here at any time.', 'chess-army-knife' ),
+			'restored' => __( 'The plugin\'s wording is back on the page, and it needs reviewing again. The earlier text is kept in the page\'s revisions.', 'chess-army-knife' ),
+			'reviewed' => __( 'Marked as reviewed.', 'chess-army-knife' ),
+			'unmarked' => __( 'Marked as needing a review.', 'chess-army-knife' ),
+		);
+		return isset( $messages[ $code ] ) ? $messages[ $code ] : '';
+	}
+
+	/**
+	 * The fields a policy asks for, as form rows.
+	 *
+	 * @param string $key Policy, a key of policies().
+	 */
+	protected static function render_fields( $key ) {
+		$options = Chess_Army_Knife_Settings::get_options();
+		foreach ( self::fields( $key ) as $field ) {
+			$id = 'cak-policy-' . $key . '-' . $field['name'];
+			?>
+			<p>
+				<label for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label><br />
+				<input type="<?php echo esc_attr( $field['type'] ); ?>" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $field['name'] ); ?>" value="<?php echo esc_attr( isset( $options[ $field['name'] ] ) ? $options[ $field['name'] ] : '' ); ?>" class="<?php echo 'number' === $field['type'] ? 'small-text' : 'regular-text'; ?>" <?php echo 'number' === $field['type'] ? 'min="0" max="120"' : ''; ?> <?php echo '' !== $field['help'] ? 'aria-describedby="' . esc_attr( $id ) . '-help"' : ''; ?> />
+				<?php if ( '' !== $field['help'] ) : ?>
+					<br /><span id="<?php echo esc_attr( $id ); ?>-help" class="description"><?php echo esc_html( $field['help'] ); ?></span>
+				<?php endif; ?>
+			</p>
+			<?php
+		}
 	}
 
 	/**
@@ -468,105 +738,199 @@ class Chess_Army_Knife_Policies {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of an action.
-		$done  = isset( $_GET['cak_policy_done'] ) ? sanitize_key( wp_unslash( $_GET['cak_policy_done'] ) ) : '';
+		$done  = isset( $_GET['cak_policy_done'] ) ? self::message( sanitize_key( wp_unslash( $_GET['cak_policy_done'] ) ) ) : '';
 		$error = isset( $_GET['cak_policy_error'] ) ? sanitize_key( wp_unslash( $_GET['cak_policy_error'] ) ) : '';
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Policies', 'chess-army-knife' ); ?></h1>
-			<p class="description">
-				<?php esc_html_e( 'Each policy is an ordinary page. Edit it like any other page, publish it, put it in a menu and link to it from anywhere. The plugin wrote the starting text once, as a draft; it never changes a page again unless you ask it to put its wording back. Read each policy and change it to match what your club really does. The text is a starting point, not legal advice.', 'chess-army-knife' ); ?>
+			<p>
+				<?php esc_html_e( 'A club\'s policies are specific to that club, so the plugin makes nothing until you ask. For each policy you can have a draft page made from a general example, using a few details from you, or say that you will write it yourself. A page is an ordinary page: edit it in the block editor, publish it, put it in a menu and link to it from anywhere on the site.', 'chess-army-knife' ); ?>
+			</p>
+			<p>
+				<strong><?php esc_html_e( 'The examples are general, and are not legal advice.', 'chess-army-knife' ); ?></strong>
+				<?php esc_html_e( 'A policy is not finished until someone at the club has read it, changed it to match what the club really does, and marked it as reviewed.', 'chess-army-knife' ); ?>
 			</p>
 
-			<?php if ( 'restored' === $done ) : ?>
-				<div class="notice notice-success"><p><?php esc_html_e( 'The plugin\'s wording is back on the page. The earlier text is kept in the page\'s revisions.', 'chess-army-knife' ); ?></p></div>
-			<?php elseif ( 'created' === $done ) : ?>
-				<div class="notice notice-success"><p><?php esc_html_e( 'The page has been made, as a draft.', 'chess-army-knife' ); ?></p></div>
+			<?php echo self::attention_notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in attention_notice(). ?>
+
+			<?php if ( '' !== $done ) : ?>
+				<div class="notice notice-success" role="status"><p><?php echo esc_html( $done ); ?></p></div>
 			<?php elseif ( '' !== $error ) : ?>
 				<div class="notice notice-error" role="alert"><p><?php echo esc_html( 'confirm' === $error ? __( 'Tick the box to say you understand, then try again.', 'chess-army-knife' ) : __( 'That could not be done.', 'chess-army-knife' ) ); ?></p></div>
 			<?php endif; ?>
 
-			<table class="widefat striped">
-				<caption class="screen-reader-text"><?php esc_html_e( 'The club\'s policies', 'chess-army-knife' ); ?></caption>
-				<thead>
-					<tr>
-						<th scope="col"><?php esc_html_e( 'Policy', 'chess-army-knife' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Page', 'chess-army-knife' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Actions', 'chess-army-knife' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php foreach ( self::policies() as $key => $policy ) : ?>
-						<?php $post = self::page( $key ); ?>
-						<tr>
-							<th scope="row">
-								<?php echo esc_html( $policy['title'] ); ?>
-								<br /><span class="description"><?php echo esc_html( $policy['description'] ); ?></span>
-							</th>
-							<td>
-								<?php echo esc_html( self::status_label( $post ) ); ?>
-								<?php if ( $post && ! self::can_restore( $key ) ) : ?>
-									<br /><span class="description"><?php esc_html_e( 'This page was already on your site, so the plugin leaves its text alone.', 'chess-army-knife' ); ?></span>
-								<?php endif; ?>
-							</td>
-							<td>
-								<?php if ( $post ) : ?>
-									<a href="<?php echo esc_url( get_edit_post_link( $post->ID ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></a>
-									|
-									<a href="<?php echo esc_url( 'publish' === $post->post_status ? get_permalink( $post ) : get_preview_post_link( $post ) ); ?>"><?php echo esc_html( 'publish' === $post->post_status ? __( 'View', 'chess-army-knife' ) : __( 'Preview', 'chess-army-knife' ) ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></a>
-									<?php if ( self::can_restore( $key ) ) : ?>
-										<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-											<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_RESTORE ); ?>" />
-											<input type="hidden" name="policy" value="<?php echo esc_attr( $key ); ?>" />
-											<?php wp_nonce_field( self::ACTION_RESTORE . '_' . $key ); ?>
-											<p>
-												<label>
-													<input type="checkbox" name="confirm" value="1" required />
-													<?php
-													/* translators: %s: policy name */
-													echo esc_html( sprintf( __( 'Replace the text of the %s page with the plugin\'s wording', 'chess-army-knife' ), $policy['title'] ) );
-													?>
-												</label>
-											</p>
-											<button type="submit" class="button"><?php esc_html_e( 'Put the plugin\'s wording back', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></button>
-										</form>
-									<?php endif; ?>
-								<?php else : ?>
-									<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-										<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_CREATE ); ?>" />
-										<input type="hidden" name="policy" value="<?php echo esc_attr( $key ); ?>" />
-										<?php wp_nonce_field( self::ACTION_CREATE . '_' . $key ); ?>
-										<button type="submit" class="button button-primary"><?php esc_html_e( 'Make the page', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></button>
-									</form>
-								<?php endif; ?>
-							</td>
-						</tr>
-					<?php endforeach; ?>
-				</tbody>
-			</table>
+			<?php foreach ( self::policies() as $key => $policy ) : ?>
+				<?php
+				$post   = self::page( $key );
+				$status = self::status( $key );
+				?>
+				<h2 id="policy-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $policy['title'] ); ?></h2>
+				<p class="description"><?php echo esc_html( $policy['description'] ); ?></p>
 
-			<p class="description">
-				<?php esc_html_e( 'The data policy page is written from your settings (how long details are kept, and who to contact). If you change those later, edit the page, or put the plugin\'s wording back. The safeguarding officer\'s name and email are also set under Settings.', 'chess-army-knife' ); ?>
-			</p>
+				<?php if ( 'review' === $status || 'done' === $status ) : ?>
+					<p>
+						<strong>
+							<?php
+							if ( 'done' === $status && self::reviewed_at( $key ) ) {
+								/* translators: %s: date the policy was marked as reviewed */
+								echo esc_html( sprintf( __( 'Reviewed on %s.', 'chess-army-knife' ), wp_date( get_option( 'date_format' ), self::reviewed_at( $key ) ) ) );
+							} elseif ( 'done' === $status ) {
+								esc_html_e( 'This page was already on your site, so the plugin leaves it alone.', 'chess-army-knife' );
+							} else {
+								esc_html_e( 'Not finished: a draft from a general example, not yet reviewed.', 'chess-army-knife' );
+							}
+							?>
+						</strong>
+						<?php echo esc_html( 'publish' === $post->post_status ? __( 'The page is published.', 'chess-army-knife' ) : __( 'The page is not public yet.', 'chess-army-knife' ) ); ?>
+					</p>
+					<p>
+						<a class="button" href="<?php echo esc_url( get_edit_post_link( $post->ID ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></a>
+						<a class="button" href="<?php echo esc_url( 'publish' === $post->post_status ? get_permalink( $post ) : get_preview_post_link( $post ) ); ?>"><?php echo esc_html( 'publish' === $post->post_status ? __( 'View', 'chess-army-knife' ) : __( 'Preview', 'chess-army-knife' ) ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></a>
+					</p>
+
+					<?php if ( 'review' === $status ) : ?>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+							<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_REVIEW ); ?>" />
+							<input type="hidden" name="policy" value="<?php echo esc_attr( $key ); ?>" />
+							<input type="hidden" name="reviewed" value="1" />
+							<?php wp_nonce_field( self::ACTION_REVIEW . '_' . $key ); ?>
+							<p>
+								<label>
+									<input type="checkbox" name="confirm" value="1" required />
+									<?php
+									/* translators: %s: policy name */
+									echo esc_html( sprintf( __( 'I have read the %s page and it matches what our club does', 'chess-army-knife' ), $policy['title'] ) );
+									?>
+									<span class="cak-required"><?php esc_html_e( '(required)', 'chess-army-knife' ); ?></span>
+								</label>
+							</p>
+							<p><button type="submit" class="button button-primary"><?php esc_html_e( 'Mark as reviewed', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></button></p>
+						</form>
+					<?php elseif ( self::reviewed_at( $key ) ) : ?>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+							<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_REVIEW ); ?>" />
+							<input type="hidden" name="policy" value="<?php echo esc_attr( $key ); ?>" />
+							<input type="hidden" name="reviewed" value="0" />
+							<?php wp_nonce_field( self::ACTION_REVIEW . '_' . $key ); ?>
+							<p><button type="submit" class="button"><?php esc_html_e( 'Needs another review', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></button></p>
+						</form>
+					<?php endif; ?>
+
+					<?php if ( self::can_restore( $key ) ) : ?>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+							<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_RESTORE ); ?>" />
+							<input type="hidden" name="policy" value="<?php echo esc_attr( $key ); ?>" />
+							<?php wp_nonce_field( self::ACTION_RESTORE . '_' . $key ); ?>
+							<p>
+								<label>
+									<input type="checkbox" name="confirm" value="1" required />
+									<?php
+									/* translators: %s: policy name */
+									echo esc_html( sprintf( __( 'Replace the text of the %s page with the plugin\'s example wording', 'chess-army-knife' ), $policy['title'] ) );
+									?>
+									<span class="cak-required"><?php esc_html_e( '(required)', 'chess-army-knife' ); ?></span>
+								</label>
+							</p>
+							<p><button type="submit" class="button"><?php esc_html_e( 'Put the example wording back', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></button></p>
+						</form>
+					<?php endif; ?>
+
+				<?php else : ?>
+					<?php if ( 'skipped' === $status ) : ?>
+						<p><strong><?php esc_html_e( 'You said you will do this yourself.', 'chess-army-knife' ); ?></strong> <?php esc_html_e( 'Change your mind below and the plugin will make a draft page.', 'chess-army-knife' ); ?></p>
+					<?php endif; ?>
+
+					<details>
+						<summary><?php esc_html_e( 'Read the example wording', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></summary>
+						<div class="cak-policy-example">
+							<?php foreach ( self::example( $key ) as $section ) : ?>
+								<h3><?php echo esc_html( $section['heading'] ); ?></h3>
+								<?php foreach ( isset( $section['paragraphs'] ) ? (array) $section['paragraphs'] : array() as $paragraph ) : ?>
+									<p><?php echo esc_html( $paragraph ); ?></p>
+								<?php endforeach; ?>
+								<?php if ( ! empty( $section['items'] ) ) : ?>
+									<ul class="ul-disc">
+										<?php foreach ( $section['items'] as $item ) : ?>
+											<li><?php echo esc_html( $item ); ?></li>
+										<?php endforeach; ?>
+									</ul>
+								<?php endif; ?>
+							<?php endforeach; ?>
+						</div>
+					</details>
+
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_SETUP ); ?>" />
+						<input type="hidden" name="policy" value="<?php echo esc_attr( $key ); ?>" />
+						<?php wp_nonce_field( self::ACTION_SETUP . '_' . $key ); ?>
+						<?php if ( self::fields( $key ) ) : ?>
+							<p><?php esc_html_e( 'Tell us about your club and we will put it in the example. You can change all of this on the page afterwards.', 'chess-army-knife' ); ?></p>
+							<?php self::render_fields( $key ); ?>
+						<?php endif; ?>
+						<p>
+							<button type="submit" name="use" value="1" class="button button-primary"><?php esc_html_e( 'Yes, make a draft page', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></button>
+							<?php if ( 'skipped' !== $status ) : ?>
+								<button type="submit" name="use" value="0" class="button" formnovalidate><?php esc_html_e( 'No, I will do it myself', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $policy['title'] ); ?></span></button>
+							<?php endif; ?>
+						</p>
+					</form>
+				<?php endif; ?>
+			<?php endforeach; ?>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Handle "Make the page".
+	 * Handle the answer to "do you want this policy?".
 	 */
-	public static function handle_create() {
+	public static function handle_setup() {
 		$key = isset( $_POST['policy'] ) ? sanitize_key( wp_unslash( $_POST['policy'] ) ) : '';
-		check_admin_referer( self::ACTION_CREATE . '_' . $key );
+		check_admin_referer( self::ACTION_SETUP . '_' . $key );
 		self::require_permission();
 
-		$result = self::create( $key );
-		wp_safe_redirect( self::screen_url( is_wp_error( $result ) ? array( 'cak_policy_error' => 'failed' ) : array( 'cak_policy_done' => 'created' ) ) );
+		$use     = ! empty( $_POST['use'] );
+		$details = array();
+		foreach ( self::fields( $key ) as $field ) {
+			if ( isset( $_POST[ $field['name'] ] ) ) {
+				$details[ $field['name'] ] = sanitize_text_field( wp_unslash( $_POST[ $field['name'] ] ) );
+			}
+		}
+
+		$result = self::set_up( $key, $use, $details );
+		if ( is_wp_error( $result ) ) {
+			wp_safe_redirect( self::screen_url( array( 'cak_policy_error' => 'failed' ) ) );
+			exit;
+		}
+		wp_safe_redirect( self::screen_url( array( 'cak_policy_done' => $use ? 'created' : 'skipped' ) ) . '#policy-' . $key );
 		exit;
 	}
 
 	/**
-	 * Handle "Put the plugin's wording back".
+	 * Handle "Mark as reviewed" and "Needs another review".
+	 */
+	public static function handle_review() {
+		$key = isset( $_POST['policy'] ) ? sanitize_key( wp_unslash( $_POST['policy'] ) ) : '';
+		check_admin_referer( self::ACTION_REVIEW . '_' . $key );
+		self::require_permission();
+
+		$reviewed = ! empty( $_POST['reviewed'] );
+		if ( $reviewed && empty( $_POST['confirm'] ) ) {
+			wp_safe_redirect( self::screen_url( array( 'cak_policy_error' => 'confirm' ) ) . '#policy-' . $key );
+			exit;
+		}
+		if ( ! isset( self::policies()[ $key ] ) ) {
+			wp_safe_redirect( self::screen_url( array( 'cak_policy_error' => 'failed' ) ) );
+			exit;
+		}
+
+		self::mark_reviewed( $key, $reviewed );
+		wp_safe_redirect( self::screen_url( array( 'cak_policy_done' => $reviewed ? 'reviewed' : 'unmarked' ) ) . '#policy-' . $key );
+		exit;
+	}
+
+	/**
+	 * Handle "Put the example wording back".
 	 */
 	public static function handle_restore() {
 		$key = isset( $_POST['policy'] ) ? sanitize_key( wp_unslash( $_POST['policy'] ) ) : '';
@@ -574,7 +938,7 @@ class Chess_Army_Knife_Policies {
 		self::require_permission();
 
 		if ( empty( $_POST['confirm'] ) ) {
-			wp_safe_redirect( self::screen_url( array( 'cak_policy_error' => 'confirm' ) ) );
+			wp_safe_redirect( self::screen_url( array( 'cak_policy_error' => 'confirm' ) ) . '#policy-' . $key );
 			exit;
 		}
 
@@ -584,7 +948,7 @@ class Chess_Army_Knife_Policies {
 		}
 
 		$result = self::restore( $key );
-		wp_safe_redirect( self::screen_url( is_wp_error( $result ) ? array( 'cak_policy_error' => 'failed' ) : array( 'cak_policy_done' => 'restored' ) ) );
+		wp_safe_redirect( self::screen_url( is_wp_error( $result ) ? array( 'cak_policy_error' => 'failed' ) : array( 'cak_policy_done' => 'restored' ) ) . '#policy-' . $key );
 		exit;
 	}
 

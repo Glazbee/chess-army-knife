@@ -456,6 +456,7 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		remove_all_actions( 'admin_init' ); // Only the fact that it has run matters here; its other callbacks call WordPress.org.
 		do_action( 'admin_init' ); // WordPress only accepts policy text once admin_init has run.
 
+		Chess_Army_Knife_Policies::set_up( 'data', true ); // The guide points to the page, so the page must exist.
 		Chess_Army_Knife_Membership_Privacy::add_policy_content();
 		$suggested = wp_json_encode( WP_Privacy_Policy_Content::get_suggested_policy_text() );
 
