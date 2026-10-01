@@ -132,6 +132,7 @@ class Chess_Army_Knife_Teams_Admin {
 					$rows    = count( $leagues ) + 3; // A few blank rows to add to.
 					?>
 					<table class="widefat striped" style="max-width:720px">
+<caption class="screen-reader-text"><?php esc_html_e( 'League entries', 'chess-army-knife' ); ?></caption>
 						<thead>
 							<tr>
 								<th><?php esc_html_e( 'LMS organisation ID', 'chess-army-knife' ); ?></th>

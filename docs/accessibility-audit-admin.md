@@ -39,6 +39,30 @@ Severity: **Blocker** = Level A failure. **Major** = AA or AAA failure that affe
 | A-11 | 1.4.6 | Minor | The Dashboard's colours are fixed in an inline `<style>` block; its text colours pass (muted text 7.33:1) but the bars and tracks should be checked. | Dashboard | *verify*; move to `admin.css`. |
 | A-12 | 3.3.6 | Minor | Deleting uses a native confirm (good). Saving a tournament result has no confirm, but it can be corrected afterwards, which meets the criterion. | Tournaments | None needed. |
 
+## Status
+
+Decisions (agreed): override core's colours, sizes and focus ring on the plugin's own screens only; make the plugin's own parts of the block editor AAA and document the rest as a limit.
+
+**Done**
+
+- A-1: every unlabelled select and input now has a label (game results, byes, manual player, bulk ticks, registrations).
+- A-3: row links say who they are for (Edit, History, Renew, Delete, Photos, Approve, Decline, Manage, Remove, Withdraw, Cancel). Registration ticks name the person.
+- A-4: every list table has a screen-reader caption; the empty actions heading is named; the dashboard bars are decorative (the numbers are beside them), and the hover tooltips are gone.
+- A-5, A-6, A-7: `assets/admin-accessibility.css`, loaded only on the plugin's screens (a `cak-admin-screen` body class). Links and help text are at least 7:1 (9.4 to 12.8 measured against the admin greys), buttons are 7:1 with a 2px border and 44px high, fields are 44px high, ticks are pressed through 44px labels, and the focus ring is a 3px black outline with a white gap.
+- A-9: the member search says how many it found; the block editor's player picker does too.
+- Block editor: the plugin's player picker announces results, errors and the selection, and its list border is 3:1.
+
+**Not changed, with reasons**
+
+- A-2 (actions as links): WordPress's own list tables use links for actions such as Trash, and no WCAG criterion fails for it, so I have left the links (each still asks before it deletes). This was over-rated in the first audit; it is a best practice, not a failure.
+- A-10 (fixed widths): the widths are maximums, so the screens still reflow. Not a failure.
+- A-8 (explaining chess terms in the admin) and the reading level: waiting on the wording approval in `plain-language-drafts.md`.
+
+**Still to check**
+
+- The admin stylesheet has been written against core's colour values, but not seen in a real admin, in each colour scheme. A browser pass is needed.
+- The rest of the block editor's sidebar (core components) stays at core's AA, as agreed.
+
 ## What looks fine
 
 - Dates, times and numbers use native inputs.

@@ -341,12 +341,13 @@ class Chess_Army_Knife_Tournaments_Page {
 		<h1><?php esc_html_e( 'Tournaments', 'chess-army-knife' ); ?></h1>
 
 		<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'Tournaments', 'chess-army-knife' ); ?></caption>
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Format', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Status', 'chess-army-knife' ); ?></th>
-					<th style="width:100px;"></th>
+					<th style="width:100px;"><span class="screen-reader-text"><?php esc_html_e( 'Actions', 'chess-army-knife' ); ?></span></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -371,7 +372,7 @@ class Chess_Army_Knife_Tournaments_Page {
 							)
 						);
 						?>
-										"><?php esc_html_e( 'Manage', 'chess-army-knife' ); ?></a></td>
+										"><?php esc_html_e( 'Manage', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tournament['name'] ); ?></span></a></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -507,13 +508,14 @@ class Chess_Army_Knife_Tournaments_Page {
 			<a
 				href="<?php echo esc_url( self::action_url( 'delete', array( 'tournament_id' => $id ) ) ); ?>"
 				onclick="return confirm('<?php echo esc_js( __( 'Delete this tournament and all its games?', 'chess-army-knife' ) ); ?>');"
-			><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
+			><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tournament['name'] ); ?></span></a>
 		</p>
 
 		<?php self::render_page_section( $tournament ); ?>
 
 		<h2><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h2>
 		<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></caption>
 			<thead>
 				<tr>
 					<th style="width:60px;"><?php esc_html_e( 'Seed', 'chess-army-knife' ); ?></th>
@@ -568,7 +570,7 @@ class Chess_Army_Knife_Tournaments_Page {
 									)
 								);
 								?>
-											"><?php esc_html_e( 'Remove', 'chess-army-knife' ); ?></a>
+											"><?php esc_html_e( 'Remove', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $entry['name'] ); ?></span></a>
 							<?php elseif ( Chess_Army_Knife_Tournaments::STATUS_ACTIVE === $tournament['status'] && 'active' === $entry['status'] ) : ?>
 								<a
 									href="
@@ -585,7 +587,7 @@ class Chess_Army_Knife_Tournaments_Page {
 									?>
 											"
 									onclick="return confirm('<?php echo esc_js( __( 'Withdraw this player? Their unplayed games will be dropped.', 'chess-army-knife' ) ); ?>');"
-								><?php esc_html_e( 'Withdraw', 'chess-army-knife' ); ?></a>
+								><?php esc_html_e( 'Withdraw', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $entry['name'] ); ?></span></a>
 							<?php endif; ?>
 						</td>
 					</tr>
@@ -793,7 +795,7 @@ class Chess_Army_Knife_Tournaments_Page {
 								)
 							);
 							?>
-										"><?php esc_html_e( 'Cancel', 'chess-army-knife' ); ?></a>
+										"><?php esc_html_e( 'Cancel', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $names[ $entry_id ] ); ?></span></a>
 						</li>
 					<?php endif; ?>
 				<?php endforeach; ?>
@@ -803,18 +805,21 @@ class Chess_Army_Knife_Tournaments_Page {
 			<input type="hidden" name="action" value="chess_army_knife_tournament_request_bye" />
 			<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
 			<?php wp_nonce_field( 'chess_army_knife_tournament_request_bye' ); ?>
-			<select name="entry_id" required>
+			<label class="screen-reader-text" for="cak-bye-player"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></label>
+			<select id="cak-bye-player" name="entry_id" required>
 				<?php foreach ( $names as $entry_id => $name ) : ?>
 					<option value="<?php echo esc_attr( $entry_id ); ?>"><?php echo esc_html( $name ); ?></option>
 				<?php endforeach; ?>
 			</select>
-			<select name="round">
+			<label class="screen-reader-text" for="cak-bye-round"><?php esc_html_e( 'Round', 'chess-army-knife' ); ?></label>
+			<select id="cak-bye-round" name="round">
 				<?php for ( $round = $current + 1; $round <= $config['rounds']; $round++ ) : ?>
 					<?php /* translators: %d: round number */ ?>
 					<option value="<?php echo esc_attr( $round ); ?>"><?php echo esc_html( sprintf( __( 'Round %d', 'chess-army-knife' ), $round ) ); ?></option>
 				<?php endfor; ?>
 			</select>
-			<select name="kind">
+			<label class="screen-reader-text" for="cak-bye-kind"><?php esc_html_e( 'Kind of bye', 'chess-army-knife' ); ?></label>
+			<select id="cak-bye-kind" name="kind">
 				<option value="half"><?php esc_html_e( 'Half-point bye', 'chess-army-knife' ); ?></option>
 				<option value="zero"><?php esc_html_e( 'Zero-point bye', 'chess-army-knife' ); ?></option>
 			</select>
@@ -861,6 +866,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		?>
 		<h2><?php echo esc_html( $heading ); ?></h2>
 		<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php echo esc_html( $heading ); ?></caption>
 			<thead>
 				<tr>
 					<th style="width:50px;">#</th>
@@ -1018,6 +1024,7 @@ class Chess_Army_Knife_Tournaments_Page {
 			<?php wp_nonce_field( 'chess_army_knife_tournament_save_results' ); ?>
 			<h3><?php echo esc_html( $heading ); ?></h3>
 			<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php echo esc_html( $heading ); ?></caption>
 				<tbody>
 					<?php foreach ( $games as $game ) : ?>
 						<?php
@@ -1044,7 +1051,7 @@ class Chess_Army_Knife_Tournaments_Page {
 								<?php elseif ( $waiting ) : ?>
 									<em><?php esc_html_e( 'Waiting for players', 'chess-army-knife' ); ?></em>
 								<?php else : ?>
-									<select name="results[<?php echo esc_attr( $game['id'] ); ?>]">
+									<select name="results[<?php echo esc_attr( $game['id'] ); ?>]" aria-label="<?php echo esc_attr( sprintf( /* translators: 1: white player, 2: black player */ __( 'Result: %1$s (White) against %2$s (Black)', 'chess-army-knife' ), isset( $names[ $game['white_entry_id'] ] ) ? $names[ $game['white_entry_id'] ] : __( 'To be decided', 'chess-army-knife' ), isset( $names[ $game['black_entry_id'] ] ) ? $names[ $game['black_entry_id'] ] : __( 'To be decided', 'chess-army-knife' ) ) ); ?>">
 										<?php foreach ( $options as $value => $label ) : ?>
 											<option value="<?php echo esc_attr( $value ); ?>" <?php selected( (string) $game['result'], $value ); ?>><?php echo esc_html( $label ); ?></option>
 										<?php endforeach; ?>

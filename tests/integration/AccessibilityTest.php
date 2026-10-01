@@ -140,4 +140,17 @@ class AccessibilityTest extends WP_UnitTestCase {
 		}
 		$this->assertArrayNotHasKey( 'autoAdvance', json_decode( file_get_contents( Chess_Army_Knife_DIR . 'build/team-carousel/block.json' ), true )['attributes'] );
 	}
+
+	public function test_the_admin_accessibility_styles_reach_only_the_plugins_screens() {
+		set_current_screen( 'toplevel_page_chess-army-knife' );
+		$this->assertTrue( Chess_Army_Knife_Menu::is_plugin_screen() );
+		$this->assertStringContainsString( 'cak-admin-screen', Chess_Army_Knife_Menu::body_class( '' ) );
+
+		set_current_screen( 'edit-' . Chess_Army_Knife_Teams::POST_TYPE );
+		$this->assertTrue( Chess_Army_Knife_Menu::is_plugin_screen() );
+
+		set_current_screen( 'edit-post' );
+		$this->assertFalse( Chess_Army_Knife_Menu::is_plugin_screen() );
+		$this->assertSame( 'wp-admin', Chess_Army_Knife_Menu::body_class( 'wp-admin' ) );
+	}
 }

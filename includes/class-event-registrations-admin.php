@@ -98,6 +98,7 @@ class Chess_Army_Knife_Event_Registrations_Admin {
 
 		<?php if ( $rows ) : ?>
 			<table class="widefat striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'People registered', 'chess-army-knife' ); ?></caption>
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></th>
@@ -114,8 +115,8 @@ class Chess_Army_Knife_Event_Registrations_Admin {
 							<td><?php echo esc_html( $person ? $person['name'] : '' ); ?></td>
 							<td><?php echo esc_html( Chess_Army_Knife_Event_Registrations::STATUS_WAITING === $row['status'] ? __( 'Waiting list', 'chess-army-knife' ) : __( 'Registered', 'chess-army-knife' ) ); ?></td>
 							<td><?php echo esc_html( $row['guests'] ); ?></td>
-							<td><input type="checkbox" name="chess_army_reg_attended[]" value="<?php echo esc_attr( $row['person_id'] ); ?>" <?php checked( $row['attended'] ); ?> aria-label="<?php esc_attr_e( 'Came', 'chess-army-knife' ); ?>" /></td>
-							<td><input type="checkbox" name="chess_army_reg_remove[]" value="<?php echo esc_attr( $row['id'] ); ?>" aria-label="<?php esc_attr_e( 'Remove', 'chess-army-knife' ); ?>" /></td>
+							<td><input type="checkbox" name="chess_army_reg_attended[]" value="<?php echo esc_attr( $row['person_id'] ); ?>" <?php checked( $row['attended'] ); ?> aria-label="<?php echo esc_attr( sprintf( /* translators: %s: person's name */ __( 'Came: %s', 'chess-army-knife' ), $person ? $person['name'] : '' ) ); ?>" /></td>
+							<td><input type="checkbox" name="chess_army_reg_remove[]" value="<?php echo esc_attr( $row['id'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: person's name */ __( 'Remove: %s', 'chess-army-knife' ), $person ? $person['name'] : '' ) ); ?>" /></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>

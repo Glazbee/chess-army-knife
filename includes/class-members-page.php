@@ -493,6 +493,7 @@ class Chess_Army_Knife_Members_Page {
 			<?php self::bulk_form_open(); ?>
 			<?php self::render_bulk_controls(); ?>
 			<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></caption>
 				<thead>
 					<tr>
 						<td class="manage-column column-cb check-column"><input type="checkbox" aria-label="<?php esc_attr_e( 'Select all', 'chess-army-knife' ); ?>" /></td>
@@ -514,18 +515,18 @@ class Chess_Army_Knife_Members_Page {
 					<?php foreach ( $members as $member ) : ?>
 						<?php $status = Chess_Army_Knife_Membership_Store::effective_status( $member, $today ); ?>
 						<tr>
-							<th scope="row" class="check-column"><input type="checkbox" name="members[]" value="<?php echo esc_attr( $member['id'] ); ?>" aria-label="<?php echo esc_attr( $member['name'] ); ?>" /></th>
+							<th scope="row" class="check-column"><label class="cak-check"><input type="checkbox" name="members[]" value="<?php echo esc_attr( $member['id'] ); ?>" /><span class="screen-reader-text"><?php echo esc_html( $member['name'] ); ?></span></label></th>
 							<td>
 								<strong><a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php echo esc_html( $member['name'] ); ?></a></strong>
 								<div class="row-actions">
 									<?php if ( Chess_Army_Knife_Membership_Store::STATUS_PENDING === $member['status'] ) : ?>
-										<a href="<?php echo esc_url( self::action_url( 'member_status', $member['id'], array( 'status' => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE ) ) ); ?>"><?php esc_html_e( 'Approve', 'chess-army-knife' ); ?></a> |
-										<a href="<?php echo esc_url( self::action_url( 'member_status', $member['id'], array( 'status' => Chess_Army_Knife_Membership_Store::STATUS_REJECTED ) ) ); ?>"><?php esc_html_e( 'Decline', 'chess-army-knife' ); ?></a> |
+										<a href="<?php echo esc_url( self::action_url( 'member_status', $member['id'], array( 'status' => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE ) ) ); ?>"><?php esc_html_e( 'Approve', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
+										<a href="<?php echo esc_url( self::action_url( 'member_status', $member['id'], array( 'status' => Chess_Army_Knife_Membership_Store::STATUS_REJECTED ) ) ); ?>"><?php esc_html_e( 'Decline', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
 									<?php endif; ?>
-									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></a> |
-									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) . '#membership-history' ); ?>"><?php esc_html_e( 'History', 'chess-army-knife' ); ?></a> |
+									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
+									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) . '#membership-history' ); ?>"><?php esc_html_e( 'History', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
 									<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'] ) : ?>
-										<a href="<?php echo esc_url( self::action_url( 'renew_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Renew this membership for another period and note the payment as received today?', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Renew', 'chess-army-knife' ); ?></a> |
+										<a href="<?php echo esc_url( self::action_url( 'renew_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Renew this membership for another period and note the payment as received today?', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Renew', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
 									<?php endif; ?>
 									<?php if ( ! empty( $photos[ $member['id'] ] ) ) : ?>
 										<a href="<?php echo esc_url( Chess_Army_Knife_Member_Photos::library_url( $member['id'] ) ); ?>">
@@ -533,9 +534,10 @@ class Chess_Army_Knife_Members_Page {
 											/* translators: %d: number of photos the member is tagged in */
 											echo esc_html( sprintf( _n( 'Photos (%d)', 'Photos (%d)', $photos[ $member['id'] ], 'chess-army-knife' ), $photos[ $member['id'] ] ) );
 											?>
+											<span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span>
 										</a> |
 									<?php endif; ?>
-									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details? If they have a payment, photos or tournament entries on record, those stay but without their personal details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
+									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details? If they have a payment, photos or tournament entries on record, those stay but without their personal details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a>
 								</div>
 							</td>
 							<td><?php echo esc_html( $member['type_name'] ); ?></td>
@@ -649,6 +651,7 @@ class Chess_Army_Knife_Members_Page {
 			</ul>
 		<?php endif; ?>
 		<table class="wp-list-table widefat fixed striped">
+<caption class="screen-reader-text"><?php esc_html_e( 'Membership history', 'chess-army-knife' ); ?></caption>
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Membership', 'chess-army-knife' ); ?></th>

@@ -730,7 +730,7 @@ class Chess_Army_Knife_Templates {
 										)
 									);
 									?>
-												"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></a> |
+												"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tpl['name'] ); ?></span></a> |
 									<a
 										href="
 										<?php
@@ -749,7 +749,7 @@ class Chess_Army_Knife_Templates {
 										?>
 												"
 										onclick="return confirm('<?php echo esc_js( __( 'Delete this template? Blocks using it will fall back to their own settings.', 'chess-army-knife' ) ); ?>');"
-									><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?></a>
+									><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tpl['name'] ); ?></span></a>
 								</td>
 							</tr>
 						<?php endforeach; ?>
