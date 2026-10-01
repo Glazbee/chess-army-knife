@@ -150,26 +150,10 @@ class PoliciesTest extends WP_UnitTestCase {
 
 	public function test_the_privacy_guide_points_to_the_data_policy_only_once_it_exists() {
 		$this->assertNull( Chess_Army_Knife_Policies::page( 'data' ) );
-		$this->assertStringNotContainsString( 'chess_army_policy_link', wp_json_encode( self::guide_text() ) );
+		$this->assertSame( '', Chess_Army_Knife_Membership_Privacy::policy_guide_text() );
 
 		Chess_Army_Knife_Policies::set_up( 'data', true );
-		$this->assertStringContainsString( 'chess_army_policy_link', wp_json_encode( self::guide_text() ) );
-	}
-
-	private static function guide_text() {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		require_once ABSPATH . 'wp-admin/includes/class-wp-privacy-policy-content.php';
-		set_current_screen( 'dashboard' );
-		// WordPress keeps the suggested text for the whole run, so start from none.
-		if ( property_exists( 'WP_Privacy_Policy_Content', 'policy_text' ) ) {
-			$text = new ReflectionProperty( 'WP_Privacy_Policy_Content', 'policy_text' );
-			$text->setAccessible( true );
-			$text->setValue( null, array() );
-		}
-		remove_all_actions( 'admin_init' );
-		do_action( 'admin_init' );
-		Chess_Army_Knife_Membership_Privacy::add_policy_content();
-		return WP_Privacy_Policy_Content::get_suggested_policy_text();
+		$this->assertStringContainsString( 'chess_army_policy_link', Chess_Army_Knife_Membership_Privacy::policy_guide_text() );
 	}
 
 	public function test_each_policy_gets_a_draft_page_with_starting_text() {
