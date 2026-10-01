@@ -163,7 +163,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 			</fieldset>
 
 			<?php // Hidden from people; a bot that fills in every field gives itself away. ?>
-			<p class="cak-membership-form__trap" aria-hidden="true">
+			<p class="cak-membership-form__trap" inert>
 				<label for="cak-member-website"><?php esc_html_e( 'Leave this field empty', 'chess-army-knife' ); ?></label>
 				<input type="text" id="cak-member-website" name="<?php echo esc_attr( Chess_Army_Knife_Membership_Form::HONEYPOT ); ?>" tabindex="-1" autocomplete="off" />
 			</p>

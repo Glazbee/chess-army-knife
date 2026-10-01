@@ -106,7 +106,7 @@ $notice_id    = 'cak-data-notice';
 			</fieldset>
 
 			<?php // Hidden from people; a bot that fills in every field gives itself away. ?>
-			<p class="cak-my-data__trap" aria-hidden="true">
+			<p class="cak-my-data__trap" inert>
 				<label for="cak-data-url"><?php esc_html_e( 'Leave this field empty', 'chess-army-knife' ); ?></label>
 				<input type="text" id="cak-data-url" name="<?php echo esc_attr( Chess_Army_Knife_Member_Requests::HONEYPOT ); ?>" tabindex="-1" autocomplete="off" />
 			</p>

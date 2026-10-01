@@ -303,7 +303,7 @@ $heading      = function ( $depth, $text ) {
 	<?php elseif ( ! $sent ) : ?>
 		<form method="post" action="<?php echo esc_url( $admin_post ); ?>">
 			<?php $cak_portal_fields( Chess_Army_Knife_Member_Portal::ACTION_LINK, '', 0, $page_url ); ?>
-			<p class="cak-portal__hp" aria-hidden="true"><label>URL <input type="text" name="<?php echo esc_attr( Chess_Army_Knife_Member_Portal::HONEYPOT ); ?>" value="" tabindex="-1" autocomplete="off" /></label></p>
+			<p class="cak-portal__hp" inert><label>URL <input type="text" name="<?php echo esc_attr( Chess_Army_Knife_Member_Portal::HONEYPOT ); ?>" value="" tabindex="-1" autocomplete="off" /></label></p>
 			<p><?php esc_html_e( 'Enter the email address the club has for you (a junior\'s parent or guardian uses theirs) and we will email you a private link.', 'chess-army-knife' ); ?></p>
 			<p class="cak-portal__field"><label for="cak-portal-email"><?php esc_html_e( 'Email address', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label><input type="email" id="cak-portal-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" required <?php echo $attrs( 'cak-portal-email' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /></p>
 			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Email me a link', 'chess-army-knife' ); ?></button></p>

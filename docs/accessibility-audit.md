@@ -44,11 +44,17 @@ Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and cove
 - F-LT, F-CR, F-BG, F-FP, F-TS, F-ST, F-TG, F-EV, F-MT: the per-block findings above.
 - High contrast: automatic with `prefers-contrast: more`, and a site setting (off, follow device, always).
 
+**Done since**
+
+- F-G18: the spam-trap fields are now `inert` (off-screen, out of the accessibility tree and unfocusable) instead of `aria-hidden`. Bots reading the HTML still see and fill them.
+
+**Accepted by the site owner**
+
+- 2.2.5 (re-authenticating, AAA): if a session ends while a form is half filled in, the answers are lost when the person signs in again. Accepted because the page shows when the session ends, warns 15 minutes before, offers an extend button, and every save restarts the hour.
+
 **Open**
 
 - F-G12 and F-MT4: plain-language wording needs your approval. See `plain-language-drafts.md`.
-- F-G18: the honeypot fields are in `aria-hidden` containers. Axe does not flag it because the fields have `tabindex="-1"`, but a screen reader's virtual cursor may still reach them. A fix needs a change to how the spam trap is hidden.
-- 2.2.5 (re-authenticating): if a session ends while a form is half filled in, the answers are lost when the person signs in again. The warning and the extend button make this unlikely, but it is not impossible.
 - 1.4.12 text spacing, 1.4.10 reflow at 320px, and a screen-reader pass are still to be done in a real browser against a real WordPress page.
 - The admin screens and the block editor have not been audited.
 
