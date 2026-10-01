@@ -158,4 +158,37 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( '1 | Div 1 | Team A', $clean['club_teams'] );
 	}
+
+	public function test_the_club_name_falls_back_to_the_site_title() {
+		Functions\when( 'get_bloginfo' )->justReturn( 'My Site &amp; Co' );
+		Functions\when( 'wp_specialchars_decode' )->alias( 'htmlspecialchars_decode' );
+
+		$this->assertSame( 'My Site & Co', Chess_Army_Knife_Settings::club_name() );
+
+		$this->set_settings( array( 'club_name' => 'Central Birmingham Chess Club' ) );
+		$this->assertSame( 'Central Birmingham Chess Club', Chess_Army_Knife_Settings::club_name() );
+	}
+
+	public function test_club_name_and_venue_are_saved_and_the_old_clutter_is_gone() {
+		$clean = Chess_Army_Knife_Settings::sanitize(
+			array(
+				'club_name'  => '  Our Club ',
+				'club_venue' => ' The Hall ',
+			)
+		);
+
+		$this->assertSame( 'Our Club', $clean['club_name'] );
+		$this->assertSame( 'The Hall', $clean['club_venue'] );
+		foreach ( array( 'lms_base_url', 'default_event_name', 'default_event_location', 'safeguarding_officer', 'safeguarding_email', 'safeguarding_phone', 'data_contact_email' ) as $removed ) {
+			$this->assertArrayNotHasKey( $removed, $clean );
+		}
+	}
+
+	public function test_saving_settings_keeps_the_retention_period_set_on_the_policies_screen() {
+		$this->set_settings( array( 'member_retention_months' => 36 ) );
+
+		$this->assertSame( 36, Chess_Army_Knife_Settings::sanitize( array( 'club_name' => 'Our Club' ) )['member_retention_months'] );
+		$this->assertSame( 120, Chess_Army_Knife_Settings::clean_retention_months( '9999' ) );
+		$this->assertSame( 0, Chess_Army_Knife_Settings::clean_retention_months( '-5' ) );
+	}
 }

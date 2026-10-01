@@ -75,7 +75,7 @@ class Chess_Army_Knife_Events_Feed {
 		header( 'Content-Disposition: inline; filename="club-events.ics"' );
 		header( 'Cache-Control: public, max-age=900' ); // Calendar apps poll; a quarter of an hour is fresh enough.
 
-		echo self::build( $events, wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ), (string) wp_parse_url( home_url(), PHP_URL_HOST ), time() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar text, escaped by escape_text(); not HTML.
+		echo self::build( $events, Chess_Army_Knife_Settings::club_name(), (string) wp_parse_url( home_url(), PHP_URL_HOST ), time() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar text, escaped by escape_text(); not HTML.
 		exit;
 	}
 

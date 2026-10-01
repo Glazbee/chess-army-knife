@@ -419,18 +419,16 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Information Commissioner', $text );
 	}
 
-	public function test_the_policy_follows_the_retention_period_and_contact_in_settings() {
+	public function test_the_policy_follows_the_retention_period() {
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
 				'use_local_cache'         => 0,
 				'member_retention_months' => 18,
-				'data_contact_email'      => 'secretary@club.test',
 			)
 		);
 		$text = $this->policy_text();
 		$this->assertStringContainsString( 'for 18 months afterwards', $text );
-		$this->assertStringContainsString( 'secretary@club.test', $text );
 
 		update_option(
 			'Chess_Army_Knife_settings',
@@ -441,12 +439,7 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		);
 		$text = $this->policy_text();
 		$this->assertStringContainsString( 'until you ask us to delete them', $text );
-		$this->assertStringContainsString( 'contact the club.', $text );
-	}
-
-	public function test_the_data_contact_setting_is_a_valid_email_or_nothing() {
-		$this->assertSame( 'secretary@club.test', Chess_Army_Knife_Settings::sanitize( array( 'data_contact_email' => ' secretary@club.test ' ) )['data_contact_email'] );
-		$this->assertSame( '', Chess_Army_Knife_Settings::sanitize( array( 'data_contact_email' => 'not an email' ) )['data_contact_email'] );
+		$this->assertStringContainsString( 'contact the club at [add an email address]', $text );
 	}
 
 	public function test_the_policy_is_added_to_the_privacy_policy_guide() {

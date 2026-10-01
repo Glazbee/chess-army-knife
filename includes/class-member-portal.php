@@ -253,7 +253,7 @@ class Chess_Army_Knife_Member_Portal {
 			$token = wp_generate_password( 32, false );
 			self::store_session( $token, $email );
 
-			$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+			$site = Chess_Army_Knife_Settings::club_name();
 			$link = add_query_arg( 'cak_portal', $token, self::page_url() ) . '#' . self::ANCHOR;
 			/* translators: %s: site name */
 			$subject = sprintf( __( '[%s] Your membership details', 'chess-army-knife' ), $site );
@@ -511,7 +511,7 @@ class Chess_Army_Knife_Member_Portal {
 			DAY_IN_SECONDS
 		);
 
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$site = Chess_Army_Knife_Settings::club_name();
 		$link = add_query_arg( 'cak_email', $token, self::page_url() ) . '#' . self::ANCHOR;
 		/* translators: %s: site name */
 		$subject = sprintf( __( '[%s] Confirm your new email address', 'chess-army-knife' ), $site );
@@ -563,7 +563,7 @@ class Chess_Army_Knife_Member_Portal {
 		);
 		delete_transient( self::EMAIL_CHANGE_KEY . preg_replace( '/[^A-Za-z0-9]/', '', (string) $input['token'] ) );
 
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$site = Chess_Army_Knife_Settings::club_name();
 		/* translators: %s: site name */
 		$subject = sprintf( __( '[%s] Your email address was changed', 'chess-army-knife' ), $site );
 		/* translators: 1: site name, 2: the new email address */

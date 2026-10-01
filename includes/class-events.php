@@ -95,13 +95,12 @@ class Chess_Army_Knife_Events {
 	}
 
 	/**
-	 * The location used by events that don't set their own.
+	 * The club's venue, used by events that don't set their own location.
 	 *
 	 * @return string
 	 */
 	public static function default_location() {
-		$options = Chess_Army_Knife_Settings::get_options();
-		return isset( $options['default_event_location'] ) ? (string) $options['default_event_location'] : '';
+		return (string) Chess_Army_Knife_Settings::get_options()['club_venue'];
 	}
 
 	/**

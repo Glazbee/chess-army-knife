@@ -141,10 +141,10 @@ class Chess_Army_Knife_Events_Admin {
 					<p class="description">
 						<?php
 						if ( '' !== $default_location ) {
-							/* translators: %s: the default location */
-							echo esc_html( sprintf( __( 'Leave blank to use the default: %s.', 'chess-army-knife' ), $default_location ) );
+							/* translators: %s: the club venue */
+							echo esc_html( sprintf( __( 'Leave blank to use the club venue: %s.', 'chess-army-knife' ), $default_location ) );
 						} else {
-							esc_html_e( 'Set a default location under Settings, and leave this blank to use it.', 'chess-army-knife' );
+							esc_html_e( 'Set your club venue under Settings, and leave this blank to use it.', 'chess-army-knife' );
 						}
 						?>
 					</p>

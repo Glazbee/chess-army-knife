@@ -349,14 +349,13 @@ class Chess_Army_Knife_Membership_Privacy {
 	/**
 	 * The club's data policy for members, as sections of plain text. The
 	 * starting text of the Club data policy page (see Chess_Army_Knife_Policies),
-	 * which follows the retention period and contact set on the Settings page.
+	 * which follows the retention period set on the Policies screen.
 	 *
 	 * @return array[] Each { heading, paragraphs }, all plain text.
 	 */
 	public static function policy_sections() {
 		$options = Chess_Army_Knife_Settings::get_options();
 		$months  = (int) $options['member_retention_months'];
-		$contact = (string) $options['data_contact_email'];
 
 		if ( $months > 0 ) {
 			/* translators: %d: number of months */
@@ -365,12 +364,7 @@ class Chess_Army_Knife_Membership_Privacy {
 			$keep = __( 'We keep your details until you ask us to delete them.', 'chess-army-knife' );
 		}
 
-		if ( '' !== $contact ) {
-			/* translators: %s: email address */
-			$ask = sprintf( __( 'To ask about your details, contact the club at %s.', 'chess-army-knife' ), $contact );
-		} else {
-			$ask = __( 'To ask about your details, contact the club.', 'chess-army-knife' );
-		}
+		$ask = __( 'To ask about your details, contact the club at [add an email address].', 'chess-army-knife' );
 
 		$sections = array(
 			array(

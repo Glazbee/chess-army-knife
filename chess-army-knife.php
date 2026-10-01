@@ -80,6 +80,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-member-stats.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-dashboard-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-block-help.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-access.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-setup.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-menu.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
@@ -115,6 +116,9 @@ function Chess_Army_Knife_activate() {
 	Chess_Army_Knife_Mailer::schedule();
 	Chess_Army_Knife_Renewal_Reminders::schedule();
 	Chess_Army_Knife_Announcements::schedule();
+
+	// Ask for the club's details once, as soon as the plugin is on.
+	Chess_Army_Knife_Setup::request_redirect();
 }
 register_activation_hook( __FILE__, 'Chess_Army_Knife_activate' );
 

@@ -146,7 +146,6 @@ class Chess_Army_Knife_LMS_Client {
 		$bases = array_unique(
 			array_filter(
 				array(
-					Chess_Army_Knife_Settings::get_options()['lms_base_url'] ?: self::BASE,
 					self::BASE,
 					self::LEGACY_BASE,
 				)
@@ -382,18 +381,11 @@ class Chess_Army_Knife_LMS_Client {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * The v2 base URL: the built-in one, or the Settings override (a v1
-	 * ".../league" address) pointed at the same host's v2 path.
+	 * The v2 base URL.
 	 *
 	 * @return string No trailing slash.
 	 */
 	public static function v2_base() {
-		$override = rtrim( (string) Chess_Army_Knife_Settings::get_options()['lms_base_url'], '/' );
-
-		if ( '' !== $override && '/league' === substr( $override, -7 ) ) {
-			return substr( $override, 0, -7 ) . '/v2';
-		}
-
 		return self::V2_BASE;
 	}
 

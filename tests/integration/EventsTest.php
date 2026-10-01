@@ -149,8 +149,8 @@ class EventsTest extends WP_UnitTestCase {
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
-				'use_local_cache'        => 0,
-				'default_event_location' => 'The Village Hall',
+				'use_local_cache' => 0,
+				'club_venue'      => 'The Village Hall',
 			)
 		);
 		$this->event( 'Usual place', '2099-01-01 19:00:00' );
@@ -507,5 +507,56 @@ class EventsTest extends WP_UnitTestCase {
 
 		// Newest first, and an event with no date is still shown.
 		$this->assertSame( array( 'Later', 'Earlier', 'Undated' ), wp_list_pluck( $query->get_posts(), 'post_title' ) );
+	}
+
+	public function test_setup_makes_weekly_events_once() {
+		$rows = array(
+			array(
+				'key'     => 'club_night',
+				'title'   => 'Club night',
+				'tag'     => 'Club night',
+				'weekday' => 2,
+				'start'   => '19:30',
+				'end'     => '22:00',
+			),
+		);
+
+		// 2099-10-01 is a Thursday, so the next Tuesday is the 6th.
+		$this->assertSame( 1, Chess_Army_Knife_Setup::create_events( $rows, '2099-10-01' ) );
+		$this->assertSame( 0, Chess_Army_Knife_Setup::create_events( $rows, '2099-10-01' ), 'Running setup again does not repeat it.' );
+
+		$events = Chess_Army_Knife_Events::query( array( 'limit' => 2 ) );
+		$this->assertSame( 'Club night', $events[0]['title'] );
+		$this->assertSame( 'weekly', $events[0]['repeat'] );
+		$this->assertSame( '2099-10-06 19:30:00', $events[0]['start'] );
+		$this->assertSame( '2099-10-06 22:00:00', $events[0]['end'] );
+		$this->assertSame( '2099-10-13 19:30:00', $events[1]['start'] );
+		$this->assertSame( array( 'Club night' ), wp_list_pluck( $events[0]['tags'], 'name' ) );
+	}
+
+	public function test_setup_saves_the_club_details_and_keeps_other_settings() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache'         => 0,
+				'member_retention_months' => 36,
+			)
+		);
+
+		Chess_Army_Knife_Settings::save(
+			array(
+				'club_name'      => 'Central Birmingham Chess Club',
+				'club_venue'     => 'The Hall',
+				'default_org_id' => '702',
+				'lms_api_key'    => 'lmsk_x',
+			)
+		);
+
+		$options = Chess_Army_Knife_Settings::get_options();
+		$this->assertSame( 'Central Birmingham Chess Club', $options['club_name'] );
+		$this->assertSame( 'The Hall', Chess_Army_Knife_Events::default_location() );
+		$this->assertSame( '702', $options['default_org_id'] );
+		$this->assertSame( 36, $options['member_retention_months'] );
+		$this->assertSame( 0, $options['use_local_cache'] );
 	}
 }

@@ -19,7 +19,7 @@ defined( 'ABSPATH' ) || exit;
 $attributes = Chess_Army_Knife_Templates::apply( 'team-carousel', $attributes );
 
 $org_id           = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_org_id', $attributes['orgId'] ?? '' ) );
-$event_name       = trim( (string) Chess_Army_Knife_Settings::resolve( 'default_event_name', $attributes['eventName'] ?? '' ) );
+$event_name       = trim( (string) ( $attributes['eventName'] ?? '' ) );
 $team_source      = isset( $attributes['teamSource'] ) ? $attributes['teamSource'] : 'club-teams';
 $manual_teams_raw = isset( $attributes['manualTeams'] ) ? (string) $attributes['manualTeams'] : '';
 $block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';

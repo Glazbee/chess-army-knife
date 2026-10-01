@@ -135,22 +135,6 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'lms_connection_error', Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' )->get_error_code() );
 	}
 
-	public function test_configured_base_url_is_tried_first() {
-		$this->set_settings(
-			array(
-				'use_local_cache'    => 0,
-				'fast_cache_enabled' => 0,
-				'lms_base_url'       => 'https://custom.test/league/',
-			)
-		);
-		$calls = array();
-		$this->queue_responses( array( $this->response( 200, array( 'table' => array( array( 'team' => 'A' ) ) ) ) ), $calls );
-
-		Chess_Army_Knife_LMS_Client::get_table( '12', 'Division 1' );
-
-		$this->assertSame( 'https://custom.test/league/table', $calls[0]['url'] );
-	}
-
 	public function test_results_are_cached() {
 		$calls = array();
 		$this->queue_responses( array( $this->response( 200, array( 'table' => array( array( 'team' => 'A' ) ) ) ) ), $calls );
@@ -423,12 +407,5 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$this->serve_v2( array() );
 
 		$this->assertSame( 'lms_not_found', Chess_Army_Knife_LMS_Client::get_fixtures( '999', 'Division One' )->get_error_code() );
-	}
-
-	public function test_the_v2_base_follows_a_settings_override() {
-		$this->assertSame( Chess_Army_Knife_LMS_Client::V2_BASE, Chess_Army_Knife_LMS_Client::v2_base() );
-
-		$this->set_settings( array( 'lms_base_url' => 'https://lms.example.test/lms/lmsrest/league/' ) );
-		$this->assertSame( 'https://lms.example.test/lms/lmsrest/v2', Chess_Army_Knife_LMS_Client::v2_base() );
 	}
 }

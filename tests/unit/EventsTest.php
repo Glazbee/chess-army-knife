@@ -91,7 +91,7 @@ class EventsTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_default_location_comes_from_settings() {
-		$this->set_settings( array( 'default_event_location' => 'The Village Hall' ) );
+		$this->set_settings( array( 'club_venue' => 'The Village Hall' ) );
 
 		$this->assertSame( 'The Village Hall', Chess_Army_Knife_Events::default_location() );
 	}

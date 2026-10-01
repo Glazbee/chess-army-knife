@@ -147,7 +147,7 @@ class Chess_Army_Knife_Member_Requests {
 		set_transient( self::TOKEN_KEY . $token, $email, DAY_IN_SECONDS );
 
 		$link = add_query_arg( 'cak_withdraw', $token, $page_url ) . '#' . self::ANCHOR;
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$site = Chess_Army_Knife_Settings::club_name();
 
 		/* translators: %s: site name */
 		$subject = sprintf( __( '[%s] Your data choices', 'chess-army-knife' ), $site );
