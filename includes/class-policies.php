@@ -453,100 +453,158 @@ class Chess_Army_Knife_Policies {
 	}
 
 	/**
-	 * The starting text of the safeguarding policy. It is general: the club should read it,
-	 * fill in the gaps and change it to match what it really does.
+	 * The starting text of the safeguarding policy. It is a general version of a real club's policy,
+	 * built on the English Chess Federation's safeguarding guidance. The club should read it, fill in
+	 * the gaps in square brackets and change it to match what it really does.
 	 *
 	 * @return array[] Each { heading, paragraphs, items? }.
 	 */
 	public static function safeguarding_sections() {
 		$options = Chess_Army_Knife_Settings::get_options();
 		$club    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		$club    = '' !== $club ? $club : __( 'The club', 'chess-army-knife' );
+		$club    = '' !== $club ? $club : __( 'The Club', 'chess-army-knife' );
 		$name    = trim( (string) $options['safeguarding_officer'] );
 		$email   = trim( (string) $options['safeguarding_email'] );
 		$phone   = trim( (string) $options['safeguarding_phone'] );
 
-		if ( '' !== $name ) {
-			/* translators: 1: the safeguarding officer's name */
-			$officer = sprintf( __( 'The club\'s safeguarding officer is %1$s.', 'chess-army-knife' ), $name );
-		} else {
-			$officer = __( 'The club\'s safeguarding officer is [add the name of your safeguarding officer].', 'chess-army-knife' );
-		}
-		$reach = array_filter( array( $email, $phone ) );
-		if ( $reach ) {
-			/* translators: %s: how to reach them, such as an email address, or an email address and a phone number */
-			$officer .= ' ' . sprintf( __( 'You can contact them at %s.', 'chess-army-knife' ), implode( ' / ', $reach ) );
-		} else {
-			$officer .= ' ' . __( 'You can contact them at [add their email address or phone number].', 'chess-army-knife' );
-		}
-
 		$sections = array(
 			array(
-				'heading'    => __( 'Our promise', 'chess-army-knife' ),
+				'heading'    => __( 'Safeguarding policy statement', 'chess-army-knife' ),
 				'paragraphs' => array(
 					/* translators: %s: club name */
-					sprintf( __( '%s wants everyone who plays chess with us to be safe and to enjoy it. Children and adults at risk have the right to be protected from harm, abuse and neglect. Everyone in the club has a part to play in this.', 'chess-army-knife' ), $club ),
-				),
-			),
-			array(
-				'heading'    => __( 'Who this policy is for', 'chess-army-knife' ),
-				'paragraphs' => array(
-					__( 'This policy is for everyone involved in the club: members, parents and guardians, volunteers, committee members, coaches, tournament controllers and visitors. It covers everything the club does, in person and online, including matches, tournaments and trips.', 'chess-army-knife' ),
-				),
-			),
-			array(
-				'heading'    => __( 'Our safeguarding officer', 'chess-army-knife' ),
-				'paragraphs' => array(
-					$officer,
-					__( 'They take the lead on any concern and make sure this policy is followed.', 'chess-army-knife' ),
-				),
-			),
-			array(
-				'heading'    => __( 'How we keep people safe', 'chess-army-knife' ),
-				'paragraphs' => array(
-					__( 'We do the following.', 'chess-army-knife' ),
+					sprintf( __( '%s (the Club) is committed to ensuring everyone participating in chess does so in a safe, friendly, secure and enjoyable environment. Everyone at the Club, whether as a player, coach, official, administrator, staff member, volunteer, spectator, parent or carer, has a role to play. Individually and together, it is our actions, both on and off the chess board, that can help create a positive and inclusive culture.', 'chess-army-knife' ), $club ),
+					__( 'We will do this by:', 'chess-army-knife' ),
 				),
 				'items'      => array(
-					__( 'We choose carefully the adults who work with children or take them to events. They have the checks that the law and the English Chess Federation (ECF) ask for, such as a Disclosure and Barring Service (DBS) check.', 'chess-army-knife' ),
-					__( 'We avoid leaving a child alone with one adult. Activities happen where other people can see.', 'chess-army-knife' ),
-					__( 'We keep the contact details of a junior\'s parent or guardian, so we can reach them when we need to. [chess_army_policy_link policy=data] explains how we look after them.', 'chess-army-knife' ),
-					__( 'We expect everyone to treat each other with respect. Bullying, harassment, discrimination and abuse are not allowed.', 'chess-army-knife' ),
-					__( 'We talk to children about club business openly. We copy in a parent or guardian, and we use club channels, not private messages.', 'chess-army-knife' ),
-					__( 'We only take and share photos of children with the agreement of a parent or guardian.', 'chess-army-knife' ),
-					__( 'We follow the ECF\'s safeguarding policy at ECF events and for ECF-rated play.', 'chess-army-knife' ),
+					__( 'having the right people in place', 'chess-army-knife' ),
+					__( 'creating the right culture and environment', 'chess-army-knife' ),
+					__( 'making sure clear processes are in place for reporting and responding to safeguarding concerns', 'chess-army-knife' ),
+					__( 'adopting the English Chess Federation\'s (ECF) Safeguarding Policy and Guidance', 'chess-army-knife' ),
+					__( 'making sure all Club officers and Team Captains undertake a Disclosure and Barring Service (DBS) check', 'chess-army-knife' ),
 				),
 			),
 			array(
-				'heading'    => __( 'Online play and messages', 'chess-army-knife' ),
+				'heading'    => __( 'Having the right people in place', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'Online games and chat can carry risks. An adult with the right checks should run any online club event for juniors, with a parent or guardian\'s agreement. Adults must not ask children for private contact.', 'chess-army-knife' ),
+					__( 'Everyone at our Club has a responsibility for safeguarding. We also have a designated Club Safeguarding Officer.', 'chess-army-knife' ),
+					__( 'The Club Safeguarding Officer is:', 'chess-army-knife' ),
+				),
+				'items'      => array(
+					__( 'the first point of contact for all children, parents and carers, volunteers and members at the Club', 'chess-army-knife' ),
+					__( 'a member of our committee', 'chess-army-knife' ),
+					__( 'a source of safeguarding advice for the Club, its committee and its members', 'chess-army-knife' ),
+					__( 'the Club\'s main point of contact for the ECF\'s Safeguarding Team and other outside safeguarding agencies', 'chess-army-knife' ),
+					__( 'the person responsible for making sure correct and complete reporting procedures exist for raising and managing safeguarding concerns', 'chess-army-knife' ),
 				),
 			),
 			array(
-				'heading'    => __( 'If you are worried', 'chess-army-knife' ),
+				'heading'    => __( 'Creating the right culture and environment', 'chess-army-knife' ),
 				'paragraphs' => array(
+					__( 'All participants in chess, whatever their age, gender, race, religion, sexual orientation, ability or disability, have the right to enjoy the game in an environment that is safe from abuse of any kind. The Club recognises that safeguarding starts with setting high standards and promoting a positive culture, which provides the best environment for participants to enjoy themselves and the game of chess.', 'chess-army-knife' ),
+					__( 'We promote a listening culture, where the views of children, parents and carers, volunteers and other Club members are actively asked for and acted on. This helps us to create an environment where people have the chance and confidence to raise concerns, including concerns about poor practice, abuse and neglect.', 'chess-army-knife' ),
+					__( 'We seek to create a partnership with parents and carers, so that they know what to expect from us and what we expect of them.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Code of conduct', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'In keeping with this aim, the Club expects all Club members to have regard to the following code of conduct.', 'chess-army-knife' ),
+				),
+				'items'      => array(
+					__( 'Ensure the safety of all children by providing effective supervision and proper planning of organised chess activities.', 'chess-army-knife' ),
+					__( 'Consider the wellbeing and safety of participants before taking part in activities such as coaching or organising the playing of chess.', 'chess-army-knife' ),
+					__( 'Encourage and guide participants to accept responsibility for their own performance and behaviour.', 'chess-army-knife' ),
+					__( 'Treat all young people fairly and make sure they feel valued and respected, and have no favourites.', 'chess-army-knife' ),
+					__( 'Do not allow any discrimination on the grounds of religious beliefs, race, gender, social class or disability.', 'chess-army-knife' ),
+					__( 'Do not allow any bullying, bad language or inappropriate behaviour.', 'chess-army-knife' ),
+					__( 'Report accidents or incidents of alleged abuse or poor practice to the Safeguarding Officer.', 'chess-army-knife' ),
+					__( 'Do not smoke or drink alcohol during direct coaching.', 'chess-army-knife' ),
+					__( 'Avoid taking photos or videos without permission, especially of children.', 'chess-army-knife' ),
+					__( 'Do not accept or give individual gifts to children and young people without permission from their parents or guardians.', 'chess-army-knife' ),
+					__( 'Do not add minors to your social media accounts or take their telephone numbers unless their parents have given permission.', 'chess-army-knife' ),
+					__( 'Never take children to your home, hotel bedroom or similar place (for example for coaching) unless another person is there who is, or is authorised by, their parent or guardian, or you have the explicit consent of their parent or guardian.', 'chess-army-knife' ),
+					__( 'Plan activities so that more than one other person is present, or at least so that they are within sight or hearing of others where possible. This applies to activities such as one-to-one training and travelling to or from chess events.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				/* translators: %s: club name */
+				'heading'    => sprintf( __( '%s and the digital world', 'chess-army-knife' ), $club ),
+				'paragraphs' => array(
+					__( 'Managing the Club\'s online presence is part of safeguarding.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Internet and social media', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'Our online presence through our website or social media platforms will follow these guidelines:', 'chess-army-knife' ),
+				),
+				'items'      => array(
+					__( 'All social media accounts will be password-protected, and at least two members of staff or volunteers will have access to each account and password.', 'chess-army-knife' ),
+					__( 'The accounts will be monitored by at least two designated Club members, appointed by the Club\'s committee, to provide transparency.', 'chess-army-knife' ),
+					__( 'The designated members managing our online presence will ask the Safeguarding Officer for advice on safeguarding requirements.', 'chess-army-knife' ),
+					__( 'Designated members will remove inappropriate posts by children or adults, explaining why, and tell anyone who may be affected (as well as the parents of any children involved).', 'chess-army-knife' ),
+					__( 'The Club will make sure children know who manages our social media accounts and who to contact if they have any concerns about something that has happened online.', 'chess-army-knife' ),
+					__( 'Our account, page and event settings will be set to "private" so that only invited Club members can see their content.', 'chess-army-knife' ),
+					__( 'Identifying details such as a child\'s home address, school name or telephone number should not be posted on social media platforms.', 'chess-army-knife' ),
+					__( 'Any posts or correspondence will be consistent with our aims and tone as a club.', 'chess-army-knife' ),
+					__( 'Parents will be asked to give their approval for Club members to communicate with their children through Club social media accounts, video conferencing platforms or any other means of communication.', 'chess-army-knife' ),
+					__( 'Parents will need to give permission for photographs or videos of their child to be posted on social media.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Using mobile phones or other digital technology to communicate', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'When using mobile phones or other devices to communicate by voice, video or text (including texting, email and instant messaging such as WhatsApp or Facebook Messenger), the Club will take these precautions to keep children safe:', 'chess-army-knife' ),
+				),
+				'items'      => array(
+					__( 'Club members will avoid having children\'s personal mobile numbers and will instead make contact through a parent.', 'chess-army-knife' ),
+					__( 'Parental permission will be sought each time we need to contact children directly. The purpose of each contact will be clearly identified and agreed.', 'chess-army-knife' ),
+					__( 'A method of accountability will be arranged, such as copies of texts, messages or emails also being sent to another member of staff or to parents.', 'chess-army-knife' ),
+					__( 'Smartphone users should respect the private lives of others and not take or share pictures or videos of other people if it could invade their privacy.', 'chess-army-knife' ),
+					__( 'Texts, emails or messages will be used for passing on information, such as details of upcoming chess matches. A group chat may sometimes have casual conversation, but always in a good spirit. No offensive communications will be tolerated.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading' => __( 'What we expect of Club members online', 'chess-army-knife' ),
+				'items'   => array(
+					__( 'Club members should not communicate with children through personal accounts.', 'chess-army-knife' ),
+					__( 'Club members should not "friend" or "follow" children from personal accounts on social media, and should keep the same professional boundaries online as they would in person when using Club accounts.', 'chess-army-knife' ),
+					__( 'Club members should make sure any content they post on public personal accounts is accurate and appropriate, as children may "follow" them on social media.', 'chess-army-knife' ),
+					__( 'Rather than communicating with parents through personal social media accounts, Club members should choose a more formal means of communication, such as face to face, in an email or in writing, or use a Club account or website.', 'chess-army-knife' ),
+					__( 'Club members should avoid communicating with children by email or Club social media such as messaging apps without copying in parents or guardians.', 'chess-army-knife' ),
+					__( 'Emails or messages should keep the Club\'s tone and be written in a professional manner, in the same way you would write to fellow professionals, avoiding kisses (X\'s), slang or inappropriate language.', 'chess-army-knife' ),
+					__( 'Club members should not delete any messages or communications sent to or from Club accounts.', 'chess-army-knife' ),
+				),
+			),
+			array(
+				'heading'    => __( 'Reporting and responding to safeguarding concerns', 'chess-army-knife' ),
+				'paragraphs' => array(
+					__( 'Our aim is that everyone at the Club should feel confident to raise a concern, no matter how small. We believe that raising and dealing with concerns quickly, when they happen, supports a proactive safeguarding culture at the Club.', 'chess-army-knife' ),
+					__( 'All suspicions, concerns and allegations will be taken seriously. We will follow the 3 Rs with every concern: responding appropriately, recording confidentially and reporting where necessary, so that concerns are dealt with fairly and promptly.', 'chess-army-knife' ),
+					__( 'The Club recognises that it is not the responsibility of Club members to decide or investigate whether abuse has taken place, but to act on and report any concerns promptly.', 'chess-army-knife' ),
 					__( 'If a child is in immediate danger, call 999.', 'chess-army-knife' ),
-					__( 'If you are worried about a child or an adult, tell the safeguarding officer as soon as you can. If your worry is about the safeguarding officer, tell another member of the committee.', 'chess-army-knife' ),
-					__( 'You can also call the NSPCC helpline on 0808 800 5000. Children can call Childline for free on 0800 1111.', 'chess-army-knife' ),
+					__( 'We make sure that confidential information about safeguarding is shared appropriately and only with those who need to know. Information may need to be shared with the ECF Safeguarding Officer or with local agencies that have statutory responsibility for safeguarding. If we are unsure, we will ask the ECF for advice.', 'chess-army-knife' ),
+					__( 'The Safeguarding Officer will give an annual report to the AGM in [add the month of your AGM], which will include notice of any updates to the policy or any relevant new advice from the ECF.', 'chess-army-knife' ),
+					__( 'This policy will be on display [add where, for example on the Club\'s noticeboard], and copies can be requested by players or parents after registering with the Club. A form for recording concerns or allegations of abuse, harm or neglect is available on request from the Club\'s Safeguarding Officer, whose details are shown below.', 'chess-army-knife' ),
 				),
 			),
 			array(
-				'heading'    => __( 'What happens next', 'chess-army-knife' ),
+				'heading'    => __( 'Club commitment', 'chess-army-knife' ),
 				'paragraphs' => array(
-					__( 'We take every concern seriously. The safeguarding officer will listen, write down what was said and decide with the committee what to do. They may need to tell the local authority children\'s services, the police or the ECF.', 'chess-army-knife' ),
-					__( 'We keep what people tell us private, and share it only with people who need to know. We cannot promise to keep a concern secret if a child may be at risk.', 'chess-army-knife' ),
+					/* translators: %s: club name */
+					sprintf( __( '%s is committed to this Safeguarding Policy Statement.', 'chess-army-knife' ), $club ),
+					__( 'Date completed: [add the date].', 'chess-army-knife' ),
 				),
 			),
 			array(
-				'heading'    => __( 'Keeping records', 'chess-army-knife' ),
-				'paragraphs' => array(
-					__( 'We keep records of concerns safely, for as long as the law and guidance say. Only the safeguarding officer and people who need them can see them.', 'chess-army-knife' ),
-				),
-			),
-			array(
-				'heading'    => __( 'Reviewing this policy', 'chess-army-knife' ),
-				'paragraphs' => array(
-					__( 'The committee reviews this policy at least once a year, and after any serious concern. It was last reviewed on [add the date].', 'chess-army-knife' ),
+				'heading' => __( 'Our Club Safeguarding Officer\'s details', 'chess-army-knife' ),
+				'items'   => array(
+					/* translators: %s: the safeguarding officer's name */
+					sprintf( __( 'Name: %s', 'chess-army-knife' ), '' !== $name ? $name : __( '[add the name of your safeguarding officer]', 'chess-army-knife' ) ),
+					/* translators: %s: email address */
+					sprintf( __( 'Email address: %s', 'chess-army-knife' ), '' !== $email ? $email : __( '[add their email address]', 'chess-army-knife' ) ),
+					/* translators: %s: phone number */
+					sprintf( __( 'Phone number: %s', 'chess-army-knife' ), '' !== $phone ? $phone : __( '[add their phone number]', 'chess-army-knife' ) ),
 				),
 			),
 		);
@@ -554,7 +612,7 @@ class Chess_Army_Knife_Policies {
 		/**
 		 * Filter the sections of the safeguarding policy's starting text.
 		 *
-		 * @param array[] $sections Each { heading, paragraphs, items? }.
+		 * @param array[] $sections Each { heading, paragraphs?, items? }.
 		 */
 		return (array) apply_filters( 'Chess_Army_Knife_safeguarding_sections', $sections );
 	}

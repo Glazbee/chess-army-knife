@@ -68,7 +68,8 @@ class PoliciesTest extends WP_UnitTestCase {
 		$this->assertSame( '07700 900123', $options['safeguarding_phone'] );
 		$content = Chess_Army_Knife_Policies::page( 'safeguarding' )->post_content;
 		$this->assertStringContainsString( 'Sam Example', $content );
-		$this->assertStringContainsString( 'safe@club.test / 07700 900123', $content );
+		$this->assertStringContainsString( 'Email address: safe@club.test', $content );
+		$this->assertStringContainsString( 'Phone number: 07700 900123', $content );
 	}
 
 	public function test_saving_the_details_keeps_the_rest_of_the_settings() {
@@ -166,7 +167,7 @@ class PoliciesTest extends WP_UnitTestCase {
 			$this->assertNotSame( '', trim( $page->post_content ), $key );
 		}
 		$this->assertStringContainsString( 'Sharing with the English Chess Federation', Chess_Army_Knife_Policies::page( 'data' )->post_content );
-		$this->assertStringContainsString( 'If you are worried', Chess_Army_Knife_Policies::page( 'safeguarding' )->post_content );
+		$this->assertStringContainsString( 'Reporting and responding to safeguarding concerns', Chess_Army_Knife_Policies::page( 'safeguarding' )->post_content );
 	}
 
 	public function test_making_the_pages_twice_does_not_make_copies() {
@@ -225,7 +226,7 @@ class PoliciesTest extends WP_UnitTestCase {
 
 		Chess_Army_Knife_Policies::restore( 'safeguarding' );
 
-		$this->assertStringContainsString( 'If you are worried', get_post( $id )->post_content );
+		$this->assertStringContainsString( 'Reporting and responding to safeguarding concerns', get_post( $id )->post_content );
 		$this->assertNotEmpty( wp_get_post_revisions( $id ), 'The earlier text can be got back.' );
 	}
 
