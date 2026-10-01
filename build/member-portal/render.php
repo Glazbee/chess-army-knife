@@ -133,16 +133,6 @@ $heading      = function ( $depth, $text ) {
 			$has_parent    = '' !== $person['guardian_name'] . $person['guardian_email'];
 			$teams         = Chess_Army_Knife_Teams::teams_of_person( $person['id'] );
 			$picked        = Chess_Army_Knife_Selection::selections_for_person( $person['id'] );
-			$events        = array();
-			foreach ( Chess_Army_Knife_Event_Registrations::for_person( $person['id'] ) as $registration ) {
-				$event_post = get_post( $registration['event_id'] );
-				if ( $event_post && 'publish' === $event_post->post_status && substr( (string) get_post_meta( $event_post->ID, Chess_Army_Knife_Events::META_START, true ), 0, 10 ) >= $today ) {
-					$events[] = array(
-						'post'         => $event_post,
-						'registration' => $registration,
-					);
-				}
-			}
 			?>
 			<section class="cak-portal__person">
 				<?php echo $heading( 1, $person['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
@@ -239,19 +229,6 @@ $heading      = function ( $depth, $text ) {
 								/* translators: 1: fixture, 2: date, 3: team, 4: board number */
 								echo esc_html( sprintf( __( '%1$s, %2$s (%3$s, board %4$d)', 'chess-army-knife' ), $item['event']['title'], Chess_Army_Knife_Events_Display::date_label( $item['event'] ), $item['team']['name'], $item['board'] ) );
 								?>
-							</li>
-						<?php endforeach; ?>
-					</ul>
-				<?php endif; ?>
-
-				<?php if ( $events ) : ?>
-					<?php echo $heading( 2, __( 'Events you are registered for', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
-					<ul>
-						<?php foreach ( $events as $item ) : ?>
-							<li>
-								<?php echo esc_html( get_the_title( $item['post'] ) ); ?>
-								(<?php echo esc_html( Chess_Army_Knife_Event_Registrations::STATUS_WAITING === $item['registration']['status'] ? __( 'waiting list', 'chess-army-knife' ) : __( 'registered', 'chess-army-knife' ) ); ?>)
-								<a href="<?php echo esc_url( Chess_Army_Knife_Event_Registration_Form::cancel_url( $item['registration'] ) ); ?>"><?php esc_html_e( 'Cancel', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: event name */ __( ' registration for %s', 'chess-army-knife' ), get_the_title( $item['post'] ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
 							</li>
 						<?php endforeach; ?>
 					</ul>

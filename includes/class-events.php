@@ -355,32 +355,6 @@ class Chess_Army_Knife_Events {
 	}
 
 	/**
-	 * The event a page is attached to.
-	 *
-	 * @param int $page_id Page id.
-	 * @return int Event id, or 0 if no event uses the page.
-	 */
-	public static function for_page( $page_id ) {
-		if ( ! $page_id ) {
-			return 0;
-		}
-
-		$posts = get_posts(
-			array(
-				'post_type'      => self::POST_TYPE,
-				'post_status'    => 'publish',
-				'posts_per_page' => 1,
-				'fields'         => 'ids',
-				'no_found_rows'  => true,
-				'meta_key'       => self::META_PAGE, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Finds the one event a page is attached to.
-				'meta_value'     => (int) $page_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Finds the one event a page is attached to.
-			)
-		);
-
-		return $posts ? (int) $posts[0] : 0;
-	}
-
-	/**
 	 * Everything the blocks need to show one event.
 	 *
 	 * @param WP_Post $post  Event post.

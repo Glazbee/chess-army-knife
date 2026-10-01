@@ -980,7 +980,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Selection::remove_person( $id );
 		Chess_Army_Knife_Member_History::remove_person( $id );
 
-		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) && ! Chess_Army_Knife_Event_Registrations::person_has_registrations( $id ) ) {
+		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
 		}
@@ -1022,7 +1022,6 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		Chess_Army_Knife_Teams::remove_person( $id );
-		Chess_Army_Knife_Event_Registrations::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
 		Chess_Army_Knife_Member_History::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.

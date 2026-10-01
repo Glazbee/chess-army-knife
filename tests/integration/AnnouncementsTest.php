@@ -12,7 +12,7 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Mailer::table(), Chess_Army_Knife_Notification_Preferences::table(), Chess_Army_Knife_Teams::squad_table(), Chess_Army_Knife_Event_Registrations::table(), Chess_Army_Knife_Selection::table( 'availability' ), Chess_Army_Knife_Selection::table( 'lineups' ) ) as $table ) {
+		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Mailer::table(), Chess_Army_Knife_Notification_Preferences::table(), Chess_Army_Knife_Teams::squad_table(), Chess_Army_Knife_Selection::table( 'availability' ), Chess_Army_Knife_Selection::table( 'lineups' ) ) as $table ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Membership_Store::install_table();
@@ -20,7 +20,6 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Mailer::install_table();
 		Chess_Army_Knife_Notification_Preferences::install_table();
 		Chess_Army_Knife_Teams::install_table();
-		Chess_Army_Knife_Event_Registrations::install_table();
 		Chess_Army_Knife_Selection::install_tables();
 		reset_phpmailer_instance();
 	}

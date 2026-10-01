@@ -15,7 +15,7 @@
  * from the new address before it takes effect, and the old address is told.
  * Deleting a record is immediate once confirmed, using the same erasure as the
  * officers' and WordPress's own tools: the record is deleted, or, if a payment,
- * photos, tournament entries or event registrations tie it to the club's
+ * photos or tournament entries tie it to the club's
  * accounts, kept without any personal details.
  *
  * @package Chess_Army_Knife
@@ -578,7 +578,7 @@ class Chess_Army_Knife_Member_Portal {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * Delete a member's own record, straight away. It is removed, or, if a payment, photos, tournament entries or event registrations tie it to the club's accounts, kept without any personal details.
+	 * Delete a member's own record, straight away. It is removed, or, if a payment, photos or tournament entries tie it to the club's accounts, kept without any personal details.
 	 *
 	 * @param array $input Raw (unslashed) form values: token, person, confirm.
 	 * @return string|WP_Error 'deleted' or 'anonymised', or an error.

@@ -380,10 +380,9 @@ class EventsTest extends WP_UnitTestCase {
 				'post_status' => 'draft',
 			)
 		);
-		$id   = $this->event( 'Night', '2099-01-01 19:00:00', array( Chess_Army_Knife_Events::META_PAGE => $page ) );
+		$this->event( 'Night', '2099-01-01 19:00:00', array( Chess_Army_Knife_Events::META_PAGE => $page ) );
 
 		$this->assertSame( '', Chess_Army_Knife_Events::query()[0]['url'], 'A draft page is not linked.' );
-		$this->assertSame( $id, Chess_Army_Knife_Events::for_page( $page ) );
 
 		wp_update_post(
 			array(
@@ -392,7 +391,6 @@ class EventsTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertSame( get_permalink( $page ), Chess_Army_Knife_Events::query()[0]['url'] );
-		$this->assertSame( 0, Chess_Army_Knife_Events::for_page( 0 ) );
 	}
 
 	public function test_saving_can_attach_a_page_or_create_a_draft_one() {
