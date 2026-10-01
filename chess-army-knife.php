@@ -68,6 +68,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-rating-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-photos.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-member-requests.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-privacy.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-policies.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-members-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-event-registration-form.php';
@@ -165,6 +166,7 @@ function Chess_Army_Knife_maybe_upgrade() {
 		Chess_Army_Knife_Teams::install_table();
 		Chess_Army_Knife_Event_Registrations::install_table();
 		Chess_Army_Knife_Selection::install_tables();
+
 		update_option( 'Chess_Army_Knife_db_version', Chess_Army_Knife_VERSION );
 	}
 }

@@ -170,8 +170,13 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 
 			<p class="cak-membership-form__hint">
 				<?php esc_html_e( 'The club uses these details to run your membership, and gives your name and ECF rating code to the English Chess Federation so your games can be rated.', 'chess-army-knife' ); ?>
-				<?php if ( get_privacy_policy_url() ) : ?>
-					<a href="<?php echo esc_url( get_privacy_policy_url() ); ?>"><?php esc_html_e( 'Read how we handle your data', 'chess-army-knife' ); ?></a>
+				<?php
+				// The club data policy page if it is published, otherwise the site's privacy policy.
+				$policy_url = Chess_Army_Knife_Policies::url( 'data' );
+				$policy_url = '' !== $policy_url ? $policy_url : (string) get_privacy_policy_url();
+				?>
+				<?php if ( '' !== $policy_url ) : ?>
+					<a href="<?php echo esc_url( $policy_url ); ?>"><?php esc_html_e( 'Read how we handle your data', 'chess-army-knife' ); ?></a>
 				<?php endif; ?>
 			</p>
 			<p class="cak-membership-form__consent">

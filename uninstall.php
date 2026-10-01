@@ -24,6 +24,8 @@ delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
 delete_option( 'Chess_Army_Knife_club_teams_migrated' );
 delete_option( 'Chess_Army_Knife_templates' );
+// The policy pages are the club's own text, so they stay; only the plugin's note of which pages they are goes.
+delete_option( 'Chess_Army_Knife_policy_pages' );
 delete_option( 'Chess_Army_Knife_db_version' );
 
 // The membership permission is not data: take it back from whoever was given it.

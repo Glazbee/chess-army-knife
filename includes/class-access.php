@@ -41,6 +41,10 @@ class Chess_Army_Knife_Access {
 				'needs' => __( 'The plugin\'s settings need an administrator account.', 'chess-army-knife' ),
 				'how'   => $profile,
 			),
+			'pages'       => array(
+				'needs' => __( 'The policies are pages, so they can be edited by editors and administrators.', 'chess-army-knife' ),
+				'how'   => $profile,
+			),
 			'events'      => array(
 				'needs' => __( 'Club events can be edited by editors, authors and administrators.', 'chess-army-knife' ),
 				'how'   => $profile,
@@ -62,6 +66,7 @@ class Chess_Army_Knife_Access {
 			'tournaments' => __( 'Administrator', 'chess-army-knife' ),
 			'settings'    => __( 'Administrator', 'chess-army-knife' ),
 			'events'      => __( 'Editor or above', 'chess-army-knife' ),
+			'pages'       => __( 'Editor or above', 'chess-army-knife' ),
 		);
 		return isset( $labels[ $kind ] ) ? $labels[ $kind ] : '';
 	}

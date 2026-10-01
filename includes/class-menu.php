@@ -235,6 +235,18 @@ class Chess_Army_Knife_Menu {
 				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
 			),
 			array(
+				'group'       => $club_group,
+				'title'       => __( 'Policies', 'chess-army-knife' ),
+				'description' => __( 'The club data policy, safeguarding policy and privacy policy, as pages you can edit.', 'chess-army-knife' ),
+				'key'         => 'policies',
+				'slug'        => Chess_Army_Knife_Policies::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Policies', 'render_page' ),
+				'kind'        => 'pages',
+				'can'         => function () {
+					return current_user_can( Chess_Army_Knife_Policies::REQUIRED_CAP );
+				},
+			),
+			array(
 				'group'       => $setup_group,
 				'title'       => __( 'Templates', 'chess-army-knife' ),
 				'description' => __( 'Saved looks for the plugin\'s blocks.', 'chess-army-knife' ),
@@ -369,6 +381,7 @@ class Chess_Army_Knife_Menu {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Chess Army Knife', 'chess-army-knife' ); ?></h1>
+			<?php echo Chess_Army_Knife_Policies::attention_notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in attention_notice(). ?>
 			<p class="description"><?php esc_html_e( 'Everything the plugin does is listed here. Some screens need a permission: the ones you cannot use say so.', 'chess-army-knife' ); ?></p>
 			<?php foreach ( $groups as $group => $areas ) : ?>
 				<h2><?php echo esc_html( $group ); ?></h2>

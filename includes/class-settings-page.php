@@ -70,6 +70,9 @@ class Chess_Army_Knife_Settings {
 			'cache_lms_minutes'         => 30,  // League tables / matches / fixtures.
 			'use_local_cache'           => 1,   // Persistent custom-table cache vs. plain transients.
 			'delete_data_on_uninstall'  => 0, // Also delete tournaments and players when the plugin is deleted.
+			'safeguarding_officer'      => '', // Named in the safeguarding policy's starting text.
+			'safeguarding_email'        => '', // How to reach them, in the same text.
+			'safeguarding_phone'        => '',
 			'heading_level'             => 2, // Level of each block's main title, 1 to 5; its sub-headings follow.
 			'contrast_mode'             => 'device', // High contrast for the blocks: 'off', 'device' (follow the visitor's device) or 'always'.
 		);
@@ -248,6 +251,15 @@ class Chess_Army_Knife_Settings {
 		}
 		if ( isset( $input['data_contact_email'] ) ) {
 			$clean['data_contact_email'] = sanitize_email( $input['data_contact_email'] );
+		}
+		if ( isset( $input['safeguarding_officer'] ) ) {
+			$clean['safeguarding_officer'] = sanitize_text_field( $input['safeguarding_officer'] );
+		}
+		if ( isset( $input['safeguarding_phone'] ) ) {
+			$clean['safeguarding_phone'] = sanitize_text_field( $input['safeguarding_phone'] );
+		}
+		if ( isset( $input['safeguarding_email'] ) ) {
+			$clean['safeguarding_email'] = sanitize_email( $input['safeguarding_email'] );
 		}
 		if ( isset( $input['member_retention_months'] ) ) {
 			$clean['member_retention_months'] = max( 0, min( 120, (int) $input['member_retention_months'] ) );
@@ -444,10 +456,29 @@ class Chess_Army_Knife_Settings {
 						</td>
 					</tr>
 					<tr>
+						<th scope="row"><label for="safeguarding_officer"><?php esc_html_e( 'Safeguarding officer', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="safeguarding_officer" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_officer]" value="<?php echo esc_attr( $options['safeguarding_officer'] ); ?>" class="regular-text" />
+							<p class="description"><?php esc_html_e( 'Written into the starting text of the safeguarding policy page. Change it later by editing the page.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="safeguarding_email"><?php esc_html_e( 'Safeguarding contact email', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="email" id="safeguarding_email" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_email]" value="<?php echo esc_attr( $options['safeguarding_email'] ); ?>" class="regular-text" />
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="safeguarding_phone"><?php esc_html_e( 'Safeguarding contact phone', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="safeguarding_phone" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_phone]" value="<?php echo esc_attr( $options['safeguarding_phone'] ); ?>" class="regular-text" />
+						</td>
+					</tr>
+					<tr>
 						<th scope="row"><label for="data_contact_email"><?php esc_html_e( 'Data protection contact', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="email" id="data_contact_email" name="<?php echo esc_attr( self::OPTION ); ?>[data_contact_email]" value="<?php echo esc_attr( $options['data_contact_email'] ); ?>" class="regular-text" />
-							<p class="description"><?php esc_html_e( 'Shown publicly in the Club Data Policy block as who to contact to see, correct or delete personal details. Use a club address rather than a personal one.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Written into the starting text of the club data policy page as who to contact to see, correct or delete personal details. Use a club address rather than a personal one.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

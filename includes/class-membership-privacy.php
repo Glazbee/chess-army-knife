@@ -384,10 +384,9 @@ class Chess_Army_Knife_Membership_Privacy {
 	}
 
 	/**
-	 * The club's data policy for members, as sections of plain text. The one
-	 * source for the wording suggested in the privacy policy guide and for the
-	 * Club Data Policy block, so the two cannot disagree and both follow the
-	 * retention period and contact set on the Settings page.
+	 * The club's data policy for members, as sections of plain text. The
+	 * starting text of the Club data policy page (see Chess_Army_Knife_Policies),
+	 * which follows the retention period and contact set on the Settings page.
 	 *
 	 * @return array[] Each { heading, paragraphs }, all plain text.
 	 */
@@ -474,7 +473,7 @@ class Chess_Army_Knife_Membership_Privacy {
 		);
 
 		/**
-		 * Filter the sections of the club's data policy, for example to add
+		 * Filter the sections of the club data policy's starting text, for example to add
 		 * the club's own paragraphs.
 		 *
 		 * @param array[] $sections Each { heading, paragraphs }, all plain text.
@@ -483,23 +482,31 @@ class Chess_Army_Knife_Membership_Privacy {
 	}
 
 	/**
-	 * Suggest wording for the site's privacy policy.
+	 * The wording suggested for the site's privacy policy: a pointer to the club data policy page,
+	 * which holds the detail and can be edited on its own.
+	 *
+	 * @return string HTML, or '' until the club has made its data policy page, when there is nothing to point to.
 	 */
-	public static function add_policy_content() {
-		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
-			return;
+	public static function policy_guide_text() {
+		if ( null === Chess_Army_Knife_Policies::page( 'data' ) ) {
+			return '';
 		}
 
 		$text  = '<h2>' . esc_html__( 'Club membership', 'chess-army-knife' ) . '</h2>';
-		$text .= '<p class="privacy-policy-tutorial">' . esc_html__( 'Suggested wording, kept up to date from your settings. You can also show it on any page with the Club Data Policy block. Review it and change it to match what your club really does; it is not legal advice.', 'chess-army-knife' ) . '</p>';
-		foreach ( self::policy_sections() as $section ) {
-			$text .= '<h3>' . esc_html( $section['heading'] ) . '</h3>';
-			foreach ( $section['paragraphs'] as $paragraph ) {
-				$text .= '<p>' . esc_html( $paragraph ) . '</p>';
-			}
-		}
+		$text .= '<p class="privacy-policy-tutorial">' . esc_html__( 'The detail is on the Club data policy page, which you can edit under Chess Army Knife → Policies. Link to it here, and change this text to match what your club really does. It is not legal advice.', 'chess-army-knife' ) . '</p>';
+		$text .= '<p>' . esc_html__( 'How the club handles its members\' personal data is explained in our', 'chess-army-knife' ) . ' [' . Chess_Army_Knife_Policies::SHORTCODE . ' policy=data].</p>';
 
-		wp_add_privacy_policy_content( __( 'Chess Army Knife', 'chess-army-knife' ), wp_kses_post( $text ) );
+		return wp_kses_post( $text );
+	}
+
+	/**
+	 * Offer that wording in the Privacy Policy Guide.
+	 */
+	public static function add_policy_content() {
+		$text = self::policy_guide_text();
+		if ( '' !== $text && function_exists( 'wp_add_privacy_policy_content' ) ) {
+			wp_add_privacy_policy_content( __( 'Chess Army Knife', 'chess-army-knife' ), $text );
+		}
 	}
 }
 
