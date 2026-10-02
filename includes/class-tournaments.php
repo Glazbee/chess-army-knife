@@ -299,6 +299,43 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
+	 * Enter someone by name only, with no record of them: for a person the club was asked not to
+	 * record. Their name is kept for the tournament, but not their ECF code, and nothing links the
+	 * entry to a person, so their other games cannot be found from it.
+	 *
+	 * @param int      $tournament_id Tournament id.
+	 * @param string   $name          Name as it should show.
+	 * @param int|null $rating        Rating to start with, or null for none.
+	 * @return int|WP_Error Entry id.
+	 */
+	public static function add_unlinked_player( $tournament_id, $name, $rating = null ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		$name       = trim( (string) $name );
+
+		if ( ! $tournament || '' === $name ) {
+			return new WP_Error( 'tournament_missing', __( 'Tournament or player not found.', 'chess-army-knife' ) );
+		}
+		if ( self::STATUS_DRAFT !== $tournament['status'] ) {
+			return new WP_Error( 'tournament_started', __( 'Players can only be added before the tournament starts.', 'chess-army-knife' ) );
+		}
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament_id ) as $entry ) {
+			if ( 0 === $entry['player_id'] && 0 === strcasecmp( $entry['name'], $name ) ) {
+				return new WP_Error( 'tournament_duplicate', __( 'That player is already entered.', 'chess-army-knife' ) );
+			}
+		}
+
+		return Chess_Army_Knife_Tournament_Store::add_entry(
+			array(
+				'tournament_id' => (int) $tournament_id,
+				'player_id'     => 0,
+				'player_name'   => $name,
+				'start_rating'  => null === $rating ? null : (int) $rating,
+				'rating_source' => null === $rating ? 'none' : 'manual',
+			)
+		);
+	}
+
+	/**
 	 * Remove an entrant from a draft tournament.
 	 *
 	 * @param int $tournament_id Tournament id.
@@ -421,7 +458,8 @@ class Chess_Army_Knife_Tournaments {
 			$rating = self::lookup_rating(
 				array(
 					'ecf_code'      => $entry['ecf_code'],
-					'manual_rating' => $player ? $player['manual_rating'] : null,
+					// An entry with no record keeps the rating it was entered with.
+					'manual_rating' => $player ? $player['manual_rating'] : $entry['start_rating'],
 				),
 				$tournament['rating_domain']
 			);

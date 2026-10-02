@@ -209,7 +209,7 @@ class Chess_Army_Knife_Do_Not_Record {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Do Not Record', 'chess-army-knife' ); ?></h1>
-			<p><?php esc_html_e( 'When someone asks to be deleted, the club should not make a record of them again by accident: for example when their ECF rating code turns up in a tournament, an ECF lookup or a league import. Add them here and the plugin will not create a record for them by itself. Results can still be processed; the person simply has no record.', 'chess-army-knife' ); ?></p>
+			<p><?php esc_html_e( 'When someone asks to be deleted, the club should not make a record of them again by accident: for example when their ECF rating code turns up in a tournament, an ECF lookup or a league import. Add them here and the plugin will not create a record for them by itself. If they play in a tournament they are entered by name only, with no record behind the entry, so nothing links their games to them.', 'chess-army-knife' ); ?></p>
 			<p><?php esc_html_e( 'This list holds no codes or names, only one-way fingerprints that cannot be turned back into them, so keeping it does not keep the person\'s details. Deleting a member from the Members screen can add them here for you.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( 'added' === $done ) : ?>

@@ -135,31 +135,76 @@ class TournamentTest extends WP_UnitTestCase {
 
 		$this->assertNotContains( 'name', $columns );
 		$this->assertNotContains( 'ecf_code', $columns );
+		$this->assertContains( 'player_name', $columns, 'Only a name, for an entry that no longer has a record behind it.' );
 		$this->assertEmpty( $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', '%chess_army_knife_players' ) ), 'There is no separate table of player profiles.' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Test inspects the plugin's own tables.
 	}
 
-	public function test_erasing_a_player_entered_in_a_tournament_keeps_the_tournament_intact() {
+	public function test_erasing_a_player_in_a_started_tournament_keeps_their_name_but_unlinks_it() {
+		$tournament = $this->four_player_tournament();
+		$alice      = $this->players['Alice'];
+		Chess_Army_Knife_Tournaments::start( $tournament );
+		$before = array_column( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), null, 'name' );
+
+		$this->assertSame( 'deleted', Chess_Army_Knife_Membership_Store::erase_member( $alice ), 'A tournament no longer keeps the record.' );
+
+		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $alice ) );
+		$after = array_column( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), null, 'name' );
+		$this->assertCount( 4, $after, 'The tournament still adds up.' );
+		$this->assertArrayHasKey( 'Alice', $after, 'The name is kept as a historical record.' );
+		$this->assertSame( 0, $after['Alice']['player_id'], 'Nothing leads to a person.' );
+		$this->assertSame( '', $after['Alice']['ecf_code'] );
+		$this->assertSame( $before['Alice']['start_rating'], $after['Alice']['start_rating'], 'The rating it started with is kept.' );
+		$this->assertSame( array(), Chess_Army_Knife_Tournament_Store::get_tournaments_for_person( $alice ), 'No person has any tournament to find.' );
+	}
+
+	public function test_erasing_a_player_in_a_draft_tournament_removes_the_entry() {
 		$tournament = $this->create_tournament();
 		$id         = $this->add_player( 'Alice', '100001A', 1650 );
 		Chess_Army_Knife_Tournaments::add_player( $tournament, $id );
 
-		$this->assertSame( 'anonymised', Chess_Army_Knife_Membership_Store::erase_member( $id ) );
+		Chess_Army_Knife_Membership_Store::erase_member( $id );
 
-		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $tournament );
-		$this->assertCount( 1, $entries );
-		$this->assertSame( Chess_Army_Knife_Membership_Store::erased_name(), $entries[0]['name'] );
-		$this->assertSame( '', $entries[0]['ecf_code'] );
-		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id )['manual_rating'] );
+		$this->assertSame( array(), Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), 'Nothing had been played, so nothing is kept.' );
 	}
 
-	public function test_a_person_deleted_outright_still_leaves_a_readable_entry() {
+	public function test_someone_the_club_was_asked_not_to_record_can_play_by_name_only() {
 		$tournament = $this->create_tournament();
-		$id         = $this->add_player( 'Alice' );
-		Chess_Army_Knife_Tournaments::add_player( $tournament, $id );
+		Chess_Army_Knife_Do_Not_Record::add( '100001A', 'Alice Smith' );
 
-		Chess_Army_Knife_Membership_Store::delete_member( $id );
+		$outcome = Chess_Army_Knife_Player_Selector::enter_players(
+			$tournament,
+			array(
+				'new_players' => array(
+					array(
+						'name'          => 'Alice Smith',
+						'ecf_code'      => '100001A',
+						'manual_rating' => '1650',
+					),
+				),
+			)
+		);
 
-		$this->assertSame( Chess_Army_Knife_Membership_Store::erased_name(), Chess_Army_Knife_Tournament_Store::get_entries( $tournament )[0]['name'] );
+		$this->assertSame( 1, $outcome['added'] );
+		$this->assertSame( array(), $outcome['errors'] );
+		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $tournament );
+		$this->assertSame( 'Alice Smith', $entries[0]['name'] );
+		$this->assertSame( 0, $entries[0]['player_id'] );
+		$this->assertSame( '', $entries[0]['ecf_code'], 'The code is not kept.' );
+		$this->assertSame( 1650, $entries[0]['start_rating'] );
+		$this->assertNull( Chess_Army_Knife_Membership_Store::find_by_ecf_code( '100001A' ), 'No record was made.' );
+
+		$again = Chess_Army_Knife_Player_Selector::enter_players(
+			$tournament,
+			array(
+				'new_players' => array(
+					array(
+						'name'     => 'Alice Smith',
+						'ecf_code' => '100001A',
+					),
+				),
+			)
+		);
+		$this->assertSame( 0, $again['added'], 'The same player is not entered twice.' );
 	}
 
 	public function test_only_current_members_and_guests_can_be_entered() {

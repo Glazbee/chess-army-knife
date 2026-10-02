@@ -156,13 +156,18 @@ class Chess_Army_Knife_Player_Selector {
 
 		$new = self::parse_new_players( isset( $input['new_players'] ) ? $input['new_players'] : array() );
 		foreach ( $new['players'] as $player ) {
-			// The person's own record, or a new one marked as not being a member: nobody is entered without a record.
+			// The person's own record, or a new one marked as not being a member. Only someone the club was asked not to record is entered without one.
 			$person_id = Chess_Army_Knife_Membership_Store::ensure_person( $player['name'], $player['ecf_code'], $player['manual_rating'] );
 			if ( $person_id ) {
 				$player_ids[] = $person_id;
 			} elseif ( Chess_Army_Knife_Do_Not_Record::is_blocked( $player['ecf_code'], $player['name'] ) ) {
-				/* translators: %s: player name */
-				$outcome['errors'][] = sprintf( __( '%s was not entered: the club was asked not to record this person. If this is someone else with the same name, give their ECF rating code.', 'chess-army-knife' ), $player['name'] );
+				// The club was asked not to record this person: they play under their name only, with no record behind it.
+				$entered = Chess_Army_Knife_Tournaments::add_unlinked_player( $tournament_id, $player['name'], $player['manual_rating'] );
+				if ( ! is_wp_error( $entered ) ) {
+					++$outcome['added'];
+				} elseif ( 'tournament_duplicate' !== $entered->get_error_code() ) {
+					$outcome['errors'][] = $entered->get_error_message();
+				}
 			}
 		}
 		$outcome['errors'] = $new['errors'];

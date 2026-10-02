@@ -48,7 +48,7 @@ Branch: `claude/wonderful-archimedes-07ikpe` (PR 27). The next PR should start f
 - Tournament pagination is by **rounds**, not games.
 - Players ask for a place in a team **in person**; there is no online request or note about teams. An admin then adds them.
 - WhatsApp in the plugin is **records only** (consent, and who should be in each group); it never contacts WhatsApp.
-- A person who asks to be deleted is kept off the system by **one-way fingerprints** (Do Not Record), never by storing their code or name. It only blocks automatic creation (tournament entry, ECF lookup); explicit admin adds and fresh applications are allowed.
+- A person who asks to be deleted is kept off the system by **one-way fingerprints** (Do Not Record), never by storing their code or name. A deleted person's **name stays on the results of tournaments already started** (a `player_name` on the entry, `player_id` 0), unlinked from any record; draft-tournament entries are removed; a blocked person plays by name only. It only blocks automatic creation (tournament entry, ECF lookup); explicit admin adds and fresh applications are allowed.
 - Squads are managed **only by admins in the admin panel**; captains who are not admins ask an admin. No captain-facing squad editing.
 - A membership created in the admin panel is marked **junior** when its type is a junior one. A junior type does **not** offer "I am applying for my child"; the junior section simply appears for junior types.
 - Clubs are a **private** directory; they only feed the location of events.

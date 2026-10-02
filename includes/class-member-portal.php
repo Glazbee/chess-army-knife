@@ -15,7 +15,7 @@
  * from the new address before it takes effect, and the old address is told.
  * Deleting a record is immediate once confirmed, using the same erasure as the
  * officers' and WordPress's own tools: the record is deleted, or, if a payment,
- * photos or tournament entries tie it to the club's
+ * or photos tie it to the club's
  * accounts, kept without any personal details.
  *
  * @package Chess_Army_Knife
@@ -577,7 +577,7 @@ class Chess_Army_Knife_Member_Portal {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * Delete a member's own record, straight away. It is removed, or, if a payment, photos or tournament entries tie it to the club's accounts, kept without any personal details.
+	 * Delete a member's own record, straight away. It is removed, or, if a payment or photos tie it to the club's accounts, kept without any personal details.
 	 *
 	 * @param array $input Raw (unslashed) form values: token, person, confirm.
 	 * @return string|WP_Error 'deleted' or 'anonymised', or an error.
@@ -613,7 +613,7 @@ class Chess_Army_Knife_Member_Portal {
 			'email_sent' => __( 'We have emailed a link to the new address. Your address changes when you follow it.', 'chess-army-knife' ),
 			'email_done' => __( 'Your email address has been changed. To carry on, ask for a new link at the new address.', 'chess-army-knife' ),
 			'deleted'    => __( 'Your details have been deleted.', 'chess-army-knife' ),
-			'anonymised' => __( 'Your personal details have been deleted. A record without your details is kept because it is tied to the club\'s accounts, such as a payment, tournament or event.', 'chess-army-knife' ),
+			'anonymised' => __( 'Your personal details have been deleted. A record without your details is kept because it is tied to the club\'s accounts, such as a payment or photos. Your name stays on the results of tournaments you played in, with nothing linking it to a person.', 'chess-army-knife' ),
 			'signed_out' => __( 'You have signed out.', 'chess-army-knife' ),
 			'extended'   => __( 'Your session has been extended.', 'chess-army-knife' ),
 		);

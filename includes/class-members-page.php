@@ -279,7 +279,7 @@ class Chess_Army_Knife_Members_Page {
 
 		if ( 'erase' === $action ) {
 			/* translators: 1: number of people deleted, 2: number of records kept without personal details */
-			return array( 'success', sprintf( __( 'Deleted %1$d people. %2$d records were kept without any personal details because they are tied to a payment, photos or a tournament.', 'chess-army-knife' ), $count, absint( $_GET['bulk_to'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state.
+			return array( 'success', sprintf( __( 'Deleted %1$d people. %2$d records were kept without any personal details because they are tied to a payment or photos.', 'chess-army-knife' ), $count, absint( $_GET['bulk_to'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state.
 		}
 		if ( 'type' === $action ) {
 			/* translators: 1: number of members, 2: membership type */
@@ -578,8 +578,8 @@ class Chess_Army_Knife_Members_Page {
 											<span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span>
 										</a> |
 									<?php endif; ?>
-									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details? If they have a payment, photos or tournament entries on record, those stay but without their personal details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
-									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'], array( 'do_not_record' => '1' ) ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details, and do not record them again? Their ECF rating code and name are kept only as a one-way fingerprint, so imports and tournaments will not create a record for them. Anything tied to the club\'s accounts stays, without their details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete and do not record again', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a>
+									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details? If they have a payment or photos on record, those stay but without their personal details. Their name stays on the results of tournaments already started, with nothing linking it to a person.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
+									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'], array( 'do_not_record' => '1' ) ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details, and do not record them again? Their ECF rating code and name are kept only as a one-way fingerprint, so imports and tournaments will not create a record for them. Payments and photos stay without their details, and their name stays on the results of tournaments already started, unlinked.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete and do not record again', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a>
 								</div>
 							</td>
 							<td><?php echo esc_html( $member['type_name'] ); ?></td>

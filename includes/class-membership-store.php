@@ -945,9 +945,9 @@ class Chess_Army_Knife_Membership_Store {
 	/**
 	 * Erase a person's details. A record with a payment on it is kept without
 	 * the person's details, because the club may need to keep its accounts, and
-	 * so is one tagged in photos or entered in a tournament, so those photos can
-	 * still be found and reviewed and the tournament still adds up; any other
-	 * record is deleted.
+	 * so is one tagged in photos, so those photos can still be found and reviewed;
+	 * any other record is deleted. Tournament entries keep the person's name as a
+	 * historical record but are unlinked from the record.
 	 *
 	 * @param int  $id            Member id.
 	 * @param bool $do_not_record Also remember not to record this person again (see Chess_Army_Knife_Do_Not_Record).
@@ -963,6 +963,9 @@ class Chess_Army_Knife_Membership_Store {
 			Chess_Army_Knife_Do_Not_Record::add( $member['ecf_code'], $member['name'] );
 		}
 
+		// Tournament results keep the name, as a historical record, but no longer lead to this person.
+		Chess_Army_Knife_Tournament_Store::unlink_person( $id, $member['name'] );
+
 		// A record is kept, without personal details, while it has a payment on it or is tagged
 		// in photos: the photos may show other people, so someone has to review them by hand.
 		// What they were emailed, and their email choices, are never kept.
@@ -972,7 +975,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Selection::remove_person( $id );
 		Chess_Army_Knife_Member_History::remove_person( $id );
 
-		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) ) {
+		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
 		}
