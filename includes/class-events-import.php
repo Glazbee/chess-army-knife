@@ -566,7 +566,7 @@ class Chess_Army_Knife_Events_Import {
 	 */
 	public static function import( $season = 'active' ) {
 		$is_active = 'active' === $season;
-		$summary = array(
+		$summary   = array(
 			'created'           => 0,
 			'updated'           => 0,
 			'unchanged'         => 0,
