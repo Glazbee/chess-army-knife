@@ -266,7 +266,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 		$this->assertIsInt( $event );
 		$data = Chess_Army_Knife_Events::details( $event );
-		$this->assertSame( "Blitz Night's Cup", $data['title'] );
+		$this->assertSame( wptexturize( "Blitz Night's Cup" ), $data['title'], 'The title is the tournament\'s, as WordPress shows any title.' );
 		$this->assertSame( '2099-05-04 10:00:00', $data['start'] );
 		$this->assertSame( $tournament, $data['tournaments'][0]['id'] );
 		$this->assertSame( $event, Chess_Army_Knife_Events::for_tournament( $tournament ) );
