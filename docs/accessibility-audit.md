@@ -67,7 +67,7 @@ Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and cove
 **Open**
 
 - A screen-reader pass against a real WordPress page.
-- Axe against the new markup (calendar panel, key, Team Results boards, round pagination) on a rendered page.
+- Axe in a real browser: CI now checks the markup of the calendar, event, membership, member and league blocks with axe in jsdom on every pull request (`scripts/axe-check.js`; the fixtures are written by `tests/integration/A11yFixturesTest.php`). jsdom has no layout, so colour contrast and target size are not covered by it (contrast has unit tests; target size is still to check in a browser). The tournament blocks and the admin screens are not in it yet.
 - The admin screens (Setup, Clubs, Sort Clubs, Policies, Do Not Record, the Overview list) and the block editor have not been audited.
 - Team Results board table and the League Table's new F and A columns: reflow at 320px and 44px targets not yet checked in a browser.
 
