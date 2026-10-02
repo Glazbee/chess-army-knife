@@ -173,8 +173,8 @@ class Chess_Army_Knife_Membership_Store {
 		$guardian_phone = isset( $input['guardian_phone'] ) ? sanitize_text_field( $input['guardian_phone'] ) : '';
 
 		if ( ! $is_admin ) {
-			// Someone whose date of birth says they are under 18 is a junior even if the box was not ticked.
-			$junior = ! empty( $input['is_junior'] ) || Chess_Army_Knife_Memberships::is_under_18( $date_of_birth, $today );
+			// A junior type, or a date of birth under 18, makes a junior even if the box was not ticked.
+			$junior = ( $type && ! empty( $type['is_junior'] ) ) || ! empty( $input['is_junior'] ) || Chess_Army_Knife_Memberships::is_under_18( $date_of_birth, $today );
 
 			if ( $junior ) {
 				if ( '' === $date_of_birth ) {
