@@ -642,17 +642,21 @@ class EventsImportTest extends WP_UnitTestCase {
 	public function test_the_daily_import_does_nothing_without_a_key_and_records_what_it_did_with_one() {
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
 		Chess_Army_Knife_Events_Import::run_scheduled();
-		$this->assertNull( Chess_Army_Knife_Events_Import::last_run(), 'No key, no teams: nothing to record.' );
+		$this->assertNull( Chess_Army_Knife_Events_Import::last_run(), 'No key: nothing to record.' );
 
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
 				'use_local_cache' => 0,
-				'lms_api_key'     => 'secret',
+				'lms_api_key'     => 'lmsk_test',
 			)
 		);
 		Chess_Army_Knife_Events_Import::run_scheduled();
-		$this->assertNull( Chess_Army_Knife_Events_Import::last_run(), 'A key but no teams.' );
+		$last = Chess_Army_Knife_Events_Import::last_run();
+
+		$this->assertNotNull( $last );
+		$this->assertSame( 'scheduled', $last['source'] );
+		$this->assertArrayHasKey( 'created', $last['summary'] );
 	}
 
 	public function test_the_daily_import_is_scheduled_and_unscheduled() {
@@ -672,6 +676,7 @@ class EventsImportTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$html = Chess_Army_Knife_Setup_Checklist::html();
 		$this->assertStringContainsString( 'There is no LMS API key', $html );
-		$this->assertStringContainsString( 'No teams have been added', $html );
+		$this->assertStringContainsString( 'No tournament has been created yet', $html );
+		$this->assertStringNotContainsString( 'No teams have been added', $html, 'set_up gave the club a team.' );
 	}
 }

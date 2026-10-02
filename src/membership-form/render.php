@@ -87,7 +87,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				<select id="cak-member-type" name="membership_type_id" required <?php echo $attrs( 'cak-member-type' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?>>
 					<option value=""><?php esc_html_e( 'Choose a membership', 'chess-army-knife' ); ?></option>
 					<?php foreach ( $membership_types as $membership_type ) : ?>
-						<option value="<?php echo esc_attr( $membership_type['id'] ); ?>" data-junior="<?php echo $membership_type['is_junior'] ? '1' : '0'; ?>" <?php selected( $chosen_id, $membership_type['id'] ); ?>>
+						<option value="<?php echo esc_attr( $membership_type['id'] ); ?>" <?php selected( $chosen_id, $membership_type['id'] ); ?> data-junior="<?php echo $membership_type['is_junior'] ? '1' : '0'; ?>">
 							<?php echo esc_html( $membership_type['name'] . ' (' . $membership_type['price_label'] . ( $membership_type['price'] > 0 ? ' ' . $membership_type['period_label'] : '' ) . ')' ); ?>
 						</option>
 					<?php endforeach; ?>
