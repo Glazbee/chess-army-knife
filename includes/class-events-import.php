@@ -622,6 +622,7 @@ class Chess_Army_Knife_Events_Import {
 				);
 				if ( ! is_wp_error( $post_id ) ) {
 					wp_set_object_terms( $post_id, self::tags_for( $candidate['club_teams'] ), Chess_Army_Knife_Events::TAXONOMY );
+					Chess_Army_Knife_Events::apply_type( $post_id, 'league_match' );
 					self::sync_teams( $post_id, $candidate['club_teams'] );
 					++$summary['created'];
 				}

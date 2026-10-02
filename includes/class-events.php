@@ -29,6 +29,7 @@ class Chess_Army_Knife_Events {
 	const META_SKIP        = '_chess_army_event_skip'; // Dates, "Y-m-d", on which a repeating event does not happen (holidays).
 	const META_STATUS      = '_chess_army_event_status'; // 'cancelled' or 'moved'; absent for an event going ahead as planned.
 	const META_STATUS_NOTE = '_chess_army_event_status_note'; // A few words for the status, such as where a moved event went.
+	const META_TYPE        = '_chess_army_event_type'; // A key of types(); absent for an event with no type.
 	const META_PAGE        = '_chess_army_event_page'; // Id of the page attached to the event.
 	const META_COLOUR      = '_chess_army_event_colour'; // Hex colour of the event's bubble in the calendar; absent for the default.
 	const META_LOCATION    = '_chess_army_event_location';
@@ -143,6 +144,79 @@ class Chess_Army_Knife_Events {
 			'map_url'    => (string) $options['club_venue_map'],
 			'what3words' => (string) $options['club_venue_w3w'],
 		);
+	}
+
+	/**
+	 * The kinds of event a club has. A type gives an event a tag and, if that tag has no colour chosen, a
+	 * colour (always one of tag_palette(), so the text on its calendar bubble stays readable). Anything
+	 * finer than a type, such as a team's name, is still a tag.
+	 *
+	 * @return array[] By key: { label, tag, colour }.
+	 */
+	public static function types() {
+		$palette = self::tag_palette();
+		$types   = array(
+			'club_night'   => array(
+				'label'  => __( 'Club night', 'chess-army-knife' ),
+				'tag'    => __( 'Club night', 'chess-army-knife' ),
+				'colour' => $palette[0],
+			),
+			'coaching'     => array(
+				'label'  => __( 'Coaching', 'chess-army-knife' ),
+				'tag'    => __( 'Coaching', 'chess-army-knife' ),
+				'colour' => $palette[2],
+			),
+			'competitive'  => array(
+				'label'  => __( 'Competitive games', 'chess-army-knife' ),
+				'tag'    => __( 'Competitive games', 'chess-army-knife' ),
+				'colour' => $palette[3],
+			),
+			'tournament'   => array(
+				'label'  => __( 'Tournament', 'chess-army-knife' ),
+				'tag'    => __( 'Tournament', 'chess-army-knife' ),
+				'colour' => $palette[4],
+			),
+			'league_match' => array(
+				'label'  => __( 'League match', 'chess-army-knife' ),
+				'tag'    => __( 'League match', 'chess-army-knife' ),
+				'colour' => $palette[1],
+			),
+		);
+
+		/**
+		 * Filter the kinds of event.
+		 *
+		 * @param array[] $types By key: { label, tag, colour (a hex code) }.
+		 */
+		$filtered = apply_filters( 'Chess_Army_Knife_event_types', $types );
+
+		return is_array( $filtered ) ? $filtered : $types;
+	}
+
+	/**
+	 * Give an event a type: it gets the type's tag, and the tag gets the type's colour unless a colour was already
+	 * chosen for it.
+	 *
+	 * @param int    $post_id Event id.
+	 * @param string $type    A key of types(); '' takes the type away (the tag stays: it may have been added by hand).
+	 * @return bool Whether the event now has a type.
+	 */
+	public static function apply_type( $post_id, $type ) {
+		$types = self::types();
+		if ( '' === (string) $type || ! isset( $types[ $type ] ) ) {
+			delete_post_meta( $post_id, self::META_TYPE );
+			return false;
+		}
+
+		update_post_meta( $post_id, self::META_TYPE, $type );
+		wp_set_object_terms( $post_id, array( $types[ $type ]['tag'] ), self::TAXONOMY, true );
+
+		$term = get_term_by( 'name', $types[ $type ]['tag'], self::TAXONOMY );
+		if ( $term && ! is_wp_error( $term ) && '' === (string) get_term_meta( $term->term_id, self::TAG_COLOUR_META, true ) && sanitize_hex_color( $types[ $type ]['colour'] ) ) {
+			update_term_meta( $term->term_id, self::TAG_COLOUR_META, sanitize_hex_color( $types[ $type ]['colour'] ) );
+		}
+
+		return true;
 	}
 
 	/**
@@ -605,6 +679,7 @@ class Chess_Army_Knife_Events {
 	 *     @type int|null $start_ts            Unix timestamp of the start.
 	 *     @type string   $end                 Site-local "Y-m-d H:i:s", or ''.
 	 *     @type string   $repeat              'weekly', 'monthly', 'annually' or ''.
+	 *     @type string   $type                A key of types(), or ''.
 	 *     @type string   $status              'cancelled', 'moved' or ''.
 	 *     @type string   $status_note         A few words about the status, or ''.
 	 *     @type string   $colour              The event's own colour, a hex code, or ''.
@@ -699,6 +774,7 @@ class Chess_Army_Knife_Events {
 			'start_ts'    => $start_ts,
 			'end'         => $end,
 			'repeat'      => (string) get_post_meta( $id, self::META_REPEAT, true ),
+			'type'        => (string) get_post_meta( $id, self::META_TYPE, true ),
 			'status'      => $status,
 			'status_note' => $status ? (string) get_post_meta( $id, self::META_STATUS_NOTE, true ) : '',
 			'colour'      => (string) sanitize_hex_color( (string) get_post_meta( $id, self::META_COLOUR, true ) ),

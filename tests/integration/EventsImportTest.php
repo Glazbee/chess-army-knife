@@ -751,4 +751,36 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertEqualsCanonicalizing( array( 'Stroud Badgers', 'Stroud Hedgehogs' ), $stroud['teams'] );
 		$this->assertCount( 2, Chess_Army_Knife_Clubs::all() );
 	}
+
+	public function test_imported_fixtures_are_league_matches_and_setup_events_get_their_types() {
+		$this->lms['Division 1'] = array( $this->fixture( 'Our A', 'Rivals', '2099-10-05' ) );
+		Chess_Army_Knife_Events_Import::import();
+		$this->assertSame( 'league_match', $this->imported()[0]['type'] );
+
+		Chess_Army_Knife_Setup::create_events(
+			array(
+				array(
+					'key'     => 'club_night',
+					'title'   => 'Club night',
+					'tag'     => 'Club night',
+					'type'    => 'club_night',
+					'weekday' => 2,
+					'start'   => '19:30',
+					'end'     => '',
+				),
+			),
+			'2099-01-01'
+		);
+		$types = wp_list_pluck(
+			Chess_Army_Knife_Events::query(
+				array(
+					'after'  => '',
+					'limit'  => 0,
+					'before' => '2099-02-01 00:00:00',
+				)
+			),
+			'type'
+		);
+		$this->assertContains( 'club_night', $types );
+	}
 }

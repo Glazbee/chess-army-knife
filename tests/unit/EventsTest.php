@@ -269,4 +269,21 @@ class EventsTest extends Chess_Army_Knife_TestCase {
 			Chess_Army_Knife_Events::occurrence_starts( '2027-01-29 20:00:00', 'monthly', '', '2027-02-01 00:00:00', '2027-04-01 00:00:00' )
 		);
 	}
+
+	public function test_every_event_type_has_a_label_a_tag_and_one_of_the_readable_palette_colours() {
+		Functions\when( 'apply_filters' )->alias(
+			function ( $hook, $value ) {
+				return $value;
+			}
+		);
+		$types = Chess_Army_Knife_Events::types();
+
+		$this->assertSame( array( 'club_night', 'coaching', 'competitive', 'tournament', 'league_match' ), array_keys( $types ) );
+		foreach ( $types as $key => $type ) {
+			$this->assertNotSame( '', $type['label'], $key );
+			$this->assertNotSame( '', $type['tag'], $key );
+			$this->assertContains( $type['colour'], Chess_Army_Knife_Events::tag_palette(), "$key must use a colour whose text contrast is checked." );
+		}
+		$this->assertCount( count( $types ), array_unique( array_column( $types, 'colour' ) ), 'No two types share a colour.' );
+	}
 }

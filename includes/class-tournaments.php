@@ -382,7 +382,7 @@ class Chess_Army_Knife_Tournaments {
 		if ( is_wp_error( $id ) ) {
 			return $id;
 		}
-		wp_set_object_terms( $id, array( __( 'Tournament', 'chess-army-knife' ) ), Chess_Army_Knife_Events::TAXONOMY );
+		Chess_Army_Knife_Events::apply_type( $id, 'tournament' );
 
 		return (int) $id;
 	}

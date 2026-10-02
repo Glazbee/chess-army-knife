@@ -104,21 +104,24 @@ class Chess_Army_Knife_Setup {
 		return array(
 			'club_night'  => array(
 				'title'   => __( 'Club night', 'chess-army-knife' ),
-				'tag'     => __( 'Club night', 'chess-army-knife' ),
+				'type'    => 'club_night',
+				'tag'     => Chess_Army_Knife_Events::types()['club_night']['tag'],
 				'weekday' => 2,
 				'start'   => '19:30',
 				'end'     => '22:00',
 			),
 			'coaching'    => array(
 				'title'   => __( 'Coaching session', 'chess-army-knife' ),
-				'tag'     => __( 'Coaching', 'chess-army-knife' ),
+				'type'    => 'coaching',
+				'tag'     => Chess_Army_Knife_Events::types()['coaching']['tag'],
 				'weekday' => 6,
 				'start'   => '10:00',
 				'end'     => '12:00',
 			),
 			'competitive' => array(
 				'title'   => __( 'Competitive games', 'chess-army-knife' ),
-				'tag'     => __( 'Competitive games', 'chess-army-knife' ),
+				'type'    => 'competitive',
+				'tag'     => Chess_Army_Knife_Events::types()['competitive']['tag'],
 				'weekday' => 4,
 				'start'   => '19:30',
 				'end'     => '22:00',
@@ -184,7 +187,9 @@ class Chess_Army_Knife_Setup {
 				continue;
 			}
 
-			if ( '' !== $row['tag'] ) {
+			if ( ! empty( $row['type'] ) ) {
+				Chess_Army_Knife_Events::apply_type( $post_id, $row['type'] );
+			} elseif ( '' !== $row['tag'] ) {
 				wp_set_object_terms( $post_id, array( $row['tag'] ), Chess_Army_Knife_Events::TAXONOMY );
 			}
 			++$made;
@@ -563,6 +568,7 @@ class Chess_Army_Knife_Setup {
 				'key'     => $key,
 				'title'   => isset( $row['title'] ) ? sanitize_text_field( $row['title'] ) : $preset['title'],
 				'tag'     => $preset['tag'],
+				'type'    => $preset['type'],
 				'weekday' => isset( $row['weekday'] ) ? max( 0, min( 6, (int) $row['weekday'] ) ) : $preset['weekday'],
 				'start'   => isset( $row['start'] ) ? sanitize_text_field( $row['start'] ) : $preset['start'],
 				'end'     => isset( $row['end'] ) ? sanitize_text_field( $row['end'] ) : '',
