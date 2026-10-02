@@ -25,6 +25,10 @@ may use. Some need a permission that an administrator gives you on your user pro
 fresh results sooner. The screen says when it last ran and how many leagues failed. A red line on the
 Overview about the API key means the LMS stopped accepting it.
 
+To keep your history, scroll to **Earlier seasons** on the same screen, tick the seasons you want (or
+*All earlier seasons*) and press **Import selected seasons**. They come in as past events; squads are
+not changed. A team whose league had a different name in an old season is reported and skipped.
+
 **2. Sort new clubs.** If the import found team names it has not seen, **Sort Clubs** offers them in
 groups. Tick the names that belong to one club, say where it plays (a name, a map link, a what3words
 address), and save. Import again and those clubs' away fixtures get their venue. To add many clubs at
