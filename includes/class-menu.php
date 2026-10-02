@@ -235,6 +235,16 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $teams_group,
+				'title'       => __( 'Team Overview', 'chess-army-knife' ),
+				'description' => __( 'A team\'s details, leagues, squad, next fixtures and who has not replied, all in one place.', 'chess-army-knife' ),
+				'key'         => 'team_overview',
+				'slug'        => Chess_Army_Knife_Team_Overview::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Team_Overview', 'render_page' ),
+				'kind'        => 'selection',
+				'can'         => array( 'Chess_Army_Knife_Captains', 'user_can_select' ),
+			),
+			array(
+				'group'       => $teams_group,
 				'title'       => __( 'Team Selection', 'chess-army-knife' ),
 				'description' => __( 'Ask the squad who can play and publish the line-up.', 'chess-army-knife' ),
 				'key'         => 'team_selection',
