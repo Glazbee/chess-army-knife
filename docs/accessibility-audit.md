@@ -52,6 +52,14 @@ Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and cove
 
 - F-G18: the spam-trap fields are now `inert` (off-screen, out of the accessibility tree and unfocusable) instead of `aria-hidden`. Bots reading the HTML still see and fill them.
 
+**Calendar, rounds and new screens (PR 28; read and calculated, not run in a browser)**
+
+- Calendar bubbles and tag colours: the tint (14%, 26% on hover) leaves the theme's text readable. The lowest ratio over all eight palette colours is 10.5:1 (dark grey text on a light grey page) and 13.9:1 for black on white, so AAA (7:1) holds; a unit test (`EventPaletteContrastTest`) keeps it so. The dots are at least 3.3:1 against white and 3.4:1 against black, and are decorative anyway: every event says what it is, and cancelled or moved is written in words.
+- A colour picked by hand for one event is not checked. It only tints the bubble, so text contrast changes little, but a very pale dot would be hard to see.
+- Panel: a `details` element, so it opens with Enter or Space and works without scripts; `view.js` closes the others, closes on a click elsewhere and on Escape, and puts focus back on the bubble's summary.
+- Round pagination: a `nav` landmark with its own label, `aria-current="page"` on the current page, and text for each page.
+- Fixed in this pass: the "Add to my calendar" link had an `aria-label` that did not contain its visible text (2.5.3, Level A); its name now starts with the visible words and adds the event in hidden text. The what3words link's name now contains its visible `///words` too.
+
 **Accepted by the site owner**
 
 - 2.2.5 (re-authenticating, AAA): if a session ends while a form is half filled in, the answers are lost when the person signs in again. Accepted because the page shows when the session ends, warns 15 minutes before, offers an extend button, and every save restarts the hour.
@@ -59,7 +67,9 @@ Progress is on branch `claude/sweet-gauss-ktq43g`. "Done" means changed and cove
 **Open**
 
 - A screen-reader pass against a real WordPress page.
-- The admin screens and the block editor have not been audited.
+- Axe against the new markup (calendar panel, key, Team Results boards, round pagination) on a rendered page.
+- The admin screens (Setup, Clubs, Sort Clubs, Policies, Do Not Record, the Overview list) and the block editor have not been audited.
+- Team Results board table and the League Table's new F and A columns: reflow at 320px and 44px targets not yet checked in a browser.
 
 **Checked**
 

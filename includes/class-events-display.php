@@ -227,9 +227,8 @@ class Chess_Army_Knife_Events_Display {
 			return '';
 		}
 
-		/* translators: %s: event title */
-		$label = sprintf( __( 'Add %s to my calendar', 'chess-army-knife' ), $event['title'] );
-		return '<p class="cak-event__calendar"><a href="' . esc_url( Chess_Army_Knife_Events_Feed::event_url( $event ) ) . '" aria-label="' . esc_attr( $label ) . '">' . esc_html__( 'Add to my calendar', 'chess-army-knife' ) . '</a></p>';
+		// The link's name starts with what it says (WCAG 2.5.3), then adds which event it is for.
+		return '<p class="cak-event__calendar"><a href="' . esc_url( Chess_Army_Knife_Events_Feed::event_url( $event ) ) . '">' . esc_html__( 'Add to my calendar', 'chess-army-knife' ) . '<span class="cak-visually-hidden"> (' . esc_html( $event['title'] ) . ')</span></a></p>';
 	}
 
 	/**
@@ -252,7 +251,7 @@ class Chess_Army_Knife_Events_Display {
 			$html .= ( '' !== $event['location'] ? ' ' : '' ) . '<a class="cak-event__map" href="' . esc_url( $map ) . '" aria-label="' . esc_attr( $label ) . '">' . esc_html__( 'Map', 'chess-army-knife' ) . '</a>';
 		}
 		if ( '' !== $w3w ) {
-			$html .= ( '' !== $event['location'] || '' !== $map ? ' ' : '' ) . '<a class="cak-event__w3w" href="' . esc_url( 'https://what3words.com/' . rawurlencode( $w3w ) ) . '" aria-label="' . esc_attr( sprintf( /* translators: %s: three words */ __( 'what3words address %s', 'chess-army-knife' ), $w3w ) ) . '">///' . esc_html( $w3w ) . '</a>';
+			$html .= ( '' !== $event['location'] || '' !== $map ? ' ' : '' ) . '<a class="cak-event__w3w" href="' . esc_url( 'https://what3words.com/' . rawurlencode( $w3w ) ) . '" aria-label="' . esc_attr( sprintf( /* translators: %s: three words */ __( 'what3words address ///%s', 'chess-army-knife' ), $w3w ) ) . '">///' . esc_html( $w3w ) . '</a>';
 		}
 		return $html . '</p>';
 	}
