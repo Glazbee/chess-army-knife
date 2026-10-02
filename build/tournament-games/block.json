@@ -19,9 +19,9 @@
       "type": "number",
       "default": 0
     },
-    "pageSize": {
+    "roundsPerPage": {
       "type": "number",
-      "default": 20
+      "default": 1
     },
     "templateId": {
       "type": "string",

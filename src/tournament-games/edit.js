@@ -11,7 +11,7 @@ import useTournaments from '../shared/use-tournaments';
 import TemplatePicker from '../shared/template-picker';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { tournamentId, pageSize } = attributes;
+	const { tournamentId, roundsPerPage } = attributes;
 	const blockProps = useBlockProps();
 	const tournaments = useTournaments();
 
@@ -41,18 +41,18 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						type="number"
 						min={ 0 }
-						max={ 500 }
-						label={ __( 'Games on a page', 'chess-army-knife' ) }
+						max={ 100 }
+						label={ __( 'Rounds on a page', 'chess-army-knife' ) }
 						help={ __(
-							'A long list is split into pages with Previous and Next links. Enter 0 to show every game on one page.',
+							'Games are shown a round at a time, with Previous and Next links. Show more rounds on a page, or enter 0 to show every round on one page.',
 							'chess-army-knife'
 						) }
-						value={ pageSize }
+						value={ roundsPerPage }
 						onChange={ ( value ) =>
 							setAttributes( {
-								pageSize: Math.max(
+								roundsPerPage: Math.max(
 									0,
-									Math.min( 500, parseInt( value, 10 ) || 0 )
+									Math.min( 100, parseInt( value, 10 ) || 0 )
 								),
 							} )
 						}

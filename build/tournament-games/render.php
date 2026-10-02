@@ -30,11 +30,11 @@ if ( ! $tournament ) {
 	return;
 }
 
-// Show a page of games at a time, so a big tournament does not make a page of a hundred.
-$page_size  = isset( $attributes['pageSize'] ) ? max( 0, min( 500, (int) $attributes['pageSize'] ) ) : 20;
+// Show some rounds at a time, so a big tournament does not make a page of a hundred games.
+$per_page   = isset( $attributes['roundsPerPage'] ) ? max( 0, min( 100, (int) $attributes['roundsPerPage'] ) ) : 1;
 $page_param = 'cak_games_' . $tournament_id;
 $wanted     = isset( $_GET[ $page_param ] ) ? absint( $_GET[ $page_param ] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only choice of which page of games to show.
-$games_page = Chess_Army_Knife_Tournament_Summary::paginate( Chess_Army_Knife_Tournament_Summary::games_to_play( $tournament_id ), $wanted, $page_size );
+$games_page = Chess_Army_Knife_Tournament_Summary::paginate( Chess_Army_Knife_Tournament_Summary::games_to_play( $tournament_id ), $wanted, $per_page );
 $sections   = $games_page['sections'];
 $can_edit   = ! empty( $sections ) && Chess_Army_Knife_Tournaments::user_can_manage();
 
@@ -117,15 +117,14 @@ $score_options = array(
 			<?php endif; ?>
 			<span class="cak-games__page" aria-current="page">
 				<?php
+				$labels = $games_page['labels'];
 				echo esc_html(
 					sprintf(
-						/* translators: 1: first game shown, 2: last game shown, 3: number of games, 4: page, 5: number of pages */
-						__( 'Games %1$d to %2$d of %3$d (page %4$d of %5$d)', 'chess-army-knife' ),
-						$games_page['first'],
-						$games_page['last'],
-						$games_page['total'],
+						/* translators: 1: page, 2: number of pages, 3: the rounds shown, for example "Round 2" or "Round 2 to Round 4" */
+						__( 'Page %1$d of %2$d: %3$s', 'chess-army-knife' ),
 						$games_page['page'],
-						$games_page['pages']
+						$games_page['pages'],
+						count( $labels ) > 1 ? sprintf( /* translators: 1: first round shown, 2: last round shown */ __( '%1$s to %2$s', 'chess-army-knife' ), reset( $labels ), end( $labels ) ) : (string) reset( $labels )
 					)
 				);
 				?>
@@ -135,7 +134,7 @@ $score_options = array(
 			<?php endif; ?>
 		</nav>
 		<?php if ( $can_edit ) : ?>
-			<p class="cak-games__note"><?php esc_html_e( 'Save results before moving to another page.', 'chess-army-knife' ); ?></p>
+			<p class="cak-games__note"><?php esc_html_e( 'Save results before moving to another round.', 'chess-army-knife' ); ?></p>
 		<?php endif; ?>
 	<?php endif; ?>
 </div>

@@ -129,57 +129,26 @@ class Chess_Army_Knife_Tournament_Summary {
 	}
 
 	/**
-	 * One page of the games to play. Games keep their rounds; a round that runs over a page
-	 * continues under the same heading on the next.
+	 * One page of the games to play: whole rounds, so a round is never split across pages.
 	 *
-	 * @param array[] $sections  From games_to_play().
-	 * @param int     $page      Page wanted, from 1; one that is out of range is moved to the nearest page.
-	 * @param int     $page_size Games on a page; 0 or less for all of them on one page.
-	 * @return array { sections, page, pages, total, first, last } where first and last are the numbers, from 1, of the first and last game shown.
+	 * @param array[] $sections    From games_to_play(): round label => games.
+	 * @param int     $page        Page wanted, from 1; one that is out of range is moved to the nearest page.
+	 * @param int     $per_page    Rounds on a page; 0 or less for all of them on one page.
+	 * @return array { sections, page, pages, rounds, labels } where rounds is how many there are in all and labels are those shown.
 	 */
-	public static function paginate( array $sections, $page, $page_size ) {
-		$total     = array_sum( array_map( 'count', $sections ) );
-		$page_size = (int) $page_size;
-		$pages     = $page_size > 0 ? max( 1, (int) ceil( $total / $page_size ) ) : 1;
-		$page      = max( 1, min( $pages, (int) $page ) );
-
-		if ( $page_size <= 0 ) {
-			return array(
-				'sections' => $sections,
-				'page'     => 1,
-				'pages'    => 1,
-				'total'    => $total,
-				'first'    => $total ? 1 : 0,
-				'last'     => $total,
-			);
-		}
-
-		$skip = ( $page - 1 ) * $page_size;
-		$left = $page_size;
-		$out  = array();
-		$last = $skip;
-		foreach ( $sections as $label => $games ) {
-			if ( $skip >= count( $games ) ) {
-				$skip -= count( $games );
-				continue;
-			}
-			$slice         = array_slice( $games, $skip, $left );
-			$skip          = 0;
-			$left         -= count( $slice );
-			$last         += count( $slice );
-			$out[ $label ] = $slice;
-			if ( $left <= 0 ) {
-				break;
-			}
-		}
+	public static function paginate( array $sections, $page, $per_page ) {
+		$rounds   = count( $sections );
+		$per_page = (int) $per_page;
+		$pages    = $per_page > 0 ? max( 1, (int) ceil( $rounds / $per_page ) ) : 1;
+		$page     = max( 1, min( $pages, (int) $page ) );
+		$shown    = $per_page > 0 ? array_slice( $sections, ( $page - 1 ) * $per_page, $per_page, true ) : $sections;
 
 		return array(
-			'sections' => $out,
+			'sections' => $shown,
 			'page'     => $page,
 			'pages'    => $pages,
-			'total'    => $total,
-			'first'    => $total ? ( $page - 1 ) * $page_size + 1 : 0,
-			'last'     => $last,
+			'rounds'   => $rounds,
+			'labels'   => array_keys( $shown ),
 		);
 	}
 

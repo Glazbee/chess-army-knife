@@ -149,54 +149,49 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'no games waiting', $this->render( 'tournament-games', array( 'tournamentId' => $id ) ) );
 	}
 
-	public function test_games_block_pages_a_long_list_with_previous_and_next_links() {
-		$id   = $this->tournament( 'Big', 8 ); // 28 games in one round.
+	public function test_games_block_shows_rounds_a_page_with_previous_and_next_links() {
+		$id   = $this->tournament( 'Big', 8 ); // Seven rounds of four games.
 		$_GET = array();
 
-		$first = $this->render(
-			'tournament-games',
-			array(
-				'tournamentId' => $id,
-				'pageSize'     => 10,
-			)
-		);
-		$this->assertSame( 10, substr_count( $first, 'data-game-id=' ) );
-		$this->assertStringContainsString( 'Games 1 to 10 of 28 (page 1 of 3)', $first );
+		$first = $this->render( 'tournament-games', array( 'tournamentId' => $id ) );
+		$this->assertSame( 4, substr_count( $first, 'data-game-id=' ), 'One round by default.' );
+		$this->assertStringContainsString( 'Round 1', $first );
+		$this->assertStringContainsString( 'Page 1 of 7: Round 1', $first );
 		$this->assertStringContainsString( 'rel="next"', $first );
 		$this->assertStringNotContainsString( 'rel="prev"', $first );
 
-		$_GET = array( 'cak_games_' . $id => '3' );
-		$last = $this->render(
+		$_GET  = array( 'cak_games_' . $id => '3' );
+		$third = $this->render(
 			'tournament-games',
 			array(
-				'tournamentId' => $id,
-				'pageSize'     => 10,
+				'tournamentId'  => $id,
+				'roundsPerPage' => 3,
 			)
 		);
-		$this->assertSame( 8, substr_count( $last, 'data-game-id=' ) );
-		$this->assertStringContainsString( 'Games 21 to 28 of 28 (page 3 of 3)', $last );
-		$this->assertStringContainsString( 'rel="prev"', $last );
-		$this->assertStringNotContainsString( 'rel="next"', $last );
+		$this->assertSame( 4, substr_count( $third, 'data-game-id=' ), 'Page 3 of 3 is the seventh round alone.' );
+		$this->assertStringContainsString( 'Page 3 of 3: Round 7', $third );
+		$this->assertStringContainsString( 'rel="prev"', $third );
+		$this->assertStringNotContainsString( 'rel="next"', $third );
 
 		$_GET = array( 'cak_games_' . $id => '99' );
-		$this->assertStringContainsString(
-			'page 3 of 3',
-			$this->render(
-				'tournament-games',
-				array(
-					'tournamentId' => $id,
-					'pageSize'     => 10,
-				)
-			),
-			'A page past the end shows the last.'
-		);
+		$this->assertStringContainsString( 'Page 7 of 7', $this->render( 'tournament-games', array( 'tournamentId' => $id ) ), 'A page past the end shows the last.' );
 
 		$_GET = array();
-		$all  = $this->render(
+		$two  = $this->render(
 			'tournament-games',
 			array(
-				'tournamentId' => $id,
-				'pageSize'     => 0,
+				'tournamentId'  => $id,
+				'roundsPerPage' => 2,
+			)
+		);
+		$this->assertSame( 8, substr_count( $two, 'data-game-id=' ) );
+		$this->assertStringContainsString( 'Round 1 to Round 2', $two );
+
+		$all = $this->render(
+			'tournament-games',
+			array(
+				'tournamentId'  => $id,
+				'roundsPerPage' => 0,
 			)
 		);
 		$this->assertSame( 28, substr_count( $all, 'data-game-id=' ) );

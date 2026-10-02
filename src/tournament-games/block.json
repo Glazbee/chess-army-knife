@@ -11,7 +11,7 @@
 	"textdomain": "chess-army-knife",
 	"attributes": {
 		"tournamentId": { "type": "number", "default": 0 },
-		"pageSize": { "type": "number", "default": 20 },
+		"roundsPerPage": { "type": "number", "default": 1 },
 		"templateId": { "type": "string", "default": "" }
 	},
 	"supports": {
