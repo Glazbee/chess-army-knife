@@ -45,7 +45,8 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 	return Chess_Army_Knife_A11y::field_attrs( $field_id, $error_field[0], $notice_id, $hint_id );
 };
 ?>
-<div <?php echo wp_kses_post( get_block_wrapper_attributes( array( 'id' => Chess_Army_Knife_Membership_Form::ANCHOR ) ) ); ?>>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
+<div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'membership-form', $attributes, array( 'id' => Chess_Army_Knife_Membership_Form::ANCHOR ) ) ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-membership-form__heading', '' !== $block_title ? $block_title : __( 'Apply for membership', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( null !== $applied_id ) : ?>

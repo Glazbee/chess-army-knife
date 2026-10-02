@@ -1,4 +1,5 @@
 import { __ } from '@wordpress/i18n';
+import TemplatePicker from '../shared/template-picker';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, SelectControl, TextControl } from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
@@ -20,6 +21,13 @@ export default function Edit( { attributes, setAttributes } ) {
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
+				<TemplatePicker
+					blockSlug="team-profiles"
+					value={ attributes.templateId }
+					onChange={ ( value ) =>
+						setAttributes( { templateId: value } )
+					}
+				/>
 				<PanelBody
 					title={ __( 'Display', 'chess-army-knife' ) }
 					initialOpen={ true }

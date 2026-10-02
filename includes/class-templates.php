@@ -48,6 +48,12 @@ class Chess_Army_Knife_Templates {
 			'tournament-winners'   => __( 'Tournament Past Winners', 'chess-army-knife' ),
 			'next-club-event'      => __( 'Next Club Event', 'chess-army-knife' ),
 			'club-event-calendar'  => __( 'Club Event Calendar', 'chess-army-knife' ),
+			'team-page'            => __( 'Team Results', 'chess-army-knife' ),
+			'team-profiles'        => __( 'Club Teams', 'chess-army-knife' ),
+			'memberships'          => __( 'Club Memberships', 'chess-army-knife' ),
+			'membership-form'      => __( 'Membership Application Form', 'chess-army-knife' ),
+			'my-data'              => __( 'Manage My Data', 'chess-army-knife' ),
+			'member-portal'        => __( 'Member Portal', 'chess-army-knife' ),
 		);
 	}
 
@@ -430,12 +436,13 @@ class Chess_Army_Knife_Templates {
 	 *
 	 * @param string $slug       Block slug.
 	 * @param array  $attributes Block attributes (with templateId).
+	 * @param array  $extra      Other attributes for the wrapper, such as an id.
 	 * @return string
 	 */
-	public static function wrapper_attributes( $slug, $attributes ) {
+	public static function wrapper_attributes( $slug, $attributes, array $extra = array() ) {
 		$tpl = self::get( isset( $attributes['templateId'] ) ? (string) $attributes['templateId'] : '' );
 		if ( ! $tpl || $tpl['block'] !== $slug ) {
-			return get_block_wrapper_attributes();
+			return get_block_wrapper_attributes( $extra );
 		}
 
 		$v     = isset( $tpl['values'] ) ? $tpl['values'] : array();
@@ -460,7 +467,7 @@ class Chess_Army_Knife_Templates {
 		}
 
 		return get_block_wrapper_attributes(
-			array(
+			$extra + array(
 				'class' => 'ecf-tpl-' . sanitize_html_class( $tpl['id'] ),
 				'style' => implode( ';', $style ),
 			)

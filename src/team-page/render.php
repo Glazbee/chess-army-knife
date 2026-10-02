@@ -28,7 +28,7 @@ if ( '' === $team_name ) {
 	}
 }
 
-$wrapper_attributes = get_block_wrapper_attributes();
+$wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'team-page', $attributes );
 
 if ( '' === $team_name || '' === $org_id || '' === $event_name ) {
 	printf(
@@ -96,6 +96,7 @@ $player_text = function ( $name, $rating ) {
 	return null === $rating ? sprintf( __( '%1$s (unrated)', 'chess-army-knife' ), $name ) : sprintf( __( '%1$s (%2$d)', 'chess-army-knife' ), $name, $rating );
 };
 ?>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-team__title', '' !== $block_title ? $block_title : $lms_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<p class="cak-team__event"><?php echo esc_html( $event_name ); ?></p>

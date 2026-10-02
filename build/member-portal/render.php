@@ -75,7 +75,8 @@ $heading      = function ( $depth, $text ) {
 	return Chess_Army_Knife_A11y::heading( $depth, 'cak-portal__subheading', $text );
 };
 ?>
-<div <?php echo wp_kses_post( get_block_wrapper_attributes( array( 'id' => Chess_Army_Knife_Member_Portal::ANCHOR ) ) ); ?>>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
+<div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'member-portal', $attributes, array( 'id' => Chess_Army_Knife_Member_Portal::ANCHOR ) ) ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-portal__heading', '' !== $block_title ? $block_title : __( 'My membership', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( '' !== $error_text ) : ?>

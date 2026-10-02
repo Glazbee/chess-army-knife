@@ -34,7 +34,8 @@ $error_fields = array(
 $error_field  = isset( $error_fields[ $error_code ] ) ? $error_fields[ $error_code ] : array( '', '' );
 $notice_id    = 'cak-data-notice';
 ?>
-<div <?php echo wp_kses_post( get_block_wrapper_attributes( array( 'id' => Chess_Army_Knife_Member_Requests::ANCHOR ) ) ); ?>>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
+<div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'my-data', $attributes, array( 'id' => Chess_Army_Knife_Member_Requests::ANCHOR ) ) ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-my-data__heading', '' !== $block_title ? $block_title : __( 'Manage my data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( '' !== $error_code ) : ?>

@@ -17,7 +17,11 @@ function Chess_Army_Knife_register() {
 	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'team-page', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'next-club-event', 'club-event-calendar', 'memberships', 'membership-form', 'my-data', 'team-profiles', 'member-portal' ) as $block ) {
 		$path = $blocks_dir . $block;
 		if ( file_exists( $path . '/block.json' ) ) {
-			register_block_type( $path );
+			$registered = register_block_type( $path );
+			// The editor's own text, translated from the languages folder.
+			if ( $registered && ! empty( $registered->editor_script_handles ) ) {
+				wp_set_script_translations( $registered->editor_script_handles[0], 'chess-army-knife', Chess_Army_Knife_DIR . 'languages' );
+			}
 		}
 	}
 }
