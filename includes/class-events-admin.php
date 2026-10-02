@@ -147,6 +147,9 @@ class Chess_Army_Knife_Events_Admin {
 
 		$repeat = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_REPEAT, true );
 		$until  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_UNTIL, true );
+		$skips  = Chess_Army_Knife_Events::skipped_dates( $post->ID );
+		$status = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS, true );
+		$note   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS_NOTE, true );
 		$page   = (int) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_PAGE, true );
 		$colour = (string) sanitize_hex_color( (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_COLOUR, true ) );
 		$map    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_MAP, true );
@@ -184,6 +187,27 @@ class Chess_Army_Knife_Events_Admin {
 				<td>
 					<input type="date" id="chess_army_event_until" name="chess_army_event_until" value="<?php echo esc_attr( $until ); ?>" />
 					<p class="description"><?php esc_html_e( 'For a repeating event: the last day it can happen. Leave blank to repeat with no end.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_skip"><?php esc_html_e( 'Dates to skip', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<textarea id="chess_army_event_skip" name="chess_army_event_skip" rows="3" class="small-text" placeholder="2026-12-28"><?php echo esc_textarea( implode( "\n", $skips ) ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'For a repeating event: dates on which it does not happen, such as holidays. One date per line, YYYY-MM-DD.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_status"><?php esc_html_e( 'Status', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<select id="chess_army_event_status" name="chess_army_event_status">
+						<option value=""><?php esc_html_e( 'Going ahead', 'chess-army-knife' ); ?></option>
+						<?php foreach ( Chess_Army_Knife_Events::status_labels() as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $status, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<label for="chess_army_event_status_note" class="screen-reader-text"><?php esc_html_e( 'Note about the status', 'chess-army-knife' ); ?></label>
+					<input type="text" id="chess_army_event_status_note" name="chess_army_event_status_note" value="<?php echo esc_attr( $note ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'For example: moved to Thursday', 'chess-army-knife' ); ?>" />
+					<p class="description"><?php esc_html_e( 'A cancelled or moved event stays on the calendar, marked as such, so nobody turns up for nothing. For a repeating event this applies to every date; to drop one date, skip it instead.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -334,6 +358,15 @@ class Chess_Army_Knife_Events_Admin {
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_END, $end );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_REPEAT, $repeat );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_UNTIL, $until );
+
+		// Skipped dates only make sense for a repeating event.
+		$skips = '' !== $repeat && isset( $_POST['chess_army_event_skip'] ) ? Chess_Army_Knife_Events::parse_dates( sanitize_textarea_field( wp_unslash( $_POST['chess_army_event_skip'] ) ) ) : array();
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_SKIP, $skips );
+
+		$status = isset( $_POST['chess_army_event_status'] ) ? sanitize_key( wp_unslash( $_POST['chess_army_event_status'] ) ) : '';
+		$status = isset( Chess_Army_Knife_Events::status_labels()[ $status ] ) ? $status : '';
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_STATUS, $status );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_STATUS_NOTE, '' !== $status && isset( $_POST['chess_army_event_status_note'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_event_status_note'] ) ) : '' );
 		self::save_page( $post_id );
 
 		// The colour picker always sends a value, so "default" has its own box.

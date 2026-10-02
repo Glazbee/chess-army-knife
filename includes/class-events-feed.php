@@ -48,12 +48,42 @@ class Chess_Army_Knife_Events_Feed {
 	}
 
 	/**
+	 * The address that downloads one occurrence of one event.
+	 *
+	 * @param array $event Event data.
+	 * @return string
+	 */
+	public static function event_url( array $event ) {
+		return add_query_arg(
+			array(
+				self::QUERY_VAR => '1',
+				'event'         => (int) $event['id'],
+				'start'         => $event['start'], // add_query_arg() encodes it.
+			),
+			home_url( '/' )
+		);
+	}
+
+	/**
 	 * Send the feed if this request is for it.
 	 */
 	public static function maybe_serve() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- A public, read-only feed of public data.
 		if ( ! isset( $_GET[ self::QUERY_VAR ] ) ) {
 			return;
+		}
+
+		// One event, for the "Add to my calendar" link.
+		if ( isset( $_GET['event'] ) ) {
+			$event = Chess_Army_Knife_Events::get_occurrence( absint( $_GET['event'] ), isset( $_GET['start'] ) ? sanitize_text_field( wp_unslash( $_GET['start'] ) ) : '' );
+			if ( ! $event ) {
+				status_header( 404 );
+				exit;
+			}
+			header( 'Content-Type: text/calendar; charset=utf-8' );
+			header( 'Content-Disposition: attachment; filename="club-event.ics"' );
+			echo self::build( array( $event ), Chess_Army_Knife_Settings::club_name(), (string) wp_parse_url( home_url(), PHP_URL_HOST ), time() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar text, escaped by escape_text(); not HTML.
+			exit;
 		}
 
 		$team_ids = isset( $_GET['teams'] ) ? array_filter( array_map( 'absint', explode( ',', sanitize_text_field( wp_unslash( $_GET['teams'] ) ) ) ) ) : array();
@@ -128,12 +158,19 @@ class Chess_Army_Knife_Events_Feed {
 			if ( '' !== $team_label ) {
 				array_unshift( $description, $team_label );
 			}
+			$status_text = Chess_Army_Knife_Events_Display::status_text( $event );
+			if ( '' !== $status_text ) {
+				array_unshift( $description, $status_text );
+			}
 
 			$lines[] = 'BEGIN:VEVENT';
 			$lines[] = 'UID:' . $event['id'] . '-' . gmdate( 'Ymd', $event['start_ts'] ) . '@' . $host; // A repeating event has an id for each occurrence.
 			$lines[] = 'DTSTAMP:' . gmdate( 'Ymd\THis\Z', $now );
 			$lines[] = 'DTSTART:' . gmdate( 'Ymd\THis\Z', $event['start_ts'] );
 			$lines[] = 'DTEND:' . gmdate( 'Ymd\THis\Z', $end_ts );
+			if ( isset( $event['status'] ) && 'cancelled' === $event['status'] ) {
+				$lines[] = 'STATUS:CANCELLED';
+			}
 			$lines[] = 'SUMMARY:' . self::escape_text( $event['title'] );
 			if ( '' !== $event['location'] ) {
 				$lines[] = 'LOCATION:' . self::escape_text( $event['location'] );

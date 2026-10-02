@@ -2,11 +2,16 @@ import { __ } from '@wordpress/i18n';
 import TemplatePicker from '../shared/template-picker';
 import EventTagsControl from '../shared/event-tags-control';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
+import {
+	PanelBody,
+	SelectControl,
+	TextControl,
+	ToggleControl,
+} from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, tags, showLocation, showTags, showLinks, emptyMessage } =
+	const { title, show, tags, showLocation, showTags, showLinks, emptyMessage } =
 		attributes;
 
 	const blockProps = useBlockProps();
@@ -29,6 +34,31 @@ export default function Edit( { attributes, setAttributes } ) {
 					title={ __( 'Display', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
+					<SelectControl
+						label={ __( 'Events to show', 'chess-army-knife' ) }
+						value={ show }
+						options={ [
+							{
+								label: __( 'The next event', 'chess-army-knife' ),
+								value: 'next',
+							},
+							{
+								label: __(
+									'The next three events',
+									'chess-army-knife'
+								),
+								value: 'three',
+							},
+							{
+								label: __(
+									'Today and tomorrow',
+									'chess-army-knife'
+								),
+								value: 'today',
+							},
+						] }
+						onChange={ ( value ) => setAttributes( { show: value } ) }
+					/>
 					<TextControl
 						label={ __(
 							'Custom title (optional)',

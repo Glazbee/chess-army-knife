@@ -200,6 +200,39 @@ class Chess_Army_Knife_Events_Display {
 	}
 
 	/**
+	 * What to say about an event that is cancelled or moved.
+	 *
+	 * @param array $event Event data.
+	 * @return string Plain text such as "Cancelled: no hall this week", or '' if it is going ahead.
+	 */
+	public static function status_text( array $event ) {
+		$status = isset( $event['status'] ) ? (string) $event['status'] : '';
+		$labels = Chess_Army_Knife_Events::status_labels();
+		if ( ! isset( $labels[ $status ] ) ) {
+			return '';
+		}
+
+		$note = isset( $event['status_note'] ) ? trim( (string) $event['status_note'] ) : '';
+		return '' !== $note ? $labels[ $status ] . ': ' . $note : $labels[ $status ];
+	}
+
+	/**
+	 * A link that downloads one event for the visitor's own calendar.
+	 *
+	 * @param array $event Event data.
+	 * @return string Escaped HTML, or '' for an event that is cancelled.
+	 */
+	public static function calendar_link_html( array $event ) {
+		if ( empty( $event['id'] ) || ( isset( $event['status'] ) && 'cancelled' === $event['status'] ) ) {
+			return '';
+		}
+
+		/* translators: %s: event title */
+		$label = sprintf( __( 'Add %s to my calendar', 'chess-army-knife' ), $event['title'] );
+		return '<p class="cak-event__calendar"><a href="' . esc_url( Chess_Army_Knife_Events_Feed::event_url( $event ) ) . '" aria-label="' . esc_attr( $label ) . '">' . esc_html__( 'Add to my calendar', 'chess-army-knife' ) . '</a></p>';
+	}
+
+	/**
 	 * An event's venue: its name, with links to it on a map and its what3words address.
 	 *
 	 * @param array $event Event data.
@@ -234,6 +267,11 @@ class Chess_Army_Knife_Events_Display {
 	public static function details_html( array $event, array $options ) {
 		$html = '';
 
+		$status = self::status_text( $event );
+		if ( '' !== $status ) {
+			$html .= '<p class="cak-event__status">' . esc_html( $status ) . '</p>';
+		}
+
 		$team_label = self::team_label( $event );
 		if ( ! empty( $options['show_teams'] ) && '' !== $team_label ) {
 			$html .= '<p class="cak-event__team">' . esc_html( $team_label ) . '</p>';
@@ -256,6 +294,10 @@ class Chess_Army_Knife_Events_Display {
 			if ( $items ) {
 				$html .= '<p class="cak-event__links">' . implode( ', ', $items ) . '</p>'; // Each item is escaped above.
 			}
+		}
+
+		if ( ! empty( $options['show_links'] ) ) {
+			$html .= self::calendar_link_html( $event );
 		}
 
 		if ( ! empty( $options['show_tags'] ) && $event['tags'] ) {
@@ -432,9 +474,14 @@ class Chess_Army_Knife_Events_Display {
 	public static function bubble_html( array $event, array $options ) {
 		$when = trim( self::date_label( $event ) . ', ' . self::time_label( $event ), ' ,' );
 
-		$html  = '<details class="cak-bubble"><summary class="cak-bubble__summary">';
+		$status = self::status_text( $event );
+		$label  = isset( $event['status'] ) && isset( Chess_Army_Knife_Events::status_labels()[ $event['status'] ] ) ? Chess_Army_Knife_Events::status_labels()[ $event['status'] ] : '';
+
+		$html  = '<details class="cak-bubble' . ( '' !== $label ? ' cak-bubble--' . esc_attr( $event['status'] ) : '' ) . '"><summary class="cak-bubble__summary">';
 		$html .= '<span class="cak-bubble__dot" aria-hidden="true"></span>';
 		$html .= '<span class="cak-bubble__time">' . esc_html( self::start_time_label( $event ) ) . '</span> ';
+		// The status is written out, so it is not only shown by a line through the title.
+		$html .= '' !== $label ? '<span class="cak-bubble__status">' . esc_html( $label ) . '</span> ' : '';
 		$html .= '<span class="cak-bubble__title">' . esc_html( $event['title'] ) . '</span>';
 		$html .= '</summary><div class="cak-bubble__panel">';
 		$html .= '<p class="cak-bubble__name">' . esc_html( $event['title'] ) . '</p>';

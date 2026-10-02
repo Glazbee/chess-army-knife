@@ -220,4 +220,16 @@ class EventsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'https://maps.app.goo.gl/abc', Chess_Army_Knife_Events::clean_map_url( ' https://maps.app.goo.gl/abc ' ) );
 		$this->assertSame( '', Chess_Army_Knife_Events::clean_map_url( 'javascript:alert(1)' ) );
 	}
+
+	public function test_skipped_dates_leave_out_those_occurrences_only() {
+		$starts = Chess_Army_Knife_Events::occurrence_starts( '2026-10-05 19:00:00', 'weekly', '', '', '2026-10-27 00:00:00', array( '2026-10-12', '2026-12-25' ) );
+
+		$this->assertSame( array( '2026-10-05 19:00:00', '2026-10-19 19:00:00', '2026-10-26 19:00:00' ), $starts );
+	}
+
+	public function test_typed_dates_are_cleaned_sorted_and_deduplicated() {
+		$dates = Chess_Army_Knife_Events::parse_dates( "2026-12-28\n2026-12-25, nonsense 2026-02-30 2026-12-25;2026-1-1" );
+
+		$this->assertSame( array( '2026-12-25', '2026-12-28' ), $dates );
+	}
 }

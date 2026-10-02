@@ -26,6 +26,9 @@ class Chess_Army_Knife_Events {
 	const META_END         = '_chess_army_event_end'; // End of the first occurrence; later ones last as long.
 	const META_REPEAT      = '_chess_army_event_repeat'; // 'weekly', 'monthly' or 'annually'; absent for a one-off.
 	const META_UNTIL       = '_chess_army_event_until'; // Last date a repeating event can occur, "Y-m-d"; absent for no end.
+	const META_SKIP        = '_chess_army_event_skip'; // Dates, "Y-m-d", on which a repeating event does not happen (holidays).
+	const META_STATUS      = '_chess_army_event_status'; // 'cancelled' or 'moved'; absent for an event going ahead as planned.
+	const META_STATUS_NOTE = '_chess_army_event_status_note'; // A few words for the status, such as where a moved event went.
 	const META_PAGE        = '_chess_army_event_page'; // Id of the page attached to the event.
 	const META_COLOUR      = '_chess_army_event_colour'; // Hex colour of the event's bubble in the calendar; absent for the default.
 	const META_LOCATION    = '_chess_army_event_location';
@@ -268,9 +271,10 @@ class Chess_Army_Knife_Events {
 	 * @param string $until  Last date it can occur, "Y-m-d", or '' for no end.
 	 * @param string $from   Earliest start wanted, "Y-m-d H:i:s", or '' for no limit.
 	 * @param string $to     Starts must be before this, "Y-m-d H:i:s", or '' to look a year ahead.
+	 * @param array  $skip   Dates, "Y-m-d", on which a repeating event does not happen.
 	 * @return string[] Starts, "Y-m-d H:i:s", earliest first.
 	 */
-	public static function occurrence_starts( $first, $repeat, $until, $from, $to ) {
+	public static function occurrence_starts( $first, $repeat, $until, $from, $to, array $skip = array() ) {
 		if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}:\d{2})$/', (string) $first, $m ) ) {
 			return array();
 		}
@@ -302,7 +306,7 @@ class Chess_Army_Knife_Events {
 			if ( $start >= $to || ( '' !== $until && $date > $until ) ) {
 				break;
 			}
-			if ( '' === $from || $start >= $from ) {
+			if ( ( '' === $from || $start >= $from ) && ! in_array( $date, $skip, true ) ) {
 				$starts[] = $start;
 			}
 		}
@@ -393,7 +397,8 @@ class Chess_Army_Knife_Events {
 				(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
 				(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
 				$earliest,
-				(string) $args['before']
+				(string) $args['before'],
+				self::skipped_dates( $post->ID )
 			);
 			foreach ( $starts as $start ) {
 				$events[] = self::data( $post, $start );
@@ -413,6 +418,73 @@ class Chess_Army_Knife_Events {
 		);
 
 		return $args['limit'] > 0 ? array_slice( $events, 0, (int) $args['limit'] ) : $events;
+	}
+
+	/**
+	 * Read dates typed one per line, or separated by commas or spaces.
+	 *
+	 * @param string $text Typed dates, YYYY-MM-DD.
+	 * @return string[] The valid ones, earliest first, each once.
+	 */
+	public static function parse_dates( $text ) {
+		$dates = array();
+		foreach ( preg_split( '/[\s,;]+/', (string) $text ) as $date ) {
+			if ( '' !== self::combine_datetime( $date, '00:00' ) ) {
+				$dates[ $date ] = $date;
+			}
+		}
+		ksort( $dates );
+
+		return array_values( $dates );
+	}
+
+	/**
+	 * The dates a repeating event skips.
+	 *
+	 * @param int $event_id Event id.
+	 * @return string[] "Y-m-d" dates.
+	 */
+	public static function skipped_dates( $event_id ) {
+		return array_values( array_filter( (array) get_post_meta( $event_id, self::META_SKIP, true ) ) );
+	}
+
+	/**
+	 * Labels for the states an event can be in other than going ahead.
+	 *
+	 * @return string[] Label for each status.
+	 */
+	public static function status_labels() {
+		return array(
+			'cancelled' => __( 'Cancelled', 'chess-army-knife' ),
+			'moved'     => __( 'Moved', 'chess-army-knife' ),
+		);
+	}
+
+	/**
+	 * One occurrence of a published event, for downloading it.
+	 *
+	 * @param int    $event_id Event id.
+	 * @param string $start    Start of the occurrence, "Y-m-d H:i:s".
+	 * @return array|null See data(); null if there is no such published event or it does not happen then.
+	 */
+	public static function get_occurrence( $event_id, $start ) {
+		// get_post( 0 ) would give the page being viewed.
+		$post = $event_id ? get_post( (int) $event_id ) : null;
+		if ( ! $post || self::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
+			return null;
+		}
+
+		$start  = (string) $start;
+		$starts = self::occurrence_starts(
+			(string) get_post_meta( $post->ID, self::META_START, true ),
+			(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
+			(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
+			$start,
+			gmdate( 'Y-m-d H:i:s', strtotime( $start . ' UTC' ) + 1 ),
+			self::skipped_dates( $post->ID )
+		);
+
+		return in_array( $start, $starts, true ) ? self::data( $post, $start ) : null;
 	}
 
 	/**
@@ -442,6 +514,8 @@ class Chess_Army_Knife_Events {
 	 *     @type int|null $start_ts            Unix timestamp of the start.
 	 *     @type string   $end                 Site-local "Y-m-d H:i:s", or ''.
 	 *     @type string   $repeat              'weekly', 'monthly', 'annually' or ''.
+	 *     @type string   $status              'cancelled', 'moved' or ''.
+	 *     @type string   $status_note         A few words about the status, or ''.
 	 *     @type string   $colour              The event's own colour, a hex code, or ''.
 	 *     @type string   $location            The event's own location, or the club venue.
 	 *     @type string   $map_url             Link to it on a map, or ''.
@@ -523,6 +597,9 @@ class Chess_Army_Knife_Events {
 			$end = gmdate( 'Y-m-d H:i:s', strtotime( $start . ' UTC' ) + ( strtotime( $end . ' UTC' ) - strtotime( $first . ' UTC' ) ) );
 		}
 
+		$status = (string) get_post_meta( $id, self::META_STATUS, true );
+		$status = isset( self::status_labels()[ $status ] ) ? $status : '';
+
 		return array(
 			'id'          => $id,
 			'title'       => get_the_title( $post ),
@@ -531,6 +608,8 @@ class Chess_Army_Knife_Events {
 			'start_ts'    => $start_ts,
 			'end'         => $end,
 			'repeat'      => (string) get_post_meta( $id, self::META_REPEAT, true ),
+			'status'      => $status,
+			'status_note' => $status ? (string) get_post_meta( $id, self::META_STATUS_NOTE, true ) : '',
 			'colour'      => (string) sanitize_hex_color( (string) get_post_meta( $id, self::META_COLOUR, true ) ),
 			'location'    => $venue['location'],
 			'map_url'     => $venue['map_url'],

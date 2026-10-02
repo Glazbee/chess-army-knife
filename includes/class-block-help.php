@@ -179,7 +179,7 @@ class Chess_Army_Knife_Block_Help {
 				'where'    => array( 'club_events', 'import_events' ),
 			),
 			'next-club-event'      => array(
-				'use'      => __( 'The next club event, optionally only one with a chosen tag such as "in-house".', 'chess-army-knife' ),
+				'use'      => __( 'The next club event, the next three, or today and tomorrow, optionally only those with a chosen tag such as "in-house".', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Choose the tags to match, what to show, and the message when nothing is coming up.', 'chess-army-knife' ),
 				),

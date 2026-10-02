@@ -28,6 +28,14 @@
 		margin-left: 0.5em;
 	}
 
+	.cak-event + .cak-event {
+		margin-top: 1em;
+	}
+
+	.cak-event__status {
+		font-weight: 700;
+	}
+
 	.cak-event__title {
 		font-size: 1.15em;
 		font-weight: 700;
