@@ -227,4 +227,31 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 	public function test_the_players_block_asks_for_a_tournament() {
 		$this->assertStringContainsString( 'choose a tournament', do_blocks( '<!-- wp:chess-army-knife/tournament-players {} /-->' ) );
 	}
+
+	public function test_a_name_left_on_a_result_can_be_replaced_but_only_if_no_record_is_behind_it() {
+		$tournament = $this->tournament();
+		$person     = $this->saved_player( 'Linked Person', '111111A', 1500 );
+		Chess_Army_Knife_Tournaments::add_player( $tournament, $person );
+		Chess_Army_Knife_Tournaments::add_unlinked_player( $tournament, 'Gone Person', 1400 );
+
+		$by_name = array();
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ) as $entry ) {
+			$by_name[ $entry['name'] ] = $entry;
+		}
+		$this->assertArrayHasKey( 'Gone Person', $by_name );
+		$this->assertSame( 0, $by_name['Gone Person']['player_id'] );
+
+		$linked = Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, $by_name['Linked Person']['id'] );
+		$this->assertWPError( $linked );
+		$this->assertSame( 'entry_linked', $linked->get_error_code() );
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, $by_name['Gone Person']['id'] ) );
+
+		$names = wp_list_pluck( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), 'name' );
+		$this->assertNotContains( 'Gone Person', $names );
+		$this->assertContains( 'Linked Person', $names );
+		$this->assertContains( 'Anonymous player ' . $by_name['Gone Person']['id'], $names );
+
+		$this->assertWPError( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, 999999 ) );
+	}
 }

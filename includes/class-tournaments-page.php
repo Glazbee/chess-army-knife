@@ -16,7 +16,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Boot the admin page and its form handlers.
 	 */
 	public static function init() {
-		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye', 'create_page' ) as $action ) {
+		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye', 'create_page', 'anonymise_entry' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -129,6 +129,19 @@ class Chess_Army_Knife_Tournaments_Page {
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
 
 		self::finish( Chess_Army_Knife_Tournaments::remove_player( $tournament_id, $entry_id ), __( 'Player removed.', 'chess-army-knife' ), $tournament_id );
+	}
+
+	/**
+	 * Replace a name left on a result, for someone who asked to be deleted and objects to it.
+	 */
+	public static function handle_anonymise_entry() {
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_anonymise_entry' );
+
+		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
+		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
+
+		self::finish( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament_id, $entry_id ), __( 'The name has been replaced.', 'chess-army-knife' ), $tournament_id );
 	}
 
 	/**
@@ -588,6 +601,24 @@ class Chess_Army_Knife_Tournaments_Page {
 											"
 									onclick="return confirm('<?php echo esc_js( __( 'Withdraw this player? Their unplayed games will be dropped.', 'chess-army-knife' ) ); ?>');"
 								><?php esc_html_e( 'Withdraw', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $entry['name'] ); ?></span></a>
+							<?php endif; ?>
+							<?php if ( 0 === $entry['player_id'] ) : ?>
+								<a
+									href="
+									<?php
+									echo esc_url(
+										self::action_url(
+											'anonymise_entry',
+											array(
+												'tournament_id' => $id,
+												'entry_id' => $entry['id'],
+											)
+										)
+									);
+									?>
+											"
+									onclick="return confirm('<?php echo esc_js( __( 'Replace this name on the results with "Anonymous player"? This cannot be undone.', 'chess-army-knife' ) ); ?>');"
+								><?php esc_html_e( 'Anonymise name', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $entry['name'] ); ?></span></a>
 							<?php endif; ?>
 						</td>
 					</tr>

@@ -336,6 +336,31 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
+	 * Blank the name on a result: a person who asked to be deleted keeps their name on the results of
+	 * tournaments already started, which is a legitimate record, but if they object it can be replaced.
+	 * Only an entry with no member record behind it can be changed.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @param int $entry_id      Entry id.
+	 * @return true|WP_Error
+	 */
+	public static function anonymise_entry( $tournament_id, $entry_id ) {
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( (int) $tournament_id ) as $entry ) {
+			if ( $entry['id'] !== (int) $entry_id ) {
+				continue;
+			}
+			if ( 0 !== $entry['player_id'] ) {
+				return new WP_Error( 'entry_linked', __( 'That entry is linked to a member record. Delete or change the record instead.', 'chess-army-knife' ) );
+			}
+			/* translators: %d: entry number, so each anonymous player can be told apart */
+			Chess_Army_Knife_Tournament_Store::rename_unlinked_entry( $entry['id'], sprintf( __( 'Anonymous player %d', 'chess-army-knife' ), $entry['id'] ) );
+			return true;
+		}
+
+		return new WP_Error( 'tournament_missing', __( 'That player is not in this tournament.', 'chess-army-knife' ) );
+	}
+
+	/**
 	 * Remove an entrant from a draft tournament.
 	 *
 	 * @param int $tournament_id Tournament id.
