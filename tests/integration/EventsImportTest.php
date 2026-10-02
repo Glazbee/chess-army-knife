@@ -853,6 +853,9 @@ class EventsImportTest extends WP_UnitTestCase {
 		$ada = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '123456A' );
 		$this->assertSame( 'Ada Lovelace', $ada['name'] );
 		$this->assertSame( Chess_Army_Knife_Membership_Store::STATUS_PENDING, $ada['status'] );
+		$this->assertNotSame( '', $ada['consent_at'], 'Consent to hold their details is recorded.' );
+		$this->assertSame( '', $ada['newsletter_consent_at'], 'The optional extras are not assumed.' );
+		$this->assertSame( '', $ada['whatsapp_consent_at'] );
 		$this->assertSame( array(), Chess_Army_Knife_LMS_Players::candidates(), 'Nobody is left to add.' );
 	}
 

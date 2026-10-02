@@ -5,8 +5,9 @@
  * pending members in one go, then confirm each membership from the Members screen.
  *
  * Nothing is added by itself. A person who asked not to be recorded is never listed, and the people
- * added have only the name and ECF code the LMS gave: their contact details, consent and membership
- * are filled in when the admin confirms them.
+ * added have only the name and ECF code the LMS gave, and their consent to the club holding their details is
+ * taken as given (the club is choosing to add its own players). Newsletter and WhatsApp consent are never assumed.
+ * Contact details and the membership itself are filled in when the admin confirms them.
  *
  * @package Chess_Army_Knife
  */
@@ -68,10 +69,12 @@ class Chess_Army_Knife_LMS_Players {
 
 			Chess_Army_Knife_Membership_Store::save_member(
 				array(
-					'name'     => sanitize_text_field( $player['name'] ),
-					'ecf_code' => Chess_Army_Knife_Do_Not_Record::clean_code( $player['code'] ),
-					'status'   => Chess_Army_Knife_Membership_Store::STATUS_PENDING,
-					'source'   => Chess_Army_Knife_Membership_Store::SOURCE_MANUAL,
+					'name'       => sanitize_text_field( $player['name'] ),
+					'ecf_code'   => Chess_Army_Knife_Do_Not_Record::clean_code( $player['code'] ),
+					'status'     => Chess_Army_Knife_Membership_Store::STATUS_PENDING,
+					'source'     => Chess_Army_Knife_Membership_Store::SOURCE_MANUAL,
+					// Joining the club's team is taken as agreeing to the club holding their details; the extras (newsletter, WhatsApp) are not.
+					'consent_at' => current_time( 'mysql', true ),
 				)
 			);
 			++$added;
@@ -123,7 +126,7 @@ class Chess_Army_Knife_LMS_Players {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Players from the LMS', 'chess-army-knife' ); ?></h1>
-			<p><?php esc_html_e( 'These people played for your teams in the results Import Events has kept, and are not on your membership records. Add the ones who are your members: each is added as a pending member with just the name and ECF code the LMS holds, and you then confirm their membership, contact details and consent from the Members screen. Nobody is added until you tick them.', 'chess-army-knife' ); ?></p>
+			<p><?php esc_html_e( 'These people played for your teams in the results Import Events has kept, and are not on your membership records. Add the ones who are your members: each is added as a pending member with just the name and ECF code the LMS holds, and their consent to the club holding those details is recorded as given. You then confirm their membership and add their contact details from the Members screen. Newsletter and WhatsApp choices are not assumed: they stay off until the person agrees. Nobody is added until you tick them.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( null !== $added ) : ?>
 				<div class="notice notice-success" role="status"><p>

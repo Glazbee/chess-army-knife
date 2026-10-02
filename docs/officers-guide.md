@@ -33,7 +33,8 @@ not changed. A team whose league had a different name in an old season is report
 event's page shows them (Club Event Details block). To set up your membership from this, open
 **Members → Add players from the LMS**: it lists everyone who played for your teams and is not a member
 yet. Tick the ones who are your members and they are added as *pending*; then open each from the
-Members screen to add their contact details and consent, and approve them. Nobody is added until you
+Members screen to add their contact details and approve them. Their consent to the club holding their
+details is recorded as given; newsletter and WhatsApp consent are not assumed. Nobody is added until you
 tick them, and someone on the Do Not Record list is never listed.
 
 **2. Sort new clubs.** If the import found team names it has not seen, **Sort Clubs** offers them in
