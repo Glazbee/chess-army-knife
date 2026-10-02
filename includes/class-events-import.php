@@ -239,7 +239,7 @@ class Chess_Army_Knife_Events_Import {
 	 * @param string  $today              Today, "Y-m-d" (earlier fixtures are ignored).
 	 * @param string  $default_time       Start time for a fixture with none, "HH:MM".
 	 * @return array {
-	 *     @type array[] $candidates Each { key, title, start, location, home_team, away_team, league, club_teams }, where club_teams maps a league entry key to 'home' or 'away'.
+	 *     @type array[] $candidates Each { key, title, start, location, home_team, away_team, league, club_teams, match }, where match is the fixture's row and club_teams maps a league entry key to 'home' or 'away'.
 	 *     @type int     $skipped    Fixtures ignored because their date couldn't be read.
 	 * }
 	 */
@@ -285,6 +285,7 @@ class Chess_Army_Knife_Events_Import {
 					'away_team'  => $match['away'],
 					'league'     => Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ),
 					'club_teams' => $club_teams,
+					'match'      => $match,
 				);
 			}
 		}
@@ -448,6 +449,16 @@ class Chess_Army_Knife_Events_Import {
 		$away = Chess_Army_Knife_Clubs::venue_of_team( $candidate['home_team'] );
 
 		return $away ? $away : $none;
+	}
+
+	/**
+	 * Keep a fixture's result (score and boards) on its event.
+	 *
+	 * @param int   $event_id  Event id.
+	 * @param array $candidate A candidate from plan().
+	 */
+	protected static function store_result( $event_id, array $candidate ) {
+		Chess_Army_Knife_Event_Results::store( $event_id, Chess_Army_Knife_Event_Results::build( $candidate['match'], array_values( $candidate['club_teams'] ) ) );
 	}
 
 	/**
@@ -635,12 +646,21 @@ class Chess_Army_Knife_Events_Import {
 					wp_set_object_terms( $post_id, self::tags_for( $candidate['club_teams'] ), Chess_Army_Knife_Events::TAXONOMY );
 					Chess_Army_Knife_Events::apply_type( $post_id, 'league_match' );
 					self::sync_teams( $post_id, $candidate['club_teams'] );
+					self::store_result( $post_id, $candidate );
 					++$summary['created'];
 				}
 				continue;
 			}
 
-			if ( 'trash' === $existing->post_status || get_post_meta( $existing->ID, self::META_EDITED, true ) ) {
+			if ( 'trash' === $existing->post_status ) {
+				++$summary['kept'];
+				continue;
+			}
+
+			// The result is the LMS's, not something an editor changes, so it is kept up to date even on an edited event.
+			self::store_result( $existing->ID, $candidate );
+
+			if ( get_post_meta( $existing->ID, self::META_EDITED, true ) ) {
 				++$summary['kept'];
 				continue;
 			}

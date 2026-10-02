@@ -36,4 +36,5 @@ $options = Chess_Army_Knife_Events_Display::options( $attributes );
 		<span class="cak-event__time"><?php echo esc_html( Chess_Army_Knife_Events_Display::time_label( $event ) ); ?></span>
 	</p>
 	<?php echo Chess_Army_Knife_Events_Display::details_html( $event, $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in details_html(). ?>
+	<?php echo Chess_Army_Knife_Event_Results::html( (int) $event['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in html(). ?>
 </div>

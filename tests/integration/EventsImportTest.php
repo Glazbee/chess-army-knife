@@ -783,4 +783,100 @@ class EventsImportTest extends WP_UnitTestCase {
 		);
 		$this->assertContains( 'club_night', $types );
 	}
+
+	private function played_fixture() {
+		return $this->fixture(
+			'Our A',
+			'Rivals',
+			'2099-10-05',
+			array(
+				'home_score' => 1.5,
+				'away_score' => 0.5,
+				'winner'     => 'home',
+				'games'      => array(
+					array(
+						'board'       => 1,
+						'home_colour' => 'W',
+						'result'      => 'home_win',
+						'home_player' => $this->player( '123456A', 'Ada Lovelace' ),
+						'away_player' => $this->player( '999999Z', 'Their player' ),
+					),
+					array(
+						'board'       => 2,
+						'home_colour' => 'B',
+						'result'      => 'draw',
+						'home_player' => $this->player( '222222B', 'Bea Babbage' ),
+						'away_player' => $this->player( '888888Y', 'Another of theirs' ),
+					),
+				),
+			)
+		);
+	}
+
+	private function event_result() {
+		$events = Chess_Army_Knife_Events::query( array( 'after' => '' ) );
+		return Chess_Army_Knife_Event_Results::get( $events[0]['id'] );
+	}
+
+	public function test_a_played_fixture_keeps_its_score_and_who_played_each_board() {
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+
+		Chess_Army_Knife_Events_Import::import();
+		$result = $this->event_result();
+
+		$this->assertSame( 'home', $result['winner'] );
+		$this->assertSame( '1.5', $result['home_score'] );
+		$this->assertSame( 'Ada Lovelace', $result['games'][0]['home']['name'] );
+		$this->assertSame( '123456A', $result['games'][0]['home']['code'] );
+		$this->assertSame( array( 'name' => 'Their player' ), $result['games'][0]['away'], 'The opponent is kept by name only.' );
+	}
+
+	public function test_a_fixture_not_yet_played_keeps_no_result() {
+		$this->lms['Division 1'] = array( $this->fixture( 'Our A', 'Rivals', '2099-10-05' ) );
+
+		Chess_Army_Knife_Events_Import::import();
+
+		$this->assertNull( $this->event_result() );
+	}
+
+	public function test_players_in_the_results_can_be_added_as_pending_members() {
+		$this->member_with_code( 'Bea Babbage', '222222B' );
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+		Chess_Army_Knife_Events_Import::import();
+
+		$candidates = Chess_Army_Knife_LMS_Players::candidates();
+		$this->assertCount( 1, $candidates, 'Bea is already a member; opponents are never listed.' );
+		$this->assertSame( 'Ada Lovelace', array_values( $candidates )[0]['name'] );
+
+		$this->assertSame( 1, Chess_Army_Knife_LMS_Players::add( array_keys( $candidates ), $candidates ) );
+
+		$ada = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '123456A' );
+		$this->assertSame( 'Ada Lovelace', $ada['name'] );
+		$this->assertSame( Chess_Army_Knife_Membership_Store::STATUS_PENDING, $ada['status'] );
+		$this->assertSame( array(), Chess_Army_Knife_LMS_Players::candidates(), 'Nobody is left to add.' );
+	}
+
+	public function test_a_person_asked_not_to_be_recorded_is_neither_kept_nor_listed() {
+		Chess_Army_Knife_Do_Not_Record::add( '123456A', 'Ada Lovelace' );
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+
+		Chess_Army_Knife_Events_Import::import();
+		$result = $this->event_result();
+
+		$this->assertSame( array( 'name' => '' ), $result['games'][0]['home'] );
+		$this->assertSame( 'home_win', $result['games'][0]['result'] );
+		$this->assertArrayNotHasKey( '123456', Chess_Army_Knife_LMS_Players::candidates() );
+	}
+
+	public function test_erasing_a_member_takes_their_name_out_of_the_results() {
+		$ada = $this->member_with_code( 'Ada Lovelace', '123456A' );
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+		Chess_Army_Knife_Events_Import::import();
+
+		Chess_Army_Knife_Membership_Store::erase_member( $ada );
+		$result = $this->event_result();
+
+		$this->assertSame( array( 'name' => '' ), $result['games'][0]['home'] );
+		$this->assertSame( 'Bea Babbage', $result['games'][1]['home']['name'] );
+	}
 }

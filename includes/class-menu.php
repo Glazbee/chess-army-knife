@@ -161,6 +161,16 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $members_group,
+				'title'       => __( 'Players from the LMS', 'chess-army-knife' ),
+				'description' => __( 'Add the people who play for your teams, as found in the imported results, as members to confirm.', 'chess-army-knife' ),
+				'key'         => 'lms_players',
+				'slug'        => Chess_Army_Knife_LMS_Players::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_LMS_Players', 'render_page' ),
+				'kind'        => 'members',
+				'can'         => $can_members,
+			),
+			array(
+				'group'       => $members_group,
 				'title'       => __( 'Do Not Record', 'chess-army-knife' ),
 				'description' => __( 'People who asked to be deleted, so the plugin does not record them again by itself.', 'chess-army-knife' ),
 				'key'         => 'do_not_record',

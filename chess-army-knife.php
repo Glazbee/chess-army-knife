@@ -87,6 +87,8 @@ require_once Chess_Army_Knife_DIR . 'includes/class-dashboard-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-block-help.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-access.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-squad-review.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-event-results.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-lms-players.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-team-overview.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-setup.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-setup-checklist.php';

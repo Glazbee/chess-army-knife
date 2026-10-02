@@ -966,6 +966,9 @@ class Chess_Army_Knife_Membership_Store {
 		// Tournament results keep the name, as a historical record, but no longer lead to this person.
 		Chess_Army_Knife_Tournament_Store::unlink_person( $id, $member['name'] );
 
+		// League results keep the board and its result, but no longer name this person.
+		Chess_Army_Knife_Event_Results::remove_person( $member['ecf_code'], $member['name'] );
+
 		// A record is kept, without personal details, while it has a payment on it or is tagged
 		// in photos: the photos may show other people, so someone has to review them by hand.
 		// What they were emailed, and their email choices, are never kept.

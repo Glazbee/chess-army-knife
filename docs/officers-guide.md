@@ -29,6 +29,13 @@ To keep your history, scroll to **Earlier seasons** on the same screen, tick the
 *All earlier seasons*) and press **Import selected seasons**. They come in as past events; squads are
 not changed. A team whose league had a different name in an old season is reported and skipped.
 
+**Results are kept too.** The import keeps each played match's score and who played each board, and the
+event's page shows them (Club Event Details block). To set up your membership from this, open
+**Members → Add players from the LMS**: it lists everyone who played for your teams and is not a member
+yet. Tick the ones who are your members and they are added as *pending*; then open each from the
+Members screen to add their contact details and consent, and approve them. Nobody is added until you
+tick them, and someone on the Do Not Record list is never listed.
+
 **2. Sort new clubs.** If the import found team names it has not seen, **Sort Clubs** offers them in
 groups. Tick the names that belong to one club, say where it plays (a name, a map link, a what3words
 address), and save. Import again and those clubs' away fixtures get their venue. To add many clubs at
