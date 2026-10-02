@@ -1,0 +1,86 @@
+# Officers' guide: the weekly routine
+
+A short guide for the people who run the club's site. It follows the order you would work in. The
+screens are all in the **Chess Army Knife** menu; the **Overview** lists every one and says which you
+may use. Some need a permission that an administrator gives you on your user profile.
+
+| You need | To use |
+|---|---|
+| The *Club memberships* permission | Members, Renewals, Member Checks, Announcements, Do Not Record |
+| The *Club teams* permission (or be a team's captain) | Teams, Clubs, Sort Clubs, Squad Review, Import Events; captains see only their own team in Team Overview and Team Selection |
+| Administrator | Settings, Setup, Policies, Templates |
+
+## Once, when you start
+
+1. **Setup** asks for the club's name and venue, regular weekly events, your ECF details and your LMS
+   details, and can add your first team and fetch its fixtures. Anything you skip can be done later.
+2. Enter the **LMS API key** under Settings and press **Test the LMS connection**.
+3. Open **Policies** and decide, for each policy, whether the plugin makes you a draft page to edit or you
+   will write it yourself. Read the draft against what your club really does before you mark it reviewed.
+4. The **Overview** has a **Still to do** list. Work down it; each line has a link.
+
+## Every week
+
+**1. Fetch the fixtures.** *Import Events* runs by itself once a day. Press **Import now** if you need
+fresh results sooner. The screen says when it last ran and how many leagues failed. A red line on the
+Overview about the API key means the LMS stopped accepting it.
+
+**2. Sort new clubs.** If the import found team names it has not seen, **Sort Clubs** offers them in
+groups. Tick the names that belong to one club, say where it plays (a name, a map link, a what3words
+address), and save. Import again and those clubs' away fixtures get their venue. To add many clubs at
+once, paste a list from a spreadsheet at the top of the same screen.
+
+**3. Look at each team.** **Team Overview** shows a team's captain, venue, leagues, next fixtures, how
+many have said yes, maybe or no, who has not replied, and the squad with ratings.
+
+**4. Ask who can play and pick the line-up.** On **Team Selection** choose the fixture and press
+**Ask the squad**: each member of the squad gets an email with a link to answer yes, maybe or no (they
+need no login). When the replies are in, pick the boards (or use **Suggest**), save a draft, and
+**Publish**: the people picked are emailed, and anyone taken off is told. A line-up cannot be changed once
+the fixture has started.
+
+**5. Deal with applications.** New applications wait on **Members** under *Pending*. Approve or decline.
+An approved member's dates follow their membership type. Tell people how to pay; record the payment on
+their record when it arrives.
+
+**6. Renewals.** **Renewals** shows who is due a reminder at the next daily run. Reminders go out by
+themselves if they are switched on under Settings. Use **Renew** on a record when someone has paid again.
+
+## Now and then
+
+- **Tidy the squads.** Importing adds people to a squad when they play, and never takes anyone out.
+  **Squad Review** lists people who have not played for a team in a year (you can change the number of
+  months) with a tick box to take them out. They stay members.
+- **Member Checks** lists records to tidy: members with no ECF code, or a code the ECF does not know.
+- **Calendar.** Events are under **Club Events**. Mark an event **Cancelled** or **Moved** rather than
+  deleting it, so nobody turns up for nothing. A repeating event has **Dates to skip** for holidays. A
+  tournament can be put on the calendar from its own screen.
+- **Tournaments.** Create it, enter players, start it, enter results. The page the plugin makes for a
+  tournament lists its status, players and the games still to play.
+
+## When someone asks to be deleted
+
+A person has the right to ask. Do these in order:
+
+1. If they asked through the site (the Manage My Data block or WordPress's privacy tools), find the
+   request under **Tools → Erase Personal Data**, check it is really them (it is confirmed by email), and
+   run it. Otherwise find them on **Members**.
+2. Use **Delete and do not record** on their record (or tick *Do not record* when you bulk-delete). This
+   removes their details, or, if the record is tied to a payment, photos or a tournament, removes the
+   details and keeps the rest. It also adds them to **Do Not Record**, so the plugin does not make a
+   record of them again by itself (for example when their ECF code turns up in a league import).
+3. Their name stays on the results of tournaments already played. That is a legitimate record. If they
+   object, open the tournament and use **Anonymise name** beside their entry.
+4. Keep a copy of the **Do Not Record** list from time to time (**Download a backup**). It holds only
+   one-way fingerprints, not names. If the site's secret keys (the salts in `wp-config.php`) are ever
+   changed, the list stops working and has to be built again from the people who asked.
+
+## Where to look when something is wrong
+
+| What you see | Look at |
+|---|---|
+| No fixtures on the calendar | Overview → *Still to do*; Import Events (did it run? any leagues failed?); Settings → *Test the LMS connection* |
+| An away fixture has no venue | Sort Clubs: the other club's team names are probably still unsorted |
+| A member says they never got an email | Members → their record: is the email right, and have they turned that kind of email off? |
+| A block shows "No event called ..." | The league name does not match the LMS exactly (case and spaces); check it in the block settings |
+| Something else | **Block Help** explains each block and what to set up first |
