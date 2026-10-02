@@ -621,4 +621,31 @@ class EventsTest extends WP_UnitTestCase {
 		$hidden = do_blocks( '<!-- wp:chess-army-knife/club-event-calendar {"showKey":false} /-->' );
 		$this->assertStringNotContainsString( 'cak-key', $hidden );
 	}
+
+	public function test_a_club_night_is_at_the_club_venue_but_an_away_fixture_is_not() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'club_venue'      => 'The Club Room',
+			)
+		);
+		$this->event( 'Club night', '2099-01-01 19:00:00' );
+		$this->event(
+			'Away match',
+			'2099-01-02 19:00:00',
+			array( Chess_Army_Knife_Events::META_SIDES => array( 3 => 'away' ) )
+		);
+		$this->event(
+			'Home match',
+			'2099-01-03 19:00:00',
+			array( Chess_Army_Knife_Events::META_SIDES => array( 3 => 'home' ) )
+		);
+
+		$venues = wp_list_pluck( Chess_Army_Knife_Events::query(), 'location', 'title' );
+
+		$this->assertSame( 'The Club Room', $venues['Club night'] );
+		$this->assertSame( '', $venues['Away match'] );
+		$this->assertSame( 'The Club Room', $venues['Home match'] );
+	}
 }

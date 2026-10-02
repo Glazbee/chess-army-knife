@@ -382,7 +382,8 @@ class TournamentTest extends WP_UnitTestCase {
 		// Administrators get two score selectors per game and one Save button.
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$html = do_blocks( $block );
-		$this->assertSame( 12, substr_count( $html, 'data-side=' ) ); // Six games, two selectors each.
+		$this->assertSame( 4, substr_count( $html, 'data-side=' ), 'One round, two games, is shown at a time.' );
+		$this->assertStringContainsString( 'Page 1 of 3', $html );
 		$this->assertSame( 1, substr_count( $html, 'class="cak-games__save' ) );
 		$this->assertStringContainsString( 'data-nonce', $html );
 		$this->assertStringContainsString( '/games/results', $html );

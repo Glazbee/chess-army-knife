@@ -463,7 +463,8 @@ class Chess_Army_Knife_Events {
 			'what3words' => (string) get_post_meta( $id, self::META_W3W, true ),
 		);
 		// An event with no venue of its own is held at the club venue, unless it is an away fixture.
-		$sides = array_values( (array) get_post_meta( $id, self::META_SIDES, true ) );
+		// No stored sides is an empty string, so an event that is not a fixture is never "away".
+		$sides = array_filter( (array) get_post_meta( $id, self::META_SIDES, true ) );
 		$away  = $sides && ! in_array( 'home', $sides, true );
 		if ( '' === implode( '', $venue ) && ! $away ) {
 			$venue = self::default_venue();

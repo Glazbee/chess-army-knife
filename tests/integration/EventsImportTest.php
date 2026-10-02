@@ -144,6 +144,7 @@ class EventsImportTest extends WP_UnitTestCase {
 			'Chess_Army_Knife_settings',
 			array(
 				'use_local_cache' => 0,
+				'lms_api_key'     => 'lmsk_test',
 				'match_time'      => '18:45',
 			)
 		);
