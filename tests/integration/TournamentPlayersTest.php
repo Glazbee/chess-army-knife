@@ -256,6 +256,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_tournament_can_be_put_on_the_calendar_once_with_its_page_attached() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) ); // Making a page needs the permission to.
 		$tournament = $this->tournament();
 		$this->assertSame( 0, Chess_Army_Knife_Events::for_tournament( $tournament ) );
 		$page = Chess_Army_Knife_Tournaments::create_page( $tournament );
