@@ -25,8 +25,7 @@ $error_code = isset( $_GET['cak_data_error'] ) ? sanitize_key( wp_unslash( $_GET
 $token      = isset( $_GET['cak_withdraw'] ) ? preg_replace( '/[^A-Za-z0-9]/', '', sanitize_text_field( wp_unslash( $_GET['cak_withdraw'] ) ) ) : '';
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-$team_choices = Chess_Army_Knife_Teams::choices();
-$found        = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_token( $token ) : null;
+$found = '' !== $token ? Chess_Army_Knife_Member_Requests::people_for_token( $token ) : null;
 
 $error_fields = array(
 	'email'  => array( 'cak-data-email', __( 'The email address the club holds for you', 'chess-army-knife' ) ),
@@ -70,17 +69,9 @@ $notice_id    = 'cak-data-notice';
 					<p>
 						<label>
 							<input type="checkbox" name="whatsapp[<?php echo esc_attr( $person['id'] ); ?>]" value="1" <?php checked( '' !== $person['whatsapp_consent_at'] ); ?> />
-							<?php esc_html_e( 'Add to the WhatsApp group for the team(s) ticked below (the phone number is visible to the group)', 'chess-army-knife' ); ?>
+							<?php esc_html_e( 'Add to the WhatsApp group of the team(s) the club has me in (the phone number is visible to the group)', 'chess-army-knife' ); ?>
 						</label>
 					</p>
-					<?php foreach ( $team_choices as $team_id => $team_name ) : ?>
-						<p class="cak-my-data__team">
-							<label>
-								<input type="checkbox" name="teams[<?php echo esc_attr( $person['id'] ); ?>][]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( in_array( $team_id, $person['whatsapp_teams'], true ) ); ?> />
-								<?php echo esc_html( $team_name ); ?>
-							</label>
-						</p>
-					<?php endforeach; ?>
 				</fieldset>
 			<?php endforeach; ?>
 			<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my choices', 'chess-army-knife' ); ?></button></p>

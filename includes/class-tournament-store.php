@@ -64,6 +64,7 @@ class Chess_Army_Knife_Tournament_Store {
 			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			tournament_id BIGINT(20) UNSIGNED NOT NULL,
 			player_id BIGINT(20) UNSIGNED NOT NULL,
+			player_name VARCHAR(191) NULL,
 			seed INT(11) NULL,
 			start_rating INT(11) NULL,
 			rating_source VARCHAR(10) NOT NULL DEFAULT 'none',
@@ -190,7 +191,8 @@ class Chess_Army_Knife_Tournament_Store {
 	 * @return string SQL that selects entries (alias e) with the person (alias p).
 	 */
 	protected static function entry_select() {
-		return 'SELECT e.*, p.name AS name, p.ecf_code AS ecf_code FROM ' . self::table( 'entries' ) . ' e LEFT JOIN ' . self::table( 'members' ) . ' p ON p.id = e.player_id';
+		// An entry with no person (player_id 0) keeps the name it was given, and has no ECF code or any link to a record.
+		return 'SELECT e.*, COALESCE( p.name, e.player_name ) AS name, p.ecf_code AS ecf_code FROM ' . self::table( 'entries' ) . ' e LEFT JOIN ' . self::table( 'members' ) . ' p ON p.id = e.player_id';
 	}
 
 	/**
@@ -203,7 +205,7 @@ class Chess_Army_Knife_Tournament_Store {
 		global $wpdb;
 		$select = self::entry_select();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
-		$rows = $wpdb->get_results( $wpdb->prepare( "{$select} WHERE e.tournament_id = %d ORDER BY e.seed IS NULL, e.seed ASC, p.name ASC", (int) $tournament_id ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( "{$select} WHERE e.tournament_id = %d ORDER BY e.seed IS NULL, e.seed ASC, COALESCE( p.name, e.player_name ) ASC", (int) $tournament_id ), ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_entry' ), (array) $rows );
 	}
 
@@ -253,6 +255,27 @@ class Chess_Army_Knife_Tournament_Store {
 			},
 			(array) $rows
 		);
+	}
+
+	/**
+	 * Unlink a person from the tournaments they are entered in, when their record is deleted.
+	 * In a tournament that has started the entry stays, with the name it was played under and no
+	 * link to any record, so results and standings still add up and the person can no longer be
+	 * found from them. In a draft tournament nothing has been played, so the entry is removed.
+	 *
+	 * @param int    $person_id Person id.
+	 * @param string $name      The name to keep on entries that stay.
+	 */
+	public static function unlink_person( $person_id, $name ) {
+		global $wpdb;
+
+		$entries = self::table( 'entries' );
+		$tourney = self::table( 'tournaments' );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
+		$wpdb->query( $wpdb->prepare( "DELETE e FROM {$entries} e INNER JOIN {$tourney} t ON t.id = e.tournament_id WHERE e.player_id = %d AND t.status = %s", (int) $person_id, 'draft' ) );
+		$wpdb->query( $wpdb->prepare( "UPDATE {$entries} SET player_name = %s, player_id = 0 WHERE player_id = %d", (string) $name, (int) $person_id ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**

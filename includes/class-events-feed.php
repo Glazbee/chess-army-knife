@@ -75,7 +75,7 @@ class Chess_Army_Knife_Events_Feed {
 		header( 'Content-Disposition: inline; filename="club-events.ics"' );
 		header( 'Cache-Control: public, max-age=900' ); // Calendar apps poll; a quarter of an hour is fresh enough.
 
-		echo self::build( $events, wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ), (string) wp_parse_url( home_url(), PHP_URL_HOST ), time() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar text, escaped by escape_text(); not HTML.
+		echo self::build( $events, Chess_Army_Knife_Settings::club_name(), (string) wp_parse_url( home_url(), PHP_URL_HOST ), time() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar text, escaped by escape_text(); not HTML.
 		exit;
 	}
 
@@ -118,13 +118,19 @@ class Chess_Army_Knife_Events_Feed {
 			foreach ( $event['tournaments'] as $tournament ) {
 				$description[] = $tournament['name'];
 			}
+			if ( ! empty( $event['map_url'] ) ) {
+				$description[] = $event['map_url'];
+			}
+			if ( ! empty( $event['what3words'] ) ) {
+				$description[] = '///' . $event['what3words'];
+			}
 			$team_label = Chess_Army_Knife_Events_Display::team_label( $event );
 			if ( '' !== $team_label ) {
 				array_unshift( $description, $team_label );
 			}
 
 			$lines[] = 'BEGIN:VEVENT';
-			$lines[] = 'UID:' . $event['id'] . '@' . $host;
+			$lines[] = 'UID:' . $event['id'] . '-' . gmdate( 'Ymd', $event['start_ts'] ) . '@' . $host; // A repeating event has an id for each occurrence.
 			$lines[] = 'DTSTAMP:' . gmdate( 'Ymd\THis\Z', $now );
 			$lines[] = 'DTSTART:' . gmdate( 'Ymd\THis\Z', $event['start_ts'] );
 			$lines[] = 'DTEND:' . gmdate( 'Ymd\THis\Z', $end_ts );
@@ -135,7 +141,9 @@ class Chess_Army_Knife_Events_Feed {
 			if ( $description ) {
 				$lines[] = 'DESCRIPTION:' . self::escape_text( implode( "\n", $description ) );
 			}
-			$lines[] = 'URL:' . $event['url'];
+			if ( '' !== $event['url'] ) {
+				$lines[] = 'URL:' . $event['url'];
+			}
 			$lines[] = 'END:VEVENT';
 		}
 

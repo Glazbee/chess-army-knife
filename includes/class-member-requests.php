@@ -147,7 +147,7 @@ class Chess_Army_Knife_Member_Requests {
 		set_transient( self::TOKEN_KEY . $token, $email, DAY_IN_SECONDS );
 
 		$link = add_query_arg( 'cak_withdraw', $token, $page_url ) . '#' . self::ANCHOR;
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$site = Chess_Army_Knife_Settings::club_name();
 
 		/* translators: %s: site name */
 		$subject = sprintf( __( '[%s] Your data choices', 'chess-army-knife' ), $site );
@@ -209,9 +209,6 @@ class Chess_Army_Knife_Member_Requests {
 					$update[ $column ] = $now; // Given again; an existing consent keeps its original time.
 				}
 			}
-			// Teams only go with a WhatsApp consent: withdrawing it clears them, and only the club's own teams are kept.
-			$wants_whatsapp           = in_array( $person['id'], $whatsapp, true );
-			$update['whatsapp_teams'] = $wants_whatsapp ? Chess_Army_Knife_Membership_Store::clean_teams( isset( $input['teams'][ $person['id'] ] ) ? $input['teams'][ $person['id'] ] : $person['whatsapp_teams'] ) : '';
 			Chess_Army_Knife_Membership_Store::save_member( $update );
 		}
 

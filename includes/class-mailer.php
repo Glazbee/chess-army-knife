@@ -167,7 +167,7 @@ class Chess_Army_Knife_Mailer {
 		$table = self::table();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE status = %s ORDER BY id ASC LIMIT %d", self::STATUS_QUEUED, self::batch_size() ), ARRAY_A );
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$site = Chess_Army_Knife_Settings::club_name();
 		$sent = 0;
 
 		foreach ( (array) $rows as $row ) {

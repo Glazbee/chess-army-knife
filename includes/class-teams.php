@@ -36,6 +36,7 @@ class Chess_Army_Knife_Teams {
 	const META_SEASONS = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
 	const META_LEAGUES = '_chess_army_team_leagues';
 	const META_COLOUR  = '_chess_army_team_colour';
+	const META_TAG     = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
 
 	/**
 	 * Hook up registration and cleanup.
@@ -136,7 +137,7 @@ class Chess_Army_Knife_Teams {
 	/**
 	 * The teams on offer, in their page order.
 	 *
-	 * @return array[] Each { id, name, description, venue, captain_id, colour, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
+	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
 		$posts = get_posts(
@@ -180,6 +181,7 @@ class Chess_Army_Knife_Teams {
 			'venue'       => (string) get_post_meta( $post->ID, self::META_VENUE, true ),
 			'captain_id'  => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
+			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -226,46 +228,6 @@ class Chess_Army_Knife_Teams {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * Names of the teams with the given ids, for showing choices.
-	 *
-	 * @param array $ids Team ids; anything that is no longer a team (or is an old team name) is shown as it is.
-	 * @return string[]
-	 */
-	public static function labels( array $ids ) {
-		$choices = self::choices();
-		$labels  = array();
-		foreach ( $ids as $id ) {
-			$labels[] = is_int( $id ) && isset( $choices[ $id ] ) ? $choices[ $id ] : (string) $id;
-		}
-		return $labels;
-	}
-
-	/**
-	 * Turn a stored list of teams into ids. Earlier versions stored team names:
-	 * a name that matches a team becomes its id, and one that does not is kept as it is.
-	 *
-	 * @param array $stored Stored list.
-	 * @return array Ids (int), and any names that matched no team.
-	 */
-	public static function normalise_ids( array $stored ) {
-		$by_name = null;
-		$out     = array();
-
-		foreach ( $stored as $item ) {
-			if ( is_int( $item ) || ( is_string( $item ) && ctype_digit( $item ) ) ) {
-				$out[] = (int) $item;
-				continue;
-			}
-			if ( null === $by_name ) {
-				$by_name = array_flip( array_map( 'strtolower', self::choices() ) );
-			}
-			$key   = strtolower( (string) $item );
-			$out[] = isset( $by_name[ $key ] ) ? (int) $by_name[ $key ] : (string) $item;
-		}
-		return array_values( array_unique( $out, SORT_REGULAR ) );
 	}
 
 	/**

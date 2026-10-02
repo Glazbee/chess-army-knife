@@ -53,6 +53,16 @@ class Chess_Army_Knife_Events_Display {
 	}
 
 	/**
+	 * Just the start time, as it shows in a calendar bubble: "7:30 pm".
+	 *
+	 * @param array $event Event data.
+	 * @return string
+	 */
+	public static function start_time_label( array $event ) {
+		return null === $event['start_ts'] ? '' : wp_date( get_option( 'time_format' ), $event['start_ts'] );
+	}
+
+	/**
 	 * Whether a fixture is home, away or between two of the club's own teams.
 	 *
 	 * @param array $event Event data.
@@ -120,19 +130,98 @@ class Chess_Army_Knife_Events_Display {
 	}
 
 	/**
-	 * The inline style that carries a fixture's team colour to its CSS.
+	 * The inline style that carries an event's colour to its CSS: its own colour or, if
+	 * it has none, its team's (which is only used beside the team's name).
 	 *
-	 * @param array $event Event data.
-	 * @return string ' style="..."' with a leading space, or '' if no team has a colour.
+	 * @param array $event     Event data.
+	 * @param bool  $use_teams Whether a team's colour may be used.
+	 * @return string ' style="..."' with a leading space, or '' if there is no colour.
 	 */
-	public static function colour_style( array $event ) {
-		foreach ( $event['teams'] as $team ) {
-			$colour = sanitize_hex_color( $team['colour'] );
-			if ( $colour ) {
-				return ' style="--cak-team-colour:' . esc_attr( $colour ) . '"';
+	public static function colour_style( array $event, $use_teams = true ) {
+		$colour = isset( $event['colour'] ) ? sanitize_hex_color( $event['colour'] ) : '';
+
+		if ( ! $colour && $use_teams && '' !== self::team_label( $event ) ) {
+			foreach ( $event['teams'] as $team ) {
+				$colour = sanitize_hex_color( $team['colour'] );
+				if ( $colour ) {
+					break;
+				}
 			}
 		}
-		return '';
+
+		// Then the colour of its first tag, which the key explains.
+		if ( ! $colour ) {
+			foreach ( $event['tags'] as $tag ) {
+				$colour = isset( $tag['colour'] ) ? sanitize_hex_color( $tag['colour'] ) : '';
+				if ( $colour ) {
+					break;
+				}
+			}
+		}
+
+		return $colour ? ' style="--cak-event-colour:' . esc_attr( $colour ) . '"' : '';
+	}
+
+	/**
+	 * The key to the colours: each tag in use, with its colour.
+	 *
+	 * @param string[] $tag_slugs Only these tags; none means every tag in use.
+	 * @return string Escaped HTML, or '' if no tag is in use.
+	 */
+	public static function key_html( array $tag_slugs = array() ) {
+		$args = array(
+			'taxonomy'   => Chess_Army_Knife_Events::TAXONOMY,
+			'hide_empty' => true,
+		);
+		if ( $tag_slugs ) {
+			$args['slug'] = $tag_slugs;
+		}
+
+		$terms = get_terms( $args );
+		if ( ! is_array( $terms ) || ! $terms ) {
+			return '';
+		}
+
+		$html = '<ul class="cak-key" aria-label="' . esc_attr__( 'Key to event colours', 'chess-army-knife' ) . '">';
+		foreach ( $terms as $term ) {
+			$html .= '<li class="cak-key__item" style="--cak-event-colour:' . esc_attr( Chess_Army_Knife_Events::tag_colour( $term ) ) . '"><span class="cak-bubble__dot" aria-hidden="true"></span> ' . esc_html( $term->name ) . '</li>';
+		}
+		return $html . '</ul>';
+	}
+
+	/**
+	 * An event's title, linked to its page if it has one.
+	 *
+	 * @param array $event Event data.
+	 * @return string Escaped HTML.
+	 */
+	public static function title_html( array $event ) {
+		return '' !== $event['url'] ? '<a href="' . esc_url( $event['url'] ) . '">' . esc_html( $event['title'] ) . '</a>' : esc_html( $event['title'] );
+	}
+
+	/**
+	 * An event's venue: its name, with links to it on a map and its what3words address.
+	 *
+	 * @param array $event Event data.
+	 * @return string Escaped HTML, or '' if the event has no venue.
+	 */
+	public static function location_html( array $event ) {
+		$map = isset( $event['map_url'] ) ? (string) $event['map_url'] : '';
+		$w3w = isset( $event['what3words'] ) ? (string) $event['what3words'] : '';
+		if ( '' === $event['location'] && '' === $map && '' === $w3w ) {
+			return '';
+		}
+
+		$html = '<p class="cak-event__location">' . esc_html( $event['location'] );
+		if ( '' !== $map ) {
+			/* translators: %s: venue name */
+			$label = '' !== $event['location'] ? sprintf( __( 'Map of %s', 'chess-army-knife' ), $event['location'] ) : __( 'Map of the venue', 'chess-army-knife' );
+			$html .= ( '' !== $event['location'] ? ' ' : '' ) . '<a class="cak-event__map" href="' . esc_url( $map ) . '" aria-label="' . esc_attr( $label ) . '">' . esc_html__( 'Map', 'chess-army-knife' ) . '</a>';
+		}
+		if ( '' !== $w3w ) {
+			$html .= ( '' !== $event['location'] || '' !== $map ? ' ' : '' ) . '<a class="cak-event__w3w" href="' . esc_url( 'https://what3words.com/' . rawurlencode( $w3w ) ) . '" aria-label="' . esc_attr( sprintf( /* translators: %s: three words */ __( 'what3words address %s', 'chess-army-knife' ), $w3w ) ) . '">///' . esc_html( $w3w ) . '</a>';
+		}
+		return $html . '</p>';
 	}
 
 	/**
@@ -150,8 +239,8 @@ class Chess_Army_Knife_Events_Display {
 			$html .= '<p class="cak-event__team">' . esc_html( $team_label ) . '</p>';
 		}
 
-		if ( ! empty( $options['show_location'] ) && '' !== $event['location'] ) {
-			$html .= '<p class="cak-event__location">' . esc_html( $event['location'] ) . '</p>';
+		if ( ! empty( $options['show_location'] ) ) {
+			$html .= self::location_html( $event );
 		}
 
 		if ( ! empty( $options['show_links'] ) ) {
@@ -313,7 +402,7 @@ class Chess_Army_Knife_Events_Display {
 	}
 
 	/**
-	 * A day's events as a list.
+	 * A day's events as a list of bubbles.
 	 *
 	 * @param array[] $day_events Events on the day.
 	 * @param array   $options    show_location and show_teams flags.
@@ -326,16 +415,43 @@ class Chess_Army_Knife_Events_Display {
 
 		$html = '<ul class="cak-month__events">';
 		foreach ( $day_events as $event ) {
-			$team     = ! empty( $options['show_teams'] ) ? self::team_label( $event ) : '';
-			$location = ! empty( $options['show_location'] ) ? (string) $event['location'] : '';
-			// The team colour only ever comes with the team's name, so colour is never the only clue.
-			$colour = '' !== $team ? self::colour_style( $event ) : '';
-			$html  .= '<li class="cak-month__event"' . $colour . '><span class="cak-month__time">' . esc_html( self::time_label( $event ) ) . '</span> '
-				. '<a href="' . esc_url( $event['url'] ) . '">' . esc_html( $event['title'] ) . '</a>'
-				. ( '' !== $team ? ' <span class="cak-month__team">' . esc_html( $team ) . '</span>' : '' )
-				. ( '' !== $location ? ' <span class="cak-month__location">' . esc_html( $location ) . '</span>' : '' ) . '</li>';
+			$html .= '<li class="cak-month__event"' . self::colour_style( $event, ! empty( $options['show_teams'] ) ) . '>' . self::bubble_html( $event, $options ) . '</li>';
 		}
 		return $html . '</ul>';
+	}
+
+	/**
+	 * One event as a bubble, like Google Calendar's: its start time and title on one line.
+	 * Selecting it opens a panel with the rest. It is a details element, so it works
+	 * without scripts and is announced as expandable; view.js only tidies it up.
+	 *
+	 * @param array $event   Event data.
+	 * @param array $options show_location and show_teams flags.
+	 * @return string Escaped HTML.
+	 */
+	public static function bubble_html( array $event, array $options ) {
+		$when = trim( self::date_label( $event ) . ', ' . self::time_label( $event ), ' ,' );
+
+		$html  = '<details class="cak-bubble"><summary class="cak-bubble__summary">';
+		$html .= '<span class="cak-bubble__dot" aria-hidden="true"></span>';
+		$html .= '<span class="cak-bubble__time">' . esc_html( self::start_time_label( $event ) ) . '</span> ';
+		$html .= '<span class="cak-bubble__title">' . esc_html( $event['title'] ) . '</span>';
+		$html .= '</summary><div class="cak-bubble__panel">';
+		$html .= '<p class="cak-bubble__name">' . esc_html( $event['title'] ) . '</p>';
+		$html .= '<p class="cak-bubble__when">' . esc_html( $when ) . '</p>';
+		$html .= self::details_html(
+			$event,
+			array(
+				'show_location' => ! empty( $options['show_location'] ),
+				'show_teams'    => ! empty( $options['show_teams'] ),
+				'show_links'    => true,
+				'show_tags'     => true,
+			)
+		);
+		if ( '' !== $event['url'] ) {
+			$html .= '<p class="cak-bubble__more"><a href="' . esc_url( $event['url'] ) . '">' . esc_html__( 'More about this event', 'chess-army-knife' ) . '</a></p>';
+		}
+		return $html . '</div></details>';
 	}
 
 	/**

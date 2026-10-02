@@ -81,7 +81,6 @@ class Chess_Army_Knife_Membership_Store {
 			consent_at DATETIME NULL,
 			newsletter_consent_at DATETIME NULL,
 			whatsapp_consent_at DATETIME NULL,
-			whatsapp_teams TEXT NULL,
 			renewal_reminder VARCHAR(24) NOT NULL DEFAULT '',
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
@@ -221,8 +220,6 @@ class Chess_Army_Knife_Membership_Store {
 			// Optional extras, each agreed separately; blank means not agreed.
 			'newsletter_consent_at' => ! empty( $input['newsletter'] ) ? $now : null,
 			'whatsapp_consent_at'   => ! empty( $input['whatsapp'] ) ? $now : null,
-			// Which teams' groups, only for someone who agreed to WhatsApp, and only teams the club has.
-			'whatsapp_teams'        => ! empty( $input['whatsapp'] ) ? self::clean_teams( isset( $input['whatsapp_teams'] ) ? $input['whatsapp_teams'] : array() ) : '',
 		);
 
 		if ( ! $is_admin ) {
@@ -277,26 +274,6 @@ class Chess_Army_Knife_Membership_Store {
 	 */
 	public static function contact_email( array $member ) {
 		return '' !== $member['email'] ? $member['email'] : $member['guardian_email'];
-	}
-
-	/**
-	 * Keep only the teams the club has, as the text stored for them.
-	 *
-	 * @param mixed $submitted Team ids ticked on a form.
-	 * @return string JSON list of team ids, or '' for none.
-	 */
-	public static function clean_teams( $submitted ) {
-		$allowed = array_keys( Chess_Army_Knife_Teams::choices() );
-		$teams   = array();
-
-		foreach ( (array) $submitted as $team ) {
-			$team = absint( $team );
-			if ( in_array( $team, $allowed, true ) ) {
-				$teams[ $team ] = $team;
-			}
-		}
-
-		return $teams ? wp_json_encode( array_values( $teams ) ) : '';
 	}
 
 	/**
@@ -624,6 +601,11 @@ class Chess_Army_Knife_Membership_Store {
 			return $row['id'];
 		}
 
+		// Someone who asked to be deleted is not recorded again by accident.
+		if ( Chess_Army_Knife_Do_Not_Record::is_blocked( $ecf_code, $name ) ) {
+			return 0;
+		}
+
 		return self::add_guest(
 			array(
 				'name'          => $name,
@@ -647,6 +629,11 @@ class Chess_Army_Knife_Membership_Store {
 		$existing = self::find_by_ecf_code( $ecf_code );
 		if ( $existing ) {
 			return $existing['id'];
+		}
+
+		// Nothing is fetched about someone the club was asked not to record.
+		if ( Chess_Army_Knife_Do_Not_Record::is_blocked( $ecf_code, '' ) ) {
+			return new WP_Error( 'do_not_record', __( 'The club was asked not to record this person.', 'chess-army-knife' ) );
 		}
 
 		$player = Chess_Army_Knife_ECF_Client::get_player_by_code( $ecf_code, false );
@@ -958,18 +945,26 @@ class Chess_Army_Knife_Membership_Store {
 	/**
 	 * Erase a person's details. A record with a payment on it is kept without
 	 * the person's details, because the club may need to keep its accounts, and
-	 * so is one tagged in photos or entered in a tournament, so those photos can
-	 * still be found and reviewed and the tournament still adds up; any other
-	 * record is deleted.
+	 * so is one tagged in photos, so those photos can still be found and reviewed;
+	 * any other record is deleted. Tournament entries keep the person's name as a
+	 * historical record but are unlinked from the record.
 	 *
-	 * @param int $id Member id.
+	 * @param int  $id            Member id.
+	 * @param bool $do_not_record Also remember not to record this person again (see Chess_Army_Knife_Do_Not_Record).
 	 * @return string 'deleted', 'anonymised', or '' if there is no such member.
 	 */
-	public static function erase_member( $id ) {
+	public static function erase_member( $id, $do_not_record = false ) {
 		$member = self::get_member( $id );
 		if ( ! $member ) {
 			return '';
 		}
+
+		if ( $do_not_record ) {
+			Chess_Army_Knife_Do_Not_Record::add( $member['ecf_code'], $member['name'] );
+		}
+
+		// Tournament results keep the name, as a historical record, but no longer lead to this person.
+		Chess_Army_Knife_Tournament_Store::unlink_person( $id, $member['name'] );
 
 		// A record is kept, without personal details, while it has a payment on it or is tagged
 		// in photos: the photos may show other people, so someone has to review them by hand.
@@ -980,7 +975,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Selection::remove_person( $id );
 		Chess_Army_Knife_Member_History::remove_person( $id );
 
-		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) && ! Chess_Army_Knife_Tournament_Store::person_has_entries( $id ) && ! Chess_Army_Knife_Event_Registrations::person_has_registrations( $id ) ) {
+		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
 		}
@@ -1004,7 +999,6 @@ class Chess_Army_Knife_Membership_Store {
 				'consent_at'            => null,
 				'newsletter_consent_at' => null,
 				'whatsapp_consent_at'   => null,
-				'whatsapp_teams'        => '',
 				'renewal_reminder'      => '',
 			)
 		);
@@ -1022,7 +1016,6 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		Chess_Army_Knife_Teams::remove_person( $id );
-		Chess_Army_Knife_Event_Registrations::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
 		Chess_Army_Knife_Member_History::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
@@ -1042,8 +1035,6 @@ class Chess_Army_Knife_Membership_Store {
 		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
 		$row['ecf_checked_at']     = null === $row['ecf_checked_at'] ? '' : (string) $row['ecf_checked_at'];
-		$teams                     = json_decode( (string) $row['whatsapp_teams'], true );
-		$row['whatsapp_teams']     = is_array( $teams ) ? Chess_Army_Knife_Teams::normalise_ids( $teams ) : array();
 
 		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];

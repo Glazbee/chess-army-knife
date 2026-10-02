@@ -48,16 +48,17 @@ class Chess_Army_Knife_Settings {
 	 */
 	public static function defaults() {
 		return array(
+			'club_name'                 => '', // The club's name; the site's title is used until it is set.
+			'club_venue_map'            => '', // Link to the venue on a map.
+			'club_venue_w3w'            => '', // The venue's what3words address.
+			'club_venue'                => '', // Where the club meets: used by club events that don't set their own location.
 			'default_org_id'            => '',
-			'default_event_name'        => '',
 			'default_domain'            => 'S',
 			'ecf_club_code'             => '', // The club's ECF code, to refresh all members' ratings in one request.
 			'default_days_back'         => 60,
 			'default_max_players'       => 12,
-			'lms_base_url'              => '',
-			'default_event_location'    => '', // Used by club events that don't set their own.
+			'lms_api_key'               => '', // Key for the LMS v2 API, used by Import Events.
 			'membership_payment_info'   => '', // How to pay for a membership (bank details, cash at the club...).
-			'data_contact_email'        => '', // Shown in the data policy as who to contact about personal data.
 			'member_retention_months'   => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
 			'renewal_reminders_enabled' => 0, // Email members as their membership runs out.
 			'renewal_reminder_days'     => '30,7,0,-7', // Days before (positive) or after (negative) the last day of membership.
@@ -70,9 +71,6 @@ class Chess_Army_Knife_Settings {
 			'cache_lms_minutes'         => 30,  // League tables / matches / fixtures.
 			'use_local_cache'           => 1,   // Persistent custom-table cache vs. plain transients.
 			'delete_data_on_uninstall'  => 0, // Also delete tournaments and players when the plugin is deleted.
-			'safeguarding_officer'      => '', // Named in the safeguarding policy's starting text.
-			'safeguarding_email'        => '', // How to reach them, in the same text.
-			'safeguarding_phone'        => '',
 			'heading_level'             => 2, // Level of each block's main title, 1 to 5; its sub-headings follow.
 			'contrast_mode'             => 'device', // High contrast for the blocks: 'off', 'device' (follow the visitor's device) or 'always'.
 		);
@@ -217,6 +215,51 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
+	 * The rating lists a club can show.
+	 *
+	 * @return string[] ECF rating domain code => label.
+	 */
+	public static function rating_domains() {
+		return array(
+			'S'  => __( 'Standard (OTB)', 'chess-army-knife' ),
+			'R'  => __( 'Rapid (OTB)', 'chess-army-knife' ),
+			'B'  => __( 'Blitz (OTB)', 'chess-army-knife' ),
+			'SW' => __( 'Online Standard', 'chess-army-knife' ),
+			'RW' => __( 'Online Rapid', 'chess-army-knife' ),
+			'BW' => __( 'Online Blitz', 'chess-army-knife' ),
+		);
+	}
+
+	/**
+	 * Change some settings and keep the rest. The values are cleaned as on the Settings screen.
+	 *
+	 * @param array $changes Setting => new value.
+	 */
+	public static function save( array $changes ) {
+		update_option( self::OPTION, self::sanitize( array_merge( self::get_options(), $changes ) ) );
+	}
+
+	/**
+	 * A number of months to keep old membership records.
+	 *
+	 * @param mixed $months Raw value.
+	 * @return int 0 to 120; 0 keeps them until deleted by hand.
+	 */
+	public static function clean_retention_months( $months ) {
+		return max( 0, min( 120, (int) $months ) );
+	}
+
+	/**
+	 * The club's name: the one set in Settings, or the site's title until then.
+	 *
+	 * @return string
+	 */
+	public static function club_name() {
+		$name = trim( (string) self::get_options()['club_name'] );
+		return '' !== $name ? $name : wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+	}
+
+	/**
 	 * Sanitize the settings form submission.
 	 *
 	 * @param array $input Raw form input.
@@ -225,11 +268,20 @@ class Chess_Army_Knife_Settings {
 	public static function sanitize( $input ) {
 		$clean = self::defaults();
 
+		if ( isset( $input['club_name'] ) ) {
+			$clean['club_name'] = sanitize_text_field( $input['club_name'] );
+		}
+		if ( isset( $input['club_venue_map'] ) ) {
+			$clean['club_venue_map'] = Chess_Army_Knife_Events::clean_map_url( $input['club_venue_map'] );
+		}
+		if ( isset( $input['club_venue_w3w'] ) ) {
+			$clean['club_venue_w3w'] = Chess_Army_Knife_Events::clean_what3words( $input['club_venue_w3w'] );
+		}
+		if ( isset( $input['club_venue'] ) ) {
+			$clean['club_venue'] = sanitize_text_field( $input['club_venue'] );
+		}
 		if ( isset( $input['default_org_id'] ) ) {
 			$clean['default_org_id'] = preg_replace( '/[^0-9]/', '', $input['default_org_id'] );
-		}
-		if ( isset( $input['default_event_name'] ) ) {
-			$clean['default_event_name'] = sanitize_text_field( $input['default_event_name'] );
 		}
 		if ( isset( $input['ecf_club_code'] ) ) {
 			$clean['ecf_club_code'] = strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', sanitize_text_field( $input['ecf_club_code'] ) ) );
@@ -243,27 +295,11 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['default_max_players'] ) ) {
 			$clean['default_max_players'] = max( 1, (int) $input['default_max_players'] );
 		}
-		if ( isset( $input['default_event_location'] ) ) {
-			$clean['default_event_location'] = sanitize_text_field( $input['default_event_location'] );
-		}
 		if ( isset( $input['membership_payment_info'] ) ) {
 			$clean['membership_payment_info'] = sanitize_textarea_field( $input['membership_payment_info'] );
 		}
-		if ( isset( $input['data_contact_email'] ) ) {
-			$clean['data_contact_email'] = sanitize_email( $input['data_contact_email'] );
-		}
-		if ( isset( $input['safeguarding_officer'] ) ) {
-			$clean['safeguarding_officer'] = sanitize_text_field( $input['safeguarding_officer'] );
-		}
-		if ( isset( $input['safeguarding_phone'] ) ) {
-			$clean['safeguarding_phone'] = sanitize_text_field( $input['safeguarding_phone'] );
-		}
-		if ( isset( $input['safeguarding_email'] ) ) {
-			$clean['safeguarding_email'] = sanitize_email( $input['safeguarding_email'] );
-		}
-		if ( isset( $input['member_retention_months'] ) ) {
-			$clean['member_retention_months'] = max( 0, min( 120, (int) $input['member_retention_months'] ) );
-		}
+		// Set on the Policies screen, so it is kept unless submitted here.
+		$clean['member_retention_months']   = isset( $input['member_retention_months'] ) ? self::clean_retention_months( $input['member_retention_months'] ) : (int) self::get_options()['member_retention_months'];
 		$clean['renewal_reminders_enabled'] = ! empty( $input['renewal_reminders_enabled'] ) ? 1 : 0;
 		if ( isset( $input['renewal_reminder_days'] ) ) {
 			$clean['renewal_reminder_days'] = implode( ',', Chess_Army_Knife_Renewal_Reminders::parse_schedule( sanitize_text_field( $input['renewal_reminder_days'] ) ) );
@@ -274,8 +310,8 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['renewal_reminder_message'] ) ) {
 			$clean['renewal_reminder_message'] = sanitize_textarea_field( $input['renewal_reminder_message'] );
 		}
-		if ( isset( $input['lms_base_url'] ) ) {
-			$clean['lms_base_url'] = esc_url_raw( trim( $input['lms_base_url'] ) );
+		if ( isset( $input['lms_api_key'] ) ) {
+			$clean['lms_api_key'] = sanitize_text_field( $input['lms_api_key'] );
 		}
 		// The old free-text team list no longer has a field on this page;
 		// keep whatever was stored so the one-off migration into the Club
@@ -350,50 +386,45 @@ class Chess_Army_Knife_Settings {
 			<form method="post" action="options.php">
 				<?php settings_fields( 'Chess_Army_Knife' ); ?>
 
-				<h2><?php esc_html_e( 'Accessibility', 'chess-army-knife' ); ?></h2>
+				<h2><?php esc_html_e( 'Your club', 'chess-army-knife' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="heading_level"><?php esc_html_e( 'Heading level for block titles', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="club_name"><?php esc_html_e( 'Club name', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<select id="heading_level" name="<?php echo esc_attr( self::OPTION ); ?>[heading_level]">
-								<?php for ( $level = 1; $level <= 5; $level++ ) : ?>
-									<option value="<?php echo (int) $level; ?>" <?php selected( (int) $options['heading_level'], $level ); ?>><?php echo esc_html( 'H' . $level ); ?></option>
-								<?php endfor; ?>
-							</select>
-							<p class="description"><?php esc_html_e( 'Each block\'s title is a heading, so people using a screen reader can move around the page. Choose the level that fits under your page title: use H2 if the page title is an H1. Headings inside a block go one level below this.', 'chess-army-knife' ); ?></p>
+							<input type="text" id="club_name" name="<?php echo esc_attr( self::OPTION ); ?>[club_name]" value="<?php echo esc_attr( $options['club_name'] ); ?>" class="regular-text" placeholder="<?php echo esc_attr( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) ); ?>" />
+							<p class="description"><?php esc_html_e( 'Used in emails, policies and anywhere the club\'s name is shown. Leave blank to use the site title.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="contrast_mode"><?php esc_html_e( 'High contrast', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="club_venue"><?php esc_html_e( 'Club venue', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<select id="contrast_mode" name="<?php echo esc_attr( self::OPTION ); ?>[contrast_mode]">
-								<option value="device" <?php selected( $options['contrast_mode'], 'device' ); ?>><?php esc_html_e( 'Follow the visitor\'s device (recommended)', 'chess-army-knife' ); ?></option>
-								<option value="always" <?php selected( $options['contrast_mode'], 'always' ); ?>><?php esc_html_e( 'Always on', 'chess-army-knife' ); ?></option>
-								<option value="off" <?php selected( $options['contrast_mode'], 'off' ); ?>><?php esc_html_e( 'Off', 'chess-army-knife' ); ?></option>
-							</select>
-							<p class="description"><?php esc_html_e( 'High contrast shows the plugin\'s blocks in black on white with underlined links and solid borders. It applies to the plugin\'s blocks only, not the rest of your theme. "Follow the visitor\'s device" uses it for people who have asked their device for more contrast.', 'chess-army-knife' ); ?></p>
+							<input type="text" id="club_venue" name="<?php echo esc_attr( self::OPTION ); ?>[club_venue]" value="<?php echo esc_attr( $options['club_venue'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. The Village Hall, High Street', 'chess-army-knife' ); ?>" />
+							<p class="description"><?php esc_html_e( 'Where the club meets. A club event with no location of its own is held here.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="club_venue_map"><?php esc_html_e( 'Venue on a map', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="url" id="club_venue_map" name="<?php echo esc_attr( self::OPTION ); ?>[club_venue_map]" value="<?php echo esc_attr( $options['club_venue_map'] ); ?>" class="regular-text" placeholder="https://maps.app.goo.gl/..." />
+							<p class="description"><?php esc_html_e( 'A Google Maps (or similar) link to the venue. Shown beside the venue on events.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="club_venue_w3w"><?php esc_html_e( 'Venue what3words address', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="club_venue_w3w" name="<?php echo esc_attr( self::OPTION ); ?>[club_venue_w3w]" value="<?php echo esc_attr( $options['club_venue_w3w'] ); ?>" class="regular-text" placeholder="index.home.raft" />
+							<p class="description"><?php esc_html_e( 'The three words for the venue\'s entrance, for example index.home.raft. You can paste it with or without the ///.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'Global defaults', 'chess-army-knife' ); ?></h2>
-				<p class="description">
-					<?php esc_html_e( 'Set these once and leave the matching field blank in a block to use them automatically. Any block can still override a default individually.', 'chess-army-knife' ); ?>
-				</p>
+				<h2><?php esc_html_e( 'ECF ratings', 'chess-army-knife' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="default_org_id"><?php esc_html_e( 'Default LMS organisation ID', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="ecf_club_code"><?php esc_html_e( 'ECF club code', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="text" id="default_org_id" name="<?php echo esc_attr( self::OPTION ); ?>[default_org_id]" value="<?php echo esc_attr( $options['default_org_id'] ); ?>" class="regular-text" placeholder="e.g. 613" />
-							<p class="description">
-								<?php esc_html_e( 'The numeric ID at the end of your league\'s LMS homepage URL, e.g. lms.englishchess.org.uk/lms/organisation/613 → 613. Used by "League Standings" and "Team Carousel" blocks when left blank.', 'chess-army-knife' ); ?>
-							</p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="default_event_name"><?php esc_html_e( 'Default event/division name', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="text" id="default_event_name" name="<?php echo esc_attr( self::OPTION ); ?>[default_event_name]" value="<?php echo esc_attr( $options['default_event_name'] ); ?>" class="regular-text" placeholder="e.g. Division 1" />
+							<input type="text" id="ecf_club_code" name="<?php echo esc_attr( self::OPTION ); ?>[ecf_club_code]" value="<?php echo esc_attr( $options['ecf_club_code'] ); ?>" class="regular-text" placeholder="e.g. 4USL" />
+							<p class="description"><?php esc_html_e( 'Your club\'s ECF code. Members\' ratings are then refreshed from the ECF\'s club list in a single request instead of one request per member. Only ratings of people already on your records are kept; the rest of the list is not stored.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -401,14 +432,7 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<select id="default_domain" name="<?php echo esc_attr( self::OPTION ); ?>[default_domain]">
 								<?php
-								$domains = array(
-									'S'  => __( 'Standard (OTB)', 'chess-army-knife' ),
-									'R'  => __( 'Rapid (OTB)', 'chess-army-knife' ),
-									'B'  => __( 'Blitz (OTB)', 'chess-army-knife' ),
-									'SW' => __( 'Online Standard', 'chess-army-knife' ),
-									'RW' => __( 'Online Rapid', 'chess-army-knife' ),
-									'BW' => __( 'Online Blitz', 'chess-army-knife' ),
-								);
+								$domains = self::rating_domains();
 								foreach ( $domains as $value => $label ) {
 									printf(
 										'<option value="%1$s" %2$s>%3$s</option>',
@@ -422,71 +446,49 @@ class Chess_Army_Knife_Settings {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="ecf_club_code"><?php esc_html_e( 'ECF club code', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="text" id="ecf_club_code" name="<?php echo esc_attr( self::OPTION ); ?>[ecf_club_code]" value="<?php echo esc_attr( $options['ecf_club_code'] ); ?>" class="regular-text" placeholder="e.g. 4USL" />
-							<p class="description"><?php esc_html_e( 'Your club\'s ECF code. Members\' ratings are then refreshed from the ECF\'s club list in a single request instead of one request per member. Only ratings of people already on your records are kept; the rest of the list is not stored.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="default_days_back"><?php esc_html_e( 'Default "days to look back"', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="default_days_back"><?php esc_html_e( 'Days to look back', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="number" min="1" id="default_days_back" name="<?php echo esc_attr( self::OPTION ); ?>[default_days_back]" value="<?php echo esc_attr( $options['default_days_back'] ); ?>" class="small-text" />
-							<p class="description"><?php esc_html_e( 'Used by "Club Results" and "Biggest Gainers".', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'How far back the Club Results and Biggest Gainers blocks look for games. A block can set its own.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="default_max_players"><?php esc_html_e( 'Default "players checked from roster"', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="default_max_players"><?php esc_html_e( 'Members to check', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="number" min="1" id="default_max_players" name="<?php echo esc_attr( self::OPTION ); ?>[default_max_players]" value="<?php echo esc_attr( $options['default_max_players'] ); ?>" class="small-text" />
+							<p class="description"><?php esc_html_e( 'The most club members (with an ECF code) the Club Results and Biggest Gainers blocks look up. Each one is a separate request to the ECF, so keep it modest for a large club. A block can set its own.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'League Management System (LMS)', 'chess-army-knife' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Each team\'s league is set on the team, under Teams. The organisation ID below is only used by League Standings and Team Fixtures blocks that do not set their own.', 'chess-army-knife' ); ?></p>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="default_org_id"><?php esc_html_e( 'LMS organisation ID', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="default_org_id" name="<?php echo esc_attr( self::OPTION ); ?>[default_org_id]" value="<?php echo esc_attr( $options['default_org_id'] ); ?>" class="regular-text" placeholder="e.g. 613" />
+							<p class="description">
+								<?php esc_html_e( 'The numeric ID at the end of your league\'s LMS homepage URL, e.g. lms.englishchess.org.uk/lms/organisation/613 → 613. Used by "League Standings" and "Team Carousel" blocks when left blank.', 'chess-army-knife' ); ?>
+							</p>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="default_event_location"><?php esc_html_e( 'Default event location', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="lms_api_key"><?php esc_html_e( 'LMS API key', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="text" id="default_event_location" name="<?php echo esc_attr( self::OPTION ); ?>[default_event_location]" value="<?php echo esc_attr( $options['default_event_location'] ); ?>" class="regular-text" placeholder="e.g. The Village Hall, High Street" />
-							<p class="description"><?php esc_html_e( 'Where club events are usually held. A club event that has no location of its own uses this.', 'chess-army-knife' ); ?></p>
+							<input type="password" id="lms_api_key" name="<?php echo esc_attr( self::OPTION ); ?>[lms_api_key]" value="<?php echo esc_attr( $options['lms_api_key'] ); ?>" class="regular-text" autocomplete="off" />
+							<p class="description"><?php esc_html_e( 'Needed to import fixtures into Club Events. Create a key on your LMS account\'s "API keys" page; it can see the same data you can.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Membership', 'chess-army-knife' ); ?></h2>
+				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="membership_payment_info"><?php esc_html_e( 'How to pay for membership', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<textarea id="membership_payment_info" name="<?php echo esc_attr( self::OPTION ); ?>[membership_payment_info]" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'e.g. Bank transfer to Any Chess Club, sort code 00-00-00, account 12345678, quoting your reference. Or pay cash at the club.', 'chess-army-knife' ); ?>"><?php echo esc_textarea( $options['membership_payment_info'] ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="safeguarding_officer"><?php esc_html_e( 'Safeguarding officer', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="text" id="safeguarding_officer" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_officer]" value="<?php echo esc_attr( $options['safeguarding_officer'] ); ?>" class="regular-text" />
-							<p class="description"><?php esc_html_e( 'Written into the starting text of the safeguarding policy page. Change it later by editing the page.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="safeguarding_email"><?php esc_html_e( 'Safeguarding contact email', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="email" id="safeguarding_email" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_email]" value="<?php echo esc_attr( $options['safeguarding_email'] ); ?>" class="regular-text" />
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="safeguarding_phone"><?php esc_html_e( 'Safeguarding contact phone', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="text" id="safeguarding_phone" name="<?php echo esc_attr( self::OPTION ); ?>[safeguarding_phone]" value="<?php echo esc_attr( $options['safeguarding_phone'] ); ?>" class="regular-text" />
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="data_contact_email"><?php esc_html_e( 'Data protection contact', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="email" id="data_contact_email" name="<?php echo esc_attr( self::OPTION ); ?>[data_contact_email]" value="<?php echo esc_attr( $options['data_contact_email'] ); ?>" class="regular-text" />
-							<p class="description"><?php esc_html_e( 'Written into the starting text of the club data policy page as who to contact to see, correct or delete personal details. Use a club address rather than a personal one.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="member_retention_months"><?php esc_html_e( 'Keep old membership records for', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="number" min="0" max="120" id="member_retention_months" name="<?php echo esc_attr( self::OPTION ); ?>[member_retention_months]" value="<?php echo esc_attr( $options['member_retention_months'] ); ?>" class="small-text" />
-							<?php esc_html_e( 'months', 'chess-army-knife' ); ?>
-							<p class="description"><?php esc_html_e( 'Members whose membership ended, and applications that were declined, cancelled or never approved, are deleted automatically this long after. A record with a payment on it is kept for your accounts, but its personal details are removed. Enter 0 to keep everything until you delete it yourself. Current members are never removed.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -518,15 +520,34 @@ class Chess_Army_Knife_Settings {
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'Advanced', 'chess-army-knife' ); ?></h2>
+				<h2><?php esc_html_e( 'Accessibility', 'chess-army-knife' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="lms_base_url"><?php esc_html_e( 'LMS API base URL override', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="heading_level"><?php esc_html_e( 'Heading level for block titles', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="text" id="lms_base_url" name="<?php echo esc_attr( self::OPTION ); ?>[lms_base_url]" value="<?php echo esc_attr( $options['lms_base_url'] ); ?>" class="regular-text" placeholder="https://lms.englishchess.org.uk/lms/lmsrest/league" />
-							<p class="description"><?php esc_html_e( 'Only needed if the ECF changes their LMS API host again. Leave blank to use the built-in default (with an automatic fallback to the legacy host if needed).', 'chess-army-knife' ); ?></p>
+							<select id="heading_level" name="<?php echo esc_attr( self::OPTION ); ?>[heading_level]">
+								<?php for ( $level = 1; $level <= 5; $level++ ) : ?>
+									<option value="<?php echo (int) $level; ?>" <?php selected( (int) $options['heading_level'], $level ); ?>><?php echo esc_html( 'H' . $level ); ?></option>
+								<?php endfor; ?>
+							</select>
+							<p class="description"><?php esc_html_e( 'Each block\'s title is a heading, so people using a screen reader can move around the page. Choose the level that fits under your page title: use H2 if the page title is an H1. Headings inside a block go one level below this.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
+					<tr>
+						<th scope="row"><label for="contrast_mode"><?php esc_html_e( 'High contrast', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<select id="contrast_mode" name="<?php echo esc_attr( self::OPTION ); ?>[contrast_mode]">
+								<option value="device" <?php selected( $options['contrast_mode'], 'device' ); ?>><?php esc_html_e( 'Follow the visitor\'s device (recommended)', 'chess-army-knife' ); ?></option>
+								<option value="always" <?php selected( $options['contrast_mode'], 'always' ); ?>><?php esc_html_e( 'Always on', 'chess-army-knife' ); ?></option>
+								<option value="off" <?php selected( $options['contrast_mode'], 'off' ); ?>><?php esc_html_e( 'Off', 'chess-army-knife' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'High contrast shows the plugin\'s blocks in black on white with underlined links and solid borders. It applies to the plugin\'s blocks only, not the rest of your theme. "Follow the visitor\'s device" uses it for people who have asked their device for more contrast.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Advanced', 'chess-army-knife' ); ?></h2>
+				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Persistent local cache', 'chess-army-knife' ); ?></th>
 						<td>

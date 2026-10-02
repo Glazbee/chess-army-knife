@@ -52,44 +52,6 @@ class PoliciesTest extends WP_UnitTestCase {
 		$this->assertNotNull( Chess_Army_Knife_Policies::page( 'safeguarding' ) );
 	}
 
-	public function test_the_details_asked_for_are_saved_in_settings_and_used_in_the_text() {
-		Chess_Army_Knife_Policies::set_up(
-			'safeguarding',
-			true,
-			array(
-				'safeguarding_officer' => 'Sam Example',
-				'safeguarding_email'   => 'safe@club.test',
-				'safeguarding_phone'   => '07700 900123',
-			)
-		);
-
-		$options = Chess_Army_Knife_Settings::get_options();
-		$this->assertSame( 'Sam Example', $options['safeguarding_officer'] );
-		$this->assertSame( '07700 900123', $options['safeguarding_phone'] );
-		$content = Chess_Army_Knife_Policies::page( 'safeguarding' )->post_content;
-		$this->assertStringContainsString( 'Sam Example', $content );
-		$this->assertStringContainsString( 'Email address: safe@club.test', $content );
-		$this->assertStringContainsString( 'Phone number: 07700 900123', $content );
-	}
-
-	public function test_saving_the_details_keeps_the_rest_of_the_settings() {
-		update_option(
-			'Chess_Army_Knife_settings',
-			array(
-				'use_local_cache'     => 0,
-				'default_org_id'      => '613',
-				'default_max_players' => 20,
-			)
-		);
-
-		Chess_Army_Knife_Policies::set_up( 'data', true, array( 'data_contact_email' => 'secretary@club.test' ) );
-
-		$options = Chess_Army_Knife_Settings::get_options();
-		$this->assertSame( '613', $options['default_org_id'] );
-		$this->assertSame( 20, $options['default_max_players'] );
-		$this->assertSame( 'secretary@club.test', $options['data_contact_email'] );
-	}
-
 	public function test_a_new_policy_is_not_finished_until_it_has_been_marked_as_reviewed() {
 		self::all_set_up();
 		$this->assertSame( 'review', Chess_Army_Knife_Policies::status( 'data' ) );
@@ -258,53 +220,54 @@ class PoliciesTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<a href="' . get_permalink( $page->ID ) . '">Club data policy</a>', do_shortcode( '[chess_army_policy_link policy=data]' ) );
 	}
 
-	public function test_the_data_policy_starts_from_the_settings() {
+	public function test_the_data_policy_starts_from_the_retention_period() {
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
 				'use_local_cache'         => 0,
 				'member_retention_months' => 18,
-				'data_contact_email'      => 'secretary@club.test',
 			)
 		);
 
 		$text = Chess_Army_Knife_Policies::content( 'data' );
 
 		$this->assertStringContainsString( 'for 18 months afterwards', $text );
-		$this->assertStringContainsString( 'secretary@club.test', $text );
+		$this->assertStringContainsString( '[add an email address]', $text, 'The contact is left for the club to write.' );
 	}
 
-	public function test_the_safeguarding_policy_names_the_officer_or_leaves_a_gap_to_fill() {
-		$this->assertStringContainsString( '[add the name of your safeguarding officer]', Chess_Army_Knife_Policies::content( 'safeguarding' ) );
+	public function test_the_safeguarding_policy_leaves_the_officers_details_to_fill_in() {
+		$text = Chess_Army_Knife_Policies::content( 'safeguarding' );
 
+		$this->assertStringContainsString( '[add the name of your safeguarding officer]', $text );
+		$this->assertStringContainsString( '[add their email address]', $text );
+		$this->assertStringContainsString( '[add their phone number]', $text );
+	}
+
+	public function test_the_club_name_is_used_in_the_safeguarding_policy() {
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
-				'use_local_cache'      => 0,
-				'safeguarding_officer' => 'Sam Example',
-				'safeguarding_email'   => 'safe@club.test',
+				'use_local_cache' => 0,
+				'club_name'       => 'Central Birmingham Chess Club',
 			)
 		);
-		$text = Chess_Army_Knife_Policies::content( 'safeguarding' );
 
-		$this->assertStringContainsString( 'Sam Example', $text );
-		$this->assertStringContainsString( 'safe@club.test', $text );
-		$this->assertStringNotContainsString( '[add the name', $text );
+		$this->assertStringContainsString( 'Central Birmingham Chess Club (the Club)', Chess_Army_Knife_Policies::content( 'safeguarding' ) );
+	}
+
+	public function test_the_retention_period_is_set_on_the_policies_screen_and_kept_when_settings_are_saved() {
+		Chess_Army_Knife_Policies::set_retention_months( '36' );
+		$this->assertSame( 36, Chess_Army_Knife_Settings::get_options()['member_retention_months'] );
+
+		Chess_Army_Knife_Policies::set_retention_months( '9999' );
+		$this->assertSame( 120, Chess_Army_Knife_Settings::get_options()['member_retention_months'] );
+
+		$clean = Chess_Army_Knife_Settings::sanitize( array( 'club_name' => 'Our Club' ) );
+		$this->assertSame( 120, $clean['member_retention_months'], 'Saving Settings does not reset it.' );
 	}
 
 	public function test_the_safeguarding_policy_explains_the_word_safeguarding() {
 		$this->assertStringContainsString( 'Safeguarding means keeping people safe from harm', Chess_Army_Knife_Policies::content( 'safeguarding' ) );
-	}
-
-	public function test_the_safeguarding_settings_are_cleaned() {
-		$clean = Chess_Army_Knife_Settings::sanitize(
-			array(
-				'safeguarding_officer' => '  <b>Sam</b> Example ',
-				'safeguarding_email'   => 'not an email',
-			)
-		);
-		$this->assertSame( 'Sam Example', $clean['safeguarding_officer'] );
-		$this->assertSame( '', $clean['safeguarding_email'] );
 	}
 
 	public function test_only_people_who_can_edit_pages_may_use_the_screen() {

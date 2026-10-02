@@ -97,8 +97,8 @@ class EventBlocksTest extends WP_UnitTestCase {
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
-				'use_local_cache'        => 0,
-				'default_event_location' => 'The Village Hall',
+				'use_local_cache' => 0,
+				'club_venue'      => 'The Village Hall',
 			)
 		);
 		$this->event( 'Club night', '2099-01-01 19:00:00', array( 'In-house' ) );

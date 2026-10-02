@@ -20,6 +20,29 @@
 		font-size: 0.95em;
 	}
 
+	.cak-games__pages {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5em 1em;
+		margin: 1em 0 0;
+	}
+
+	.cak-games__prev,
+	.cak-games__next {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0 0.75em;
+		border: 2px solid currentcolor;
+		border-radius: 4px;
+	}
+
+	.cak-games__note {
+		margin: 0.5em 0 0;
+		font-size: 0.9em;
+	}
+
 	.cak-games__status--error,
 	.cak-games__row-error {
 		font-weight: 700;

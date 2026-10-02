@@ -15,7 +15,7 @@
  * from the new address before it takes effect, and the old address is told.
  * Deleting a record is immediate once confirmed, using the same erasure as the
  * officers' and WordPress's own tools: the record is deleted, or, if a payment,
- * photos, tournament entries or event registrations tie it to the club's
+ * or photos tie it to the club's
  * accounts, kept without any personal details.
  *
  * @package Chess_Army_Knife
@@ -253,7 +253,7 @@ class Chess_Army_Knife_Member_Portal {
 			$token = wp_generate_password( 32, false );
 			self::store_session( $token, $email );
 
-			$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+			$site = Chess_Army_Knife_Settings::club_name();
 			$link = add_query_arg( 'cak_portal', $token, self::page_url() ) . '#' . self::ANCHOR;
 			/* translators: %s: site name */
 			$subject = sprintf( __( '[%s] Your membership details', 'chess-army-knife' ), $site );
@@ -459,7 +459,6 @@ class Chess_Army_Knife_Member_Portal {
 			array(
 				'id'                  => $person['id'],
 				'whatsapp_consent_at' => $whatsapp ? ( '' !== $person['whatsapp_consent_at'] ? $person['whatsapp_consent_at'] : current_time( 'mysql', true ) ) : null, // An existing agreement keeps its original time.
-				'whatsapp_teams'      => $whatsapp ? Chess_Army_Knife_Membership_Store::clean_teams( isset( $input['teams'] ) ? $input['teams'] : array() ) : '',
 			)
 		);
 		return true;
@@ -511,7 +510,7 @@ class Chess_Army_Knife_Member_Portal {
 			DAY_IN_SECONDS
 		);
 
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$site = Chess_Army_Knife_Settings::club_name();
 		$link = add_query_arg( 'cak_email', $token, self::page_url() ) . '#' . self::ANCHOR;
 		/* translators: %s: site name */
 		$subject = sprintf( __( '[%s] Confirm your new email address', 'chess-army-knife' ), $site );
@@ -563,7 +562,7 @@ class Chess_Army_Knife_Member_Portal {
 		);
 		delete_transient( self::EMAIL_CHANGE_KEY . preg_replace( '/[^A-Za-z0-9]/', '', (string) $input['token'] ) );
 
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$site = Chess_Army_Knife_Settings::club_name();
 		/* translators: %s: site name */
 		$subject = sprintf( __( '[%s] Your email address was changed', 'chess-army-knife' ), $site );
 		/* translators: 1: site name, 2: the new email address */
@@ -578,7 +577,7 @@ class Chess_Army_Knife_Member_Portal {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * Delete a member's own record, straight away. It is removed, or, if a payment, photos, tournament entries or event registrations tie it to the club's accounts, kept without any personal details.
+	 * Delete a member's own record, straight away. It is removed, or, if a payment or photos tie it to the club's accounts, kept without any personal details.
 	 *
 	 * @param array $input Raw (unslashed) form values: token, person, confirm.
 	 * @return string|WP_Error 'deleted' or 'anonymised', or an error.
@@ -592,7 +591,8 @@ class Chess_Army_Knife_Member_Portal {
 			return new WP_Error( 'confirm', __( 'Please tick the box to confirm you want your details deleted.', 'chess-army-knife' ) );
 		}
 
-		$result = Chess_Army_Knife_Membership_Store::erase_member( $person['id'] );
+		// A person who deletes their own details asked to go: they are not recorded again by accident.
+		$result = Chess_Army_Knife_Membership_Store::erase_member( $person['id'], true );
 		return '' === $result ? new WP_Error( 'person', __( 'That record could not be found.', 'chess-army-knife' ) ) : $result;
 	}
 
@@ -613,7 +613,7 @@ class Chess_Army_Knife_Member_Portal {
 			'email_sent' => __( 'We have emailed a link to the new address. Your address changes when you follow it.', 'chess-army-knife' ),
 			'email_done' => __( 'Your email address has been changed. To carry on, ask for a new link at the new address.', 'chess-army-knife' ),
 			'deleted'    => __( 'Your details have been deleted.', 'chess-army-knife' ),
-			'anonymised' => __( 'Your personal details have been deleted. A record without your details is kept because it is tied to the club\'s accounts, such as a payment, tournament or event.', 'chess-army-knife' ),
+			'anonymised' => __( 'Your personal details have been deleted. A record without your details is kept because it is tied to the club\'s accounts, such as a payment or photos. Your name stays on the results of tournaments you played in, with nothing linking it to a person.', 'chess-army-knife' ),
 			'signed_out' => __( 'You have signed out.', 'chess-army-knife' ),
 			'extended'   => __( 'Your session has been extended.', 'chess-army-knife' ),
 		);

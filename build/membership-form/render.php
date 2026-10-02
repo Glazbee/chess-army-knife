@@ -16,7 +16,6 @@ $intro_text   = isset( $attributes['introText'] ) ? trim( (string) $attributes['
 $consent_text = isset( $attributes['consentText'] ) ? trim( (string) $attributes['consentText'] ) : '';
 
 $membership_types = Chess_Army_Knife_Memberships::types();
-$team_choices     = Chess_Army_Knife_Teams::choices();
 $page_url         = get_permalink();
 
 // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of a submission; nothing is changed.
@@ -148,18 +147,8 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 					<label><input type="checkbox" name="newsletter" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'newsletter' ) ); ?> /> <?php esc_html_e( 'Yes, email me the club newsletter', 'chess-army-knife' ); ?></label>
 				</p>
 				<p class="cak-membership-form__check">
-					<label><input type="checkbox" name="whatsapp" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp' ) ); ?> /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group for the teams I tick below. Everyone in the group can see the name and phone number.', 'chess-army-knife' ); ?></label>
+					<label><input type="checkbox" name="whatsapp" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp' ) ); ?> /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group of the team(s) the club puts me in. Everyone in the group can see the name and phone number.', 'chess-army-knife' ); ?></label>
 				</p>
-				<?php if ( $team_choices ) : ?>
-					<fieldset class="cak-membership-form__teams">
-						<legend><?php esc_html_e( 'Which team(s) do you play for?', 'chess-army-knife' ); ?></legend>
-					<?php foreach ( $team_choices as $team_id => $team_name ) : ?>
-						<p class="cak-membership-form__check">
-							<label><input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp_teams', (string) $team_id ) ); ?> /> <?php echo esc_html( $team_name ); ?></label>
-						</p>
-					<?php endforeach; ?>
-					</fieldset>
-				<?php endif; ?>
 			</fieldset>
 
 			<?php // Hidden from people; a bot that fills in every field gives itself away. ?>

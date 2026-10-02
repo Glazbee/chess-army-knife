@@ -149,8 +149,8 @@ class EventsTest extends WP_UnitTestCase {
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
-				'use_local_cache'        => 0,
-				'default_event_location' => 'The Village Hall',
+				'use_local_cache' => 0,
+				'club_venue'      => 'The Village Hall',
 			)
 		);
 		$this->event( 'Usual place', '2099-01-01 19:00:00' );
@@ -278,6 +278,152 @@ class EventsTest extends WP_UnitTestCase {
 		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_END, true ) );
 	}
 
+	public function test_events_and_their_tags_have_no_pages_of_their_own() {
+		$this->assertFalse( is_post_type_viewable( Chess_Army_Knife_Events::POST_TYPE ) );
+		$this->assertFalse( is_taxonomy_viewable( Chess_Army_Knife_Events::TAXONOMY ) );
+	}
+
+	public function test_a_repeating_event_appears_once_for_each_occurrence_in_the_window() {
+		$id = $this->event(
+			'Club night',
+			'2099-10-05 19:00:00',
+			array(
+				Chess_Army_Knife_Events::META_END    => '2099-10-05 22:00:00',
+				Chess_Army_Knife_Events::META_REPEAT => 'weekly',
+				Chess_Army_Knife_Events::META_UNTIL  => '2099-10-19',
+			)
+		);
+		$this->event( 'Quiz', '2099-10-10 19:00:00' );
+
+		$events = Chess_Army_Knife_Events::query(
+			array(
+				'after' => '2099-10-06 00:00:00',
+				'limit' => 0,
+			)
+		);
+
+		$this->assertSame( array( 'Quiz', 'Club night', 'Club night' ), $this->titles( $events ) );
+		$this->assertSame( '2099-10-12 19:00:00', $events[1]['start'] );
+		$this->assertSame( '2099-10-12 22:00:00', $events[1]['end'], 'Each occurrence lasts as long as the first.' );
+		$this->assertSame( '2099-10-19 19:00:00', $events[2]['start'], 'The stop date is the last day.' );
+		$this->assertSame( $id, $events[2]['id'] );
+		$this->assertSame( 'weekly', $events[2]['repeat'] );
+	}
+
+	public function test_a_repeating_event_with_no_stop_date_is_limited_by_the_query() {
+		$this->event(
+			'Club night',
+			'2099-10-05 19:00:00',
+			array( Chess_Army_Knife_Events::META_REPEAT => 'weekly' )
+		);
+
+		$events = Chess_Army_Knife_Events::query( array( 'limit' => 3 ) );
+
+		$this->assertCount( 3, $events );
+		$this->assertSame( array( '2099-10-05 19:00:00', '2099-10-12 19:00:00', '2099-10-19 19:00:00' ), wp_list_pluck( $events, 'start' ) );
+	}
+
+	public function test_saving_stores_the_repeat_and_stop_date() {
+		$id = $this->event( 'Night', '' );
+
+		$this->submit_details(
+			self::factory()->user->create( array( 'role' => 'administrator' ) ),
+			$id,
+			array(
+				'chess_army_event_date'       => '2099-10-05',
+				'chess_army_event_start_time' => '19:30',
+				'chess_army_event_repeat'     => 'monthly',
+				'chess_army_event_until'      => '2100-03-01',
+			)
+		);
+
+		$this->assertSame( 'monthly', get_post_meta( $id, Chess_Army_Knife_Events::META_REPEAT, true ) );
+		$this->assertSame( '2100-03-01', get_post_meta( $id, Chess_Army_Knife_Events::META_UNTIL, true ) );
+	}
+
+	public function test_a_stop_date_is_dropped_unless_the_event_repeats_and_it_is_not_before_the_start() {
+		$id    = $this->event( 'Night', '' );
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$base  = array(
+			'chess_army_event_date'       => '2099-10-05',
+			'chess_army_event_start_time' => '19:30',
+		);
+
+		$this->submit_details(
+			$admin,
+			$id,
+			$base + array(
+				'chess_army_event_repeat' => '',
+				'chess_army_event_until'  => '2100-03-01',
+			)
+		);
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_UNTIL, true ), 'A one-off has no stop date.' );
+
+		$this->submit_details(
+			$admin,
+			$id,
+			$base + array(
+				'chess_army_event_repeat' => 'weekly',
+				'chess_army_event_until'  => '2099-10-01',
+			)
+		);
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_UNTIL, true ), 'A stop date before the start is dropped.' );
+
+		$this->submit_details( $admin, $id, $base + array( 'chess_army_event_repeat' => 'daily' ) );
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_REPEAT, true ), 'An unknown repeat is dropped.' );
+	}
+
+	public function test_an_event_links_to_its_page_only_once_published() {
+		$page = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'draft',
+			)
+		);
+		$this->event( 'Night', '2099-01-01 19:00:00', array( Chess_Army_Knife_Events::META_PAGE => $page ) );
+
+		$this->assertSame( '', Chess_Army_Knife_Events::query()[0]['url'], 'A draft page is not linked.' );
+
+		wp_update_post(
+			array(
+				'ID'          => $page,
+				'post_status' => 'publish',
+			)
+		);
+		$this->assertSame( get_permalink( $page ), Chess_Army_Knife_Events::query()[0]['url'] );
+	}
+
+	public function test_saving_can_attach_a_page_or_create_a_draft_one() {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$page  = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$post  = self::factory()->post->create( array( 'post_type' => 'post' ) );
+		$id    = $this->event( 'Night', '' );
+		$base  = array(
+			'chess_army_event_date'       => '2099-10-05',
+			'chess_army_event_start_time' => '19:30',
+		);
+
+		$this->submit_details( $admin, $id, $base + array( 'chess_army_event_page' => (string) $page ) );
+		$this->assertSame( $page, (int) get_post_meta( $id, Chess_Army_Knife_Events::META_PAGE, true ) );
+
+		$this->submit_details( $admin, $id, $base + array( 'chess_army_event_page' => (string) $post ) );
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_PAGE, true ), 'Only a page can be attached.' );
+
+		$this->submit_details(
+			$admin,
+			$id,
+			$base + array(
+				'chess_army_event_page'        => '0',
+				'chess_army_event_create_page' => '1',
+			)
+		);
+		$created = (int) get_post_meta( $id, Chess_Army_Knife_Events::META_PAGE, true );
+		$this->assertGreaterThan( 0, $created );
+		$this->assertSame( 'page', get_post_type( $created ) );
+		$this->assertSame( 'draft', get_post_status( $created ) );
+		$this->assertSame( 'Night', get_the_title( $created ) );
+	}
+
 	public function test_an_invalid_date_clears_the_start_so_the_event_is_not_listed() {
 		$id = $this->event( 'Night', '2099-01-01 19:00:00' );
 
@@ -361,5 +507,145 @@ class EventsTest extends WP_UnitTestCase {
 
 		// Newest first, and an event with no date is still shown.
 		$this->assertSame( array( 'Later', 'Earlier', 'Undated' ), wp_list_pluck( $query->get_posts(), 'post_title' ) );
+	}
+
+	public function test_setup_makes_weekly_events_once() {
+		$rows = array(
+			array(
+				'key'     => 'club_night',
+				'title'   => 'Club night',
+				'tag'     => 'Club night',
+				'weekday' => 2,
+				'start'   => '19:30',
+				'end'     => '22:00',
+			),
+		);
+
+		// 2099-10-01 is a Thursday, so the next Tuesday is the 6th.
+		$this->assertSame( 1, Chess_Army_Knife_Setup::create_events( $rows, '2099-10-01' ) );
+		$this->assertSame( 0, Chess_Army_Knife_Setup::create_events( $rows, '2099-10-01' ), 'Running setup again does not repeat it.' );
+
+		$events = Chess_Army_Knife_Events::query( array( 'limit' => 2 ) );
+		$this->assertSame( 'Club night', $events[0]['title'] );
+		$this->assertSame( 'weekly', $events[0]['repeat'] );
+		$this->assertSame( '2099-10-06 19:30:00', $events[0]['start'] );
+		$this->assertSame( '2099-10-06 22:00:00', $events[0]['end'] );
+		$this->assertSame( '2099-10-13 19:30:00', $events[1]['start'] );
+		$this->assertSame( array( 'Club night' ), wp_list_pluck( $events[0]['tags'], 'name' ) );
+	}
+
+	public function test_setup_saves_the_club_details_and_keeps_other_settings() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache'         => 0,
+				'member_retention_months' => 36,
+			)
+		);
+
+		Chess_Army_Knife_Settings::save(
+			array(
+				'club_name'      => 'Central Birmingham Chess Club',
+				'club_venue'     => 'The Hall',
+				'club_venue_map' => 'https://maps.app.goo.gl/hall',
+				'club_venue_w3w' => '///Index.Home.Raft',
+				'default_org_id' => '702',
+				'lms_api_key'    => 'lmsk_x',
+			)
+		);
+
+		$options = Chess_Army_Knife_Settings::get_options();
+		$this->assertSame( 'Central Birmingham Chess Club', $options['club_name'] );
+		$this->assertSame( 'The Hall', Chess_Army_Knife_Events::default_location() );
+		$this->assertSame( 'https://maps.app.goo.gl/hall', $options['club_venue_map'] );
+		$this->assertSame( 'index.home.raft', $options['club_venue_w3w'], 'Cleaned like an address typed in Settings.' );
+		$this->assertSame( '702', $options['default_org_id'] );
+		$this->assertSame( 36, $options['member_retention_months'] );
+		$this->assertSame( 0, $options['use_local_cache'] );
+	}
+
+	public function test_saving_stores_an_events_colour_or_clears_it() {
+		$id    = $this->event( 'Night', '' );
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$base  = array(
+			'chess_army_event_date'       => '2099-10-05',
+			'chess_army_event_start_time' => '19:30',
+		);
+
+		$this->submit_details( $admin, $id, $base + array( 'chess_army_event_colour' => '#d62a2a' ) );
+		$this->assertSame( '#d62a2a', get_post_meta( $id, Chess_Army_Knife_Events::META_COLOUR, true ) );
+		$this->assertSame( '#d62a2a', Chess_Army_Knife_Events::data( get_post( $id ) )['colour'] );
+
+		$this->submit_details( $admin, $id, $base + array( 'chess_army_event_colour' => 'red;x' ) );
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_COLOUR, true ), 'Only a hex colour is kept.' );
+
+		$this->submit_details(
+			$admin,
+			$id,
+			$base + array(
+				'chess_army_event_colour'         => '#d62a2a',
+				'chess_army_event_colour_default' => '1',
+			)
+		);
+		$this->assertSame( '', get_post_meta( $id, Chess_Army_Knife_Events::META_COLOUR, true ), 'The default colour box clears it.' );
+	}
+
+	public function test_an_event_with_no_page_does_not_link_to_the_page_being_viewed() {
+		$viewed = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+			)
+		);
+		$id     = $this->event( 'Night', '2099-01-01 19:00:00' );
+		$this->go_to( get_permalink( $viewed ) );
+
+		$this->assertSame( '', Chess_Army_Knife_Events::page_url( $id ) );
+		$this->assertSame( '', Chess_Army_Knife_Events::query()[0]['url'] );
+		$this->assertStringNotContainsString( get_permalink( $viewed ), do_blocks( '<!-- wp:chess-army-knife/club-event-calendar /-->' ) );
+	}
+
+	public function test_a_tagged_event_gets_its_tags_colour_and_the_calendar_has_a_key() {
+		$id = $this->event( 'Night', '2099-01-01 19:00:00' );
+		wp_set_object_terms( $id, array( 'Coaching' ), Chess_Army_Knife_Events::TAXONOMY );
+		$term = get_term_by( 'name', 'Coaching', Chess_Army_Knife_Events::TAXONOMY );
+
+		$event = Chess_Army_Knife_Events::query()[0];
+		$this->assertSame( Chess_Army_Knife_Events::tag_colour( $term ), $event['tags'][0]['colour'] );
+
+		update_term_meta( $term->term_id, Chess_Army_Knife_Events::TAG_COLOUR_META, '#123456' );
+		$html = do_blocks( '<!-- wp:chess-army-knife/club-event-calendar /-->' );
+		$this->assertStringContainsString( '--cak-event-colour:#123456', $html );
+		$this->assertStringContainsString( 'class="cak-key"', $html );
+
+		$hidden = do_blocks( '<!-- wp:chess-army-knife/club-event-calendar {"showKey":false} /-->' );
+		$this->assertStringNotContainsString( 'cak-key', $hidden );
+	}
+
+	public function test_a_club_night_is_at_the_club_venue_but_an_away_fixture_is_not() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'club_venue'      => 'The Club Room',
+			)
+		);
+		$this->event( 'Club night', '2099-01-01 19:00:00' );
+		$this->event(
+			'Away match',
+			'2099-01-02 19:00:00',
+			array( Chess_Army_Knife_Events::META_SIDES => array( 3 => 'away' ) )
+		);
+		$this->event(
+			'Home match',
+			'2099-01-03 19:00:00',
+			array( Chess_Army_Knife_Events::META_SIDES => array( 3 => 'home' ) )
+		);
+
+		$venues = wp_list_pluck( Chess_Army_Knife_Events::query(), 'location', 'title' );
+
+		$this->assertSame( 'The Club Room', $venues['Club night'] );
+		$this->assertSame( '', $venues['Away match'] );
+		$this->assertSame( 'The Club Room', $venues['Home match'] );
 	}
 }

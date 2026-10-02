@@ -129,6 +129,30 @@ class Chess_Army_Knife_Tournament_Summary {
 	}
 
 	/**
+	 * One page of the games to play: whole rounds, so a round is never split across pages.
+	 *
+	 * @param array[] $sections    From games_to_play(): round label => games.
+	 * @param int     $page        Page wanted, from 1; one that is out of range is moved to the nearest page.
+	 * @param int     $per_page    Rounds on a page; 0 or less for all of them on one page.
+	 * @return array { sections, page, pages, rounds, labels } where rounds is how many there are in all and labels are those shown.
+	 */
+	public static function paginate( array $sections, $page, $per_page ) {
+		$rounds   = count( $sections );
+		$per_page = (int) $per_page;
+		$pages    = $per_page > 0 ? max( 1, (int) ceil( $rounds / $per_page ) ) : 1;
+		$page     = max( 1, min( $pages, (int) $page ) );
+		$shown    = $per_page > 0 ? array_slice( $sections, ( $page - 1 ) * $per_page, $per_page, true ) : $sections;
+
+		return array(
+			'sections' => $shown,
+			'page'     => $page,
+			'pages'    => $pages,
+			'rounds'   => $rounds,
+			'labels'   => array_keys( $shown ),
+		);
+	}
+
+	/**
 	 * A cross-table of the main stage: one row per player in rank order, with
 	 * the points scored in each round and the total.
 	 *

@@ -74,8 +74,8 @@ class FixtureCalendarTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Club A (home)', $html );
 		$this->assertStringContainsString( 'Club B (home)', $html );
-		$this->assertStringContainsString( '--cak-team-colour:#2a78d6', $html );
-		$this->assertSame( 2, substr_count( $html, '--cak-team-colour' ), 'Club B has no colour; a club night has no team.' );
+		$this->assertStringContainsString( '--cak-event-colour:#2a78d6', $html );
+		$this->assertSame( 2, substr_count( $html, '--cak-event-colour' ), 'Club B has no colour; a club night has no team.' );
 	}
 
 	public function test_the_agenda_can_be_one_team_and_home_or_away() {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Integration tests: the member portal (see and change your own details, choices and registrations, delete your data).
+ * Integration tests: the member portal (see and change your own details, choices, delete your data).
  *
  * @package Chess_Army_Knife
  */
@@ -12,7 +12,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Mailer::table(), Chess_Army_Knife_Notification_Preferences::table(), Chess_Army_Knife_Teams::squad_table(), Chess_Army_Knife_Event_Registrations::table() ) as $table ) {
+		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Mailer::table(), Chess_Army_Knife_Notification_Preferences::table(), Chess_Army_Knife_Teams::squad_table() ) as $table ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Membership_Store::install_table();
@@ -20,7 +20,6 @@ class MemberPortalTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Mailer::install_table();
 		Chess_Army_Knife_Notification_Preferences::install_table();
 		Chess_Army_Knife_Teams::install_table();
-		Chess_Army_Knife_Event_Registrations::install_table();
 		reset_phpmailer_instance();
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.99';
 		$this->clear_counters();
@@ -355,14 +354,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '0123', Chess_Army_Knife_Membership_Store::get_member( $ada )['phone'] );
 	}
 
-	public function test_a_member_chooses_what_they_are_emailed_and_their_whatsapp_teams() {
-		$team  = self::factory()->post->create(
-			array(
-				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
-				'post_status' => 'publish',
-				'post_title'  => 'Club A',
-			)
-		);
+	public function test_a_member_chooses_what_they_are_emailed_and_whether_to_be_in_whatsapp() {
 		$ada   = $this->person(
 			'Ada Lovelace',
 			array(
@@ -376,7 +368,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 			return Chess_Army_Knife_Member_Portal::save_choices( $this->post( Chess_Army_Knife_Member_Portal::ACTION_CHOICES, $token, array( 'person' => $ada ) + $extra ) );
 		};
 
-		// Newsletter and renewals on, everything else off; WhatsApp with one team.
+		// Newsletter and renewals on, everything else off; WhatsApp on. A team in the form is ignored.
 		$this->assertTrue(
 			$save(
 				array(
@@ -385,7 +377,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 						'renewals'   => '1',
 					),
 					'whatsapp' => '1',
-					'teams'    => array( (string) $team, '99999' ),
+					'teams'    => array( '99999' ),
 				)
 			)
 		);
@@ -393,7 +385,6 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '2026-01-01 10:00:00', $member['newsletter_consent_at'], 'An existing agreement keeps its time.' );
 		$this->assertSame( array( 'announcements', 'event_notices', 'fixtures' ), Chess_Army_Knife_Notification_Preferences::get_opt_outs( $ada ) );
 		$this->assertNotSame( '', $member['whatsapp_consent_at'] );
-		$this->assertSame( array( $team ), $member['whatsapp_teams'] );
 
 		// Newsletter off, everything else on, WhatsApp off.
 		$this->assertTrue(
@@ -412,7 +403,6 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '', $member['newsletter_consent_at'] );
 		$this->assertSame( array(), Chess_Army_Knife_Notification_Preferences::get_opt_outs( $ada ) );
 		$this->assertSame( '', $member['whatsapp_consent_at'] );
-		$this->assertSame( array(), $member['whatsapp_teams'] );
 	}
 
 	public function test_whatsapp_needs_a_phone_number() {
@@ -550,7 +540,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertNull( Chess_Army_Knife_Member_Portal::session( $token ), 'Nothing is left under the address.' );
 	}
 
-	public function test_a_record_tied_to_a_payment_or_registration_is_kept_without_personal_details() {
+	public function test_a_record_tied_to_a_payment_is_kept_without_personal_details() {
 		$ada   = $this->person(
 			'Ada Lovelace',
 			array(
@@ -652,15 +642,6 @@ class MemberPortalTest extends WP_UnitTestCase {
 			)
 		);
 		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
-		$event = self::factory()->post->create(
-			array(
-				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
-				'post_status' => 'publish',
-				'post_title'  => 'Summer Blitz',
-				'meta_input'  => array( Chess_Army_Knife_Events::META_START => '2099-07-01 19:00:00' ),
-			)
-		);
-		Chess_Army_Knife_Event_Registrations::register( $event, $ada, 0, true );
 		$_GET = array( 'cak_portal' => $this->sign_in() );
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/member-portal /-->' );
@@ -672,8 +653,6 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'value="' . Chess_Army_Knife_Member_Portal::ACTION_CHOICES . '"', $html );
 		$this->assertStringContainsString( 'value="' . Chess_Army_Knife_Member_Portal::ACTION_EMAIL . '"', $html );
 		$this->assertStringContainsString( 'value="' . Chess_Army_Knife_Member_Portal::ACTION_DELETE . '"', $html );
-		$this->assertStringContainsString( 'Summer Blitz', $html );
-		$this->assertStringContainsString( 'cak_cancel=', $html );
 		$this->assertStringContainsString( 'Sign out', $html );
 	}
 

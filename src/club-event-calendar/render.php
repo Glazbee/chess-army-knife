@@ -23,6 +23,8 @@ $tag_slugs     = Chess_Army_Knife_Events_Display::tag_slugs( isset( $attributes[
 $team_ids      = isset( $attributes['teamIds'] ) ? array_values( array_filter( array_map( 'absint', (array) $attributes['teamIds'] ) ) ) : array();
 $venue         = isset( $attributes['venue'] ) && in_array( $attributes['venue'], array( 'home', 'away' ), true ) ? $attributes['venue'] : 'all';
 $subscribe_url = ! isset( $attributes['showSubscribe'] ) || $attributes['showSubscribe'] ? Chess_Army_Knife_Events_Feed::url( $team_ids, $venue, $tag_slugs ) : '';
+$show_key      = ! isset( $attributes['showKey'] ) || $attributes['showKey'];
+$key_html      = $show_key ? Chess_Army_Knife_Events_Display::key_html( $tag_slugs ) : '';
 $layout        = isset( $attributes['layout'] ) && 'month' === $attributes['layout'] ? 'month' : 'agenda';
 
 if ( 'month' === $layout ) {
@@ -58,6 +60,7 @@ if ( 'month' === $layout ) {
 				<?php echo Chess_Army_Knife_Events_Display::month_html( $event_year, $month, Chess_Army_Knife_Events_Display::month_events( $event_year, $month, $tag_slugs, $team_ids, $venue ), $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in month_html(). ?>
 			</div>
 		</div>
+		<?php echo $key_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in key_html(). ?>
 		<?php if ( '' !== $subscribe_url ) : ?>
 			<p class="cak-event__subscribe"><a href="<?php echo esc_url( $subscribe_url ); ?>"><?php esc_html_e( 'Subscribe to this calendar (.ics)', 'chess-army-knife' ); ?></a></p>
 		<?php endif; ?>
@@ -96,9 +99,9 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-even
 				<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-calendar__date', Chess_Army_Knife_Events_Display::date_label( $day_events[0] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 				<ul class="cak-calendar__events">
 					<?php foreach ( $day_events as $event ) : ?>
-						<li class="cak-event"<?php echo $options['show_teams'] && '' !== Chess_Army_Knife_Events_Display::team_label( $event ) ? Chess_Army_Knife_Events_Display::colour_style( $event ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in colour_style(). ?>>
+						<li class="cak-event"<?php echo Chess_Army_Knife_Events_Display::colour_style( $event, $options['show_teams'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in colour_style(). ?>>
 							<p class="cak-event__when"><span class="cak-event__time"><?php echo esc_html( Chess_Army_Knife_Events_Display::time_label( $event ) ); ?></span></p>
-							<p class="cak-event__title"><a href="<?php echo esc_url( $event['url'] ); ?>"><?php echo esc_html( $event['title'] ); ?></a></p>
+							<p class="cak-event__title"><?php echo Chess_Army_Knife_Events_Display::title_html( $event ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in title_html(). ?></p>
 							<?php echo Chess_Army_Knife_Events_Display::details_html( $event, $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in details_html(). ?>
 						</li>
 					<?php endforeach; ?>
@@ -106,6 +109,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-even
 			</section>
 		<?php endforeach; ?>
 	<?php endif; ?>
+	<?php echo $key_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in key_html(). ?>
 	<?php if ( '' !== $subscribe_url ) : ?>
 		<p class="cak-event__subscribe"><a href="<?php echo esc_url( $subscribe_url ); ?>"><?php esc_html_e( 'Subscribe to this calendar (.ics)', 'chess-army-knife' ); ?></a></p>
 	<?php endif; ?>

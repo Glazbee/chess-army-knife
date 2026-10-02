@@ -1,12 +1,17 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, Placeholder } from '@wordpress/components';
+import {
+	PanelBody,
+	SelectControl,
+	Placeholder,
+	TextControl,
+} from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import useTournaments from '../shared/use-tournaments';
 import TemplatePicker from '../shared/template-picker';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { tournamentId } = attributes;
+	const { tournamentId, roundsPerPage } = attributes;
 	const blockProps = useBlockProps();
 	const tournaments = useTournaments();
 
@@ -31,6 +36,25 @@ export default function Edit( { attributes, setAttributes } ) {
 						options={ options }
 						onChange={ ( value ) =>
 							setAttributes( { tournamentId: Number( value ) } )
+						}
+					/>
+					<TextControl
+						type="number"
+						min={ 0 }
+						max={ 100 }
+						label={ __( 'Rounds on a page', 'chess-army-knife' ) }
+						help={ __(
+							'Games are shown a round at a time, with Previous and Next links. Show more rounds on a page, or enter 0 to show every round on one page.',
+							'chess-army-knife'
+						) }
+						value={ roundsPerPage }
+						onChange={ ( value ) =>
+							setAttributes( {
+								roundsPerPage: Math.max(
+									0,
+									Math.min( 100, parseInt( value, 10 ) || 0 )
+								),
+							} )
 						}
 					/>
 				</PanelBody>

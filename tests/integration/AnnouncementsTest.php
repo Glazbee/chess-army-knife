@@ -12,7 +12,7 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Mailer::table(), Chess_Army_Knife_Notification_Preferences::table(), Chess_Army_Knife_Teams::squad_table(), Chess_Army_Knife_Event_Registrations::table(), Chess_Army_Knife_Selection::table( 'availability' ), Chess_Army_Knife_Selection::table( 'lineups' ) ) as $table ) {
+		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Mailer::table(), Chess_Army_Knife_Notification_Preferences::table(), Chess_Army_Knife_Teams::squad_table(), Chess_Army_Knife_Selection::table( 'availability' ), Chess_Army_Knife_Selection::table( 'lineups' ) ) as $table ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Membership_Store::install_table();
@@ -20,7 +20,6 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Mailer::install_table();
 		Chess_Army_Knife_Notification_Preferences::install_table();
 		Chess_Army_Knife_Teams::install_table();
-		Chess_Army_Knife_Event_Registrations::install_table();
 		Chess_Army_Knife_Selection::install_tables();
 		reset_phpmailer_instance();
 	}
@@ -305,11 +304,18 @@ class AnnouncementsTest extends WP_UnitTestCase {
 			array(
 				'phone'               => '0123',
 				'whatsapp_consent_at' => '2026-01-01 10:00:00',
-				'whatsapp_teams'      => wp_json_encode( array( $team ) ),
 			)
 		);
-		$this->person( 'Bob Smith', array( 'phone' => '0456' ) );
-		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
+		$bob  = $this->person( 'Bob Smith', array( 'phone' => '0456' ) );
+		$cat  = $this->person(
+			'Cat Jones',
+			array(
+				'phone'               => '0789',
+				'whatsapp_consent_at' => '2026-01-01 10:00:00',
+			)
+		);
+		// Ada is in the squad and agreed; Bob is in it but has not agreed; Cat agreed but is not in it.
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada, $bob ) );
 		$id = $this->announcement(
 			array(
 				Chess_Army_Knife_Announcements::META_AUDIENCE => 'teams',
@@ -322,9 +328,10 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		$html = ob_get_clean();
 
 		$this->assertStringContainsString( 'Who gets it', $html );
-		$this->assertStringContainsString( 'Right now that is 1 people', $html );
+		$this->assertStringContainsString( 'Right now that is 2 people', $html, 'Ada and Bob are in the squad; Cat is not.' );
 		$this->assertStringContainsString( 'Ada Lovelace — 0123', $html );
 		$this->assertStringNotContainsString( 'Bob Smith', $html );
+		$this->assertStringNotContainsString( 'Cat Jones', $html, 'Only squad members are listed for a team.' );
 	}
 
 	/* -------------------------------------------------------------

@@ -176,4 +176,65 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( array( '613|Division 1', '613|Division 2' ), array_column( $plan['candidates'], 'league' ) );
 	}
+
+	public function test_the_players_of_our_team_are_collected_from_every_fixture_even_past_ones() {
+		$matches = array(
+			'613|division 1' => array(
+				$this->match(
+					'Our A',
+					'Rivals',
+					'2026-01-05',
+					array(
+						'players' => array(
+							array(
+								'side' => 'home',
+								'code' => '123456a',
+								'name' => 'Ada',
+							),
+							array(
+								'side' => 'away',
+								'code' => '999999Z',
+								'name' => 'Their player',
+							),
+						),
+					)
+				),
+				$this->match(
+					'Rivals',
+					'Our A',
+					'2026-02-05',
+					array(
+						'players' => array(
+							array(
+								'side' => 'home',
+								'code' => '888888Y',
+								'name' => 'Their other',
+							),
+							array(
+								'side' => 'away',
+								'code' => '123456A',
+								'name' => 'Ada',
+							),
+							array(
+								'side' => 'away',
+								'code' => '222222B',
+								'name' => 'Bea',
+							),
+						),
+					)
+				),
+			),
+		);
+
+		$by_team = Chess_Army_Knife_Events_Import::players_by_team( array( $this->team( 'Our A' ) ), $matches );
+		$players = array_values( $by_team )[0];
+
+		$this->assertSame( array( 'Ada', 'Bea' ), array_column( $players, 'name' ), 'Only our side, and a player who played twice is listed once.' );
+	}
+
+	public function test_a_team_with_no_board_results_has_no_players() {
+		$matches = array( '613|division 1' => array( $this->match( 'Our A', 'Rivals', '2026-10-05' ) ) );
+
+		$this->assertSame( array(), Chess_Army_Knife_Events_Import::players_by_team( array( $this->team( 'Our A' ) ), $matches ) );
+	}
 }

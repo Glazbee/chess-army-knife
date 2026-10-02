@@ -26,6 +26,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		showTeams,
 		teamIds,
 		venue,
+		showKey,
 		showSubscribe,
 		emptyMessage,
 	} = attributes;
@@ -205,6 +206,20 @@ export default function Edit( { attributes, setAttributes } ) {
 						checked={ showTeams }
 						onChange={ ( value ) =>
 							setAttributes( { showTeams: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __(
+							'Show a key to the colours',
+							'chess-army-knife'
+						) }
+						help={ __(
+							"Lists each tag with its colour. Set a tag's colour under Club Events > Event tags.",
+							'chess-army-knife'
+						) }
+						checked={ showKey !== false }
+						onChange={ ( value ) =>
+							setAttributes( { showKey: value } )
 						}
 					/>
 					<ToggleControl

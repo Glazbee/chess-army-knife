@@ -111,11 +111,15 @@ class Chess_Army_Knife_Announcements_Admin {
 			?>
 		</p>
 		<?php
-		// WhatsApp groups stay manual: who agreed to the chosen teams' groups.
+		// WhatsApp groups stay manual: who is in the chosen teams' squads and agreed to be added.
 		if ( 'teams' === $settings['audience'] && $settings['teams'] ) {
 			$names = array();
+			$squad = array();
+			foreach ( $settings['teams'] as $team_id ) {
+				$squad = array_merge( $squad, Chess_Army_Knife_Teams::squad( $team_id ) );
+			}
 			foreach ( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'active' ) ) as $person ) {
-				if ( '' !== $person['whatsapp_consent_at'] && array_intersect( $settings['teams'], $person['whatsapp_teams'] ) ) {
+				if ( '' !== $person['whatsapp_consent_at'] && in_array( $person['id'], $squad, true ) ) {
 					$phone   = '' !== $person['phone'] ? $person['phone'] : $person['guardian_phone'];
 					$names[] = $person['name'] . ( '' !== $phone ? ' — ' . $phone : '' );
 				}

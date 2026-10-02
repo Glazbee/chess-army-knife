@@ -259,7 +259,11 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 		$this->assertStringContainsString( '<span class="cak-visually-hidden">', $html );
 		$this->assertStringContainsString( 'Club &lt;night&gt;', $html );
 		$this->assertStringNotContainsString( '<night>', $html );
-		$this->assertStringContainsString( '<span class="cak-month__location">Town &quot;Hall&quot;</span>', $html );
+		// The bubble shows the time and title; the rest is in its panel.
+		$this->assertStringContainsString( '<span class="cak-bubble__time">19:30</span> <span class="cak-bubble__title">Club &lt;night&gt;</span>', $html );
+		$this->assertStringContainsString( '<p class="cak-event__location">Town &quot;Hall&quot;</p>', $html );
+		$this->assertStringContainsString( '<p class="cak-bubble__when">5 October 2026, 19:30</p>', $html );
+		$this->assertStringContainsString( '<a href="https://example.test/night">More about this event</a>', $html );
 		$this->assertStringNotContainsString( 'title="Town', $html );
 		// The event is in the table and, for a phone, in the list of days.
 		$this->assertSame( 2, substr_count( $html, 'cak-month__event"' ) );
@@ -271,7 +275,17 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 
 		$html = Chess_Army_Knife_Events_Display::month_html( 2026, 10, array( $this->event() ), array( 'show_location' => false ) );
 
-		$this->assertStringNotContainsString( 'cak-month__location', $html );
+		$this->assertStringNotContainsString( 'cak-event__location', $html );
+	}
+
+	public function test_an_event_without_a_page_has_no_link_in_its_bubble() {
+		Functions\when( 'current_time' )->justReturn( '2026-10-05' );
+		Functions\when( 'esc_url' )->returnArg();
+
+		$html = Chess_Army_Knife_Events_Display::bubble_html( $this->event( array( 'url' => '' ) ), array() );
+
+		$this->assertStringNotContainsString( '<a ', $html );
+		$this->assertStringContainsString( 'Club night', $html );
 	}
 
 	public function test_month_html_with_no_events_is_still_a_full_grid() {
@@ -328,7 +342,7 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 			}
 		);
 
-		$this->assertSame( ' style="--cak-team-colour:#2a78d6"', Chess_Army_Knife_Events_Display::colour_style( $this->team_event( array( $this->side( 1, 'A', 'home', '#2a78d6' ) ) ) ) );
+		$this->assertSame( ' style="--cak-event-colour:#2a78d6"', Chess_Army_Knife_Events_Display::colour_style( $this->team_event( array( $this->side( 1, 'A', 'home', '#2a78d6' ) ) ) ) );
 		$this->assertSame( '', Chess_Army_Knife_Events_Display::colour_style( $this->team_event( array( $this->side( 1, 'A', 'home', 'red;x' ) ) ) ) );
 		$this->assertSame( '', Chess_Army_Knife_Events_Display::colour_style( $this->event() ) );
 	}
@@ -338,5 +352,120 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertStringContainsString( 'Club A (away)', Chess_Army_Knife_Events_Display::details_html( $event, array( 'show_teams' => true ) ) );
 		$this->assertStringNotContainsString( 'Club A', Chess_Army_Knife_Events_Display::details_html( $event, array( 'show_teams' => false ) ) );
+	}
+
+	public function test_an_events_own_colour_wins_over_its_teams_and_is_used_without_a_team() {
+		Functions\when( 'sanitize_hex_color' )->alias(
+			function ( $colour ) {
+				return preg_match( '/^#[0-9a-f]{6}$/i', $colour ) ? $colour : '';
+			}
+		);
+		Functions\when( 'esc_attr' )->alias( 'htmlspecialchars' );
+
+		$own = $this->event( array( 'colour' => '#d62a2a' ) );
+		$this->assertSame( ' style="--cak-event-colour:#d62a2a"', Chess_Army_Knife_Events_Display::colour_style( $own ) );
+
+		$both = $this->event(
+			array(
+				'colour' => '#d62a2a',
+				'teams'  => array( $this->side( 1, 'A', 'home', '#2a78d6' ) ),
+			)
+		);
+		$this->assertSame( ' style="--cak-event-colour:#d62a2a"', Chess_Army_Knife_Events_Display::colour_style( $both ) );
+
+		$team_only = $this->team_event( array( $this->side( 1, 'A', 'home', '#2a78d6' ) ) );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::colour_style( $team_only, false ), 'A team colour is not used when team names are hidden.' );
+		$this->assertSame( ' style="--cak-event-colour:#d62a2a"', Chess_Army_Knife_Events_Display::colour_style( $both, false ) );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::colour_style( $this->event( array( 'colour' => 'red;x' ) ) ) );
+	}
+
+	public function test_a_title_links_to_the_events_page_only_if_it_has_one() {
+		Functions\when( 'esc_url' )->returnArg();
+
+		$this->assertSame( '<a href="https://example.test/event">Club night</a>', Chess_Army_Knife_Events_Display::title_html( $this->event() ) );
+		$this->assertSame( 'Club night', Chess_Army_Knife_Events_Display::title_html( $this->event( array( 'url' => '' ) ) ) );
+	}
+
+	public function test_an_event_takes_its_first_tags_colour_when_it_has_no_other() {
+		Functions\when( 'sanitize_hex_color' )->alias(
+			function ( $colour ) {
+				return preg_match( '/^#[0-9a-f]{6}$/i', $colour ) ? $colour : '';
+			}
+		);
+		Functions\when( 'esc_attr' )->alias( 'htmlspecialchars' );
+
+		$tagged = $this->event(
+			array(
+				'tags' => array(
+					array(
+						'name'   => 'Coaching',
+						'slug'   => 'coaching',
+						'colour' => '#2a9d5c',
+					),
+					array(
+						'name'   => 'Juniors',
+						'slug'   => 'juniors',
+						'colour' => '#d62a8f',
+					),
+				),
+			)
+		);
+		$this->assertSame( ' style="--cak-event-colour:#2a9d5c"', Chess_Army_Knife_Events_Display::colour_style( $tagged ) );
+
+		$own           = $tagged;
+		$own['colour'] = '#d62a2a';
+		$this->assertSame( ' style="--cak-event-colour:#d62a2a"', Chess_Army_Knife_Events_Display::colour_style( $own ), 'Its own colour comes first.' );
+
+		$team          = $tagged;
+		$team['teams'] = array( $this->side( 1, 'A', 'home', '#2a78d6' ) );
+		$this->assertSame( ' style="--cak-event-colour:#2a78d6"', Chess_Army_Knife_Events_Display::colour_style( $team ), 'A team colour comes before a tag colour.' );
+		$this->assertSame( ' style="--cak-event-colour:#2a9d5c"', Chess_Army_Knife_Events_Display::colour_style( $team, false ) );
+	}
+
+	public function test_the_key_lists_each_tag_with_its_colour() {
+		Functions\when( 'sanitize_hex_color' )->returnArg();
+		Functions\when( 'esc_attr' )->alias( 'htmlspecialchars' );
+		Functions\when( 'get_term_meta' )->justReturn( '#2a9d5c' );
+		Functions\when( 'get_terms' )->justReturn(
+			array(
+				(object) array(
+					'term_id' => 3,
+					'name'    => 'Coaching',
+					'slug'    => 'coaching',
+				),
+			)
+		);
+
+		$html = Chess_Army_Knife_Events_Display::key_html();
+
+		$this->assertStringContainsString( 'style="--cak-event-colour:#2a9d5c"', $html );
+		$this->assertStringContainsString( 'Coaching', $html );
+
+		Functions\when( 'get_terms' )->justReturn( array() );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::key_html(), 'No tags, no key.' );
+	}
+
+	public function test_the_location_links_to_a_map_and_what3words_when_they_are_known() {
+		Functions\when( 'esc_url' )->returnArg();
+		Functions\when( 'esc_attr' )->alias( 'htmlspecialchars' );
+
+		$html = Chess_Army_Knife_Events_Display::location_html(
+			$this->event(
+				array(
+					'location'   => 'Town Hall',
+					'map_url'    => 'https://maps.app.goo.gl/abc',
+					'what3words' => 'index.home.raft',
+				)
+			)
+		);
+
+		$this->assertStringContainsString( 'Town Hall <a class="cak-event__map" href="https://maps.app.goo.gl/abc" aria-label="Map of Town Hall">Map</a>', $html );
+		$this->assertStringContainsString( 'href="https://what3words.com/index.home.raft"', $html );
+		$this->assertStringContainsString( '>///index.home.raft</a>', $html );
+	}
+
+	public function test_a_location_with_only_a_name_is_plain_text_and_none_is_nothing() {
+		$this->assertSame( '<p class="cak-event__location">Town Hall</p>', Chess_Army_Knife_Events_Display::location_html( $this->event( array( 'location' => 'Town Hall' ) ) ) );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::location_html( $this->event( array( 'location' => '' ) ) ) );
 	}
 }

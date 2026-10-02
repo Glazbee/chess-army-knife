@@ -20,6 +20,7 @@
 		"showTeams": { "type": "boolean", "default": true },
 		"teamIds": { "type": "array", "items": { "type": "number" }, "default": [] },
 		"venue": { "type": "string", "default": "all" },
+		"showKey": { "type": "boolean", "default": true },
 		"showSubscribe": { "type": "boolean", "default": true },
 		"emptyMessage": { "type": "string", "default": "" },
 		"templateId": { "type": "string", "default": "" }

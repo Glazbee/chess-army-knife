@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 function Chess_Army_Knife_register() {
 	$blocks_dir = Chess_Army_Knife_DIR . 'build/';
 
-	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'next-club-event', 'club-event-calendar', 'memberships', 'membership-form', 'my-data', 'team-profiles', 'event-registration', 'member-portal' ) as $block ) {
+	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'next-club-event', 'club-event-calendar', 'memberships', 'membership-form', 'my-data', 'team-profiles', 'member-portal' ) as $block ) {
 		$path = $blocks_dir . $block;
 		if ( file_exists( $path . '/block.json' ) ) {
 			register_block_type( $path );
@@ -133,9 +133,8 @@ function Chess_Army_Knife_rest_get_defaults() {
 
 	return rest_ensure_response(
 		array(
-			'orgId'     => $options['default_org_id'],
-			'eventName' => $options['default_event_name'],
-			'domain'    => $options['default_domain'],
+			'orgId'  => $options['default_org_id'],
+			'domain' => $options['default_domain'],
 		)
 	);
 }

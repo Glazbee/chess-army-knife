@@ -149,6 +149,55 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'no games waiting', $this->render( 'tournament-games', array( 'tournamentId' => $id ) ) );
 	}
 
+	public function test_games_block_shows_rounds_a_page_with_previous_and_next_links() {
+		$id   = $this->tournament( 'Big', 8 ); // Seven rounds of four games.
+		$_GET = array();
+
+		$first = $this->render( 'tournament-games', array( 'tournamentId' => $id ) );
+		$this->assertSame( 4, substr_count( $first, 'data-game-id=' ), 'One round by default.' );
+		$this->assertStringContainsString( 'Round 1', $first );
+		$this->assertStringContainsString( 'Page 1 of 7: Round 1', $first );
+		$this->assertStringContainsString( 'rel="next"', $first );
+		$this->assertStringNotContainsString( 'rel="prev"', $first );
+
+		$_GET  = array( 'cak_games_' . $id => '3' );
+		$third = $this->render(
+			'tournament-games',
+			array(
+				'tournamentId'  => $id,
+				'roundsPerPage' => 3,
+			)
+		);
+		$this->assertSame( 4, substr_count( $third, 'data-game-id=' ), 'Page 3 of 3 is the seventh round alone.' );
+		$this->assertStringContainsString( 'Page 3 of 3: Round 7', $third );
+		$this->assertStringContainsString( 'rel="prev"', $third );
+		$this->assertStringNotContainsString( 'rel="next"', $third );
+
+		$_GET = array( 'cak_games_' . $id => '99' );
+		$this->assertStringContainsString( 'Page 7 of 7', $this->render( 'tournament-games', array( 'tournamentId' => $id ) ), 'A page past the end shows the last.' );
+
+		$_GET = array();
+		$two  = $this->render(
+			'tournament-games',
+			array(
+				'tournamentId'  => $id,
+				'roundsPerPage' => 2,
+			)
+		);
+		$this->assertSame( 8, substr_count( $two, 'data-game-id=' ) );
+		$this->assertStringContainsString( 'Round 1 to Round 2', $two );
+
+		$all = $this->render(
+			'tournament-games',
+			array(
+				'tournamentId'  => $id,
+				'roundsPerPage' => 0,
+			)
+		);
+		$this->assertSame( 28, substr_count( $all, 'data-game-id=' ) );
+		$this->assertStringNotContainsString( 'cak-games__pages', $all, 'No page links when everything is on one page.' );
+	}
+
 	public function test_winners_block_renders_a_table_or_an_empty_message() {
 		$this->assertStringContainsString( 'No tournaments have finished', $this->render( 'tournament-winners' ) );
 

@@ -32,6 +32,16 @@ class Chess_Army_Knife_LMS_Client {
 	const LEGACY_BASE = 'https://ecflms.org.uk/lms/lmsrest/league';
 
 	/**
+	 * Version 2 of the API: read-only JSON over GET, with an API key. It lists
+	 * an organisation's seasons, a season's events and an event's fixtures with
+	 * their dates and times. See get_fixtures().
+	 */
+	const V2_BASE = 'https://lms.englishchess.org.uk/lms/lmsrest/v2';
+
+	/** How long seasons and the events in them are cached: they rarely change. */
+	const V2_STRUCTURE_TTL = 6 * HOUR_IN_SECONDS;
+
+	/**
 	 * Fetch the league table (or knockout table / individual standings)
 	 * for a named event within an organisation.
 	 *
@@ -136,7 +146,6 @@ class Chess_Army_Knife_LMS_Client {
 		$bases = array_unique(
 			array_filter(
 				array(
-					Chess_Army_Knife_Settings::get_options()['lms_base_url'] ?: self::BASE,
 					self::BASE,
 					self::LEGACY_BASE,
 				)
@@ -361,6 +370,248 @@ class Chess_Army_Knife_LMS_Client {
 
 		if ( empty( $json ) ) {
 			return new WP_Error( 'lms_empty', __( 'No data was found. Check the organisation ID and that the event/club name matches exactly (case and spacing included).', 'chess-army-knife' ), $debug );
+		}
+
+		return $json;
+	}
+
+	/*
+	---------------------------------------------------------------
+	 * LMS v2 API.
+	 * ------------------------------------------------------------- */
+
+	/**
+	 * The v2 base URL.
+	 *
+	 * @return string No trailing slash.
+	 */
+	public static function v2_base() {
+		return self::V2_BASE;
+	}
+
+	/**
+	 * The API key from Settings.
+	 *
+	 * @return string
+	 */
+	public static function api_key() {
+		return trim( (string) Chess_Army_Knife_Settings::get_options()['lms_api_key'] );
+	}
+
+	/**
+	 * The fixtures of a team event, as the rows the rest of the plugin reads
+	 * (see normalise_match_row()). The event is found by name: the
+	 * organisation's active season, then the event in it with that name.
+	 *
+	 * @param string $org        Numeric organisation id.
+	 * @param string $event_name Event name, e.g. "Division One"; case and extra spaces are ignored.
+	 * @param bool   $refresh    Skip the cached copies, for a manual refresh.
+	 * @return array[]|WP_Error Normalised rows (empty for an event that has no fixtures, such as an individual one).
+	 */
+	public static function get_fixtures( $org, $event_name, $refresh = false ) {
+		$org        = trim( (string) $org );
+		$event_name = trim( (string) $event_name );
+
+		if ( '' === $org || '' === $event_name ) {
+			return new WP_Error( 'lms_missing_params', __( 'An LMS organisation ID and event/club name are required.', 'chess-army-knife' ) );
+		}
+		if ( '' === self::api_key() ) {
+			return new WP_Error( 'lms_no_api_key', __( 'Add your LMS API key under Settings to read fixtures from the LMS.', 'chess-army-knife' ) );
+		}
+
+		$seasons = self::v2_get( 'org/' . rawurlencode( $org ) . '/seasons', self::V2_STRUCTURE_TTL, $refresh );
+		if ( is_wp_error( $seasons ) ) {
+			return $seasons;
+		}
+
+		// Only the running season has fixtures worth importing.
+		$season_ids = array();
+		foreach ( isset( $seasons['seasons'] ) && is_array( $seasons['seasons'] ) ? $seasons['seasons'] : array() as $season ) {
+			if ( isset( $season['id'], $season['status'] ) && 'active' === $season['status'] ) {
+				$season_ids[] = (int) $season['id'];
+			}
+		}
+
+		$event_id = 0;
+		foreach ( $season_ids as $season_id ) {
+			$events = self::v2_get( 'season/' . $season_id . '/events', self::V2_STRUCTURE_TTL, $refresh );
+			if ( is_wp_error( $events ) ) {
+				return $events;
+			}
+			foreach ( isset( $events['events'] ) && is_array( $events['events'] ) ? $events['events'] : array() as $event ) {
+				if ( isset( $event['id'], $event['name'] ) && self::same_name( $event['name'], $event_name ) ) {
+					$event_id = (int) $event['id'];
+					break 2;
+				}
+			}
+		}
+
+		if ( ! $event_id ) {
+			return new WP_Error(
+				'lms_event_not_found',
+				sprintf(
+					/* translators: %s: event / division name */
+					__( 'No event called "%s" was found in the organisation\'s active season. Check the organisation ID and that the name matches the LMS.', 'chess-army-knife' ),
+					$event_name
+				)
+			);
+		}
+
+		$minutes = Chess_Army_Knife_Settings::get_effective_lms_cache_minutes( 'lms_results', 30 );
+		$results = self::v2_get( 'event/' . $event_id . '/results', max( 60, (int) $minutes * MINUTE_IN_SECONDS ), $refresh );
+		if ( is_wp_error( $results ) ) {
+			return $results;
+		}
+
+		$rows = array();
+		foreach ( isset( $results['fixtures'] ) && is_array( $results['fixtures'] ) ? $results['fixtures'] : array() as $fixture ) {
+			$row = self::normalise_fixture( $fixture );
+			if ( $row ) {
+				$rows[] = $row;
+			}
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Whether two event names are the same, ignoring case and extra spaces.
+	 *
+	 * @param string $a Name.
+	 * @param string $b Name.
+	 * @return bool
+	 */
+	protected static function same_name( $a, $b ) {
+		$clean = function ( $name ) {
+			return strtolower( trim( preg_replace( '/\s+/', ' ', (string) $name ) ) );
+		};
+
+		return $clean( $a ) === $clean( $b );
+	}
+
+	/**
+	 * One v2 fixture as a match row (see normalise_match_row()), with the players who
+	 * played (side, ECF code, name). The v2 API gives no venue, so that is left empty.
+	 *
+	 * @param mixed $fixture Entry of the results' "fixtures" list.
+	 * @return array|null Null if it is not a fixture.
+	 */
+	public static function normalise_fixture( $fixture ) {
+		if ( ! is_array( $fixture ) ) {
+			return null;
+		}
+
+		// The players who played each board, by the ECF rating code the LMS holds for them.
+		$players = array();
+		foreach ( isset( $fixture['games'] ) && is_array( $fixture['games'] ) ? $fixture['games'] : array() as $game ) {
+			foreach ( array(
+				'home' => 'home_player',
+				'away' => 'away_player',
+			) as $side => $key ) {
+				$player = isset( $game[ $key ] ) && is_array( $game[ $key ] ) ? $game[ $key ] : null;
+				$code   = $player ? trim( (string) self::pick( $player, array( 'rating_code' ), '' ) ) : '';
+				// A negative id is a bye or default, not a person.
+				if ( '' === $code || (int) self::pick( $player, array( 'lms_id' ), 0 ) < 0 ) {
+					continue;
+				}
+				$players[] = array(
+					'side' => $side,
+					'code' => $code,
+					'name' => (string) self::pick( $player, array( 'name' ), '' ),
+				);
+			}
+		}
+
+		return array(
+			'players'     => $players,
+			'venue'       => '',
+			'date'        => (string) self::pick( $fixture, array( 'date' ), '' ),
+			'time'        => (string) self::pick( $fixture, array( 'time' ), '' ),
+			'home'        => (string) self::pick( $fixture, array( 'home_team' ), '' ),
+			'away'        => (string) self::pick( $fixture, array( 'away_team' ), '' ),
+			'home_score'  => '',
+			'away_score'  => '',
+			'result_text' => '',
+		);
+	}
+
+	/**
+	 * GET a v2 path, cached.
+	 *
+	 * @param string $path    Path under the v2 base, e.g. "season/3/events".
+	 * @param int    $ttl     Seconds to cache for.
+	 * @param bool   $refresh Forget any cached copy first.
+	 * @return array|WP_Error Decoded JSON.
+	 */
+	protected static function v2_get( $path, $ttl, $refresh = false ) {
+		$key = 'lms2_v2_' . $path;
+
+		if ( $refresh ) {
+			Chess_Army_Knife_Cache::forget( $key );
+		}
+
+		return Chess_Army_Knife_Cache::remember(
+			$key,
+			$ttl,
+			function () use ( $path ) {
+				return self::v2_request( $path );
+			}
+		);
+	}
+
+	/**
+	 * Make one v2 request.
+	 *
+	 * @param string $path Path under the v2 base.
+	 * @return array|WP_Error Decoded JSON.
+	 */
+	protected static function v2_request( $path ) {
+		$url      = self::v2_base() . '/' . $path;
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout'    => 15,
+				'user-agent' => 'chess-army-knife WordPress Plugin/' . Chess_Army_Knife_VERSION . '; ' . home_url( '/' ),
+				'headers'    => array(
+					'Accept'        => 'application/json',
+					'Authorization' => 'Bearer ' . self::api_key(),
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error(
+				'lms_connection_error',
+				sprintf(
+					/* translators: 1: URL tried, 2: underlying error message */
+					__( 'Could not reach the LMS service at %1$s (%2$s).', 'chess-army-knife' ),
+					$url,
+					$response->get_error_message()
+				)
+			);
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		$body = wp_remote_retrieve_body( $response );
+		$data = array( 'status' => $code );
+
+		if ( 401 === $code ) {
+			return new WP_Error( 'lms_unauthorised', __( 'The LMS did not accept the API key. Check it under Settings.', 'chess-army-knife' ), $data );
+		}
+		if ( 403 === $code ) {
+			return new WP_Error( 'lms_forbidden', __( 'The LMS API key does not have permission to see that data.', 'chess-army-knife' ), $data );
+		}
+		if ( 404 === $code ) {
+			return new WP_Error( 'lms_not_found', __( 'The LMS could not find that organisation, season or event.', 'chess-army-knife' ), $data );
+		}
+		if ( $code >= 400 ) {
+			/* translators: %d: HTTP status code */
+			return new WP_Error( 'lms_http_error', sprintf( __( 'The LMS service returned an error (HTTP %d).', 'chess-army-knife' ), $code ), $data );
+		}
+
+		$json = json_decode( $body, true );
+		if ( ! is_array( $json ) ) {
+			return new WP_Error( 'lms_bad_response', __( 'The LMS service returned a response that could not be parsed as JSON.', 'chess-army-knife' ), $data );
 		}
 
 		return $json;

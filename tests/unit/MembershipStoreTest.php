@@ -128,7 +128,6 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 				'type_name'             => 'Junior',
 				'newsletter_consent_at' => null,
 				'whatsapp_consent_at'   => null,
-				'whatsapp_teams'        => '',
 			),
 			$member
 		);
@@ -257,39 +256,20 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		);
 	}
 
-	public function test_old_team_names_become_ids_and_unknown_ones_are_kept() {
-		$this->assertSame( array( 12, 11, 'Ghost Team' ), Chess_Army_Knife_Teams::normalise_ids( array( 'Club B', '11', 'Ghost Team', 'club a' ) ) );
-		$this->assertSame( array( 'Club B', 'Gone', 'Club A' ), Chess_Army_Knife_Teams::labels( array( 12, 'Gone', 11 ) ) );
-	}
-
-	public function test_the_teams_chosen_are_kept_only_with_a_whatsapp_opt_in_and_only_if_the_club_has_them() {
-		$chosen = Chess_Army_Knife_Membership_Store::sanitize_member(
+	public function test_a_whatsapp_agreement_is_recorded_without_any_choice_of_teams() {
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member(
 			$this->form_input(
 				array(
 					'phone'          => '0123',
 					'whatsapp'       => '1',
-					'whatsapp_teams' => array( '12', '12', '99', 'Club A', '11' ),
+					'whatsapp_teams' => array( '12', '11' ),
 				)
 			),
 			false
 		);
-		$this->assertSame( '[12,11]', $chosen['whatsapp_teams'] );
 
-		$no_opt_in = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp_teams' => array( '11' ) ) ), false );
-		$this->assertSame( '', $no_opt_in['whatsapp_teams'], 'Teams without a WhatsApp opt-in are not kept.' );
-		$this->assertNull( $no_opt_in['whatsapp_consent_at'] );
-
-		$none = Chess_Army_Knife_Membership_Store::sanitize_member(
-			$this->form_input(
-				array(
-					'phone'    => '0123',
-					'whatsapp' => '1',
-				)
-			),
-			false
-		);
-		$this->assertSame( '', $none['whatsapp_teams'], 'Opting in without choosing a team is allowed.' );
-		$this->assertSame( '2026-09-29', $none['whatsapp_consent_at'] );
+		$this->assertSame( '2026-09-29', $member['whatsapp_consent_at'] );
+		$this->assertArrayNotHasKey( 'whatsapp_teams', $member, 'Members do not choose teams: the club puts them in squads.' );
 	}
 
 	public function test_public_application_ignores_admin_only_fields() {

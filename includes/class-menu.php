@@ -47,6 +47,7 @@ class Chess_Army_Knife_Menu {
 			array(
 				Chess_Army_Knife_Teams::POST_TYPE,
 				Chess_Army_Knife_Events::POST_TYPE,
+				Chess_Army_Knife_Clubs::POST_TYPE,
 				Chess_Army_Knife_Memberships::POST_TYPE,
 				Chess_Army_Knife_Announcements::POST_TYPE,
 			),
@@ -160,6 +161,16 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $members_group,
+				'title'       => __( 'Do Not Record', 'chess-army-knife' ),
+				'description' => __( 'People who asked to be deleted, so the plugin does not record them again by itself.', 'chess-army-knife' ),
+				'key'         => 'do_not_record',
+				'slug'        => Chess_Army_Knife_Do_Not_Record::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Do_Not_Record', 'render_page' ),
+				'kind'        => 'members',
+				'can'         => $can_members,
+			),
+			array(
+				'group'       => $members_group,
 				'title'       => __( 'Announcements', 'chess-army-knife' ),
 				'description' => __( 'Messages to members, all of them or chosen teams.', 'chess-army-knife' ),
 				'key'         => 'announcements',
@@ -190,6 +201,27 @@ class Chess_Army_Knife_Menu {
 				'kind'        => 'teams',
 				'can'         => $can_teams,
 				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Clubs', 'chess-army-knife' ),
+				'description' => __( 'Other clubs and where they play, so away fixtures get a venue.', 'chess-army-knife' ),
+				'key'         => 'clubs',
+				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Clubs::POST_TYPE,
+				'callback'    => null,
+				'kind'        => 'teams',
+				'can'         => $can_teams,
+				'post_type'   => Chess_Army_Knife_Clubs::POST_TYPE,
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Sort Clubs', 'chess-army-knife' ),
+				'description' => __( 'Say which team names seen in the LMS belong to one club, and where it plays.', 'chess-army-knife' ),
+				'key'         => 'sort_clubs',
+				'slug'        => Chess_Army_Knife_Clubs::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Clubs', 'render_page' ),
+				'kind'        => 'teams',
+				'can'         => $can_teams,
 			),
 			array(
 				'group'       => $teams_group,
@@ -244,6 +276,18 @@ class Chess_Army_Knife_Menu {
 				'kind'        => 'pages',
 				'can'         => function () {
 					return current_user_can( Chess_Army_Knife_Policies::REQUIRED_CAP );
+				},
+			),
+			array(
+				'group'       => $setup_group,
+				'title'       => __( 'Setup', 'chess-army-knife' ),
+				'description' => __( 'Your club\'s name, venue, regular events, and ECF and LMS details, in one place.', 'chess-army-knife' ),
+				'key'         => 'setup',
+				'slug'        => Chess_Army_Knife_Setup::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Setup', 'render_page' ),
+				'kind'        => 'settings',
+				'can'         => function () {
+					return current_user_can( Chess_Army_Knife_Setup::REQUIRED_CAP );
 				},
 			),
 			array(
@@ -381,6 +425,7 @@ class Chess_Army_Knife_Menu {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Chess Army Knife', 'chess-army-knife' ); ?></h1>
+			<?php echo Chess_Army_Knife_Setup::notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
 			<?php echo Chess_Army_Knife_Policies::attention_notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in attention_notice(). ?>
 			<p class="description"><?php esc_html_e( 'Everything the plugin does is listed here. Some screens need a permission: the ones you cannot use say so.', 'chess-army-knife' ); ?></p>
 			<?php foreach ( $groups as $group => $areas ) : ?>

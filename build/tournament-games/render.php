@@ -30,8 +30,18 @@ if ( ! $tournament ) {
 	return;
 }
 
-$sections = Chess_Army_Knife_Tournament_Summary::games_to_play( $tournament_id );
-$can_edit = ! empty( $sections ) && Chess_Army_Knife_Tournaments::user_can_manage();
+// Show some rounds at a time, so a big tournament does not make a page of a hundred games.
+$rounds_per_page = isset( $attributes['roundsPerPage'] ) ? max( 0, min( 100, (int) $attributes['roundsPerPage'] ) ) : 1;
+$page_param      = 'cak_games_' . $tournament_id;
+$wanted          = isset( $_GET[ $page_param ] ) ? absint( $_GET[ $page_param ] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only choice of which page of games to show.
+$games_page      = Chess_Army_Knife_Tournament_Summary::paginate( Chess_Army_Knife_Tournament_Summary::games_to_play( $tournament_id ), $wanted, $rounds_per_page );
+$sections        = $games_page['sections'];
+$can_edit        = ! empty( $sections ) && Chess_Army_Knife_Tournaments::user_can_manage();
+
+// The address of a page of games: the first page has no page in its address.
+$page_url = function ( $number ) use ( $page_param ) {
+	return $number > 1 ? add_query_arg( $page_param, $number ) : remove_query_arg( $page_param );
+};
 
 // The score a player can be given, and the label shown for it.
 $score_options = array(
@@ -99,4 +109,32 @@ $score_options = array(
 			<?php endforeach; ?>
 		</ul>
 	<?php endforeach; ?>
+
+	<?php if ( $games_page['pages'] > 1 ) : ?>
+		<nav class="cak-games__pages" aria-label="<?php esc_attr_e( 'Pages of games', 'chess-army-knife' ); ?>">
+			<?php if ( $games_page['page'] > 1 ) : ?>
+				<a class="cak-games__prev" rel="prev" href="<?php echo esc_url( $page_url( $games_page['page'] - 1 ) ); ?>"><?php esc_html_e( 'Previous', 'chess-army-knife' ); ?></a>
+			<?php endif; ?>
+			<span class="cak-games__page" aria-current="page">
+				<?php
+				$labels = $games_page['labels'];
+				echo esc_html(
+					sprintf(
+						/* translators: 1: page, 2: number of pages, 3: the rounds shown, for example "Round 2" or "Round 2 to Round 4" */
+						__( 'Page %1$d of %2$d: %3$s', 'chess-army-knife' ),
+						$games_page['page'],
+						$games_page['pages'],
+						count( $labels ) > 1 ? sprintf( /* translators: 1: first round shown, 2: last round shown */ __( '%1$s to %2$s', 'chess-army-knife' ), reset( $labels ), end( $labels ) ) : (string) reset( $labels )
+					)
+				);
+				?>
+			</span>
+			<?php if ( $games_page['page'] < $games_page['pages'] ) : ?>
+				<a class="cak-games__next" rel="next" href="<?php echo esc_url( $page_url( $games_page['page'] + 1 ) ); ?>"><?php esc_html_e( 'Next', 'chess-army-knife' ); ?></a>
+			<?php endif; ?>
+		</nav>
+		<?php if ( $can_edit ) : ?>
+			<p class="cak-games__note"><?php esc_html_e( 'Save results before moving to another round.', 'chess-army-knife' ); ?></p>
+		<?php endif; ?>
+	<?php endif; ?>
 </div>

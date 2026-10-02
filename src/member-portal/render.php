@@ -29,11 +29,10 @@ $error_text = isset( $_GET['cak_portal_error'] ) ? Chess_Army_Knife_Member_Porta
 $session = '' !== $token ? Chess_Army_Knife_Member_Portal::session( $token ) : null;
 $change  = '' !== $email_link ? Chess_Army_Knife_Member_Portal::pending_email_change( $email_link ) : null;
 
-$team_choices = Chess_Army_Knife_Teams::choices();
-$categories   = Chess_Army_Knife_Notification_Preferences::categories();
-$labels       = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
-$date_format  = get_option( 'date_format' );
-$today        = current_time( 'Y-m-d' );
+$categories  = Chess_Army_Knife_Notification_Preferences::categories();
+$labels      = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
+$date_format = get_option( 'date_format' );
+$today       = current_time( 'Y-m-d' );
 
 /**
  * The hidden fields every portal form carries.
@@ -133,16 +132,6 @@ $heading      = function ( $depth, $text ) {
 			$has_parent    = '' !== $person['guardian_name'] . $person['guardian_email'];
 			$teams         = Chess_Army_Knife_Teams::teams_of_person( $person['id'] );
 			$picked        = Chess_Army_Knife_Selection::selections_for_person( $person['id'] );
-			$events        = array();
-			foreach ( Chess_Army_Knife_Event_Registrations::for_person( $person['id'] ) as $registration ) {
-				$event_post = get_post( $registration['event_id'] );
-				if ( $event_post && 'publish' === $event_post->post_status && substr( (string) get_post_meta( $event_post->ID, Chess_Army_Knife_Events::META_START, true ), 0, 10 ) >= $today ) {
-					$events[] = array(
-						'post'         => $event_post,
-						'registration' => $registration,
-					);
-				}
-			}
 			?>
 			<section class="cak-portal__person">
 				<?php echo $heading( 1, $person['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
@@ -222,10 +211,7 @@ $heading      = function ( $depth, $text ) {
 					<?php foreach ( $categories as $category => $category_label ) : ?>
 						<p class="cak-portal__check"><label><input type="checkbox" name="category[<?php echo esc_attr( $category ); ?>]" value="1" <?php checked( Chess_Army_Knife_Notification_Preferences::allows( $person, $category ) ); ?> /> <?php echo esc_html( $category_label ); ?></label></p>
 					<?php endforeach; ?>
-					<p class="cak-portal__check"><label><input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $person['whatsapp_consent_at'] ); ?> /> <?php esc_html_e( 'Add me to the WhatsApp group for the team(s) ticked below (my phone number is visible to the group)', 'chess-army-knife' ); ?></label></p>
-					<?php foreach ( $team_choices as $team_id => $team_name ) : ?>
-						<p class="cak-portal__check"><label><input type="checkbox" name="teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( in_array( $team_id, $person['whatsapp_teams'], true ) ); ?> /> <?php echo esc_html( $team_name ); ?></label></p>
-					<?php endforeach; ?>
+					<p class="cak-portal__check"><label><input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $person['whatsapp_consent_at'] ); ?> /> <?php esc_html_e( 'Add me to the WhatsApp group of the team(s) the club has me in (my phone number is visible to the group)', 'chess-army-knife' ); ?></label></p>
 					</fieldset>
 					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my choices', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), $person['name'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
 				</form>
@@ -239,19 +225,6 @@ $heading      = function ( $depth, $text ) {
 								/* translators: 1: fixture, 2: date, 3: team, 4: board number */
 								echo esc_html( sprintf( __( '%1$s, %2$s (%3$s, board %4$d)', 'chess-army-knife' ), $item['event']['title'], Chess_Army_Knife_Events_Display::date_label( $item['event'] ), $item['team']['name'], $item['board'] ) );
 								?>
-							</li>
-						<?php endforeach; ?>
-					</ul>
-				<?php endif; ?>
-
-				<?php if ( $events ) : ?>
-					<?php echo $heading( 2, __( 'Events you are registered for', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
-					<ul>
-						<?php foreach ( $events as $item ) : ?>
-							<li>
-								<?php echo esc_html( get_the_title( $item['post'] ) ); ?>
-								(<?php echo esc_html( Chess_Army_Knife_Event_Registrations::STATUS_WAITING === $item['registration']['status'] ? __( 'waiting list', 'chess-army-knife' ) : __( 'registered', 'chess-army-knife' ) ); ?>)
-								<a href="<?php echo esc_url( Chess_Army_Knife_Event_Registration_Form::cancel_url( $item['registration'] ) ); ?>"><?php esc_html_e( 'Cancel', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: event name */ __( ' registration for %s', 'chess-army-knife' ), get_the_title( $item['post'] ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
 							</li>
 						<?php endforeach; ?>
 					</ul>
