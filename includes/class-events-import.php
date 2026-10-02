@@ -315,9 +315,13 @@ class Chess_Army_Knife_Events_Import {
 
 			foreach ( self::team_matches( isset( $matches_by_league[ $group ] ) ? $matches_by_league[ $group ] : array(), $team['team'] ) as $match ) {
 				$side = self::side_of( $match, $team['team'] );
+				$date = self::parse_date( isset( $match['date'] ) ? $match['date'] : '' );
 				foreach ( isset( $match['players'] ) ? $match['players'] : array() as $player ) {
 					if ( $player['side'] === $side ) {
-						$by_team[ $key ][ strtoupper( $player['code'] ) ] = $player;
+						$code = strtoupper( $player['code'] );
+						// The latest game this person played for the team.
+						$player['last_played']    = max( $date, isset( $by_team[ $key ][ $code ]['last_played'] ) ? $by_team[ $key ][ $code ]['last_played'] : '' );
+						$by_team[ $key ][ $code ] = $player;
 					}
 				}
 			}
@@ -344,14 +348,20 @@ class Chess_Army_Knife_Events_Import {
 				continue;
 			}
 
-			$have = Chess_Army_Knife_Teams::squad( $team['id'] );
-			$new  = array();
+			$have   = Chess_Army_Knife_Teams::squad( $team['id'] );
+			$new    = array();
+			$latest = array();
 			foreach ( $players as $player ) {
 				$member = Chess_Army_Knife_Membership_Store::find_by_ecf_code( $player['code'] );
 				if ( ! $member || Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER === $member['status'] ) {
 					$unmatched[ strtoupper( $player['code'] ) ] = true;
-				} elseif ( ! in_array( $member['id'], $have, true ) ) {
+					continue;
+				}
+				if ( ! in_array( $member['id'], $have, true ) ) {
 					$new[] = $member['id'];
+				}
+				if ( ! empty( $player['last_played'] ) ) {
+					$latest[ $member['id'] ] = $player['last_played'];
 				}
 			}
 
@@ -359,6 +369,8 @@ class Chess_Army_Knife_Events_Import {
 				Chess_Army_Knife_Teams::add_to_squad( $team['id'], $new );
 				$added += count( array_unique( $new ) );
 			}
+			// Everyone who played, new to the squad or not, has their latest game noted, so a squad can be tidied later.
+			Chess_Army_Knife_Teams::record_appearances( $team['id'], $latest );
 		}
 
 		return array(

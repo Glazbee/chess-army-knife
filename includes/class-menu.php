@@ -225,6 +225,16 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $teams_group,
+				'title'       => __( 'Squad Review', 'chess-army-knife' ),
+				'description' => __( 'See who in a squad has not played for the team lately, and tidy the squads.', 'chess-army-knife' ),
+				'key'         => 'squad_review',
+				'slug'        => Chess_Army_Knife_Squad_Review::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Squad_Review', 'render_page' ),
+				'kind'        => 'teams',
+				'can'         => $can_teams,
+			),
+			array(
+				'group'       => $teams_group,
 				'title'       => __( 'Team Selection', 'chess-army-knife' ),
 				'description' => __( 'Ask the squad who can play and publish the line-up.', 'chess-army-knife' ),
 				'key'         => 'team_selection',

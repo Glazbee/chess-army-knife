@@ -132,6 +132,7 @@ class Chess_Army_Knife_Teams {
 			team_id BIGINT(20) UNSIGNED NOT NULL,
 			person_id BIGINT(20) UNSIGNED NOT NULL,
 			added_at DATETIME NOT NULL,
+			last_played DATE NULL,
 			PRIMARY KEY  (team_id,person_id),
 			KEY person_id (person_id)
 			) {$charset};"
@@ -505,32 +506,88 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
+	 * Note the latest game each person has played for a team, from a league import.
+	 *
+	 * @param int      $team_id Team id.
+	 * @param string[] $dates   Latest date played, "Y-m-d", by member id. Only a later date than the one held is kept.
+	 */
+	public static function record_appearances( $team_id, array $dates ) {
+		global $wpdb;
+
+		$table = self::squad_table();
+		foreach ( $dates as $person_id => $date ) {
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) $date ) ) {
+				continue;
+			}
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+			$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET last_played = %s WHERE team_id = %d AND person_id = %d AND ( last_played IS NULL OR last_played < %s )", $date, (int) $team_id, (int) $person_id, $date ) );
+		}
+	}
+
+	/**
+	 * A team's squad with when each person joined it and last played for it.
+	 *
+	 * @param int $team_id Team id.
+	 * @return array[] Each { person_id, added, last_played }; added is "Y-m-d" and last_played is "Y-m-d" or '' if never.
+	 */
+	public static function squad_rows( $team_id ) {
+		global $wpdb;
+
+		$table = self::squad_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT person_id, added_at, last_played FROM {$table} WHERE team_id = %d ORDER BY person_id ASC", (int) $team_id ), ARRAY_A );
+
+		return array_map(
+			function ( $row ) {
+				return array(
+					'person_id'   => (int) $row['person_id'],
+					'added'       => substr( (string) $row['added_at'], 0, 10 ),
+					'last_played' => null === $row['last_played'] ? '' : (string) $row['last_played'],
+				);
+			},
+			$rows
+		);
+	}
+
+	/**
+	 * Who in a squad has not played for the team since a date. Someone who has never played counts from
+	 * the day they were added, so a person added yesterday is not listed.
+	 *
+	 * @param array[] $rows   Rows from squad_rows().
+	 * @param string  $cutoff "Y-m-d": those last seen before this are listed.
+	 * @return array[] The same rows with seen (the date counted from) added, longest away first.
+	 */
+	public static function not_seen_since( array $rows, $cutoff ) {
+		$stale = array();
+		foreach ( $rows as $row ) {
+			$row['seen'] = '' !== $row['last_played'] ? $row['last_played'] : $row['added'];
+			if ( $row['seen'] < $cutoff ) {
+				$stale[] = $row;
+			}
+		}
+
+		usort(
+			$stale,
+			function ( $a, $b ) {
+				return strcmp( $a['seen'], $b['seen'] );
+			}
+		);
+
+		return $stale;
+	}
+
+	/**
 	 * Replace a team's squad. Only people the club holds a record of can be in it.
 	 *
 	 * @param int   $team_id    Team id.
 	 * @param int[] $person_ids Member ids.
 	 */
 	public static function set_squad( $team_id, array $person_ids ) {
-		global $wpdb;
+		$wanted = array_filter( array_unique( array_map( 'absint', $person_ids ) ) );
 
-		$table = self::squad_table();
-		$now   = current_time( 'mysql', true );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$wpdb->delete( $table, array( 'team_id' => (int) $team_id ), array( '%d' ) );
-		foreach ( array_unique( array_map( 'absint', $person_ids ) ) as $person_id ) {
-			if ( $person_id && Chess_Army_Knife_Membership_Store::get_member( $person_id ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal.
-				$wpdb->insert(
-					$table,
-					array(
-						'team_id'   => (int) $team_id,
-						'person_id' => $person_id,
-						'added_at'  => $now,
-					)
-				);
-			}
-		}
+		// Only the changes are made, so a person who stays keeps when they were added and last played.
+		self::remove_from_squad( $team_id, array_diff( self::squad( $team_id ), $wanted ) );
+		self::add_to_squad( $team_id, $wanted );
 	}
 
 	/**

@@ -237,4 +237,27 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( array(), Chess_Army_Knife_Events_Import::players_by_team( array( $this->team( 'Our A' ) ), $matches ) );
 	}
+
+	public function test_the_latest_game_each_player_played_for_the_team_is_noted() {
+		$players = function ( $code, $name ) {
+			return array(
+				'side' => 'home',
+				'code' => $code,
+				'name' => $name,
+			);
+		};
+		$matches = array(
+			'613|division 1' => array(
+				$this->match( 'Our A', 'Rivals', '2026-10-05', array( 'players' => array( $players( '111111A', 'Ada' ), $players( '222222B', 'Bea' ) ) ) ),
+				$this->match( 'Our A', 'Others', '2026-11-02', array( 'players' => array( $players( '111111A', 'Ada' ) ) ) ),
+				$this->match( 'Our A', 'More', '2026-10-19', array( 'players' => array( $players( '111111A', 'Ada' ) ) ) ),
+			),
+		);
+
+		$players_by_team = array_values( Chess_Army_Knife_Events_Import::players_by_team( array( $this->team( 'Our A' ) ), $matches ) )[0];
+		$last            = array_column( $players_by_team, 'last_played', 'name' );
+
+		$this->assertSame( '2026-11-02', $last['Ada'], 'The latest of her three games, whatever the order.' );
+		$this->assertSame( '2026-10-05', $last['Bea'] );
+	}
 }

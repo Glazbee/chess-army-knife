@@ -321,4 +321,60 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertEqualSets( array( $a, $b ), wp_list_pluck( Chess_Army_Knife_Captains::teams_for_user( $manager ), 'id' ) );
 		$this->assertSame( array( $a ), wp_list_pluck( Chess_Army_Knife_Captains::teams_for_user( $captain ), 'id' ) );
 	}
+
+	public function test_the_squad_remembers_when_each_person_last_played_and_only_moves_forward() {
+		$team = Chess_Army_Knife_Teams::get( $this->team() );
+		$ada  = $this->person( 'Ada Lovelace' );
+		$bea  = $this->person( 'Bea Babbage' );
+		Chess_Army_Knife_Teams::add_to_squad( $team['id'], array( $ada, $bea ) );
+
+		Chess_Army_Knife_Teams::record_appearances( $team['id'], array( $ada => '2026-10-05' ) );
+		Chess_Army_Knife_Teams::record_appearances(
+			$team['id'],
+			array(
+				$ada => '2026-09-01',
+				$bea => 'not a date',
+			)
+		);
+
+		$rows = array_column( Chess_Army_Knife_Teams::squad_rows( $team['id'] ), null, 'person_id' );
+		$this->assertSame( '2026-10-05', $rows[ $ada ]['last_played'], 'An earlier date does not move it back.' );
+		$this->assertSame( '', $rows[ $bea ]['last_played'] );
+		$this->assertSame( gmdate( 'Y-m-d' ), $rows[ $bea ]['added'] );
+	}
+
+	public function test_setting_a_squad_keeps_what_is_known_about_those_who_stay() {
+		$team = Chess_Army_Knife_Teams::get( $this->team() );
+		$ada  = $this->person( 'Ada Lovelace' );
+		$bea  = $this->person( 'Bea Babbage' );
+		$cy   = $this->person( 'Cy Turing' );
+		Chess_Army_Knife_Teams::add_to_squad( $team['id'], array( $ada, $bea ) );
+		Chess_Army_Knife_Teams::record_appearances( $team['id'], array( $ada => '2026-10-05' ) );
+
+		Chess_Army_Knife_Teams::set_squad( $team['id'], array( $ada, $cy ) );
+
+		$rows = array_column( Chess_Army_Knife_Teams::squad_rows( $team['id'] ), null, 'person_id' );
+		$this->assertSame( array( $ada, $cy ), array_keys( $rows ) );
+		$this->assertSame( '2026-10-05', $rows[ $ada ]['last_played'] );
+	}
+
+	public function test_the_review_removes_only_people_who_are_in_that_squad() {
+		$lions  = Chess_Army_Knife_Teams::get( $this->team( 'Lions' ) );
+		$tigers = Chess_Army_Knife_Teams::get( $this->team( 'Tigers' ) );
+		$ada    = $this->person( 'Ada Lovelace' );
+		$bea    = $this->person( 'Bea Babbage' );
+		Chess_Army_Knife_Teams::add_to_squad( $lions['id'], array( $ada ) );
+		Chess_Army_Knife_Teams::add_to_squad( $tigers['id'], array( $bea ) );
+
+		$removed = Chess_Army_Knife_Squad_Review::remove(
+			array(
+				$lions['id'] => array( $ada, $bea ), // Bea is not in the Lions.
+				999999       => array( $bea ),       // Not a team.
+			)
+		);
+
+		$this->assertSame( 1, $removed );
+		$this->assertSame( array(), Chess_Army_Knife_Teams::squad( $lions['id'] ) );
+		$this->assertSame( array( $bea ), Chess_Army_Knife_Teams::squad( $tigers['id'] ), 'Her place in the Tigers is untouched.' );
+	}
 }
