@@ -1,12 +1,17 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, Placeholder } from '@wordpress/components';
+import {
+	PanelBody,
+	SelectControl,
+	Placeholder,
+	TextControl,
+} from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import useTournaments from '../shared/use-tournaments';
 import TemplatePicker from '../shared/template-picker';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { tournamentId } = attributes;
+	const { tournamentId, pageSize } = attributes;
 	const blockProps = useBlockProps();
 	const tournaments = useTournaments();
 
@@ -31,6 +36,25 @@ export default function Edit( { attributes, setAttributes } ) {
 						options={ options }
 						onChange={ ( value ) =>
 							setAttributes( { tournamentId: Number( value ) } )
+						}
+					/>
+					<TextControl
+						type="number"
+						min={ 0 }
+						max={ 500 }
+						label={ __( 'Games on a page', 'chess-army-knife' ) }
+						help={ __(
+							'A long list is split into pages with Previous and Next links. Enter 0 to show every game on one page.',
+							'chess-army-knife'
+						) }
+						value={ pageSize }
+						onChange={ ( value ) =>
+							setAttributes( {
+								pageSize: Math.max(
+									0,
+									Math.min( 500, parseInt( value, 10 ) || 0 )
+								),
+							} )
 						}
 					/>
 				</PanelBody>

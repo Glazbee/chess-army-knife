@@ -149,6 +149,60 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'no games waiting', $this->render( 'tournament-games', array( 'tournamentId' => $id ) ) );
 	}
 
+	public function test_games_block_pages_a_long_list_with_previous_and_next_links() {
+		$id   = $this->tournament( 'Big', 8 ); // 28 games in one round.
+		$_GET = array();
+
+		$first = $this->render(
+			'tournament-games',
+			array(
+				'tournamentId' => $id,
+				'pageSize'     => 10,
+			)
+		);
+		$this->assertSame( 10, substr_count( $first, 'data-game-id=' ) );
+		$this->assertStringContainsString( 'Games 1 to 10 of 28 (page 1 of 3)', $first );
+		$this->assertStringContainsString( 'rel="next"', $first );
+		$this->assertStringNotContainsString( 'rel="prev"', $first );
+
+		$_GET = array( 'cak_games_' . $id => '3' );
+		$last = $this->render(
+			'tournament-games',
+			array(
+				'tournamentId' => $id,
+				'pageSize'     => 10,
+			)
+		);
+		$this->assertSame( 8, substr_count( $last, 'data-game-id=' ) );
+		$this->assertStringContainsString( 'Games 21 to 28 of 28 (page 3 of 3)', $last );
+		$this->assertStringContainsString( 'rel="prev"', $last );
+		$this->assertStringNotContainsString( 'rel="next"', $last );
+
+		$_GET = array( 'cak_games_' . $id => '99' );
+		$this->assertStringContainsString(
+			'page 3 of 3',
+			$this->render(
+				'tournament-games',
+				array(
+					'tournamentId' => $id,
+					'pageSize'     => 10,
+				)
+			),
+			'A page past the end shows the last.'
+		);
+
+		$_GET = array();
+		$all  = $this->render(
+			'tournament-games',
+			array(
+				'tournamentId' => $id,
+				'pageSize'     => 0,
+			)
+		);
+		$this->assertSame( 28, substr_count( $all, 'data-game-id=' ) );
+		$this->assertStringNotContainsString( 'cak-games__pages', $all, 'No page links when everything is on one page.' );
+	}
+
 	public function test_winners_block_renders_a_table_or_an_empty_message() {
 		$this->assertStringContainsString( 'No tournaments have finished', $this->render( 'tournament-winners' ) );
 
