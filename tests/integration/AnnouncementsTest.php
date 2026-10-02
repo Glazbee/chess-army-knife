@@ -328,7 +328,7 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		$html = ob_get_clean();
 
 		$this->assertStringContainsString( 'Who gets it', $html );
-		$this->assertStringContainsString( 'Right now that is 1 people', $html );
+		$this->assertStringContainsString( 'Right now that is 2 people', $html, 'Ada and Bob are in the squad; Cat is not.' );
 		$this->assertStringContainsString( 'Ada Lovelace — 0123', $html );
 		$this->assertStringNotContainsString( 'Bob Smith', $html );
 		$this->assertStringNotContainsString( 'Cat Jones', $html, 'Only squad members are listed for a team.' );
