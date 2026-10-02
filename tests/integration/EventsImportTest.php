@@ -731,4 +731,24 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertContains( 'Keyless Team', wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' ), 'The team is added; only the fetch is skipped.' );
 		$this->assertStringContainsString( 'no LMS API key', $no_key['problem'] );
 	}
+
+	public function test_a_list_of_clubs_is_added_and_a_second_paste_updates_instead_of_duplicating() {
+		$first = Chess_Army_Knife_Clubs::import_rows(
+			Chess_Army_Knife_Clubs::parse_csv( "Stroud,Stroud Badgers,The Library\nCheltenham,Cheltenham Knights;Cheltenham Rooks\n" )['rows']
+		);
+		$this->assertSame( 2, $first['created'] );
+
+		$second = Chess_Army_Knife_Clubs::import_rows(
+			Chess_Army_Knife_Clubs::parse_csv( "stroud,Stroud Hedgehogs,,,index.home.raft\n" )['rows']
+		);
+		$this->assertSame( 1, $second['updated'] );
+		$this->assertSame( 0, $second['created'] );
+
+		$stroud = Chess_Army_Knife_Clubs::find_by_team( 'Stroud Hedgehogs' );
+		$this->assertSame( 'Stroud', $stroud['name'] );
+		$this->assertSame( 'The Library', $stroud['venue'], 'A blank venue in the second list does not erase the first.' );
+		$this->assertSame( 'index.home.raft', $stroud['what3words'] );
+		$this->assertEqualsCanonicalizing( array( 'Stroud Badgers', 'Stroud Hedgehogs' ), $stroud['teams'] );
+		$this->assertCount( 2, Chess_Army_Knife_Clubs::all() );
+	}
 }
