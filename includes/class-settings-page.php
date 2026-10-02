@@ -609,6 +609,8 @@ class Chess_Army_Knife_Settings {
 				<?php submit_button(); ?>
 			</form>
 
+			<?php echo Chess_Army_Knife_LMS_Test::panel_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in panel_html(). ?>
+
 			<hr />
 
 			<h2><?php esc_html_e( 'Cache', 'chess-army-knife' ); ?></h2>

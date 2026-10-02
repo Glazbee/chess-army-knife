@@ -384,6 +384,8 @@ class Chess_Army_Knife_Setup {
 				</p>
 			</form>
 
+			<?php echo Chess_Army_Knife_LMS_Test::panel_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in panel_html(). ?>
+
 			<h2><?php esc_html_e( 'Next', 'chess-army-knife' ); ?></h2>
 			<ul class="ul-disc">
 				<li>

@@ -679,4 +679,15 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'No tournament has been created yet', $html );
 		$this->assertStringNotContainsString( 'No teams have been added', $html, 'set_up gave the club a team.' );
 	}
+
+	public function test_the_lms_test_button_is_for_administrators_and_tests_the_saved_key() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( '', Chess_Army_Knife_LMS_Test::panel_html() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertStringContainsString( 'Test the LMS connection', Chess_Army_Knife_LMS_Test::panel_html() );
+
+		$this->lms = array(); // The LMS lists the organisation's seasons, as set_up() arranged.
+		$this->assertSame( 'ok', Chess_Army_Knife_LMS_Test::run()['status'] );
+	}
 }
