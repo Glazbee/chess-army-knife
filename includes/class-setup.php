@@ -365,8 +365,8 @@ class Chess_Army_Knife_Setup {
 					<tr>
 						<th scope="row"><label for="cak-setup-lms-key"><?php esc_html_e( 'LMS API key', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="password" id="cak-setup-lms-key" name="lms_api_key" value="<?php echo esc_attr( $options['lms_api_key'] ); ?>" class="regular-text" autocomplete="off" />
-							<p class="description"><?php esc_html_e( 'Create a key on your LMS account\'s "API keys" page. It is needed to import your teams\' fixtures into the calendar.', 'chess-army-knife' ); ?></p>
+							<input type="password" id="cak-setup-lms-key" name="lms_api_key" value="" class="regular-text" autocomplete="new-password" aria-describedby="cak-setup-lms-key-help" placeholder="<?php echo esc_attr( '' !== $options['lms_api_key'] ? __( 'A key is saved. Type a new one to replace it.', 'chess-army-knife' ) : '' ); ?>" />
+							<p class="description" id="cak-setup-lms-key-help"><?php esc_html_e( 'Create a key on your LMS account\'s "API keys" page. It is needed to import your teams\' fixtures into the calendar. Once saved, the key is not shown again.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

@@ -710,6 +710,7 @@ class Chess_Army_Knife_Policies {
 			<?php endif; ?>
 
 			<h2 id="keeping-details"><?php esc_html_e( 'Keeping members\' details', 'chess-army-knife' ); ?></h2>
+			<?php if ( self::can_set_retention() ) : ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_KEEP ); ?>" />
 				<?php wp_nonce_field( self::ACTION_KEEP ); ?>
@@ -720,6 +721,9 @@ class Chess_Army_Knife_Policies {
 				</p>
 				<p><button type="submit" class="button"><?php esc_html_e( 'Save', 'chess-army-knife' ); ?></button></p>
 			</form>
+			<?php else : ?>
+				<p><?php echo esc_html( sprintf( /* translators: %d: number of months */ __( 'Details are kept for %d months after someone stops being a member (0 means until deleted by hand). An administrator or a membership officer can change this.', 'chess-army-knife' ), (int) Chess_Army_Knife_Settings::get_options()['member_retention_months'] ) ); ?></p>
+			<?php endif; ?>
 
 			<?php foreach ( self::policies() as $key => $policy ) : ?>
 				<?php
@@ -889,6 +893,9 @@ class Chess_Army_Knife_Policies {
 	public static function handle_keep() {
 		check_admin_referer( self::ACTION_KEEP );
 		self::require_permission();
+		if ( ! self::can_set_retention() ) {
+			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ), 403 );
+		}
 
 		self::set_retention_months( isset( $_POST['member_retention_months'] ) ? sanitize_text_field( wp_unslash( $_POST['member_retention_months'] ) ) : 24 );
 		wp_safe_redirect( self::screen_url( array( 'cak_policy_done' => 'kept' ) ) . '#keeping-details' );
@@ -898,6 +905,17 @@ class Chess_Army_Knife_Policies {
 	/**
 	 * Stop anyone who may not edit pages.
 	 */
+	/**
+	 * Whether the current user may change how long members' details are kept. That decides when
+	 * people's records are deleted automatically, so it is not for everyone who can edit pages:
+	 * it takes an administrator or someone given the members permission.
+	 *
+	 * @return bool
+	 */
+	public static function can_set_retention() {
+		return current_user_can( 'manage_options' ) || Chess_Army_Knife_Memberships::user_can_manage();
+	}
+
 	protected static function require_permission() {
 		if ( ! current_user_can( self::REQUIRED_CAP ) ) {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ), 403 );
