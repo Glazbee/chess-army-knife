@@ -161,6 +161,16 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $members_group,
+				'title'       => __( 'Do Not Record', 'chess-army-knife' ),
+				'description' => __( 'People who asked to be deleted, so the plugin does not record them again by itself.', 'chess-army-knife' ),
+				'key'         => 'do_not_record',
+				'slug'        => Chess_Army_Knife_Do_Not_Record::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Do_Not_Record', 'render_page' ),
+				'kind'        => 'members',
+				'can'         => $can_members,
+			),
+			array(
+				'group'       => $members_group,
 				'title'       => __( 'Announcements', 'chess-army-knife' ),
 				'description' => __( 'Messages to members, all of them or chosen teams.', 'chess-army-knife' ),
 				'key'         => 'announcements',

@@ -185,6 +185,34 @@ class Chess_Army_Knife_Members_Page {
 			Chess_Army_Knife_Member_Export::download( $members );
 		}
 
+		if ( 'erase' === $action ) {
+			if ( empty( $_POST['erase_confirm'] ) ) {
+				wp_safe_redirect( add_query_arg( 'bulk_error', 'erase_confirm', $back ) );
+				exit;
+			}
+			$do_not_record = ! empty( $_POST['erase_do_not_record'] );
+			$deleted       = 0;
+			$kept          = 0;
+			foreach ( $members as $member ) {
+				if ( 'anonymised' === Chess_Army_Knife_Membership_Store::erase_member( $member['id'], $do_not_record ) ) {
+					++$kept;
+				} else {
+					++$deleted;
+				}
+			}
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'bulk'       => 'erase',
+						'bulk_count' => $deleted,
+						'bulk_to'    => $kept,
+					),
+					$back
+				)
+			);
+			exit;
+		}
+
 		$done = array(
 			'bulk'       => $action,
 			'bulk_count' => count( $members ),
@@ -231,10 +259,11 @@ class Chess_Army_Knife_Members_Page {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
 		if ( isset( $_GET['bulk_error'] ) ) {
 			$errors = array(
-				'none'   => __( 'Tick at least one member first.', 'chess-army-knife' ),
-				'type'   => __( 'Please choose a membership type.', 'chess-army-knife' ),
-				'team'   => __( 'Please choose a team.', 'chess-army-knife' ),
-				'action' => __( 'Please choose what to do with the ticked members.', 'chess-army-knife' ),
+				'none'          => __( 'Tick at least one member first.', 'chess-army-knife' ),
+				'type'          => __( 'Please choose a membership type.', 'chess-army-knife' ),
+				'team'          => __( 'Please choose a team.', 'chess-army-knife' ),
+				'action'        => __( 'Please choose what to do with the ticked members.', 'chess-army-knife' ),
+				'erase_confirm' => __( 'Tick the box to confirm you want the ticked people\'s details deleted. Nothing was changed.', 'chess-army-knife' ),
 			);
 			$code   = sanitize_key( wp_unslash( $_GET['bulk_error'] ) );
 			return array( 'error', isset( $errors[ $code ] ) ? $errors[ $code ] : $errors['action'] );
@@ -248,6 +277,10 @@ class Chess_Army_Knife_Members_Page {
 		$to     = sanitize_text_field( wp_unslash( $_GET['bulk_to'] ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
+		if ( 'erase' === $action ) {
+			/* translators: 1: number of people deleted, 2: number of records kept without personal details */
+			return array( 'success', sprintf( __( 'Deleted %1$d people. %2$d records were kept without any personal details because they are tied to a payment, photos or a tournament.', 'chess-army-knife' ), $count, absint( $_GET['bulk_to'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state.
+		}
 		if ( 'type' === $action ) {
 			/* translators: 1: number of members, 2: membership type */
 			return array( 'success', sprintf( _n( '%1$d member moved to %2$s.', '%1$d members moved to %2$s.', $count, 'chess-army-knife' ), $count, $to ) );
@@ -292,6 +325,7 @@ class Chess_Army_Knife_Members_Page {
 						<option value="type"><?php esc_html_e( 'Change membership type to…', 'chess-army-knife' ); ?></option>
 						<option value="team_add"><?php esc_html_e( 'Add to team…', 'chess-army-knife' ); ?></option>
 						<option value="team_remove"><?php esc_html_e( 'Remove from team…', 'chess-army-knife' ); ?></option>
+						<option value="erase"><?php esc_html_e( 'Delete personal details…', 'chess-army-knife' ); ?></option>
 					<?php endif; ?>
 					<option value="export"><?php esc_html_e( 'Export to CSV', 'chess-army-knife' ); ?></option>
 				</select>
@@ -311,6 +345,12 @@ class Chess_Army_Knife_Members_Page {
 						<?php endforeach; ?>
 					</select>
 				<?php endif; ?>
+				<?php if ( $full ) : ?>
+					<span class="cak-bulk-erase">
+						<label><input type="checkbox" name="erase_confirm" value="1" /> <?php esc_html_e( 'For "Delete personal details": I understand this cannot be undone', 'chess-army-knife' ); ?></label>
+						<label><input type="checkbox" name="erase_do_not_record" value="1" /> <?php esc_html_e( 'and do not record them again', 'chess-army-knife' ); ?></label>
+					</span>
+				<?php endif; ?>
 				<input type="submit" class="button action" value="<?php esc_attr_e( 'Apply', 'chess-army-knife' ); ?>" />
 			</div>
 		</div>
@@ -327,9 +367,10 @@ class Chess_Army_Knife_Members_Page {
 		check_admin_referer( 'chess_army_knife_delete_member_' . $id );
 
 		// Deleted outright, unless the record is tied to a payment, photos or a tournament, in which case its personal details are removed and the rest is kept.
-		Chess_Army_Knife_Membership_Store::erase_member( $id );
+		// The second link also stops the plugin recording the person again by itself.
+		Chess_Army_Knife_Membership_Store::erase_member( $id, ! empty( $_GET['do_not_record'] ) );
 
-		wp_safe_redirect( self::url( array( 'deleted' => '1' ) ) );
+		wp_safe_redirect( self::url( array( 'deleted' => empty( $_GET['do_not_record'] ) ? '1' : 'dnr' ) ) );
 		exit;
 	}
 
@@ -386,7 +427,7 @@ class Chess_Army_Knife_Members_Page {
 		if ( isset( $_GET['saved'] ) ) {
 			$notice = array( 'success', __( 'Member saved.', 'chess-army-knife' ) );
 		} elseif ( isset( $_GET['deleted'] ) ) {
-			$notice = array( 'success', __( 'Member deleted.', 'chess-army-knife' ) );
+			$notice = array( 'success', 'dnr' === $_GET['deleted'] ? __( 'Member deleted. The plugin will not record them again by itself.', 'chess-army-knife' ) : __( 'Member deleted.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only screen state, compared with fixed text.
 		} elseif ( isset( $_GET['updated'] ) ) {
 			$notice = array( 'success', __( 'Member updated.', 'chess-army-knife' ) );
 		} elseif ( isset( $_GET['renewed'] ) ) {
@@ -537,7 +578,8 @@ class Chess_Army_Knife_Members_Page {
 											<span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span>
 										</a> |
 									<?php endif; ?>
-									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details? If they have a payment, photos or tournament entries on record, those stay but without their personal details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a>
+									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details? If they have a payment, photos or tournament entries on record, those stay but without their personal details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
+									<a href="<?php echo esc_url( self::action_url( 'delete_member', $member['id'], array( 'do_not_record' => '1' ) ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this person and their details, and do not record them again? Their ECF rating code and name are kept only as a one-way fingerprint, so imports and tournaments will not create a record for them. Anything tied to the club\'s accounts stays, without their details.', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Delete and do not record again', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a>
 								</div>
 							</td>
 							<td><?php echo esc_html( $member['type_name'] ); ?></td>

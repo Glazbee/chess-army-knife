@@ -591,7 +591,8 @@ class Chess_Army_Knife_Member_Portal {
 			return new WP_Error( 'confirm', __( 'Please tick the box to confirm you want your details deleted.', 'chess-army-knife' ) );
 		}
 
-		$result = Chess_Army_Knife_Membership_Store::erase_member( $person['id'] );
+		// A person who deletes their own details asked to go: they are not recorded again by accident.
+		$result = Chess_Army_Knife_Membership_Store::erase_member( $person['id'], true );
 		return '' === $result ? new WP_Error( 'person', __( 'That record could not be found.', 'chess-army-knife' ) ) : $result;
 	}
 

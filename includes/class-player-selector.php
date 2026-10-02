@@ -160,6 +160,9 @@ class Chess_Army_Knife_Player_Selector {
 			$person_id = Chess_Army_Knife_Membership_Store::ensure_person( $player['name'], $player['ecf_code'], $player['manual_rating'] );
 			if ( $person_id ) {
 				$player_ids[] = $person_id;
+			} elseif ( Chess_Army_Knife_Do_Not_Record::is_blocked( $player['ecf_code'], $player['name'] ) ) {
+				/* translators: %s: player name */
+				$outcome['errors'][] = sprintf( __( '%s was not entered: the club was asked not to record this person. If this is someone else with the same name, give their ECF rating code.', 'chess-army-knife' ), $player['name'] );
 			}
 		}
 		$outcome['errors'] = $new['errors'];

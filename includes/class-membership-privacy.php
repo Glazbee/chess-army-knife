@@ -297,7 +297,8 @@ class Chess_Army_Knife_Membership_Privacy {
 			$photos = count( Chess_Army_Knife_Member_Photos::photo_ids( $member['id'] ) );
 			$paid   = '' !== $member['paid_on'];
 
-			if ( 'anonymised' === Chess_Army_Knife_Membership_Store::erase_member( $member['id'] ) ) {
+			// Someone who asks to be erased is not recorded again by accident.
+			if ( 'anonymised' === Chess_Army_Knife_Membership_Store::erase_member( $member['id'], true ) ) {
 				$retained = true;
 				if ( $paid ) {
 					$messages[] = __( 'A payment record was kept for the club\'s accounts, without any personal details.', 'chess-army-knife' );
@@ -371,6 +372,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				'paragraphs' => array(
 					__( 'When you apply, we collect your name, the membership you want and your email address. We also collect your phone number and ECF rating code, if you give them. We record when and how you paid. Club officers may add notes to your record.', 'chess-army-knife' ),
 					__( 'We also keep the name and ECF rating code of people who take part in tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
+					__( 'If you ask us to delete your details, we may keep a one-way scrambled code made from your ECF rating code and name. It cannot be turned back into either, and is only used so that we do not record you again by mistake.', 'chess-army-knife' ),
 					__( 'You can see and correct your details, choose what we email you, and delete your details yourself, at any time, from the members\' page on this website. You sign in with a link we email to the address we hold for you.', 'chess-army-knife' ),
 					__( 'If you play in a club team, the team captain can see your name and rating. The captain can ask if you can play in a match, and can record your reply and whether they pick you. We delete a reply or line-up when we delete the match, when you ask us to delete your details, or after the retention period.', 'chess-army-knife' ),
 					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. A club officer puts you in a team, or you are added when the league\'s match results show you played for it. Only club officers can see this.', 'chess-army-knife' ),

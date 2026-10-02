@@ -23,6 +23,7 @@ wp_clear_scheduled_hook( 'Chess_Army_Knife_send_announcements' );
 delete_option( 'Chess_Army_Knife_settings' );
 delete_option( 'Chess_Army_Knife_club_teams' );
 delete_option( 'Chess_Army_Knife_clubs_seen' );
+delete_option( 'Chess_Army_Knife_do_not_record' );
 delete_option( 'Chess_Army_Knife_club_teams_migrated' );
 delete_option( 'Chess_Army_Knife_templates' );
 // The policy pages are the club's own text, so they stay; only the plugin's note of which pages they are goes.

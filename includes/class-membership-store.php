@@ -601,6 +601,11 @@ class Chess_Army_Knife_Membership_Store {
 			return $row['id'];
 		}
 
+		// Someone who asked to be deleted is not recorded again by accident.
+		if ( Chess_Army_Knife_Do_Not_Record::is_blocked( $ecf_code, $name ) ) {
+			return 0;
+		}
+
 		return self::add_guest(
 			array(
 				'name'          => $name,
@@ -624,6 +629,11 @@ class Chess_Army_Knife_Membership_Store {
 		$existing = self::find_by_ecf_code( $ecf_code );
 		if ( $existing ) {
 			return $existing['id'];
+		}
+
+		// Nothing is fetched about someone the club was asked not to record.
+		if ( Chess_Army_Knife_Do_Not_Record::is_blocked( $ecf_code, '' ) ) {
+			return new WP_Error( 'do_not_record', __( 'The club was asked not to record this person.', 'chess-army-knife' ) );
 		}
 
 		$player = Chess_Army_Knife_ECF_Client::get_player_by_code( $ecf_code, false );
@@ -939,13 +949,18 @@ class Chess_Army_Knife_Membership_Store {
 	 * still be found and reviewed and the tournament still adds up; any other
 	 * record is deleted.
 	 *
-	 * @param int $id Member id.
+	 * @param int  $id            Member id.
+	 * @param bool $do_not_record Also remember not to record this person again (see Chess_Army_Knife_Do_Not_Record).
 	 * @return string 'deleted', 'anonymised', or '' if there is no such member.
 	 */
-	public static function erase_member( $id ) {
+	public static function erase_member( $id, $do_not_record = false ) {
 		$member = self::get_member( $id );
 		if ( ! $member ) {
 			return '';
+		}
+
+		if ( $do_not_record ) {
+			Chess_Army_Knife_Do_Not_Record::add( $member['ecf_code'], $member['name'] );
 		}
 
 		// A record is kept, without personal details, while it has a payment on it or is tagged

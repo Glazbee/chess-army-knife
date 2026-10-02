@@ -458,4 +458,86 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'chess_army_policy_link', $suggested );
 		$this->assertStringContainsString( 'privacy-policy-tutorial', $suggested );
 	}
+
+	public function test_deleting_a_member_can_stop_the_plugin_recording_them_again() {
+		$id = Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => 'Ada Lovelace',
+				'email'    => 'ada@example.test',
+				'status'   => 'active',
+				'ecf_code' => '123456A',
+			)
+		);
+
+		$this->assertSame( 'deleted', Chess_Army_Knife_Membership_Store::erase_member( $id, true ) );
+
+		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id ) );
+		$this->assertTrue( Chess_Army_Knife_Do_Not_Record::is_blocked( '123456A', '' ) );
+		$this->assertSame( 0, Chess_Army_Knife_Membership_Store::ensure_person( 'Ada Lovelace', '123456A' ), 'No record is made by a tournament entry.' );
+		$this->assertSame( 0, Chess_Army_Knife_Membership_Store::ensure_person( 'Lovelace, Ada', '' ), 'Nor by name alone.' );
+		$this->assertWPError( Chess_Army_Knife_Membership_Store::record_ecf_player( '123456A' ), 'Nor by an ECF lookup.' );
+		$this->assertNull( Chess_Army_Knife_Membership_Store::find_by_ecf_code( '123456A' ) );
+
+		// Someone else is not caught, and the person can be added on purpose.
+		$this->assertGreaterThan( 0, Chess_Army_Knife_Membership_Store::ensure_person( 'Bea Babbage', '222222B' ) );
+		$this->assertGreaterThan(
+			0,
+			Chess_Army_Knife_Membership_Store::add_guest(
+				array(
+					'name'     => 'Ada Lovelace',
+					'ecf_code' => '123456A',
+				)
+			),
+			'A deliberate entry by an admin is allowed.'
+		);
+	}
+
+	public function test_a_record_tied_to_a_payment_is_kept_without_details_and_the_person_is_still_blocked() {
+		$id = Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => 'Ada Lovelace',
+				'email'    => 'ada@example.test',
+				'status'   => 'active',
+				'paid_on'  => '2026-01-01',
+				'ecf_code' => '123456A',
+			)
+		);
+
+		$this->assertSame( 'anonymised', Chess_Army_Knife_Membership_Store::erase_member( $id, true ) );
+
+		$kept = Chess_Army_Knife_Membership_Store::get_member( $id );
+		$this->assertSame( '', $kept['ecf_code'] );
+		$this->assertSame( '', $kept['email'] );
+		$this->assertTrue( Chess_Army_Knife_Do_Not_Record::is_blocked( '123456A', '' ) );
+	}
+
+	public function test_a_deletion_without_the_option_and_the_automatic_cleanup_do_not_block_anyone() {
+		$id = Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => 'Ada Lovelace',
+				'email'    => 'ada@example.test',
+				'status'   => 'active',
+				'ecf_code' => '123456A',
+			)
+		);
+
+		Chess_Army_Knife_Membership_Store::erase_member( $id );
+
+		$this->assertFalse( Chess_Army_Knife_Do_Not_Record::is_blocked( '123456A', '' ) );
+	}
+
+	public function test_a_wordpress_erasure_request_stops_the_person_being_recorded_again() {
+		Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => 'Ada Lovelace',
+				'email'    => 'ada@example.test',
+				'status'   => 'active',
+				'ecf_code' => '123456A',
+			)
+		);
+
+		Chess_Army_Knife_Membership_Privacy::erase( 'ada@example.test' );
+
+		$this->assertTrue( Chess_Army_Knife_Do_Not_Record::is_blocked( '123456A', '' ) );
+	}
 }
