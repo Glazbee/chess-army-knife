@@ -35,12 +35,20 @@ class Chess_Army_Knife_Clubs {
 		add_action( 'save_post_' . self::POST_TYPE, array( __CLASS__, 'save' ) );
 		add_action( 'admin_post_' . self::ACTION_SORT, array( __CLASS__, 'handle_sort' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'list_notice' ) );
-	}
+
+		// The list is kept for the request (an import looks teams and clubs up for every fixture) and forgotten when one changes.
+		foreach ( array( 'save_post', 'before_delete_post', 'wp_trash_post', 'untrashed_post' ) as $hook ) {
+			add_action( $hook, array( __CLASS__, 'flush_memo_for_post' ) );
+		}
+		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
+			add_action( $hook, array( __CLASS__, 'flush_memo_for_meta' ), 10, 2 );
+		}   }
 
 	/**
 	 * Register the club post type: private, listed in the plugin's menu.
 	 */
 	public static function register() {
+		wp_cache_add_non_persistent_groups( self::MEMO_GROUP ); // Kept for the request only.
 		register_post_type(
 			self::POST_TYPE,
 			array(
@@ -145,12 +153,41 @@ class Chess_Army_Knife_Clubs {
 	 * The directory
 	 * ------------------------------------------------------------- */
 
+	/** Object cache group holding the list from all() for the request. */
+	const MEMO_GROUP = 'chess_army_knife_memo';
+
+	/**
+	 * Forget the kept list, because a post of this type changed.
+	 *
+	 * @param int $post_id Post id.
+	 */
+	public static function flush_memo_for_post( $post_id ) {
+		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+			wp_cache_delete( 'all', self::MEMO_GROUP );
+		}
+	}
+
+	/**
+	 * Forget the kept list, because a post of this type had a meta value changed.
+	 *
+	 * @param int $meta_id Meta id.
+	 * @param int $post_id Post id.
+	 */
+	public static function flush_memo_for_meta( $meta_id, $post_id ) {
+		self::flush_memo_for_post( $post_id );
+	}
+
 	/**
 	 * Every club in the directory.
 	 *
 	 * @return array[] Each { id, name, venue, map_url, what3words, teams }.
 	 */
 	public static function all() {
+		$kept = wp_cache_get( 'all', self::MEMO_GROUP );
+		if ( is_array( $kept ) ) {
+			return $kept;
+		}
+
 		$clubs = array();
 		foreach ( get_posts(
 			array(
@@ -163,6 +200,7 @@ class Chess_Army_Knife_Clubs {
 		) as $post ) {
 			$clubs[] = self::data( $post );
 		}
+		wp_cache_set( 'all', $clubs, self::MEMO_GROUP );
 
 		return $clubs;
 	}

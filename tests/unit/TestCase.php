@@ -25,6 +25,11 @@ abstract class Chess_Army_Knife_TestCase extends PHPUnit\Framework\TestCase {
 		$this->options    = array();
 		$this->transients = array();
 
+		// No object cache in unit tests, so the kept lists of teams and clubs are never reused between calls.
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_cache_delete' )->justReturn( true );
+
 		Functions\when( 'get_option' )->alias(
 			function ( $name, $default = false ) {
 				return array_key_exists( $name, $this->options ) ? $this->options[ $name ] : $default;
