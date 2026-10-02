@@ -272,4 +272,81 @@ class EventBlocksTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Division 1', $shown );
 		$this->assertStringNotContainsString( 'Club Championship', $hidden );
 	}
+
+	public function test_the_details_block_finds_the_event_attached_to_its_page() {
+		$page  = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+			)
+		);
+		$other = $this->event( 'Not this one', '2099-03-01 19:00:00' );
+		$event = $this->event(
+			'Summer Blitz',
+			'2099-02-01 19:30:00',
+			array( 'Blitz' ),
+			array(
+				Chess_Army_Knife_Events::META_PAGE     => $page,
+				Chess_Army_Knife_Events::META_LOCATION => 'The Library',
+			)
+		);
+		$this->assertSame( $event, Chess_Army_Knife_Events::event_for_page( $page ) );
+		$this->assertSame( 0, Chess_Army_Knife_Events::event_for_page( 0 ) );
+		$this->assertNotSame( $other, Chess_Army_Knife_Events::event_for_page( $page ) );
+
+		$GLOBALS['post'] = get_post( $page ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- The block reads the page being viewed.
+		setup_postdata( $GLOBALS['post'] );
+		$html = $this->render( 'club-event-details' );
+
+		$this->assertStringContainsString( 'The Library', $html );
+		$this->assertStringContainsString( 'Blitz', $html );
+		$this->assertStringContainsString( 'Add to my calendar', $html );
+		$this->assertStringNotContainsString( 'Not this one', $html );
+	}
+
+	public function test_the_details_block_shows_a_chosen_event_and_says_nothing_to_visitors_when_there_is_none() {
+		$event = $this->event( 'Chosen', '2099-02-01 19:30:00', array(), array( Chess_Army_Knife_Events::META_LOCATION => 'Chosen Hall' ) );
+
+		$this->assertStringContainsString( 'Chosen Hall', $this->render( 'club-event-details', array( 'eventId' => $event ) ) );
+
+		$page            = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$GLOBALS['post'] = get_post( $page ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- The block reads the page being viewed.
+		setup_postdata( $GLOBALS['post'] );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( '', trim( $this->render( 'club-event-details' ) ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertStringContainsString( 'no event is attached', $this->render( 'club-event-details' ) );
+	}
+
+	public function test_a_draft_event_is_not_shown_by_the_details_block() {
+		$event = $this->event( 'Secret', '2099-02-01 19:30:00' );
+		wp_update_post(
+			array(
+				'ID'          => $event,
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertNull( Chess_Army_Knife_Events::details( $event ) );
+		$this->assertNull( Chess_Army_Knife_Events::details( 0 ) );
+	}
+
+	public function test_the_details_of_a_repeating_event_are_for_its_next_date() {
+		$event = $this->event(
+			'Weekly night',
+			'2020-01-06 19:00:00',
+			array(),
+			array(
+				Chess_Army_Knife_Events::META_REPEAT => 'weekly',
+				Chess_Army_Knife_Events::META_SKIP   => array(),
+			)
+		);
+
+		$details = Chess_Army_Knife_Events::details( $event );
+
+		$this->assertGreaterThanOrEqual( current_time( 'Y-m-d' ), substr( $details['start'], 0, 10 ) );
+		$this->assertSame( '19:00:00', substr( $details['start'], 11 ) );
+	}
 }

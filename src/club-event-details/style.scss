@@ -1,0 +1,27 @@
+@use "../shared/a11y";
+
+.wp-block-chess-army-knife-club-event-details {
+	margin-bottom: 1.5em;
+
+	.cak-event__when {
+		margin: 0 0 0.5em;
+		font-size: 1.15em;
+		font-weight: 700;
+	}
+
+	.cak-event__time {
+		margin-left: 0.5em;
+	}
+
+	.cak-event__status {
+		font-weight: 700;
+	}
+
+	.cak-event__tag {
+		display: inline-block;
+		padding: 0.05em 0.6em;
+		border: 1px solid currentcolor;
+		border-radius: 1em;
+		font-size: 0.85em;
+	}
+}

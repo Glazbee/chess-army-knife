@@ -180,6 +180,15 @@ class Chess_Army_Knife_Block_Help {
 				'needs'    => array( __( 'A tournament, created on the Tournaments screen.', 'chess-army-knife' ) ),
 				'where'    => array( 'tournaments' ),
 			),
+			'club-event-details'   => array(
+				'use'      => __( 'When and where one club event is: the date, time, venue with a map link and what3words address, whether it is cancelled or moved, and an Add to my calendar link. Put it on the page attached to the event and it finds the event by itself.', 'chess-army-knife' ),
+				'settings' => array(
+					__( 'Leave the event on "the event this page is attached to", or choose a particular event.', 'chess-army-knife' ),
+					__( 'Choose whether to show the location, the team, the tournaments and leagues with the calendar link, and the tags.', 'chess-army-knife' ),
+				),
+				'needs'    => array( __( 'A club event. Ticking "Create a draft page for this event" on the event makes a page with this block already on it.', 'chess-army-knife' ) ),
+				'where'    => array( 'club_events' ),
+			),
 			'club-event-calendar'  => array(
 				'use'      => __( 'Upcoming club events, as a list by date or a month grid.', 'chess-army-knife' ),
 				'settings' => array(

@@ -488,6 +488,64 @@ class Chess_Army_Knife_Events {
 	}
 
 	/**
+	 * The published event a page is attached to.
+	 *
+	 * @param int $page_id Page id.
+	 * @return int The event's id, or 0 if no published event has this page attached.
+	 */
+	public static function event_for_page( $page_id ) {
+		$page_id = (int) $page_id;
+		if ( ! $page_id ) {
+			return 0;
+		}
+
+		$ids = get_posts(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'meta_key'       => self::META_PAGE, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- One lookup of a page's event; the post type is small.
+				'meta_value'     => $page_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- As above.
+			)
+		);
+
+		return $ids ? (int) $ids[0] : 0;
+	}
+
+	/**
+	 * One published event as data, at its next occurrence (or its first, if a one-off is over or a
+	 * repeat has ended), for the page that is about it.
+	 *
+	 * @param int $event_id Event id.
+	 * @return array|null See data(); null if there is no such published event.
+	 */
+	public static function details( $event_id ) {
+		// get_post( 0 ) would give the page being viewed.
+		$post = $event_id ? get_post( (int) $event_id ) : null;
+		if ( ! $post || self::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
+			return null;
+		}
+
+		$first  = (string) get_post_meta( $post->ID, self::META_START, true );
+		$end    = (string) get_post_meta( $post->ID, self::META_END, true );
+		$length = '' !== $end ? max( 0, (int) self::to_timestamp( $end ) - (int) self::to_timestamp( $first ) ) : 0;
+		$now    = gmdate( 'Y-m-d H:i:s', strtotime( current_time( 'mysql' ) . ' UTC' ) - $length ); // An occurrence still under way counts.
+
+		$starts = self::occurrence_starts(
+			$first,
+			(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
+			(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
+			$now,
+			'',
+			self::skipped_dates( $post->ID )
+		);
+
+		return self::data( $post, $starts ? $starts[0] : '' );
+	}
+
+	/**
 	 * The page attached to an event, if it is published (a draft would only give visitors a 404).
 	 *
 	 * @param int $event_id Event id.

@@ -12,7 +12,7 @@ Gutenberg blocks for English chess clubs: ECF ratings and league data, club tour
 
 == Description ==
 
-This plugin adds seventeen blocks to the WordPress block editor, pulling live data from:
+This plugin adds eighteen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -38,6 +38,7 @@ Blocks are grouped in the inserter under five headings: **Chess: Ratings & Playe
 14. **Club Memberships** — advertise the memberships the club offers (junior, adult, senior or any others) with their prices and descriptions, and how to pay. Optionally link each one to your application form.
 15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
 O. **Manage My Data** — lets a member stop the newsletter or WhatsApp groups, ask for a copy of their details, or ask for them to be deleted, without an account. Changes are confirmed by an emailed link.
+S. **Club Event Details** — when and where one club event is, with a map link and an Add to my calendar link. On the page attached to an event it finds the event by itself; the draft page made from an event already has it.
 R. **Team Results** — one team's league position, next fixture and results, with the board-by-board results of each match.
 P. **Club Teams** — shows the club's teams: name, description, home venue and leagues (never the captain or squad). Show all teams or pick one.
 Q. **Member Portal** — lets members see and correct their own details, choose their emails, change their email address and delete their data, using an emailed link.
@@ -149,6 +150,7 @@ Yes — add as many blocks as you like, each configured independently.
 = Unreleased =
 * Added: deleting people's details from the admin panel. On the Members list, tick people and choose **Delete personal details…** (with a confirm tick) to delete a group at once, or use **Delete** or **Delete and do not record again** on a single member. A record tied to a payment or photos is kept without any personal details. A person's name stays on the results of tournaments already started, as a historical record, but is unlinked from any record, so nothing leads from it to their other games; in a tournament that has not started their entry is simply removed.
 * Changed: **ECF League Standings & Matchups** and **ECF Team Fixtures** now read the LMS v2 API (the same API key as Import Events) instead of the old LMS service. The league table is worked out from the results (a win is 1 point, a draw half a point) and also shows board points for and against; the list under it shows the next fixtures coming up, then the latest results. Both blocks have a **Season** setting: leave it empty for the current season, or type an earlier one as the LMS names it (for example 2025-2026) to show its final table. Earlier seasons are kept for a week. The LMS gives no venues, so the "show match location" setting has gone.
+* Added: the **Club Event Details** block, and the draft page made from an event now has it on it, so the page shows the event's date, time, venue, map link and calendar link as soon as it is made.
 * Security: the LMS API key is now stored encrypted in the database and is never shown again after it is saved (a blank box on Settings keeps it; there is a tick box to remove it). It can also be set in wp-config.php with `define( 'CHESS_ARMY_KNIFE_LMS_API_KEY', '...' );`, which keeps it out of the database altogether.
 * Security: changing how long members' details are kept now needs an administrator or someone with the members permission, not just anyone who can edit pages.
 * Security: the editor's player search (names and ECF codes of members) is now for Editors and above by default, not Contributors and Authors; the `Chess_Army_Knife_member_search_capability` filter changes it.

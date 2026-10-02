@@ -279,7 +279,7 @@ class Chess_Army_Knife_Events_Admin {
 							<?php esc_html_e( 'Create a draft page for this event when I save', 'chess-army-knife' ); ?>
 						</label>
 					<?php endif; ?>
-					<p class="description"><?php esc_html_e( 'An event has no page of its own. Attach a page to link the event to it wherever it is listed.', 'chess-army-knife' ); ?></p>
+					<p class="description"><?php esc_html_e( 'An event has no page of its own. Attach a page to link the event to it wherever it is listed. A page made here has the Club Event Details block on it, which shows the date, place and calendar link.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -411,9 +411,11 @@ class Chess_Army_Knife_Events_Admin {
 		if ( ! empty( $_POST['chess_army_event_create_page'] ) && ! $page_id && current_user_can( 'edit_pages' ) ) {
 			$created = wp_insert_post(
 				array(
-					'post_type'   => 'page',
-					'post_status' => 'draft',
-					'post_title'  => get_the_title( $post_id ),
+					'post_type'    => 'page',
+					'post_status'  => 'draft',
+					'post_title'   => get_the_title( $post_id ),
+					// The block shows this event's date, place and calendar link, found from the page.
+					'post_content' => '<!-- wp:chess-army-knife/club-event-details /-->',
 				)
 			);
 			$page_id = is_wp_error( $created ) ? 0 : (int) $created;
