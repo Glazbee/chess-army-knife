@@ -46,15 +46,17 @@ Branch: `claude/wonderful-archimedes-07ikpe` (PR 27). The next PR should start f
 ## Decisions already made (do not re-ask)
 
 - Tournament pagination is by **rounds**, not games.
+- Players ask for a place in a team **in person**; there is no online request or note about teams. An admin then adds them.
+- WhatsApp in the plugin is **records only** (consent, and who should be in each group); it never contacts WhatsApp.
 - Squads are managed **only by admins in the admin panel**; captains who are not admins ask an admin. No captain-facing squad editing.
 - A membership created in the admin panel is marked **junior** when its type is a junior one. A junior type does **not** offer "I am applying for my child"; the junior section simply appears for junior types.
 - Clubs are a **private** directory; they only feed the location of events.
 - Venues are entered by hand by the site admin (a Google Maps link and/or what3words), not looked up.
 - Anything that depends on live behaviour I could not see must be **flagged "verify on your site"**, not reported as confirmed.
 
-## Open question
+## Open questions
 
-- Should an applicant be able to tell the officers which team they would like to play for (a free-text note on the application form)? Teams can no longer be ticked. Not yet answered.
+None at the moment.
 
 ## Backlog for the next PR, in the proposed order
 
