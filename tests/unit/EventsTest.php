@@ -232,4 +232,41 @@ class EventsTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( array( '2026-12-25', '2026-12-28' ), $dates );
 	}
+
+	public function test_a_weekly_event_stays_at_the_same_clock_time_when_the_clocks_change() {
+		Functions\when( 'wp_timezone' )->justReturn( new DateTimeZone( 'Europe/London' ) );
+
+		// The clocks go back on 25 October 2026 and forward on 28 March 2027.
+		$autumn = Chess_Army_Knife_Events::occurrence_starts( '2026-10-19 19:00:00', 'weekly', '', '', '2026-11-03 00:00:00' );
+		$spring = Chess_Army_Knife_Events::occurrence_starts( '2027-03-22 19:00:00', 'weekly', '', '', '2027-04-06 00:00:00' );
+
+		$this->assertSame( array( '2026-10-19 19:00:00', '2026-10-26 19:00:00', '2026-11-02 19:00:00' ), $autumn );
+		$this->assertSame( array( '2027-03-22 19:00:00', '2027-03-29 19:00:00', '2027-04-05 19:00:00' ), $spring );
+
+		// The real time between them is a week plus or minus the hour the clocks moved.
+		$this->assertSame( 7 * DAY_IN_SECONDS + HOUR_IN_SECONDS, Chess_Army_Knife_Events::to_timestamp( $autumn[1] ) - Chess_Army_Knife_Events::to_timestamp( $autumn[0] ) );
+		$this->assertSame( 7 * DAY_IN_SECONDS - HOUR_IN_SECONDS, Chess_Army_Knife_Events::to_timestamp( $spring[1] ) - Chess_Army_Knife_Events::to_timestamp( $spring[0] ) );
+	}
+
+	public function test_a_time_that_does_not_exist_or_happens_twice_still_has_a_start() {
+		Functions\when( 'wp_timezone' )->justReturn( new DateTimeZone( 'Europe/London' ) );
+
+		// 01:30 on 28 March 2027 is skipped by the clocks going forward; on 25 October 2026 it happens twice.
+		$skipped  = Chess_Army_Knife_Events::to_timestamp( '2027-03-28 01:30:00' );
+		$repeated = Chess_Army_Knife_Events::to_timestamp( '2026-10-25 01:30:00' );
+
+		$this->assertSame( gmmktime( 1, 30, 0, 3, 28, 2027 ), $skipped, 'Read as 02:30 summer time, which is 01:30 UTC.' );
+		$this->assertSame( gmmktime( 1, 30, 0, 10, 25, 2026 ), $repeated, 'PHP takes the later of the two, in winter time.' );
+	}
+
+	public function test_a_monthly_event_on_the_29th_to_31st_keeps_to_the_end_of_a_shorter_month_across_a_leap_year() {
+		$this->assertSame(
+			array( '2027-12-31 20:00:00', '2028-01-31 20:00:00', '2028-02-29 20:00:00', '2028-03-31 20:00:00' ),
+			Chess_Army_Knife_Events::occurrence_starts( '2027-12-31 20:00:00', 'monthly', '', '', '2028-04-01 00:00:00' )
+		);
+		$this->assertSame(
+			array( '2027-02-28 20:00:00', '2027-03-29 20:00:00' ),
+			Chess_Army_Knife_Events::occurrence_starts( '2027-01-29 20:00:00', 'monthly', '', '2027-02-01 00:00:00', '2027-04-01 00:00:00' )
+		);
+	}
 }
