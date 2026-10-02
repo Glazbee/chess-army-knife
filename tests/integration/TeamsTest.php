@@ -377,4 +377,39 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertSame( array(), Chess_Army_Knife_Teams::squad( $lions['id'] ) );
 		$this->assertSame( array( $bea ), Chess_Army_Knife_Teams::squad( $tigers['id'] ), 'Her place in the Tigers is untouched.' );
 	}
+
+	public function test_a_whatsapp_link_is_shown_only_to_squad_members_who_agreed() {
+		$link  = 'https://chat.whatsapp.com/AbCdEfGhIjKlMn12';
+		$lions = Chess_Army_Knife_Teams::get( $this->team( 'Lions', array( Chess_Army_Knife_Teams::META_WHATSAPP => $link ) ) );
+		$other = Chess_Army_Knife_Teams::get( $this->team( 'Tigers', array( Chess_Army_Knife_Teams::META_WHATSAPP => $link ) ) );
+		$this->team( 'No link' );
+
+		$agreed = $this->person( 'Ada Lovelace', array( 'whatsapp_consent_at' => '2026-01-01 10:00:00' ) );
+		$silent = $this->person( 'Bea Babbage' );
+		Chess_Army_Knife_Teams::add_to_squad( $lions['id'], array( $agreed, $silent ) );
+		$this->assertNotNull( $other );
+
+		$ada = Chess_Army_Knife_Membership_Store::get_member( $agreed );
+		$bea = Chess_Army_Knife_Membership_Store::get_member( $silent );
+
+		$this->assertSame(
+			array(
+				array(
+					'name' => 'Lions',
+					'link' => $link,
+				),
+			),
+			Chess_Army_Knife_Teams::whatsapp_groups_for_person( $ada ),
+			'Only her own team, not the Tigers.'
+		);
+		$this->assertSame( array(), Chess_Army_Knife_Teams::whatsapp_groups_for_person( $bea ), 'She did not agree to WhatsApp.' );
+	}
+
+	public function test_a_team_without_a_link_gives_nothing_even_to_someone_who_agreed() {
+		$team   = Chess_Army_Knife_Teams::get( $this->team( 'No link' ) );
+		$agreed = $this->person( 'Ada Lovelace', array( 'whatsapp_consent_at' => '2026-01-01 10:00:00' ) );
+		Chess_Army_Knife_Teams::add_to_squad( $team['id'], array( $agreed ) );
+
+		$this->assertSame( array(), Chess_Army_Knife_Teams::whatsapp_groups_for_person( Chess_Army_Knife_Membership_Store::get_member( $agreed ) ) );
+	}
 }

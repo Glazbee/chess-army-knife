@@ -60,10 +60,11 @@ class Chess_Army_Knife_Teams_Admin {
 	 * @param WP_Post $post Team being edited.
 	 */
 	public static function render_details( $post ) {
-		$venue   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
-		$captain = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
-		$colour  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
-		$tag     = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_TAG, true );
+		$venue    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
+		$captain  = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
+		$colour   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
+		$tag      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_TAG, true );
+		$whatsapp = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_WHATSAPP, true );
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
@@ -85,6 +86,13 @@ class Chess_Army_Knife_Teams_Admin {
 					<input type="color" id="chess_army_team_colour" name="chess_army_team_colour" value="<?php echo esc_attr( '' !== $colour ? $colour : '#2a78d6' ); ?>" />
 					<label><input type="checkbox" name="chess_army_team_no_colour" value="1" <?php checked( '' === $colour ); ?> /> <?php esc_html_e( 'No colour', 'chess-army-knife' ); ?></label>
 					<p class="description"><?php esc_html_e( 'Marks this team\'s fixtures on the calendar. The team name is always shown too.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_team_whatsapp"><?php esc_html_e( 'WhatsApp group invite link', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<input type="url" id="chess_army_team_whatsapp" name="chess_army_team_whatsapp" value="<?php echo esc_attr( $whatsapp ); ?>" class="regular-text" placeholder="https://chat.whatsapp.com/..." aria-describedby="chess_army_team_whatsapp_help" />
+					<p class="description" id="chess_army_team_whatsapp_help"><?php esc_html_e( 'Optional. Shown in the Member Portal only to members in this team\'s squad who agreed to WhatsApp groups. Anyone who has the link can join the group, and everyone in a group can see members\' names and phone numbers, so share it with care. The plugin never contacts WhatsApp.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -214,6 +222,7 @@ class Chess_Army_Knife_Teams_Admin {
 		}
 
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_TAG, isset( $_POST['chess_army_team_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_tag'] ) ) : '' );
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_WHATSAPP, isset( $_POST['chess_army_team_whatsapp'] ) ? Chess_Army_Knife_Teams::clean_whatsapp_link( sanitize_text_field( wp_unslash( $_POST['chess_army_team_whatsapp'] ) ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_VENUE, isset( $_POST['chess_army_team_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_venue'] ) ) : '' );
 
 		$colour = ! empty( $_POST['chess_army_team_no_colour'] ) || ! isset( $_POST['chess_army_team_colour'] ) ? '' : (string) sanitize_hex_color( wp_unslash( $_POST['chess_army_team_colour'] ) );

@@ -31,12 +31,13 @@ class Chess_Army_Knife_Teams {
 	const MIGRATED_OPTION = 'Chess_Army_Knife_club_teams_migrated';
 	const LEGACY_OPTION   = 'Chess_Army_Knife_club_teams';
 
-	const META_VENUE   = '_chess_army_team_venue';
-	const META_CAPTAIN = '_chess_army_team_captain';
-	const META_SEASONS = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
-	const META_LEAGUES = '_chess_army_team_leagues';
-	const META_COLOUR  = '_chess_army_team_colour';
-	const META_TAG     = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
+	const META_VENUE    = '_chess_army_team_venue';
+	const META_CAPTAIN  = '_chess_army_team_captain';
+	const META_SEASONS  = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
+	const META_LEAGUES  = '_chess_army_team_leagues';
+	const META_COLOUR   = '_chess_army_team_colour';
+	const META_TAG      = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
+	const META_WHATSAPP = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
 	/**
 	 * Hook up registration and cleanup.
@@ -223,6 +224,7 @@ class Chess_Army_Knife_Teams {
 			'captain_id'  => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
 			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
+			'whatsapp'    => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -577,6 +579,44 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
+	 * A WhatsApp group invite link: only an https://chat.whatsapp.com/ address is kept.
+	 *
+	 * @param string $url What was entered.
+	 * @return string The link, or '' if it is not one.
+	 */
+	public static function clean_whatsapp_link( $url ) {
+		$url = trim( (string) $url );
+
+		return preg_match( '#^https://chat\.whatsapp\.com/[A-Za-z0-9]{10,40}/?$#', $url ) ? $url : '';
+	}
+
+	/**
+	 * The WhatsApp groups a person may be shown a link to: those of the teams whose squad they are in (or
+	 * that they captain), and only if they agreed to WhatsApp. Anyone with a link can join the group, so
+	 * it is shown nowhere else.
+	 *
+	 * @param array $person Member row.
+	 * @return array[] Each { name, link }.
+	 */
+	public static function whatsapp_groups_for_person( array $person ) {
+		if ( '' === (string) $person['whatsapp_consent_at'] ) {
+			return array();
+		}
+
+		$groups = array();
+		foreach ( self::teams_of_person( $person['id'] ) as $team ) {
+			if ( '' !== $team['whatsapp'] ) {
+				$groups[] = array(
+					'name' => $team['name'],
+					'link' => $team['whatsapp'],
+				);
+			}
+		}
+
+		return $groups;
+	}
+
+	/**
 	 * Replace a team's squad. Only people the club holds a record of can be in it.
 	 *
 	 * @param int   $team_id    Team id.
@@ -713,9 +753,10 @@ class Chess_Army_Knife_Teams {
 			$captain = (int) $person_id === $team['captain_id'];
 			if ( $captain || in_array( $team['id'], $in_squad, true ) ) {
 				$teams[] = array(
-					'id'      => $team['id'],
-					'name'    => $team['name'],
-					'captain' => $captain,
+					'id'       => $team['id'],
+					'name'     => $team['name'],
+					'captain'  => $captain,
+					'whatsapp' => $team['whatsapp'],
 				);
 			}
 		}
