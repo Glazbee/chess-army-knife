@@ -98,6 +98,47 @@ The target is WCAG AAA (`docs/accessibility-audit.md`; every earlier finding is 
 - Setup: also ask for team details and offer to run the first import.
 - Performance: `Events::query()` loads every published event and expands repeats in PHP, which is fine for hundreds. Cache month HTML if a club has thousands.
 
+## More suggestions (added after PR 27 was merged)
+
+Size: S is under an hour, M is a few hours, L is a day or more. "Evidence" says where the idea came from, so it can be checked.
+
+### A. Process and quality (these protect everything else)
+1. **Check that `build/` is up to date in CI (S).** `build/` is committed, but CI never runs `npm run build`. A change under `src/` with a forgotten rebuild would pass CI and ship stale JavaScript and CSS. Add a CI step that builds and fails if `git diff --exit-code build` shows a difference. Evidence: `.github/workflows/ci.yml` only runs Prettier for JS.
+2. **A unit test for missing methods (S).** Scan `includes/` and `src/` for every `Chess_Army_Knife_Class::method(` call and assert the method is defined. This would have caught the deleted `title_html()` before CI, and it needs no WordPress.
+3. **A faster way to run the integration tests (M).** They run only in CI, and this PR needed four CI rounds for bugs a local run would have shown in seconds. `CLAUDE.md` says not to run them locally, so this is a decision for the site owner: either allow `wp-env` or a Docker file for developers, or accept the cost. Evidence: the failures for `array('')`, the squad table and round paging.
+4. **A security review of the new admin handlers (M).** Run the security review over everything added in PR 27: Setup, Clubs and Sort Clubs, Do Not Record, bulk deletion, the policy forms and the squad import. Check each `admin-post` handler for a nonce, a capability check and sanitised input. None has had a review beyond PHPCS.
+5. **Automatic accessibility checks (M).** The audit was done by hand, with axe run once on a mock page. Add axe to CI against a rendered fixture of each block's markup, so a regression fails the build. Pair with the accessibility pass in backlog item 6.
+
+### B. Admin and data
+6. **Memoise the repeated lookups in an import (S).** `Teams::team_for_season()` and `Clubs::find_by_team()` each load every team or club (a query plus meta reads) on every call, and an import calls them for every fixture and player. Fine for a dozen teams, slow for a big league. Cache the lists for the length of the request. Evidence: `team_for_season()` loops over `all()` each call; `find_by_team()` calls `all()`.
+7. **Run big imports in the background (M).** An import is one admin request making three LMS calls per league at up to 15 seconds each, which can hit a time limit with many divisions. Process one league at a time through WP-Cron or a short "continue" loop, with a progress line. This pairs with the scheduled import in backlog item 3.
+8. **A "Test connection" button for the LMS key and the ECF (S).** Today a wrong key only shows when an import runs. A button on Settings and Setup that makes one cheap call and says "connected", "key rejected" or "cannot reach the LMS" would save a lot of guessing.
+9. **A squad review screen (M).** Imports only add people to squads and never remove them, so squads grow. List squad members who have not appeared on a board for a team this season, with a one-click remove. Evidence: `sync_squads()` is add-only by design.
+10. **Do Not Record housekeeping (S).** Show the number of fingerprints on the Overview. Warn on the screen that changing the site's secret keys empties the list. Consider an export of the list for backup, since it cannot be rebuilt from the database after the records are gone.
+11. **A way to blank a name on past tournament results (S).** A deleted person's name stays on results already played, which is a legitimate record. If someone objects, the admin currently has no way to blank it. Add an "Anonymise this name" action on a tournament entry that has no record behind it.
+12. **Bulk import of clubs (M).** Entering other clubs and their venues one at a time is slow for a big league. Accept a CSV (club, team names, venue, map link, what3words), and keep Sort Clubs for the rest.
+
+### C. Calendar and events
+13. **A "Club Event Details" block for the attached page (M).** An event has no page of its own, and the page the admin creates for it is empty. A block that shows that event's date, time, location, map link and what3words, with a link to add it to a calendar, would make the attached page useful on creation, and the create-page action could insert it. Evidence: `save_page()` creates an empty draft.
+14. **Create the event for a tournament from the tournament (M).** You wanted tournaments linked to a coinciding event. Today the link is made from the event side. Add "Create an event for this tournament" on the tournament screen, with the date, a link back, and the attached tournament page.
+15. **Proper event types (M).** Club night, coaching, competitive games and tournament are tags with generated colours. Real event types (a fixed list with a default colour, tag, and whether it repeats) would make the Setup screen, the key and the filters simpler. Keep tags for anything finer, such as team names.
+16. **Daylight saving tests for repeating events (S).** Repeats are worked out as wall-clock times, which should survive the clocks changing. There is no test across the change in March or October. Add one, and one for a monthly event on the 31st across February.
+17. **Smaller calendar feeds with real repeats (M).** The `.ics` feed lists every occurrence for 12 months. A repeating event could be one `RRULE` entry (with `EXDATE` for skipped dates), which is smaller and lets calendar apps show repeats properly. Do this with the holiday skips in backlog item 2.
+
+### D. Teams and members
+18. **A WhatsApp invite link per team, shown only to people who agreed (M).** WhatsApp is records only today. If the club wants members to find their group, store an invite link on the team and show it in the Member Portal to members who agreed and are in that squad. This is optional and a privacy decision for the site owner: anyone with the link can join.
+19. **A team page for the officers (M).** Squad, captain, venue, calendar tag, league entries, next fixtures and who has not replied to availability, all in one place. Today these are spread over Teams, Team Selection and Members.
+20. **Setup should finish the job (M).** After the club's name, venue, regular events and API details, offer to add the first team and its league, run the first import, and open Sort Clubs. A new club would then end setup with a populated calendar.
+
+### E. Documentation and help
+21. **Update Block Help and the readme structure (S).** Block Help does not mention the new screens (Setup, Clubs, Sort Clubs, Do Not Record) or the colour key. The readme has grown by appending: reorganise it into "Getting started", "Each screen", "Each block" and "Changelog".
+22. **A short officers' guide (M).** One page on the weekly routine: import, sort new clubs, review squads, publish the line-up, deal with a deletion request. It would also be the test that the screens make sense together.
+
+### Suggested release grouping
+- **Release 1, foundations:** A1 to A4, B6, B8, plus backlog items 1 (membership flow) and 3 (scheduled import and the Overview panel). These make everything after safer to build.
+- **Release 2, calendar and teams:** backlog items 2 and 4, C13 to C17, B9, D19.
+- **Release 3, polish:** backlog items 5 and 6, A5, B10 to B12, D18, D20, E21 and E22.
+
 ## Things that were not verified (flag these to the site owner)
 
 - Nothing was run against a real WordPress page, a real LMS v2 response, or a screen reader.
