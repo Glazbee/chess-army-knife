@@ -41,11 +41,34 @@ class KeptListsTest extends WP_UnitTestCase {
 			)
 		);
 		Chess_Army_Knife_Teams::all();
-		$this->assertNotFalse( wp_cache_get( 'all', Chess_Army_Knife_Teams::MEMO_GROUP ) );
+		$this->assertNotFalse( wp_cache_get( 'teams', Chess_Army_Knife_Teams::MEMO_GROUP ) );
 
 		self::factory()->post->create( array( 'post_type' => 'post' ) );
 
-		$this->assertNotFalse( wp_cache_get( 'all', Chess_Army_Knife_Teams::MEMO_GROUP ), 'An import saves many events; they must not empty the list each time.' );
+		$this->assertNotFalse( wp_cache_get( 'teams', Chess_Army_Knife_Teams::MEMO_GROUP ), 'An import saves many events; they must not empty the list each time.' );
+	}
+
+	public function test_teams_and_clubs_do_not_share_a_kept_list() {
+		self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
+				'post_title'  => 'Lions',
+				'post_status' => 'publish',
+			)
+		);
+		self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Clubs::POST_TYPE,
+				'post_title'  => 'Stroud',
+				'post_status' => 'draft',
+			)
+		);
+
+		Chess_Army_Knife_Teams::all();
+		Chess_Army_Knife_Clubs::all();
+
+		$this->assertSame( array( 'Lions' ), wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' ) );
+		$this->assertSame( array( 'Stroud' ), wp_list_pluck( Chess_Army_Knife_Clubs::all(), 'name' ) );
 	}
 
 	public function test_the_list_of_clubs_follows_changes_to_a_club() {
@@ -53,7 +76,7 @@ class KeptListsTest extends WP_UnitTestCase {
 			array(
 				'post_type'   => Chess_Army_Knife_Clubs::POST_TYPE,
 				'post_title'  => 'Stroud',
-				'post_status' => 'private',
+				'post_status' => 'draft', // A club is never public.
 			)
 		);
 		$this->assertSame( array( 'Stroud' ), wp_list_pluck( Chess_Army_Knife_Clubs::all(), 'name' ) );

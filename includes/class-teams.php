@@ -152,7 +152,7 @@ class Chess_Army_Knife_Teams {
 	 */
 	public static function flush_memo_for_post( $post_id ) {
 		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
-			wp_cache_delete( 'all', self::MEMO_GROUP );
+			wp_cache_delete( 'teams', self::MEMO_GROUP );
 		}
 	}
 
@@ -172,7 +172,7 @@ class Chess_Army_Knife_Teams {
 	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
-		$kept = wp_cache_get( 'all', self::MEMO_GROUP );
+		$kept = wp_cache_get( 'teams', self::MEMO_GROUP );
 		if ( is_array( $kept ) ) {
 			return $kept;
 		}
@@ -189,7 +189,7 @@ class Chess_Army_Knife_Teams {
 			)
 		);
 		$teams = array_map( array( __CLASS__, 'team_data' ), $posts );
-		wp_cache_set( 'all', $teams, self::MEMO_GROUP );
+		wp_cache_set( 'teams', $teams, self::MEMO_GROUP );
 
 		return $teams;
 	}

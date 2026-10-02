@@ -163,7 +163,7 @@ class Chess_Army_Knife_Clubs {
 	 */
 	public static function flush_memo_for_post( $post_id ) {
 		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
-			wp_cache_delete( 'all', self::MEMO_GROUP );
+			wp_cache_delete( 'clubs', self::MEMO_GROUP );
 		}
 	}
 
@@ -183,7 +183,7 @@ class Chess_Army_Knife_Clubs {
 	 * @return array[] Each { id, name, venue, map_url, what3words, teams }.
 	 */
 	public static function all() {
-		$kept = wp_cache_get( 'all', self::MEMO_GROUP );
+		$kept = wp_cache_get( 'clubs', self::MEMO_GROUP );
 		if ( is_array( $kept ) ) {
 			return $kept;
 		}
@@ -200,7 +200,7 @@ class Chess_Army_Knife_Clubs {
 		) as $post ) {
 			$clubs[] = self::data( $post );
 		}
-		wp_cache_set( 'all', $clubs, self::MEMO_GROUP );
+		wp_cache_set( 'clubs', $clubs, self::MEMO_GROUP );
 
 		return $clubs;
 	}
