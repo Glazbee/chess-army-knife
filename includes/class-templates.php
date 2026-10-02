@@ -156,13 +156,6 @@ class Chess_Army_Knife_Templates {
 					'max'   => 50,
 				);
 				$s[] = array(
-					'key'     => 'showLocation',
-					'label'   => __( 'Show match location/venue', 'chess-army-knife' ),
-					'type'    => 'select',
-					'options' => $bool,
-					'help'    => __( 'Only shown when the LMS supplies a venue for the match.', 'chess-army-knife' ),
-				);
-				$s[] = array(
 					'key'   => 'highlightTeam',
 					'label' => __( 'Highlight team', 'chess-army-knife' ),
 					'type'  => 'text',
@@ -232,13 +225,6 @@ class Chess_Army_Knife_Templates {
 					'type'  => 'number',
 					'min'   => 5,
 					'max'   => 30,
-				);
-				$s[] = array(
-					'key'     => 'showLocation',
-					'label'   => __( 'Show match location/venue', 'chess-army-knife' ),
-					'type'    => 'select',
-					'options' => $bool,
-					'help'    => __( 'Only shown when the LMS supplies a venue for the match.', 'chess-army-knife' ),
 				);
 				$s[] = array(
 					'key'   => 'highlightTeam',

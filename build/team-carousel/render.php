@@ -3,7 +3,7 @@
  * Server-side render for the ECF Team Fixtures block (once a carousel: nothing moves, and every
  * team is shown, so it works without scripts and for everyone).
  *
- * Teams come from "auto" (every team in one event's league table), "manual"
+ * Reads the LMS v2 API (see Chess_Army_Knife_League_Data). Teams come from "auto" (every team in one event), "manual"
  * (typed team names within one event) or "club-teams" (the Settings list,
  * which can span several organisations and events). Matches are fetched once
  * per unique (org, event) pair and sliced per team.
@@ -23,7 +23,7 @@ $event_name       = trim( (string) ( $attributes['eventName'] ?? '' ) );
 $team_source      = isset( $attributes['teamSource'] ) ? $attributes['teamSource'] : 'club-teams';
 $manual_teams_raw = isset( $attributes['manualTeams'] ) ? (string) $attributes['manualTeams'] : '';
 $block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$show_location    = ! empty( $attributes['showLocation'] );
+$season           = isset( $attributes['season'] ) ? trim( (string) $attributes['season'] ) : '';
 $is_carousel      = isset( $attributes['layout'] ) && 'carousel' === $attributes['layout'];
 $auto_advance     = $is_carousel && ! empty( $attributes['autoAdvance'] );
 $interval_seconds = isset( $attributes['intervalSeconds'] ) ? max( 5, (int) $attributes['intervalSeconds'] ) : 8;
@@ -33,8 +33,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'team-caro
 
 // Step 1: work out the (org, event, team) triples we need slides for,
 // regardless of which source they came from.
-$team_specs      = array();
-$table_cache_key = null; // Only set (and shown in debug/admin bar) for "auto".
+$team_specs = array();
 
 if ( 'club-teams' === $team_source ) {
 	$configured = Chess_Army_Knife_Settings::get_club_teams();
@@ -81,26 +80,22 @@ if ( 'club-teams' === $team_source ) {
 		);
 		return;
 	}
-	$table_raw       = Chess_Army_Knife_LMS_Client::get_table( $org_id, $event_name );
-	$table_cache_key = Chess_Army_Knife_LMS_Client::cache_key( 'table', $org_id, $event_name );
-	if ( is_wp_error( $table_raw ) ) {
+	$auto_loaded = Chess_Army_Knife_League_Data::load( $org_id, $event_name, $season );
+	if ( $auto_loaded['error'] ) {
 		printf(
 			'<div %1$s><div class="chess-army-knife-notice">%2$s %3$s</div></div>',
 			wp_kses_post( $wrapper_attributes ),
-			esc_html__( 'Could not load the list of teams from the league table:', 'chess-army-knife' ),
-			esc_html( $table_raw->get_error_message() )
+			esc_html__( 'Could not load the list of teams:', 'chess-army-knife' ),
+			esc_html( $auto_loaded['error']->get_error_message() )
 		);
 		return;
 	}
-	foreach ( Chess_Army_Knife_LMS_Client::find_rows( $table_raw, array( 'table' ) ) as $raw_row ) {
-		$normalised = Chess_Army_Knife_LMS_Client::normalise_table_row( $raw_row );
-		if ( $normalised && '' !== $normalised['team'] ) {
-			$team_specs[] = array(
-				'org'   => $org_id,
-				'event' => $event_name,
-				'team'  => $normalised['team'],
-			);
-		}
+	foreach ( Chess_Army_Knife_League_Data::team_names( $auto_loaded['fixtures'] ) as $auto_team ) {
+		$team_specs[] = array(
+			'org'   => $org_id,
+			'event' => $event_name,
+			'team'  => $auto_team,
+		);
 	}
 }
 
@@ -113,99 +108,22 @@ if ( empty( $team_specs ) ) {
 	return;
 }
 
-// Step 2: fetch matches once per unique (org, event) pair.
-$groups = array();
+// Step 2: fetch each event's fixtures once, however many of its teams are shown.
+$groups           = array();
+$admin_cache_keys = array();
 foreach ( $team_specs as $spec ) {
 	$group_key = $spec['org'] . '|' . strtolower( $spec['event'] );
 	if ( ! isset( $groups[ $group_key ] ) ) {
-		$groups[ $group_key ] = array(
-			'org'   => $spec['org'],
-			'event' => $spec['event'],
-			'raw'   => null,
-			'error' => null,
-			'rows'  => array(),
-		);
+		$groups[ $group_key ] = Chess_Army_Knife_League_Data::load( $spec['org'], $spec['event'], $season );
+		$admin_cache_keys     = array_merge( $admin_cache_keys, $groups[ $group_key ]['cache_keys'] );
 	}
 }
-
-$admin_cache_keys = array();
-if ( $table_cache_key ) {
-	$admin_cache_keys[] = $table_cache_key;
-}
-
-foreach ( $groups as $group_key => &$group ) {
-	$group['raw']       = Chess_Army_Knife_LMS_Client::get_matches( $group['org'], $group['event'] );
-	$admin_cache_keys[] = Chess_Army_Knife_LMS_Client::cache_key( 'match', $group['org'], $group['event'] );
-
-	if ( is_wp_error( $group['raw'] ) ) {
-		$group['error'] = $group['raw'];
-		continue;
-	}
-	foreach ( Chess_Army_Knife_LMS_Client::find_rows( $group['raw'], array( 'matches' ) ) as $raw_row ) {
-		$normalised = Chess_Army_Knife_LMS_Client::normalise_match_row( $raw_row );
-		if ( $normalised && ( '' !== $normalised['home'] || '' !== $normalised['away'] ) ) {
-			$group['rows'][] = $normalised;
-		}
-	}
-}
-unset( $group );
-
-/**
- * Find matches involving a team name (case-insensitive; falls back to
- * a substring match if no exact match is found, to tolerate minor
- * naming differences between the table/settings and the match list).
- *
- * @param array  $matches All normalised matches for this team's group.
- * @param string $team    Team name to look for.
- * @return array
- */
-$find_team_matches = function ( $matches, $team ) {
-	$exact = array_values(
-		array_filter(
-			$matches,
-			function ( $team_match ) use ( $team ) {
-				return 0 === strcasecmp( $team_match['home'], $team ) || 0 === strcasecmp( $team_match['away'], $team );
-			}
-		)
-	);
-	if ( ! empty( $exact ) ) {
-		return $exact;
-	}
-	return array_values(
-		array_filter(
-			$matches,
-			function ( $team_match ) use ( $team ) {
-				return false !== stripos( $team_match['home'], $team ) || false !== stripos( $team_match['away'], $team );
-			}
-		)
-	);
-};
-
-/**
- * Render one side (opponent + venue) of a match row from a team's
- * point of view.
- *
- * @param array  $match Normalised match row.
- * @param string $team  The team we're rendering the slide for.
- * @return array{opponent: string, venue: string}
- */
-$describe_side = function ( $match, $team ) {
-	$is_home  = 0 === strcasecmp( $match['home'], $team ) || false !== stripos( $match['home'], $team );
-	$opponent = $is_home ? $match['away'] : $match['home'];
-	$venue    = $is_home ? __( 'Home', 'chess-army-knife' ) : __( 'Away', 'chess-army-knife' );
-	return array(
-		'opponent' => $opponent,
-		'venue'    => $venue,
-		'location' => isset( $match['venue'] ) ? $match['venue'] : '',
-	);
-};
 
 $today  = current_time( 'Y-m-d' );
 $slides = array();
 
 foreach ( $team_specs as $spec ) {
-	$group_key = $spec['org'] . '|' . strtolower( $spec['event'] );
-	$group     = $groups[ $group_key ];
+	$group = $groups[ $spec['org'] . '|' . strtolower( $spec['event'] ) ];
 
 	if ( $group['error'] ) {
 		$slides[] = array(
@@ -218,49 +136,32 @@ foreach ( $team_specs as $spec ) {
 		continue;
 	}
 
-	$team_matches = $find_team_matches( $group['rows'], $spec['team'] );
-
-	$results  = array();
-	$fixtures = array();
-	foreach ( $team_matches as $team_match ) {
-		$has_score = '' !== $team_match['home_score'] || '' !== $team_match['away_score'] || '' !== $team_match['result_text'];
-		if ( $has_score ) {
-			$results[] = $team_match;
-		} else {
-			$fixtures[] = $team_match;
-		}
-	}
-
-	usort(
-		$results,
-		function ( $a, $b ) {
-			return strcmp( $b['date'], $a['date'] );
-		}
+	$team_rows = Chess_Army_Knife_League_Data::team_fixtures( $group['fixtures'], $spec['team'] );
+	$played    = array_values(
+		array_filter(
+			$team_rows,
+			function ( $row ) {
+				return '' !== $row['outcome'];
+			}
+		)
 	);
-	usort(
-		$fixtures,
-		function ( $a, $b ) {
-			return strcmp( $a['date'], $b['date'] );
+	$next      = Chess_Army_Knife_League_Data::next_fixture( $team_rows, $today );
+	if ( ! $next ) {
+		// Nothing from today on, so show the first one that was never played (postponed, say).
+		foreach ( $team_rows as $row ) {
+			if ( '' === $row['outcome'] ) {
+				$next = $row;
+				break;
+			}
 		}
-	);
-
-	$next_fixture = null;
-	foreach ( $fixtures as $f ) {
-		if ( '' === $f['date'] || $f['date'] >= $today ) {
-			$next_fixture = $f;
-			break;
-		}
-	}
-	if ( ! $next_fixture && ! empty( $fixtures ) ) {
-		$next_fixture = $fixtures[0];
 	}
 
 	$slides[] = array(
 		'team'         => $spec['team'],
 		'event'        => $spec['event'],
 		'error'        => null,
-		'last_result'  => ! empty( $results ) ? $results[0] : null,
-		'next_fixture' => $next_fixture,
+		'last_result'  => $played ? $played[ count( $played ) - 1 ] : null,
+		'next_fixture' => $next,
 	);
 }
 
@@ -271,26 +172,24 @@ $team_tag    = Chess_Army_Knife_Headings::tag( 1 );
 /**
  * A match as a sentence, for example "Home against Bath, 3 to 1, on 4 March 2025".
  *
- * @param array $side       The side from $describe_side().
- * @param array $match      The normalised match row.
+ * @param array $row        A row of Chess_Army_Knife_League_Data::team_fixtures().
  * @param bool  $with_score Whether to say the score.
  * @return string
  */
-$match_text = function ( $side, $match, $with_score ) {
-	$text = __( 'Home', 'chess-army-knife' ) === $side['venue']
+$match_text = function ( $row, $with_score ) {
+	$text = 'home' === $row['side']
 		/* translators: %s: opponent */
-		? sprintf( __( 'Home against %s', 'chess-army-knife' ), $side['opponent'] )
+		? sprintf( __( 'Home against %s', 'chess-army-knife' ), $row['opponent'] )
 		/* translators: %s: opponent */
-		: sprintf( __( 'Away against %s', 'chess-army-knife' ), $side['opponent'] );
+		: sprintf( __( 'Away against %s', 'chess-army-knife' ), $row['opponent'] );
 
-	if ( $with_score ) {
-		$score = ( '' !== $match['home_score'] || '' !== $match['away_score'] )
-			/* translators: 1: home score, 2: away score */
-			? sprintf( __( '%1$s to %2$s', 'chess-army-knife' ), $match['home_score'], $match['away_score'] )
-			: $match['result_text'];
-		if ( '' !== $score ) {
-			$text .= ', ' . $score;
-		}
+	if ( $with_score && '' !== $row['outcome'] ) {
+		$text .= sprintf(
+			/* translators: 1: this team's score, 2: the other team's score */
+			', ' . __( '%1$s to %2$s', 'chess-army-knife' ),
+			$row['for'],
+			$row['against']
+		);
 	}
 
 	return $text;
@@ -344,13 +243,9 @@ $date_format = get_option( 'date_format' );
 						<dt><?php esc_html_e( 'Last result', 'chess-army-knife' ); ?></dt>
 						<dd>
 							<?php if ( $slide['last_result'] ) : ?>
-								<?php $side = $describe_side( $slide['last_result'], $slide['team'] ); ?>
-								<?php echo esc_html( $match_text( $side, $slide['last_result'], true ) ); ?>
-								<?php if ( '' !== $slide['last_result']['date'] ) : ?>
-									<time datetime="<?php echo esc_attr( $slide['last_result']['date'] ); ?>"><?php echo esc_html( mysql2date( $date_format, $slide['last_result']['date'] ) ); ?></time>
-								<?php endif; ?>
-								<?php if ( $show_location && '' !== $side['location'] ) : ?>
-									<span class="ecf-carousel__location"><?php echo esc_html( $side['location'] ); ?></span>
+								<?php echo esc_html( $match_text( $slide['last_result'], true ) ); ?>
+								<?php if ( '' !== $slide['last_result']['fixture']['date'] ) : ?>
+									<time datetime="<?php echo esc_attr( $slide['last_result']['fixture']['date'] ); ?>"><?php echo esc_html( mysql2date( $date_format, $slide['last_result']['fixture']['date'] ) ); ?></time>
 								<?php endif; ?>
 							<?php else : ?>
 								<?php esc_html_e( 'None played yet', 'chess-army-knife' ); ?>
@@ -359,13 +254,9 @@ $date_format = get_option( 'date_format' );
 						<dt><?php esc_html_e( 'Next fixture', 'chess-army-knife' ); ?></dt>
 						<dd>
 							<?php if ( $slide['next_fixture'] ) : ?>
-								<?php $side = $describe_side( $slide['next_fixture'], $slide['team'] ); ?>
-								<?php echo esc_html( $match_text( $side, $slide['next_fixture'], false ) ); ?>
-								<?php if ( '' !== $slide['next_fixture']['date'] ) : ?>
-									<time datetime="<?php echo esc_attr( $slide['next_fixture']['date'] ); ?>"><?php echo esc_html( mysql2date( $date_format, $slide['next_fixture']['date'] ) ); ?></time>
-								<?php endif; ?>
-								<?php if ( $show_location && '' !== $side['location'] ) : ?>
-									<span class="ecf-carousel__location"><?php echo esc_html( $side['location'] ); ?></span>
+								<?php echo esc_html( $match_text( $slide['next_fixture'], false ) ); ?>
+								<?php if ( '' !== $slide['next_fixture']['fixture']['date'] ) : ?>
+									<time datetime="<?php echo esc_attr( $slide['next_fixture']['fixture']['date'] ); ?>"><?php echo esc_html( mysql2date( $date_format, $slide['next_fixture']['fixture']['date'] ) ); ?></time>
 								<?php endif; ?>
 							<?php else : ?>
 								<?php esc_html_e( 'None scheduled', 'chess-army-knife' ); ?>

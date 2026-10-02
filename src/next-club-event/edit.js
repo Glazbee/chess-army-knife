@@ -11,8 +11,15 @@ import {
 import ServerSideRender from '@wordpress/server-side-render';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, show, tags, showLocation, showTags, showLinks, emptyMessage } =
-		attributes;
+	const {
+		title,
+		show,
+		tags,
+		showLocation,
+		showTags,
+		showLinks,
+		emptyMessage,
+	} = attributes;
 
 	const blockProps = useBlockProps();
 
@@ -39,7 +46,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ show }
 						options={ [
 							{
-								label: __( 'The next event', 'chess-army-knife' ),
+								label: __(
+									'The next event',
+									'chess-army-knife'
+								),
 								value: 'next',
 							},
 							{
@@ -57,7 +67,9 @@ export default function Edit( { attributes, setAttributes } ) {
 								value: 'today',
 							},
 						] }
-						onChange={ ( value ) => setAttributes( { show: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { show: value } )
+						}
 					/>
 					<TextControl
 						label={ __(

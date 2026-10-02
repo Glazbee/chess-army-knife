@@ -481,38 +481,12 @@ class Chess_Army_Knife_LMS_Client {
 			return new WP_Error( 'lms_missing_params', __( 'An LMS organisation ID and event/club name are required.', 'chess-army-knife' ) );
 		}
 
-		$seasons = self::get_seasons( $org, $refresh );
-		if ( is_wp_error( $seasons ) ) {
-			return $seasons;
+		$found = self::find_event( $org, $event_name, $season, $refresh );
+		if ( is_wp_error( $found ) ) {
+			return $found;
 		}
-
-		$is_active  = '' === trim( (string) $season ) || 'active' === strtolower( trim( (string) $season ) );
-		$season_ids = self::seasons_matching( $seasons, $season );
-
-		$event_id = 0;
-		foreach ( $season_ids as $season_id ) {
-			$events = self::v2_get( 'season/' . $season_id . '/events', self::V2_STRUCTURE_TTL, $refresh );
-			if ( is_wp_error( $events ) ) {
-				return $events;
-			}
-			foreach ( isset( $events['events'] ) && is_array( $events['events'] ) ? $events['events'] : array() as $event ) {
-				if ( isset( $event['id'], $event['name'] ) && self::same_name( $event['name'], $event_name ) ) {
-					$event_id = (int) $event['id'];
-					break 2;
-				}
-			}
-		}
-
-		if ( ! $event_id ) {
-			return new WP_Error(
-				'lms_event_not_found',
-				sprintf(
-					/* translators: %s: event / division name */
-					__( 'No event called "%s" was found in the season. Check the organisation ID and that the name matches the LMS.', 'chess-army-knife' ),
-					$event_name
-				)
-			);
-		}
+		$event_id  = $found['event_id'];
+		$is_active = $found['is_active'];
 
 		// A finished season does not change, so its results are kept for a week.
 		$minutes = Chess_Army_Knife_Settings::get_effective_lms_cache_minutes( 'lms_results', 30 );
@@ -531,6 +505,71 @@ class Chess_Army_Knife_LMS_Client {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * Find an event by name in a season.
+	 *
+	 * @param string          $org        Numeric organisation id.
+	 * @param string          $event_name Event name.
+	 * @param string|int|null $season     'active', or a season id or name.
+	 * @param bool            $refresh    Skip the cached copies.
+	 * @return array|WP_Error { event_id, is_active, structure_keys }: structure_keys are the cache keys of the
+	 *                        seasons and events lists read to find it.
+	 */
+	protected static function find_event( $org, $event_name, $season, $refresh = false ) {
+		$seasons = self::get_seasons( $org, $refresh );
+		if ( is_wp_error( $seasons ) ) {
+			return $seasons;
+		}
+
+		$is_active  = '' === trim( (string) $season ) || 'active' === strtolower( trim( (string) $season ) );
+		$season_ids = self::seasons_matching( $seasons, $season );
+		$keys       = array( self::v2_key( 'org/' . rawurlencode( trim( (string) $org ) ) . '/seasons' ) );
+
+		foreach ( $season_ids as $season_id ) {
+			$path   = 'season/' . $season_id . '/events';
+			$keys[] = self::v2_key( $path );
+			$events = self::v2_get( $path, self::V2_STRUCTURE_TTL, $refresh );
+			if ( is_wp_error( $events ) ) {
+				return $events;
+			}
+			foreach ( isset( $events['events'] ) && is_array( $events['events'] ) ? $events['events'] : array() as $event ) {
+				if ( isset( $event['id'], $event['name'] ) && self::same_name( $event['name'], $event_name ) ) {
+					return array(
+						'event_id'       => (int) $event['id'],
+						'is_active'      => $is_active,
+						'structure_keys' => $keys,
+					);
+				}
+			}
+		}
+
+		return new WP_Error(
+			'lms_event_not_found',
+			sprintf(
+				/* translators: %s: event / division name */
+				__( 'No event called "%s" was found in the season. Check the organisation ID and that the name matches the LMS.', 'chess-army-knife' ),
+				$event_name
+			)
+		);
+	}
+
+	/**
+	 * The cache keys behind an event's fixtures, for the admin "refresh now" bar.
+	 *
+	 * @param string          $org        Numeric organisation id.
+	 * @param string          $event_name Event name.
+	 * @param string|int|null $season     'active', or a season id or name.
+	 * @return string[] Raw cache keys; the lists of seasons and events, and the results if the event is found.
+	 */
+	public static function fixture_cache_keys( $org, $event_name, $season = 'active' ) {
+		$found = self::find_event( $org, $event_name, $season );
+		if ( is_wp_error( $found ) ) {
+			return array( self::v2_key( 'org/' . rawurlencode( trim( (string) $org ) ) . '/seasons' ) );
+		}
+
+		return array_merge( $found['structure_keys'], array( self::v2_key( 'event/' . $found['event_id'] . '/results' ) ) );
 	}
 
 	/**
@@ -553,7 +592,8 @@ class Chess_Army_Knife_LMS_Client {
 	 * played (side, ECF code, name). The v2 API gives no venue, so that is left empty.
 	 *
 	 * @param mixed $fixture Entry of the results' "fixtures" list.
-	 * @return array|null Null if it is not a fixture. winner is 'home', 'away' or 'draw', and '' until it is played;
+	 * @return array|null Null if it is not a fixture. winner is 'home', 'away' or 'draw', and '' until it is played (scores are then ''
+	 *                    too);
 	 *                    home_colour in each of the games is 'W' or 'B'.
 	 */
 	public static function normalise_fixture( $fixture ) {
@@ -582,6 +622,10 @@ class Chess_Army_Knife_LMS_Client {
 			}
 		}
 
+		// An unplayed fixture arrives with scores of 0 and a winner of "unknown", which is not a result.
+		$winner = (string) self::pick( $fixture, array( 'winner' ), '' );
+		$winner = in_array( $winner, array( 'home', 'away', 'draw' ), true ) ? $winner : '';
+
 		return array(
 			'fixture_id'  => (int) self::pick( $fixture, array( 'fixture_id' ), 0 ),
 			'players'     => $players,
@@ -591,9 +635,9 @@ class Chess_Army_Knife_LMS_Client {
 			'time'        => (string) self::pick( $fixture, array( 'time' ), '' ),
 			'home'        => (string) self::pick( $fixture, array( 'home_team' ), '' ),
 			'away'        => (string) self::pick( $fixture, array( 'away_team' ), '' ),
-			'home_score'  => self::format_score( self::pick( $fixture, array( 'home_score' ), null ) ),
-			'away_score'  => self::format_score( self::pick( $fixture, array( 'away_score' ), null ) ),
-			'winner'      => (string) self::pick( $fixture, array( 'winner' ), '' ),
+			'home_score'  => '' === $winner ? '' : self::format_score( self::pick( $fixture, array( 'home_score' ), null ) ),
+			'away_score'  => '' === $winner ? '' : self::format_score( self::pick( $fixture, array( 'away_score' ), null ) ),
+			'winner'      => $winner,
 			'result_text' => '',
 		);
 	}
@@ -662,6 +706,16 @@ class Chess_Army_Knife_LMS_Client {
 	}
 
 	/**
+	 * The cache key of a v2 path.
+	 *
+	 * @param string $path Path under the v2 base.
+	 * @return string
+	 */
+	protected static function v2_key( $path ) {
+		return 'lms2_v2_' . $path;
+	}
+
+	/**
 	 * GET a v2 path, cached.
 	 *
 	 * @param string $path    Path under the v2 base, e.g. "season/3/events".
@@ -670,7 +724,7 @@ class Chess_Army_Knife_LMS_Client {
 	 * @return array|WP_Error Decoded JSON.
 	 */
 	protected static function v2_get( $path, $ttl, $refresh = false ) {
-		$key = 'lms2_v2_' . $path;
+		$key = self::v2_key( $path );
 
 		if ( $refresh ) {
 			Chess_Army_Knife_Cache::forget( $key );

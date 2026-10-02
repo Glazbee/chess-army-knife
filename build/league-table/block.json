@@ -49,9 +49,9 @@
       "type": "string",
       "default": ""
     },
-    "showLocation": {
-      "type": "boolean",
-      "default": false
+    "season": {
+      "type": "string",
+      "default": ""
     }
   },
   "supports": {

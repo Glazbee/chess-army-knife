@@ -40,6 +40,35 @@ class LeagueDataTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '', $fixtures[3]['winner'] );
 	}
 
+	public function test_an_unplayed_fixture_with_zero_scores_and_an_unknown_winner_has_no_result() {
+		$row = Chess_Army_Knife_LMS_Client::normalise_fixture(
+			array(
+				'fixture_id' => 9,
+				'date'       => '2027-01-26',
+				'home_team'  => 'Wanstead 1',
+				'away_team'  => 'Chingford 1',
+				'home_score' => 0,
+				'away_score' => 0,
+				'winner'     => 'unknown',
+				'games'      => array(),
+			)
+		);
+
+		$this->assertSame( '', $row['winner'] );
+		$this->assertSame( '', $row['home_score'] );
+		$this->assertFalse( Chess_Army_Knife_League_Data::is_played( $row ) );
+
+		$drawn = Chess_Army_Knife_LMS_Client::normalise_fixture(
+			array(
+				'home_score' => 0,
+				'away_score' => 0,
+				'winner'     => 'draw',
+			)
+		);
+		$this->assertSame( '0', $drawn['home_score'], 'A played goalless draw is a result.' );
+		$this->assertTrue( Chess_Army_Knife_League_Data::is_played( $drawn ) );
+	}
+
 	public function test_boards_are_read_with_colours_results_and_missing_ratings() {
 		$games = $this->fixtures()[1]['games'];
 
@@ -81,7 +110,7 @@ class LeagueDataTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( array( 'Test Club B', 'Test Club C', 'Test Club A' ), array_column( $table, 'team' ) );
 		$this->assertSame( array( 1, 2, 3 ), array_column( $table, 'position' ) );
-		$this->assertSame( array( 3, 3, 0 ), array_column( $table, 'points' ) );
+		$this->assertSame( array( 1.5, 1.5, 0.0 ), array_column( $table, 'points' ) );
 		$this->assertSame( array( 2, 2, 2 ), array_column( $table, 'played' ), 'The unplayed fixture is not counted.' );
 		$this->assertSame( array( 1, 1, 0 ), array_column( $table, 'won' ) );
 		$this->assertSame( array( 1, 1, 0 ), array_column( $table, 'drawn' ) );
@@ -108,7 +137,7 @@ class LeagueDataTest extends Chess_Army_Knife_TestCase {
 			)
 		);
 
-		$this->assertSame( array( 4, 4, 0 ), array_column( $table, 'points' ) );
+		$this->assertSame( array( 4.0, 4.0, 0.0 ), array_column( $table, 'points' ) );
 	}
 
 	public function test_a_team_sees_its_own_fixtures_from_its_side() {
@@ -162,5 +191,27 @@ class LeagueDataTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( 1842 ), Chess_Army_Knife_LMS_Client::seasons_matching( $seasons, '1842' ) );
 		$this->assertSame( array( 1842 ), Chess_Army_Knife_LMS_Client::seasons_matching( $seasons, ' 2025-2026 ' ) );
 		$this->assertSame( array(), Chess_Army_Knife_LMS_Client::seasons_matching( $seasons, '2019 season' ) );
+	}
+
+	public function test_a_team_name_that_is_only_part_of_the_lms_name_still_finds_its_fixtures() {
+		$this->assertCount( 3, Chess_Army_Knife_League_Data::team_fixtures( $this->fixtures(), 'club a' ) );
+		$this->assertCount( 0, Chess_Army_Knife_League_Data::team_fixtures( $this->fixtures(), 'Nobody' ) );
+		$this->assertSame( array( 'Test Club A', 'Test Club B', 'Test Club C' ), Chess_Army_Knife_League_Data::team_names( $this->fixtures() ) );
+	}
+
+	public function test_matchups_look_ahead_then_back_without_wasting_room() {
+		$fixtures = $this->fixtures();
+
+		$all = Chess_Army_Knife_League_Data::matchups( $fixtures, 6, '2026-10-02' );
+		$this->assertSame( array( 4, 3, 2, 1 ), array_column( $all, 'fixture_id' ), 'The one to come, then the results latest first.' );
+
+		$two = Chess_Army_Knife_League_Data::matchups( $fixtures, 2, '2026-10-02' );
+		$this->assertSame( array( 4, 3 ), array_column( $two, 'fixture_id' ), 'One ahead, one back.' );
+
+		$one = Chess_Army_Knife_League_Data::matchups( $fixtures, 1, '2026-10-02' );
+		$this->assertSame( array( 4 ), array_column( $one, 'fixture_id' ) );
+
+		$over = Chess_Army_Knife_League_Data::matchups( $fixtures, 3, '2100-01-01' );
+		$this->assertSame( array( 3, 2, 1 ), array_column( $over, 'fixture_id' ), 'Nothing is coming up, so all the room is for results.' );
 	}
 }

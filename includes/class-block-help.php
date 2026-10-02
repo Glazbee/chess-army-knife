@@ -105,10 +105,11 @@ class Chess_Army_Knife_Block_Help {
 				'where'    => array(),
 			),
 			'league-table'         => array(
-				'use'      => __( 'A league table and the recent and upcoming matches of a league on the ECF League Management System (LMS).', 'chess-army-knife' ),
+				'use'      => __( 'A league table and the recent and upcoming matches of a league on the ECF League Management System (LMS). Needs the LMS API key from Settings.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Give the LMS organisation ID and the exact event or division name. Put one event per line to show several divisions.', 'chess-army-knife' ),
-					__( 'Show the table, the matches or both, and how many matches to list.', 'chess-army-knife' ),
+					__( 'Show the table, the matches or both, and how many matches to list: the next ones coming up, then the latest results. The table is worked out from the results, with one point for a win and half a point for a draw.', 'chess-army-knife' ),
+					__( 'Leave Season empty for the current season, or type an earlier one as the LMS names it (for example 2025-2026) to show its final table.', 'chess-army-knife' ),
 					__( 'Teams with a league entry on a team of yours are highlighted automatically; "highlight team" is only for extra teams.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
@@ -120,7 +121,7 @@ class Chess_Army_Knife_Block_Help {
 				'use'      => __( 'Every team with its last result and next fixture, as a list or as a carousel. The list is the default: nothing moves, and it works without scripts.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Teams come from your own teams\' league entries (the default), from every team in one event\'s league table, or from a list you type.', 'chess-army-knife' ),
-					__( 'Choose a list (every team at once) or a carousel (one team at a time, with buttons and a pause button), whether the carousel may move on by itself, and whether to show the venue. A carousel that moves on by itself never starts for visitors whose device asks for less motion, and stops when they use any button.', 'chess-army-knife' ),
+					__( 'Choose a list (every team at once) or a carousel (one team at a time, with buttons and a pause button), and whether the carousel may move on by itself. A carousel that moves on by itself never starts for visitors whose device asks for less motion, and stops when they use any button.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
 					__( 'For "my club\'s teams", each team needs at least one league entry.', 'chess-army-knife' ),
