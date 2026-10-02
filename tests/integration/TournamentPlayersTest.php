@@ -254,4 +254,35 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 		$this->assertWPError( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, 999999 ) );
 	}
+
+	public function test_a_tournament_can_be_put_on_the_calendar_once_with_its_page_attached() {
+		$tournament = $this->tournament();
+		$this->assertSame( 0, Chess_Army_Knife_Events::for_tournament( $tournament ) );
+		$page = Chess_Army_Knife_Tournaments::create_page( $tournament );
+		$this->assertIsInt( $page );
+
+		$event = Chess_Army_Knife_Tournaments::create_event( $tournament, '2099-05-04', '10:00' );
+
+		$this->assertIsInt( $event );
+		$data = Chess_Army_Knife_Events::details( $event );
+		$this->assertSame( "Blitz Night's Cup", $data['title'] );
+		$this->assertSame( '2099-05-04 10:00:00', $data['start'] );
+		$this->assertSame( $tournament, $data['tournaments'][0]['id'] );
+		$this->assertSame( $event, Chess_Army_Knife_Events::for_tournament( $tournament ) );
+		$this->assertSame( (int) $page, (int) get_post_meta( $event, Chess_Army_Knife_Events::META_PAGE, true ) );
+		$this->assertSame( array( 'Tournament' ), wp_list_pluck( $data['tags'], 'name' ) );
+
+		$again = Chess_Army_Knife_Tournaments::create_event( $tournament, '2099-06-01', '10:00' );
+		$this->assertWPError( $again );
+		$this->assertSame( 'event_exists', $again->get_error_code() );
+	}
+
+	public function test_putting_a_tournament_on_the_calendar_needs_a_real_date_and_tournament() {
+		$tournament = $this->tournament();
+
+		$this->assertSame( 'event_date', Chess_Army_Knife_Tournaments::create_event( $tournament, 'next friday', '10:00' )->get_error_code() );
+		$this->assertSame( 'event_date', Chess_Army_Knife_Tournaments::create_event( $tournament, '2099-05-04', '25:99' )->get_error_code() );
+		$this->assertSame( 'tournament_missing', Chess_Army_Knife_Tournaments::create_event( 999999, '2099-05-04', '10:00' )->get_error_code() );
+		$this->assertSame( 0, Chess_Army_Knife_Events::for_tournament( $tournament ), 'Nothing was made.' );
+	}
 }

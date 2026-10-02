@@ -488,6 +488,39 @@ class Chess_Army_Knife_Events {
 	}
 
 	/**
+	 * The event that has a tournament attached, if any.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int The event's id, or 0 if no event (published, draft or private) has it attached.
+	 */
+	public static function for_tournament( $tournament_id ) {
+		$tournament_id = (int) $tournament_id;
+		if ( ! $tournament_id ) {
+			return 0;
+		}
+
+		$ids = get_posts(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'meta_key'       => self::META_TOURNAMENTS, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Events that have tournaments; the post type is small.
+			)
+		);
+
+		foreach ( $ids as $id ) {
+			$attached = array_map( 'intval', (array) get_post_meta( $id, self::META_TOURNAMENTS, true ) );
+			if ( in_array( $tournament_id, $attached, true ) ) {
+				return (int) $id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
 	 * The published event a page is attached to.
 	 *
 	 * @param int $page_id Page id.
