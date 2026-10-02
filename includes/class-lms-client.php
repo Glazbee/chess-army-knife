@@ -41,6 +41,9 @@ class Chess_Army_Knife_LMS_Client {
 	/** How long seasons and the events in them are cached: they rarely change. */
 	const V2_STRUCTURE_TTL = 6 * HOUR_IN_SECONDS;
 
+	/** How long the results of an earlier season are cached: they no longer change. */
+	const V2_HISTORY_TTL = WEEK_IN_SECONDS;
+
 	/**
 	 * Fetch the league table (or knockout table / individual standings)
 	 * for a named event within an organisation.
@@ -399,38 +402,92 @@ class Chess_Army_Knife_LMS_Client {
 	}
 
 	/**
-	 * The fixtures of a team event, as the rows the rest of the plugin reads
-	 * (see normalise_match_row()). The event is found by name: the
-	 * organisation's active season, then the event in it with that name.
+	 * An organisation's seasons, newest first as the LMS lists them.
 	 *
-	 * @param string $org        Numeric organisation id.
-	 * @param string $event_name Event name, e.g. "Division One"; case and extra spaces are ignored.
-	 * @param bool   $refresh    Skip the cached copies, for a manual refresh.
-	 * @return array[]|WP_Error Normalised rows (empty for an event that has no fixtures, such as an individual one).
+	 * @param string $org     Numeric organisation id.
+	 * @param bool   $refresh Skip the cached copy.
+	 * @return array[]|WP_Error Each { id, name, status }; status is "active" for the running season, "old" otherwise.
 	 */
-	public static function get_fixtures( $org, $event_name, $refresh = false ) {
-		$org        = trim( (string) $org );
-		$event_name = trim( (string) $event_name );
-
-		if ( '' === $org || '' === $event_name ) {
+	public static function get_seasons( $org, $refresh = false ) {
+		$org = trim( (string) $org );
+		if ( '' === $org ) {
 			return new WP_Error( 'lms_missing_params', __( 'An LMS organisation ID and event/club name are required.', 'chess-army-knife' ) );
 		}
 		if ( '' === self::api_key() ) {
 			return new WP_Error( 'lms_no_api_key', __( 'Add your LMS API key under Settings to read fixtures from the LMS.', 'chess-army-knife' ) );
 		}
 
-		$seasons = self::v2_get( 'org/' . rawurlencode( $org ) . '/seasons', self::V2_STRUCTURE_TTL, $refresh );
+		$data = self::v2_get( 'org/' . rawurlencode( $org ) . '/seasons', self::V2_STRUCTURE_TTL, $refresh );
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
+
+		$seasons = array();
+		foreach ( isset( $data['seasons'] ) && is_array( $data['seasons'] ) ? $data['seasons'] : array() as $season ) {
+			if ( isset( $season['id'] ) ) {
+				$seasons[] = array(
+					'id'     => (int) $season['id'],
+					'name'   => isset( $season['name'] ) ? (string) $season['name'] : '',
+					'status' => isset( $season['status'] ) ? (string) $season['status'] : '',
+				);
+			}
+		}
+
+		return $seasons;
+	}
+
+	/**
+	 * Which seasons a season choice means.
+	 *
+	 * @param array[]         $seasons Seasons from get_seasons().
+	 * @param string|int|null $choice  'active' (or empty) for the running season, or a season id or name such as "2025-2026".
+	 * @return int[] Season ids, in the order given.
+	 */
+	public static function seasons_matching( array $seasons, $choice ) {
+		$choice = trim( (string) $choice );
+		$ids    = array();
+
+		foreach ( $seasons as $season ) {
+			if ( '' === $choice || 'active' === strtolower( $choice ) ) {
+				$match = 'active' === $season['status'];
+			} else {
+				$match = (string) $season['id'] === $choice || self::same_name( $season['name'], $choice );
+			}
+			if ( $match ) {
+				$ids[] = (int) $season['id'];
+			}
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * The fixtures of a team event, as the rows the rest of the plugin reads
+	 * (see normalise_fixture()). The event is found by name: the
+	 * organisation's active season (or the season asked for), then the event in
+	 * it with that name.
+	 *
+	 * @param string          $org        Numeric organisation id.
+	 * @param string          $event_name Event name, e.g. "Division One"; case and extra spaces are ignored.
+	 * @param bool            $refresh    Skip the cached copies, for a manual refresh.
+	 * @param string|int|null $season     'active' for the running season, or a season id or name for an earlier one.
+	 * @return array[]|WP_Error Normalised rows (empty for an event that has no fixtures, such as an individual one).
+	 */
+	public static function get_fixtures( $org, $event_name, $refresh = false, $season = 'active' ) {
+		$org        = trim( (string) $org );
+		$event_name = trim( (string) $event_name );
+
+		if ( '' === $org || '' === $event_name ) {
+			return new WP_Error( 'lms_missing_params', __( 'An LMS organisation ID and event/club name are required.', 'chess-army-knife' ) );
+		}
+
+		$seasons = self::get_seasons( $org, $refresh );
 		if ( is_wp_error( $seasons ) ) {
 			return $seasons;
 		}
 
-		// Only the running season has fixtures worth importing.
-		$season_ids = array();
-		foreach ( isset( $seasons['seasons'] ) && is_array( $seasons['seasons'] ) ? $seasons['seasons'] : array() as $season ) {
-			if ( isset( $season['id'], $season['status'] ) && 'active' === $season['status'] ) {
-				$season_ids[] = (int) $season['id'];
-			}
-		}
+		$is_active  = '' === trim( (string) $season ) || 'active' === strtolower( trim( (string) $season ) );
+		$season_ids = self::seasons_matching( $seasons, $season );
 
 		$event_id = 0;
 		foreach ( $season_ids as $season_id ) {
@@ -451,14 +508,16 @@ class Chess_Army_Knife_LMS_Client {
 				'lms_event_not_found',
 				sprintf(
 					/* translators: %s: event / division name */
-					__( 'No event called "%s" was found in the organisation\'s active season. Check the organisation ID and that the name matches the LMS.', 'chess-army-knife' ),
+					__( 'No event called "%s" was found in the season. Check the organisation ID and that the name matches the LMS.', 'chess-army-knife' ),
 					$event_name
 				)
 			);
 		}
 
+		// A finished season does not change, so its results are kept for a week.
 		$minutes = Chess_Army_Knife_Settings::get_effective_lms_cache_minutes( 'lms_results', 30 );
-		$results = self::v2_get( 'event/' . $event_id . '/results', max( 60, (int) $minutes * MINUTE_IN_SECONDS ), $refresh );
+		$ttl     = $is_active ? max( 60, (int) $minutes * MINUTE_IN_SECONDS ) : self::V2_HISTORY_TTL;
+		$results = self::v2_get( 'event/' . $event_id . '/results', $ttl, $refresh );
 		if ( is_wp_error( $results ) ) {
 			return $results;
 		}
@@ -494,7 +553,8 @@ class Chess_Army_Knife_LMS_Client {
 	 * played (side, ECF code, name). The v2 API gives no venue, so that is left empty.
 	 *
 	 * @param mixed $fixture Entry of the results' "fixtures" list.
-	 * @return array|null Null if it is not a fixture.
+	 * @return array|null Null if it is not a fixture. winner is 'home', 'away' or 'draw', and '' until it is played;
+	 *                    home_colour in each of the games is 'W' or 'B'.
 	 */
 	public static function normalise_fixture( $fixture ) {
 		if ( ! is_array( $fixture ) ) {
@@ -523,15 +583,81 @@ class Chess_Army_Knife_LMS_Client {
 		}
 
 		return array(
+			'fixture_id'  => (int) self::pick( $fixture, array( 'fixture_id' ), 0 ),
 			'players'     => $players,
+			'games'       => self::normalise_games( isset( $fixture['games'] ) ? $fixture['games'] : array() ),
 			'venue'       => '',
 			'date'        => (string) self::pick( $fixture, array( 'date' ), '' ),
 			'time'        => (string) self::pick( $fixture, array( 'time' ), '' ),
 			'home'        => (string) self::pick( $fixture, array( 'home_team' ), '' ),
 			'away'        => (string) self::pick( $fixture, array( 'away_team' ), '' ),
-			'home_score'  => '',
-			'away_score'  => '',
+			'home_score'  => self::format_score( self::pick( $fixture, array( 'home_score' ), null ) ),
+			'away_score'  => self::format_score( self::pick( $fixture, array( 'away_score' ), null ) ),
+			'winner'      => (string) self::pick( $fixture, array( 'winner' ), '' ),
 			'result_text' => '',
+		);
+	}
+
+	/**
+	 * A score as text: 3, 2.5, or '' when there is none yet.
+	 *
+	 * @param mixed $score Number from the LMS (it sends whole scores as integers and half scores as decimals).
+	 * @return string
+	 */
+	public static function format_score( $score ) {
+		if ( ! is_numeric( $score ) ) {
+			return '';
+		}
+
+		return rtrim( rtrim( number_format( (float) $score, 1, '.', '' ), '0' ), '.' );
+	}
+
+	/**
+	 * The boards of a fixture.
+	 *
+	 * @param mixed $games The fixture's "games" list.
+	 * @return array[] Each { board, home_colour, result, home, away }; home and away are
+	 *                 { name, code, rating } or null where there was no player (a default).
+	 *                 result is 'home_win', 'away_win', 'draw' or '' (not played).
+	 */
+	public static function normalise_games( $games ) {
+		$boards = array();
+
+		foreach ( is_array( $games ) ? $games : array() as $game ) {
+			if ( ! is_array( $game ) ) {
+				continue;
+			}
+			$result   = (string) self::pick( $game, array( 'result' ), '' );
+			$boards[] = array(
+				'board'       => (int) self::pick( $game, array( 'board' ), 0 ),
+				'home_colour' => (string) self::pick( $game, array( 'home_colour' ), '' ),
+				'result'      => in_array( $result, array( 'home_win', 'away_win', 'draw' ), true ) ? $result : '',
+				'home'        => self::normalise_board_player( isset( $game['home_player'] ) ? $game['home_player'] : null ),
+				'away'        => self::normalise_board_player( isset( $game['away_player'] ) ? $game['away_player'] : null ),
+			);
+		}
+
+		return $boards;
+	}
+
+	/**
+	 * One player on a board.
+	 *
+	 * @param mixed $player The "home_player" or "away_player" entry.
+	 * @return array|null { name, code, rating }; rating is an int or null (unrated). Null for a default or no player.
+	 */
+	protected static function normalise_board_player( $player ) {
+		// A negative id is a default or bye, not a person.
+		if ( ! is_array( $player ) || (int) self::pick( $player, array( 'lms_id' ), 0 ) < 0 ) {
+			return null;
+		}
+
+		$rating = isset( $player['rating'] ) && is_numeric( $player['rating'] ) ? (int) $player['rating'] : null;
+
+		return array(
+			'name'   => (string) self::pick( $player, array( 'name' ), '' ),
+			'code'   => trim( (string) self::pick( $player, array( 'rating_code' ), '' ) ),
+			'rating' => $rating,
 		);
 	}
 

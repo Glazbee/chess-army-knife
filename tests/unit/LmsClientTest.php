@@ -475,4 +475,63 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 			)['players']
 		);
 	}
+
+	public function test_an_earlier_season_can_be_asked_for_by_name_and_is_cached_for_longer() {
+		$this->set_settings(
+			array(
+				'lms_api_key'        => 'lmsk_secret',
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
+		$bodies                     = $this->v2_league();
+		$bodies['season/1/events']  = array(
+			'events' => array(
+				array(
+					'id'   => 10,
+					'name' => 'Division One',
+					'type' => 'team_league',
+				),
+			),
+		);
+		$bodies['event/10/results'] = array(
+			'fixtures' => array(
+				array(
+					'fixture_id' => 1,
+					'date'       => '2025-01-10',
+					'home_team'  => 'Old A',
+					'away_team'  => 'Old B',
+					'home_score' => 3,
+					'away_score' => 2,
+					'winner'     => 'home',
+					'games'      => array(),
+				),
+			),
+		);
+		$calls                      = array();
+		$this->serve_v2( $bodies, $calls );
+
+		$rows = Chess_Army_Knife_LMS_Client::get_fixtures( '702', 'Division One', false, '2024-25' );
+
+		$this->assertSame( 'Old A', $rows[0]['home'] );
+		$this->assertSame( '3', $rows[0]['home_score'] );
+		$this->assertSame( Chess_Army_Knife_LMS_Client::V2_BASE . '/event/10/results', $calls[2]['url'], 'The old season, not the active one.' );
+		$this->assertGreaterThan( DAY_IN_SECONDS, Chess_Army_Knife_LMS_Client::V2_HISTORY_TTL );
+	}
+
+	public function test_the_seasons_of_an_organisation_are_listed() {
+		$this->set_settings(
+			array(
+				'lms_api_key'        => 'lmsk_secret',
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
+		$this->serve_v2( $this->v2_league() );
+
+		$seasons = Chess_Army_Knife_LMS_Client::get_seasons( '702' );
+
+		$this->assertSame( array( 1, 2 ), array_column( $seasons, 'id' ) );
+		$this->assertSame( array( 'old', 'active' ), array_column( $seasons, 'status' ) );
+	}
 }
