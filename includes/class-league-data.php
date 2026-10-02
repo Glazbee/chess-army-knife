@@ -141,6 +141,22 @@ class Chess_Army_Knife_League_Data {
 	}
 
 	/**
+	 * The name the LMS gives a team, from a name that may be spelt a little differently.
+	 *
+	 * @param array[] $fixtures Rows from normalise_fixture().
+	 * @param string  $team     Team name as typed.
+	 * @return string The LMS's name for it, or '' if the team is in none of the fixtures.
+	 */
+	public static function lms_name( array $fixtures, $team ) {
+		$rows = self::team_fixtures( $fixtures, $team );
+		if ( ! $rows ) {
+			return '';
+		}
+
+		return 'home' === $rows[0]['side'] ? $rows[0]['fixture']['home'] : $rows[0]['fixture']['away'];
+	}
+
+	/**
 	 * One team's fixtures from its point of view.
 	 *
 	 * @param array[] $fixtures Rows from normalise_fixture().

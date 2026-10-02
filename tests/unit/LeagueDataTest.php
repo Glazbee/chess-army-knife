@@ -214,4 +214,10 @@ class LeagueDataTest extends Chess_Army_Knife_TestCase {
 		$over = Chess_Army_Knife_League_Data::matchups( $fixtures, 3, '2100-01-01' );
 		$this->assertSame( array( 3, 2, 1 ), array_column( $over, 'fixture_id' ), 'Nothing is coming up, so all the room is for results.' );
 	}
+
+	public function test_the_lms_name_of_a_team_is_found_from_a_loose_one() {
+		$this->assertSame( 'Test Club B', Chess_Army_Knife_League_Data::lms_name( $this->fixtures(), 'test  club b' ) );
+		$this->assertSame( 'Test Club B', Chess_Army_Knife_League_Data::lms_name( $this->fixtures(), 'club b' ) );
+		$this->assertSame( '', Chess_Army_Knife_League_Data::lms_name( $this->fixtures(), 'Nobody' ) );
+	}
 }

@@ -12,7 +12,7 @@ Gutenberg blocks for English chess clubs: ECF ratings and league data, club tour
 
 == Description ==
 
-This plugin adds sixteen blocks to the WordPress block editor, pulling live data from:
+This plugin adds seventeen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
@@ -24,7 +24,7 @@ Blocks are grouped in the inserter under five headings: **Chess: Ratings & Playe
 1. **ECF Rating Chart** — choose a club member and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
 2. **ECF Club Results** — a merged feed of recent rated results for the club's current members who have an ECF rating code (win/draw/loss, colour, event). Opponents are not shown.
 3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
-4. **ECF Team Fixtures** — every team with its last result and next fixture. Show it as a list (the default: nothing moves and it works without scripts) or as a carousel with buttons, a button for each team and a pause button. Teams are read automatically from the league table, or you can supply your own list.
+4. **ECF Team Fixtures** — every team with its last result and next fixture. Show it as a list (the default: nothing moves and it works without scripts) or as a carousel with buttons, a button for each team and a pause button. Teams are read automatically from the league, or you can supply your own list.
 5. **ECF Biggest Rating Gainers** — showcase the club's current members whose rating has risen the most over a recent period.
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
@@ -38,6 +38,7 @@ Blocks are grouped in the inserter under five headings: **Chess: Ratings & Playe
 14. **Club Memberships** — advertise the memberships the club offers (junior, adult, senior or any others) with their prices and descriptions, and how to pay. Optionally link each one to your application form.
 15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
 O. **Manage My Data** — lets a member stop the newsletter or WhatsApp groups, ask for a copy of their details, or ask for them to be deleted, without an account. Changes are confirmed by an emailed link.
+R. **Team Results** — one team's league position, next fixture and results, with the board-by-board results of each match.
 P. **Club Teams** — shows the club's teams: name, description, home venue and leagues (never the captain or squad). Show all teams or pick one.
 Q. **Member Portal** — lets members see and correct their own details, choose their emails, change their email address and delete their data, using an emailed link.
 
@@ -148,6 +149,7 @@ Yes — add as many blocks as you like, each configured independently.
 = Unreleased =
 * Added: deleting people's details from the admin panel. On the Members list, tick people and choose **Delete personal details…** (with a confirm tick) to delete a group at once, or use **Delete** or **Delete and do not record again** on a single member. A record tied to a payment or photos is kept without any personal details. A person's name stays on the results of tournaments already started, as a historical record, but is unlinked from any record, so nothing leads from it to their other games; in a tournament that has not started their entry is simply removed.
 * Changed: **ECF League Standings & Matchups** and **ECF Team Fixtures** now read the LMS v2 API (the same API key as Import Events) instead of the old LMS service. The league table is worked out from the results (a win is 1 point, a draw half a point) and also shows board points for and against; the list under it shows the next fixtures coming up, then the latest results. Both blocks have a **Season** setting: leave it empty for the current season, or type an earlier one as the LMS names it (for example 2025-2026) to show its final table. Earlier seasons are kept for a week. The LMS gives no venues, so the "show match location" setting has gone.
+* Added: the **Team Results** block (Leagues group): one team's league position, next fixture and every result, with each match opening to show the board-by-board results (who played, their ratings, colours and who won). Type the team as the LMS spells it, or leave it empty to use your first team. It has the same Season setting, so a team page can show how an earlier season went.
 * Added: **Import Events now runs by itself once a day** (as long as there is an LMS API key and a team with a league). The Import Events screen shows when the last import ran and what it did, whether it was the daily one or yours.
 * Added: a **Still to do** list at the top of the Overview for administrators: no LMS API key (or one the LMS refused at the last import), no teams or league entries, fixtures not imported yet, leagues that failed, team names not yet put in a club, no tournament yet, and unfinished policies, each with a link to the fix.
 * Added: an **Add to my calendar** link on each event (in the calendar panel, the list and Next Club Event) that downloads that one event as an .ics file.

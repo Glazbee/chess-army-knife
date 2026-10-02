@@ -128,6 +128,18 @@ class Chess_Army_Knife_Block_Help {
 				),
 				'where'    => array( 'teams' ),
 			),
+			'team-page'            => array(
+				'use'      => __( 'One team\'s league position, next fixture and every result, with the players on each board and who won. Handy for a team\'s own page.', 'chess-army-knife' ),
+				'settings' => array(
+					__( 'Type the team name as the LMS spells it, the organisation ID and the event. With no team typed, your first team (and its league) is used.', 'chess-army-knife' ),
+					__( 'Leave Season empty for the current season, or type an earlier one (for example 2025-2026) to show how that season went.', 'chess-army-knife' ),
+					__( 'Board-by-board results can be switched off.', 'chess-army-knife' ),
+				),
+				'needs'    => array(
+					__( 'The LMS API key from Settings.', 'chess-army-knife' ),
+				),
+				'where'    => array( 'settings', 'teams' ),
+			),
 			'team-profiles'        => array(
 				'use'      => __( 'The club\'s teams: name, description, home venue and the leagues they play in. The captain and squad are never shown.', 'chess-army-knife' ),
 				'settings' => array(

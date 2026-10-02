@@ -164,4 +164,47 @@ class LeagueBlocksTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Home against Test Club A, 3 to 2', $html, 'C: the last result, from its side.' );
 		$this->assertStringContainsString( 'Away against Test Club C, 2 to 3', $html, 'A: the last result, from its side.' );
 	}
+
+	public function test_the_team_block_shows_position_results_and_boards() {
+		$html = $this->render(
+			'team-page',
+			array(
+				'team'      => 'Test Club A',
+				'orgId'     => '270',
+				'eventName' => 'Division 1',
+				'season'    => '2025-2026',
+			)
+		);
+
+		$this->assertStringContainsString( '3 of 3', $html, 'A is bottom of three.' );
+		$this->assertStringContainsString( 'Home against Test Club C', $html, 'The fixture to come.' );
+		$this->assertStringContainsString( 'Lost', $html );
+		$this->assertStringContainsString( 'Board by board', $html );
+		$this->assertStringContainsString( 'Player 1, A (1940)', $html );
+		$this->assertStringContainsString( '(unrated)', $html );
+	}
+
+	public function test_the_team_block_can_leave_out_the_boards_and_says_when_the_team_is_not_in_the_event() {
+		$without = $this->render(
+			'team-page',
+			array(
+				'team'       => 'Test Club A',
+				'orgId'      => '270',
+				'eventName'  => 'Division 1',
+				'season'     => '2025-2026',
+				'showBoards' => false,
+			)
+		);
+		$this->assertStringNotContainsString( 'Board by board', $without );
+
+		$stranger = $this->render(
+			'team-page',
+			array(
+				'team'      => 'Nobody',
+				'orgId'     => '270',
+				'eventName' => 'Division 1',
+			)
+		);
+		$this->assertStringContainsString( 'not in this event', $stranger );
+	}
 }
