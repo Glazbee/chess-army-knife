@@ -690,4 +690,45 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->lms = array(); // The LMS lists the organisation's seasons, as set_up() arranged.
 		$this->assertSame( 'ok', Chess_Army_Knife_LMS_Test::run()['status'] );
 	}
+
+	public function test_setup_adds_the_first_team_with_its_league_and_fetches_its_fixtures() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'lms_api_key'     => 'lmsk_test',
+				'default_org_id'  => '613',
+			)
+		);
+		$this->lms['Division 2'] = array( $this->fixture( 'Our New Team', 'Rivals', '2099-10-05' ) );
+
+		$result = Chess_Army_Knife_Setup::add_first_team( 'Our New Team', 'Division 2', true );
+
+		$this->assertArrayNotHasKey( 'problem', $result );
+		$this->assertSame( 1, $result['created'] );
+		$names = wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' );
+		$this->assertContains( 'Our New Team', $names );
+		$this->assertNotNull( Chess_Army_Knife_Events_Import::last_run(), 'The import is recorded like any other.' );
+	}
+
+	public function test_setup_says_what_is_missing_instead_of_adding_half_a_team() {
+		$this->assertNull( Chess_Army_Knife_Setup::add_first_team( '', 'Division 2', true ), 'No team given: nothing to do.' );
+
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		$no_org = Chess_Army_Knife_Setup::add_first_team( 'Lonely Team', 'Division 2', true );
+		$this->assertArrayHasKey( 'problem', $no_org );
+		$this->assertNotContains( 'Lonely Team', wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' ) );
+
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'default_org_id'  => '613',
+			)
+		);
+		$no_key = Chess_Army_Knife_Setup::add_first_team( 'Keyless Team', 'Division 2', true );
+		$this->assertArrayHasKey( 'problem', $no_key );
+		$this->assertContains( 'Keyless Team', wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' ), 'The team is added; only the fetch is skipped.' );
+		$this->assertStringContainsString( 'no LMS API key', $no_key['problem'] );
+	}
 }

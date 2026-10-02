@@ -66,6 +66,19 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
+	 * Run an import and remember it, as the Import now button does.
+	 *
+	 * @param string $source 'manual' or 'scheduled'.
+	 * @return array See import().
+	 */
+	public static function import_and_record( $source = 'manual' ) {
+		$summary = self::import();
+		self::record( $summary, $source );
+
+		return $summary;
+	}
+
+	/**
 	 * Remember what an import did, for the Overview and the import screen.
 	 *
 	 * @param array  $summary Result of import().
@@ -672,9 +685,7 @@ class Chess_Army_Knife_Events_Import {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 
-		$summary = self::import();
-		self::record( $summary, 'manual' );
-		set_transient( self::result_key(), $summary, MINUTE_IN_SECONDS );
+		set_transient( self::result_key(), self::import_and_record( 'manual' ), MINUTE_IN_SECONDS );
 
 		wp_safe_redirect( add_query_arg( array( 'page' => self::PAGE ), admin_url( 'admin.php' ) ) );
 		exit;
