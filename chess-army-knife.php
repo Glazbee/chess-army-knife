@@ -83,6 +83,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-dashboard-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-block-help.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-access.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-setup.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-setup-checklist.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-menu.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
@@ -137,6 +138,7 @@ function Chess_Army_Knife_deactivate() {
 	Chess_Army_Knife_Mailer::unschedule();
 	Chess_Army_Knife_Renewal_Reminders::unschedule();
 	Chess_Army_Knife_Announcements::unschedule();
+	Chess_Army_Knife_Events_Import::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 

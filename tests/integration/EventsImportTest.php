@@ -638,4 +638,40 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertEqualsCanonicalizing( array( $by_name['Our A'], $by_name['Our B'] ), Chess_Army_Knife_Teams::squad_team_ids_of_person( $ada ) );
 		$this->assertContains( $old, Chess_Army_Knife_Teams::squad( $by_name['Our B'] ), 'Nobody is taken out of a squad by an import.' );
 	}
+
+	public function test_the_daily_import_does_nothing_without_a_key_and_records_what_it_did_with_one() {
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		Chess_Army_Knife_Events_Import::run_scheduled();
+		$this->assertNull( Chess_Army_Knife_Events_Import::last_run(), 'No key, no teams: nothing to record.' );
+
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'lms_api_key'     => 'secret',
+			)
+		);
+		Chess_Army_Knife_Events_Import::run_scheduled();
+		$this->assertNull( Chess_Army_Knife_Events_Import::last_run(), 'A key but no teams.' );
+	}
+
+	public function test_the_daily_import_is_scheduled_and_unscheduled() {
+		Chess_Army_Knife_Events_Import::schedule();
+		$this->assertNotFalse( wp_next_scheduled( Chess_Army_Knife_Events_Import::HOOK ) );
+
+		Chess_Army_Knife_Events_Import::unschedule();
+		$this->assertFalse( wp_next_scheduled( Chess_Army_Knife_Events_Import::HOOK ) );
+	}
+
+	public function test_the_overview_lists_what_is_not_set_up_for_an_administrator_only() {
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( '', Chess_Army_Knife_Setup_Checklist::html() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$html = Chess_Army_Knife_Setup_Checklist::html();
+		$this->assertStringContainsString( 'There is no LMS API key', $html );
+		$this->assertStringContainsString( 'No teams have been added', $html );
+	}
 }

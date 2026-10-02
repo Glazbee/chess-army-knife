@@ -147,6 +147,8 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 * Added: deleting people's details from the admin panel. On the Members list, tick people and choose **Delete personal details…** (with a confirm tick) to delete a group at once, or use **Delete** or **Delete and do not record again** on a single member. A record tied to a payment or photos is kept without any personal details. A person's name stays on the results of tournaments already started, as a historical record, but is unlinked from any record, so nothing leads from it to their other games; in a tournament that has not started their entry is simply removed.
+* Added: **Import Events now runs by itself once a day** (as long as there is an LMS API key and a team with a league). The Import Events screen shows when the last import ran and what it did, whether it was the daily one or yours.
+* Added: a **Still to do** list at the top of the Overview for administrators: no LMS API key (or one the LMS refused at the last import), no teams or league entries, fixtures not imported yet, leagues that failed, team names not yet put in a club, no tournament yet, and unfinished policies, each with a link to the fix.
 * Added: an **Add to my calendar** link on each event (in the calendar panel, the list and Next Club Event) that downloads that one event as an .ics file.
 * Added: an event can be marked **Cancelled** or **Moved**, with a short note. It stays on the calendar, marked in words (and a line through a cancelled title), and the calendar feed marks a cancelled one `STATUS:CANCELLED`. A cancelled event has no Add to my calendar link.
 * Added: **Dates to skip** on a repeating event, such as holidays. Those dates are left out of the blocks and the feed.

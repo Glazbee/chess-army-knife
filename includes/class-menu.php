@@ -426,7 +426,9 @@ class Chess_Army_Knife_Menu {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Chess Army Knife', 'chess-army-knife' ); ?></h1>
 			<?php echo Chess_Army_Knife_Setup::notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
-			<?php echo Chess_Army_Knife_Policies::attention_notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in attention_notice(). ?>
+			<?php $checklist = Chess_Army_Knife_Setup_Checklist::html(); ?>
+			<?php // Administrators get the whole list, which includes the policies; everyone else just the policies. ?>
+			<?php echo '' !== $checklist ? $checklist : Chess_Army_Knife_Policies::attention_notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in html() and attention_notice(). ?>
 			<p class="description"><?php esc_html_e( 'Everything the plugin does is listed here. Some screens need a permission: the ones you cannot use say so.', 'chess-army-knife' ); ?></p>
 			<?php foreach ( $groups as $group => $areas ) : ?>
 				<h2><?php echo esc_html( $group ); ?></h2>

@@ -26,12 +26,100 @@ class Chess_Army_Knife_Events_Import {
 	const TAG          = 'League match';
 	const ACTION       = 'chess_army_knife_import_events';
 	const PAGE         = 'chess-army-knife-import-events';
+	const HOOK         = 'Chess_Army_Knife_import_events'; // The daily import.
+	const LAST_OPTION  = 'Chess_Army_Knife_import_last'; // What the most recent import did.
 
 	/**
 	 * Hook up the admin page and its form handler.
 	 */
 	public static function init() {
 		add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'handle_import' ) );
+		add_action( self::HOOK, array( __CLASS__, 'run_scheduled' ) );
+		add_action( 'init', array( __CLASS__, 'schedule' ) );
+	}
+
+	/**
+	 * Schedule the daily import if it is not already.
+	 */
+	public static function schedule() {
+		if ( ! wp_next_scheduled( self::HOOK ) ) {
+			wp_schedule_event( time() + 2 * HOUR_IN_SECONDS, 'daily', self::HOOK );
+		}
+	}
+
+	/**
+	 * Stop the daily import (on deactivation).
+	 */
+	public static function unschedule() {
+		wp_clear_scheduled_hook( self::HOOK );
+	}
+
+	/**
+	 * The daily import. Does nothing until there is an API key and a team to import for.
+	 */
+	public static function run_scheduled() {
+		if ( '' === Chess_Army_Knife_LMS_Client::api_key() || ! Chess_Army_Knife_Settings::get_club_teams() ) {
+			return;
+		}
+
+		self::record( self::import(), 'scheduled' );
+	}
+
+	/**
+	 * Remember what an import did, for the Overview and the import screen.
+	 *
+	 * @param array  $summary Result of import().
+	 * @param string $source  'scheduled' or 'manual'.
+	 */
+	protected static function record( array $summary, $source ) {
+		update_option(
+			self::LAST_OPTION,
+			array(
+				'time'    => time(),
+				'source'  => $source,
+				'summary' => $summary,
+			),
+			false
+		);
+	}
+
+	/**
+	 * What the most recent import did.
+	 *
+	 * @return array|null { time, source, summary }, or null if none has run.
+	 */
+	public static function last_run() {
+		$last = get_option( self::LAST_OPTION, null );
+
+		return is_array( $last ) && isset( $last['time'], $last['summary'] ) && is_array( $last['summary'] ) ? $last : null;
+	}
+
+	/**
+	 * A line saying when the last import ran and how it went.
+	 *
+	 * @param array|null $last Result of last_run().
+	 * @param int        $now  Unix time.
+	 * @return string Plain text, or '' if none has run.
+	 */
+	public static function last_run_text( $last, $now ) {
+		if ( ! is_array( $last ) ) {
+			return '';
+		}
+
+		$summary = $last['summary'];
+		$errors  = isset( $summary['errors'] ) ? count( (array) $summary['errors'] ) : 0;
+		$when    = human_time_diff( (int) $last['time'], (int) $now );
+		$how     = isset( $last['source'] ) && 'scheduled' === $last['source'] ? __( 'daily', 'chess-army-knife' ) : __( 'manual', 'chess-army-knife' );
+
+		return sprintf(
+			/* translators: 1: how long ago, 2: daily or manual, 3: new events, 4: refreshed events, 5: leagues that failed */
+			__( 'Last import: %1$s ago (%2$s): %3$d created, %4$d updated, %5$d leagues failed.', 'chess-army-knife' ),
+			$when,
+			$how,
+			(int) ( isset( $summary['created'] ) ? $summary['created'] : 0 ),
+			(int) ( isset( $summary['updated'] ) ? $summary['updated'] : 0 ),
+			$errors
+		);
 	}
 
 	/**
@@ -339,10 +427,11 @@ class Chess_Army_Knife_Events_Import {
 	 * Fetch the fixtures of every league the club's teams are in.
 	 *
 	 * @param array[] $teams   Club teams.
-	 * @param array   $errors  Filled with a message for each league that could not be loaded.
+	 * @param array   $errors      Filled with a message for each league that could not be loaded.
+	 * @param bool    $key_problem Set when the LMS refuses the API key.
 	 * @return array Normalised match rows keyed by "org|event" (lower case).
 	 */
-	protected static function fetch_matches( array $teams, array &$errors ) {
+	protected static function fetch_matches( array $teams, array &$errors, &$key_problem ) {
 		$by_league = array();
 
 		foreach ( $teams as $team ) {
@@ -358,6 +447,9 @@ class Chess_Army_Knife_Events_Import {
 			if ( is_wp_error( $rows ) ) {
 				/* translators: 1: league / division name, 2: error message */
 				$errors[] = sprintf( __( '%1$s: %2$s', 'chess-army-knife' ), $team['event'], $rows->get_error_message() );
+				if ( in_array( $rows->get_error_code(), array( 'lms_unauthorised', 'lms_forbidden', 'lms_no_api_key' ), true ) ) {
+					$key_problem = true;
+				}
 				continue;
 			}
 
@@ -437,6 +529,7 @@ class Chess_Army_Knife_Events_Import {
 	 *     @type int      $unsorted  Team names seen that are not in a club yet, so their home fixtures have no venue.
 	 *     @type int      $skipped   Fixtures with a date that couldn't be read.
 	 *     @type string[] $errors    Leagues that couldn't be loaded.
+	 *     @type bool     $key_problem Whether the LMS refused the API key (or there is none).
 	 * }
 	 */
 	public static function import() {
@@ -450,6 +543,7 @@ class Chess_Army_Knife_Events_Import {
 			'players_unmatched' => 0,
 			'skipped'           => 0,
 			'errors'            => array(),
+			'key_problem'       => false,
 		);
 
 		$teams = Chess_Army_Knife_Settings::get_club_teams();
@@ -462,7 +556,7 @@ class Chess_Army_Knife_Events_Import {
 		if ( '' === $default_time ) {
 			$default_time = '19:30';
 		}
-		$matches = self::fetch_matches( $teams, $summary['errors'] );
+		$matches = self::fetch_matches( $teams, $summary['errors'], $summary['key_problem'] );
 		$plan    = self::plan( $teams, $matches, current_time( 'Y-m-d' ), $default_time );
 
 		$summary['skipped'] = $plan['skipped'];
@@ -566,7 +660,9 @@ class Chess_Army_Knife_Events_Import {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 
-		set_transient( self::result_key(), self::import(), MINUTE_IN_SECONDS );
+		$summary = self::import();
+		self::record( $summary, 'manual' );
+		set_transient( self::result_key(), $summary, MINUTE_IN_SECONDS );
 
 		wp_safe_redirect( add_query_arg( array( 'page' => self::PAGE ), admin_url( 'admin.php' ) ) );
 		exit;
@@ -595,6 +691,11 @@ class Chess_Army_Knife_Events_Import {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Import Events from LMS', 'chess-army-knife' ); ?></h1>
+			<?php $last_line = self::last_run_text( self::last_run(), time() ); ?>
+			<?php if ( '' !== $last_line ) : ?>
+				<p><strong><?php echo esc_html( $last_line ); ?></strong></p>
+			<?php endif; ?>
+			<p class="description"><?php esc_html_e( 'The import also runs by itself once a day, as long as there is an LMS API key and at least one team.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( is_array( $result ) ) : ?>
 				<div class="notice notice-success"><p>
