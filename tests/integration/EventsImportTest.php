@@ -869,7 +869,7 @@ class EventsImportTest extends WP_UnitTestCase {
 	}
 
 	public function test_erasing_a_member_takes_their_name_out_of_the_results() {
-		$ada = $this->member_with_code( 'Ada Lovelace', '123456A' );
+		$ada                    = $this->member_with_code( 'Ada Lovelace', '123456A' );
 		$this->lms['Division 1'] = array( $this->played_fixture() );
 		Chess_Army_Knife_Events_Import::import();
 

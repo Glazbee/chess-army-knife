@@ -280,7 +280,7 @@ class Chess_Army_Knife_Event_Results {
 			return '';
 		}
 
-		$html = '<div class="cak-event__result">';
+		$html  = '<div class="cak-event__result">';
 		$html .= '<p class="cak-event__score">' . esc_html(
 			sprintf(
 				/* translators: 1: home team, 2: home score, 3: away score, 4: away team */
