@@ -34,9 +34,9 @@ once, paste a list from a spreadsheet at the top of the same screen.
 many have said yes, maybe or no, who has not replied, and the squad with ratings.
 
 **4. Ask who can play and pick the line-up.** On **Team Selection** choose the fixture and press
-**Ask the squad**: each member of the squad gets an email with a link to answer yes, maybe or no (they
-need no login). When the replies are in, pick the boards (or use **Suggest**), save a draft, and
-**Publish**: the people picked are emailed, and anyone taken off is told. A line-up cannot be changed once
+**Ask the squad if they can play**: each member of the squad gets an email with a link to answer yes, maybe or no (they
+need no login). When the replies are in, pick the boards (or use **Fill from replies**, which puts the best rated players who said yes in first), save a draft, and
+**Publish and tell the players**: the people picked are emailed, and anyone taken off is told. A line-up cannot be changed once
 the fixture has started.
 
 **5. Deal with applications.** New applications wait on **Members** under *Pending*. Approve or decline.
@@ -44,7 +44,7 @@ An approved member's dates follow their membership type. Tell people how to pay;
 their record when it arrives.
 
 **6. Renewals.** **Renewals** shows who is due a reminder at the next daily run. Reminders go out by
-themselves if they are switched on under Settings. Use **Renew** on a record when someone has paid again.
+themselves if they are switched on under Settings. Use **Renew** on a record when someone has paid again: it runs the membership on for another period and notes the payment as received today.
 
 ## Now and then
 
@@ -65,7 +65,7 @@ A person has the right to ask. Do these in order:
 1. If they asked through the site (the Manage My Data block or WordPress's privacy tools), find the
    request under **Tools → Erase Personal Data**, check it is really them (it is confirmed by email), and
    run it. Otherwise find them on **Members**.
-2. Use **Delete and do not record** on their record (or tick *Do not record* when you bulk-delete). This
+2. Use **Delete and do not record again** on their record (or, when you bulk-delete, tick *and do not record them again*). This
    removes their details, or, if the record is tied to a payment, photos or a tournament, removes the
    details and keeps the rest. It also adds them to **Do Not Record**, so the plugin does not make a
    record of them again by itself (for example when their ECF code turns up in a league import).
