@@ -43,6 +43,37 @@ class Chess_Army_Knife_Member_Requests {
 			add_action( 'admin_post_nopriv_' . $action, array( __CLASS__, $method ) );
 			add_action( 'admin_post_' . $action, array( __CLASS__, $method ) );
 		}
+		add_action( 'template_redirect', array( __CLASS__, 'protect_token_pages' ) );
+	}
+
+	/** Query arguments that carry a sign-in or confirmation token from an emailed link. */
+	const TOKEN_PARAMS = array( 'cak_portal', 'cak_email', 'cak_withdraw' );
+
+	/**
+	 * Whether a request is one opened from an emailed link, with a token in the address.
+	 *
+	 * @param array $query The request's query arguments.
+	 * @return bool
+	 */
+	public static function is_token_page( array $query ) {
+		foreach ( self::TOKEN_PARAMS as $param ) {
+			if ( isset( $query[ $param ] ) && '' !== (string) $query[ $param ] ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Keep a page opened from an emailed link out of caches, and stop the browser passing its address
+	 * (and so the token) on in the Referer header to anything the page links to.
+	 */
+	public static function protect_token_pages() {
+		if ( self::is_token_page( $_GET ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only decides on headers; nothing is changed.
+			nocache_headers();
+			header( 'Referrer-Policy: no-referrer' );
+		}
 	}
 
 	/**

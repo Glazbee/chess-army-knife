@@ -398,7 +398,21 @@ class Chess_Army_Knife_LMS_Client {
 	 * @return string
 	 */
 	public static function api_key() {
+		// A key in wp-config.php is not in the database at all, so it wins.
+		if ( self::key_in_config() ) {
+			return trim( (string) CHESS_ARMY_KNIFE_LMS_API_KEY );
+		}
+
 		return trim( (string) Chess_Army_Knife_Settings::get_options()['lms_api_key'] );
+	}
+
+	/**
+	 * Whether the key is set in wp-config.php with define( 'CHESS_ARMY_KNIFE_LMS_API_KEY', '...' ).
+	 *
+	 * @return bool
+	 */
+	public static function key_in_config() {
+		return defined( 'CHESS_ARMY_KNIFE_LMS_API_KEY' ) && '' !== trim( (string) CHESS_ARMY_KNIFE_LMS_API_KEY );
 	}
 
 	/**

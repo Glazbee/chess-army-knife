@@ -28,6 +28,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-lms-client.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-league-data.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-lms-test.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-settings-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-secrets.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-contrast.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-headings.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-a11y.php';

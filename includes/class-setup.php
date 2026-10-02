@@ -365,8 +365,12 @@ class Chess_Army_Knife_Setup {
 					<tr>
 						<th scope="row"><label for="cak-setup-lms-key"><?php esc_html_e( 'LMS API key', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="password" id="cak-setup-lms-key" name="lms_api_key" value="" class="regular-text" autocomplete="new-password" aria-describedby="cak-setup-lms-key-help" placeholder="<?php echo esc_attr( '' !== $options['lms_api_key'] ? __( 'A key is saved. Type a new one to replace it.', 'chess-army-knife' ) : '' ); ?>" />
-							<p class="description" id="cak-setup-lms-key-help"><?php esc_html_e( 'Create a key on your LMS account\'s "API keys" page. It is needed to import your teams\' fixtures into the calendar. Once saved, the key is not shown again.', 'chess-army-knife' ); ?></p>
+							<?php if ( Chess_Army_Knife_LMS_Client::key_in_config() ) : ?>
+								<p><strong><?php esc_html_e( 'The key is set in wp-config.php, so it is not stored in the database.', 'chess-army-knife' ); ?></strong></p>
+							<?php else : ?>
+								<input type="password" id="cak-setup-lms-key" name="lms_api_key" value="" class="regular-text" autocomplete="new-password" aria-describedby="cak-setup-lms-key-help" placeholder="<?php echo esc_attr( '' !== $options['lms_api_key'] ? __( 'A key is saved. Type a new one to replace it.', 'chess-army-knife' ) : '' ); ?>" />
+								<p class="description" id="cak-setup-lms-key-help"><?php esc_html_e( 'Create a key on your LMS account\'s "API keys" page. It is needed to import your teams\' fixtures into the calendar. Once saved, the key is not shown again.', 'chess-army-knife' ); ?></p>
+							<?php endif; ?>
 						</td>
 					</tr>
 					<tr>

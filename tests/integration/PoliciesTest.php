@@ -328,4 +328,30 @@ class PoliciesTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'lmsk_very_secret', $html );
 		$this->assertStringContainsString( 'A key is saved', $html );
 	}
+
+	public function test_the_lms_key_is_encrypted_in_the_database_however_the_settings_are_saved() {
+		// A key saved in plain text before encryption existed is encrypted by the next tidy.
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		global $wpdb;
+		$wpdb->update( $wpdb->options, array( 'option_value' => maybe_serialize( array( 'lms_api_key' => 'lmsk_old_plain' ) ) ), array( 'option_name' => 'Chess_Army_Knife_settings' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		wp_cache_delete( 'Chess_Army_Knife_settings', 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
+		$this->assertSame( 'lmsk_old_plain', get_option( 'Chess_Army_Knife_settings' )['lms_api_key'] );
+
+		Chess_Army_Knife_Secrets::migrate();
+		$this->assertStringStartsWith( 'enc1:', get_option( 'Chess_Army_Knife_settings' )['lms_api_key'] );
+		$this->assertSame( 'lmsk_old_plain', Chess_Army_Knife_LMS_Client::api_key(), 'The plugin still reads it.' );
+
+		// Code that reads the settings and writes them straight back does not undo it.
+		Chess_Army_Knife_Policies::set_retention_months( 12 );
+		$stored = get_option( 'Chess_Army_Knife_settings' )['lms_api_key'];
+		$this->assertStringStartsWith( 'enc1:', $stored );
+		$this->assertStringNotContainsString( 'lmsk_old_plain', $stored );
+		$this->assertSame( 'lmsk_old_plain', Chess_Army_Knife_LMS_Client::api_key() );
+
+		// A blank box on the settings form keeps it, and it stays encrypted.
+		Chess_Army_Knife_Settings::save( array( 'club_name' => 'Our Club' ) );
+		$this->assertStringStartsWith( 'enc1:', get_option( 'Chess_Army_Knife_settings' )['lms_api_key'] );
+		$this->assertSame( 'lmsk_old_plain', Chess_Army_Knife_LMS_Client::api_key() );
+	}
 }

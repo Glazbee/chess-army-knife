@@ -154,9 +154,10 @@ function Chess_Army_Knife_rest_member_search_permission() {
 	/**
 	 * Filter the capability needed to search club members by name.
 	 *
-	 * @param string $capability Capability name, edit_posts by default.
+	 * @param string $capability Capability name, edit_others_posts (an editor) by default. The search shows
+	 *                           names and ECF codes, including juniors', so it is not for contributors.
 	 */
-	return current_user_can( (string) apply_filters( 'Chess_Army_Knife_member_search_capability', 'edit_posts' ) );
+	return current_user_can( (string) apply_filters( 'Chess_Army_Knife_member_search_capability', 'edit_others_posts' ) );
 }
 
 /**

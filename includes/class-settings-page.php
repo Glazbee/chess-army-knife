@@ -83,7 +83,8 @@ class Chess_Army_Knife_Settings {
 	 */
 	public static function get_options() {
 		$saved = get_option( self::OPTION, array() );
-		return wp_parse_args( is_array( $saved ) ? $saved : array(), self::defaults() );
+		// Secrets are encrypted in the database (see Chess_Army_Knife_Secrets) and read back here.
+		return Chess_Army_Knife_Secrets::reveal( wp_parse_args( is_array( $saved ) ? $saved : array(), self::defaults() ) );
 	}
 
 	/**
@@ -480,11 +481,15 @@ class Chess_Army_Knife_Settings {
 					<tr>
 						<th scope="row"><label for="lms_api_key"><?php esc_html_e( 'LMS API key', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="password" id="lms_api_key" name="<?php echo esc_attr( self::OPTION ); ?>[lms_api_key]" value="" class="regular-text" autocomplete="new-password" aria-describedby="lms_api_key_help" placeholder="<?php echo esc_attr( '' !== $options['lms_api_key'] ? __( 'A key is saved. Type a new one to replace it.', 'chess-army-knife' ) : '' ); ?>" />
-							<?php if ( '' !== $options['lms_api_key'] ) : ?>
-								<label for="lms_api_key_clear"><input type="checkbox" id="lms_api_key_clear" name="<?php echo esc_attr( self::OPTION ); ?>[lms_api_key_clear]" value="1" /> <?php esc_html_e( 'Remove the saved key', 'chess-army-knife' ); ?></label>
+							<?php if ( Chess_Army_Knife_LMS_Client::key_in_config() ) : ?>
+								<p><strong><?php esc_html_e( 'The key is set in wp-config.php, so it is not stored in the database and cannot be changed here.', 'chess-army-knife' ); ?></strong></p>
+							<?php else : ?>
+								<input type="password" id="lms_api_key" name="<?php echo esc_attr( self::OPTION ); ?>[lms_api_key]" value="" class="regular-text" autocomplete="new-password" aria-describedby="lms_api_key_help" placeholder="<?php echo esc_attr( '' !== $options['lms_api_key'] ? __( 'A key is saved. Type a new one to replace it.', 'chess-army-knife' ) : '' ); ?>" />
+								<?php if ( '' !== $options['lms_api_key'] ) : ?>
+									<label for="lms_api_key_clear"><input type="checkbox" id="lms_api_key_clear" name="<?php echo esc_attr( self::OPTION ); ?>[lms_api_key_clear]" value="1" /> <?php esc_html_e( 'Remove the saved key', 'chess-army-knife' ); ?></label>
+								<?php endif; ?>
+								<p class="description" id="lms_api_key_help"><?php esc_html_e( 'Needed to import fixtures into Club Events and to show league data. Create a key on your LMS account\'s "API keys" page; it can see the same data you can. Once saved, the key is not shown again.', 'chess-army-knife' ); ?></p>
 							<?php endif; ?>
-							<p class="description" id="lms_api_key_help"><?php esc_html_e( 'Needed to import fixtures into Club Events and to show league data. Create a key on your LMS account\'s "API keys" page; it can see the same data you can. Once saved, the key is not shown again.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>
