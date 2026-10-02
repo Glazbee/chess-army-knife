@@ -231,46 +231,6 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * Names of the teams with the given ids, for showing choices.
-	 *
-	 * @param array $ids Team ids; anything that is no longer a team (or is an old team name) is shown as it is.
-	 * @return string[]
-	 */
-	public static function labels( array $ids ) {
-		$choices = self::choices();
-		$labels  = array();
-		foreach ( $ids as $id ) {
-			$labels[] = is_int( $id ) && isset( $choices[ $id ] ) ? $choices[ $id ] : (string) $id;
-		}
-		return $labels;
-	}
-
-	/**
-	 * Turn a stored list of teams into ids. Earlier versions stored team names:
-	 * a name that matches a team becomes its id, and one that does not is kept as it is.
-	 *
-	 * @param array $stored Stored list.
-	 * @return array Ids (int), and any names that matched no team.
-	 */
-	public static function normalise_ids( array $stored ) {
-		$by_name = null;
-		$out     = array();
-
-		foreach ( $stored as $item ) {
-			if ( is_int( $item ) || ( is_string( $item ) && ctype_digit( $item ) ) ) {
-				$out[] = (int) $item;
-				continue;
-			}
-			if ( null === $by_name ) {
-				$by_name = array_flip( array_map( 'strtolower', self::choices() ) );
-			}
-			$key   = strtolower( (string) $item );
-			$out[] = isset( $by_name[ $key ] ) ? (int) $by_name[ $key ] : (string) $item;
-		}
-		return array_values( array_unique( $out, SORT_REGULAR ) );
-	}
-
-	/**
 	 * A league entry as the rest of the plugin reads it: the name is the one the
 	 * LMS knows the team by, which is the team's own name unless told otherwise.
 	 *

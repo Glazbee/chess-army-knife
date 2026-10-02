@@ -575,7 +575,7 @@ class Chess_Army_Knife_Members_Page {
 									$agreed[] = __( 'Newsletter', 'chess-army-knife' );
 								}
 								if ( '' !== $member['whatsapp_consent_at'] ) {
-									$agreed[] = $member['whatsapp_teams'] ? sprintf( /* translators: %s: team names */ __( 'WhatsApp (%s)', 'chess-army-knife' ), implode( ', ', Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) ) ) : __( 'WhatsApp', 'chess-army-knife' );
+									$agreed[] = __( 'WhatsApp', 'chess-army-knife' );
 								}
 								echo $agreed ? esc_html( implode( ', ', $agreed ) ) : '&mdash;';
 								?>
@@ -682,8 +682,7 @@ class Chess_Army_Knife_Members_Page {
 	protected static function render_form( $member ) {
 		$editing = null !== $member;
 		$member  = $editing ? $member : array(
-			'manual_rating'  => null,
-			'whatsapp_teams' => array(),
+			'manual_rating' => null,
 		) + array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at' ), '' ) + array(
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
@@ -833,14 +832,8 @@ class Chess_Army_Knife_Members_Page {
 							</label>
 							<label style="display:block">
 								<input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $member['whatsapp_consent_at'] ); ?> />
-								<?php esc_html_e( 'Has agreed to be added to WhatsApp groups (their phone number is visible to the group)', 'chess-army-knife' ); ?>
+								<?php esc_html_e( 'Has agreed to be added to the WhatsApp groups of the teams they are in (their phone number is visible to the group)', 'chess-army-knife' ); ?>
 							</label>
-							<?php foreach ( Chess_Army_Knife_Teams::choices() as $team_id => $team_name ) : ?>
-								<label style="display:block;margin-left:1.5em">
-									<input type="checkbox" name="whatsapp_teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( in_array( $team_id, $member['whatsapp_teams'], true ) ); ?> />
-									<?php echo esc_html( $team_name ); ?>
-								</label>
-							<?php endforeach; ?>
 							<p class="description"><?php esc_html_e( 'Tick only if the member, or for a junior their parent or guardian, has said yes, in person or in writing. Untick to record that they have withdrawn (members can also do this themselves on the Manage My Data page).', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>

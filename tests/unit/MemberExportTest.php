@@ -38,7 +38,6 @@ class MemberExportTest extends Chess_Army_Knife_TestCase {
 			'notes'                 => 'Private note',
 			'newsletter_consent_at' => '2026-01-01 10:00:00',
 			'whatsapp_consent_at'   => '',
-			'whatsapp_teams'        => array(),
 			'created_at'            => '2026-01-01 10:00:00',
 		);
 	}

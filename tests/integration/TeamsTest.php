@@ -171,28 +171,10 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertCount( 4, Chess_Army_Knife_Settings::get_club_teams(), 'Running it again changes nothing.' );
 	}
 
-	public function test_old_team_names_on_a_record_become_team_ids() {
-		$a   = $this->team( 'Club A' );
-		$ada = $this->person(
-			'Ada Lovelace',
-			array(
-				'whatsapp_consent_at' => '2026-01-01 10:00:00',
-				'whatsapp_teams'      => wp_json_encode( array( 'club a', 'Old Team' ) ),
-			)
-		);
-
-		$this->assertSame( array( $a, 'Old Team' ), Chess_Army_Knife_Membership_Store::get_member( $ada )['whatsapp_teams'] );
-	}
-
-	public function test_renaming_a_team_keeps_members_whatsapp_choice() {
+	public function test_renaming_a_team_keeps_its_squad() {
 		$team = $this->team( 'Club A' );
-		$ada  = $this->person(
-			'Ada Lovelace',
-			array(
-				'whatsapp_consent_at' => '2026-01-01 10:00:00',
-				'whatsapp_teams'      => wp_json_encode( array( $team ) ),
-			)
-		);
+		$ada  = $this->person( 'Ada Lovelace' );
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
 
 		wp_update_post(
 			array(
@@ -201,8 +183,8 @@ class TeamsTest extends WP_UnitTestCase {
 			)
 		);
 
-		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
-		$this->assertSame( array( 'Club A (Division 2)' ), Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) );
+		$this->assertSame( array( $ada ), Chess_Army_Knife_Teams::squad( $team ) );
+		$this->assertSame( 'Club A (Division 2)', Chess_Army_Knife_Teams::teams_of_person( $ada )[0]['name'] );
 	}
 
 	public function test_the_block_shows_team_details_but_never_the_captain_or_squad() {

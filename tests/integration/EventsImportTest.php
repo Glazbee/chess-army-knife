@@ -33,6 +33,13 @@ class EventsImportTest extends WP_UnitTestCase {
 			)
 		);
 
+		global $wpdb;
+		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Teams::squad_table() ) as $table ) {
+			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+		Chess_Army_Knife_Membership_Store::install_table();
+		Chess_Army_Knife_Teams::install_table();
+
 		$this->lms      = array();
 		$this->requests = 0;
 		add_filter(
@@ -509,5 +516,126 @@ class EventsImportTest extends WP_UnitTestCase {
 
 		$again = Chess_Army_Knife_Events_Import::import();
 		$this->assertSame( 0, $again['updated'], 'Nothing more to add.' );
+	}
+
+	private function player( $code, $name ) {
+		return array(
+			'lms_id'      => 1,
+			'rating_code' => $code,
+			'name'        => $name,
+		);
+	}
+
+	private function member_with_code( $name, $code, $status = 'active' ) {
+		return Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => $name,
+				'email'    => strtolower( strtok( $name, ' ' ) ) . '@example.test',
+				'status'   => $status,
+				'ecf_code' => $code,
+			)
+		);
+	}
+
+	public function test_players_who_played_for_a_team_are_put_in_its_squad_by_their_ecf_code() {
+		$ada   = $this->member_with_code( 'Ada Lovelace', '123456A' );
+		$bea   = $this->member_with_code( 'Bea Babbage', '222222B' );
+		$guest = $this->member_with_code( 'Gus Guest', '333333C', Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER );
+		$team  = Chess_Army_Knife_Teams::all()[0]['id'];
+		Chess_Army_Knife_Teams::set_squad( $team, array( $bea ) );
+		$this->lms['Division 1'] = array(
+			$this->fixture(
+				'Our A',
+				'Rivals',
+				'2099-10-05',
+				array(
+					'games' => array(
+						array(
+							'board'       => 1,
+							'home_player' => $this->player( '123456A', 'Ada' ),
+							'away_player' => $this->player( '999999Z', 'Their player' ),
+						),
+						array(
+							'board'       => 2,
+							'home_player' => $this->player( '333333C', 'Gus' ),
+							'away_player' => $this->player( '888888Y', 'Another of theirs' ),
+						),
+						array(
+							'board'       => 3,
+							'home_player' => $this->player( '777777X', 'Not on file' ),
+							'away_player' => $this->player( '666666W', 'Theirs again' ),
+						),
+					),
+				)
+			),
+		);
+
+		$summary = Chess_Army_Knife_Events_Import::import();
+
+		$this->assertEqualsCanonicalizing( array( $ada, $bea ), Chess_Army_Knife_Teams::squad( $team ), 'Ada is added; Bea stays; a guest is not.' );
+		$this->assertSame( 1, $summary['squad_added'] );
+		$this->assertSame( 2, $summary['players_unmatched'], 'The guest and the player with no record.' );
+		$this->assertNotContains( $guest, Chess_Army_Knife_Teams::squad( $team ) );
+
+		$again = Chess_Army_Knife_Events_Import::import();
+		$this->assertSame( 0, $again['squad_added'], 'Importing again adds nobody twice.' );
+	}
+
+	public function test_a_player_in_two_of_our_teams_is_in_both_squads_and_import_never_removes_anyone() {
+		Chess_Army_Knife_Teams::assign_league_entries(
+			array(
+				array(
+					'org'   => '613',
+					'event' => 'Division 1',
+					'team'  => 'Our A',
+				),
+				array(
+					'org'   => '613',
+					'event' => 'Division 2',
+					'team'  => 'Our B',
+				),
+			)
+		);
+		$ada     = $this->member_with_code( 'Ada Lovelace', '123456A' );
+		$old     = $this->member_with_code( 'Old Timer', '444444D' );
+		$by_name = array_column( Chess_Army_Knife_Teams::all(), 'id', 'name' );
+		Chess_Army_Knife_Teams::set_squad( $by_name['Our B'], array( $old ) );
+		$this->lms['Division 1'] = array(
+			$this->fixture(
+				'Our A',
+				'Rivals',
+				'2099-10-05',
+				array(
+					'games' => array(
+						array(
+							'board'       => 1,
+							'home_player' => $this->player( '123456A', 'Ada' ),
+							'away_player' => $this->player( '9', 'X' ),
+						),
+					),
+				)
+			),
+		);
+		$this->lms['Division 2'] = array(
+			$this->fixture(
+				'Rivals',
+				'Our B',
+				'2099-10-05',
+				array(
+					'games' => array(
+						array(
+							'board'       => 1,
+							'home_player' => $this->player( '9', 'Y' ),
+							'away_player' => $this->player( '123456A', 'Ada' ),
+						),
+					),
+				)
+			),
+		);
+
+		Chess_Army_Knife_Events_Import::import();
+
+		$this->assertEqualsCanonicalizing( array( $by_name['Our A'], $by_name['Our B'] ), Chess_Army_Knife_Teams::squad_team_ids_of_person( $ada ) );
+		$this->assertContains( $old, Chess_Army_Knife_Teams::squad( $by_name['Our B'] ), 'Nobody is taken out of a squad by an import.' );
 	}
 }

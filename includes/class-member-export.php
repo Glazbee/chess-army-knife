@@ -59,7 +59,6 @@ class Chess_Army_Knife_Member_Export {
 		$statuses = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
 		$status   = Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
 		$methods  = Chess_Army_Knife_Memberships::payment_methods();
-		$teams    = $member['whatsapp_teams'] ? Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) : array();
 
 		return array(
 			$member['name'],
@@ -82,7 +81,7 @@ class Chess_Army_Knife_Member_Export {
 			$member['paid_on'],
 			isset( $methods[ $member['payment_method'] ] ) ? $methods[ $member['payment_method'] ] : $member['payment_method'],
 			'' !== $member['newsletter_consent_at'] ? __( 'Yes', 'chess-army-knife' ) : __( 'No', 'chess-army-knife' ),
-			'' === $member['whatsapp_consent_at'] ? __( 'No', 'chess-army-knife' ) : ( $teams ? implode( ', ', $teams ) : __( 'Yes', 'chess-army-knife' ) ),
+			'' === $member['whatsapp_consent_at'] ? __( 'No', 'chess-army-knife' ) : __( 'Yes', 'chess-army-knife' ),
 			(string) $member['created_at'],
 		);
 	}

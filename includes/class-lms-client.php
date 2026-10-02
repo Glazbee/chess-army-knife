@@ -490,8 +490,8 @@ class Chess_Army_Knife_LMS_Client {
 	}
 
 	/**
-	 * One v2 fixture as a match row (see normalise_match_row()). The v2 API
-	 * gives no venue, so that is left empty.
+	 * One v2 fixture as a match row (see normalise_match_row()), with the players who
+	 * played (side, ECF code, name). The v2 API gives no venue, so that is left empty.
 	 *
 	 * @param mixed $fixture Entry of the results' "fixtures" list.
 	 * @return array|null Null if it is not a fixture.
@@ -501,7 +501,29 @@ class Chess_Army_Knife_LMS_Client {
 			return null;
 		}
 
+		// The players who played each board, by the ECF rating code the LMS holds for them.
+		$players = array();
+		foreach ( isset( $fixture['games'] ) && is_array( $fixture['games'] ) ? $fixture['games'] : array() as $game ) {
+			foreach ( array(
+				'home' => 'home_player',
+				'away' => 'away_player',
+			) as $side => $key ) {
+				$player = isset( $game[ $key ] ) && is_array( $game[ $key ] ) ? $game[ $key ] : null;
+				$code   = $player ? trim( (string) self::pick( $player, array( 'rating_code' ), '' ) ) : '';
+				// A negative id is a bye or default, not a person.
+				if ( '' === $code || (int) self::pick( $player, array( 'lms_id' ), 0 ) < 0 ) {
+					continue;
+				}
+				$players[] = array(
+					'side' => $side,
+					'code' => $code,
+					'name' => (string) self::pick( $player, array( 'name' ), '' ),
+				);
+			}
+		}
+
 		return array(
+			'players'     => $players,
 			'venue'       => '',
 			'date'        => (string) self::pick( $fixture, array( 'date' ), '' ),
 			'time'        => (string) self::pick( $fixture, array( 'time' ), '' ),

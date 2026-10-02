@@ -212,6 +212,74 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
+	 * The players who played for each of the club's teams, from the fixtures' board results.
+	 *
+	 * @param array[] $teams             Club teams, each { org, event, team }.
+	 * @param array   $matches_by_league Normalised match rows keyed by "org|event" (lower case).
+	 * @return array[] League entry key => list of { code, name }, without repeats.
+	 */
+	public static function players_by_team( array $teams, array $matches_by_league ) {
+		$by_team = array();
+
+		foreach ( $teams as $team ) {
+			$group = strtolower( Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ) );
+			$key   = Chess_Army_Knife_Teams::season_key( $team );
+
+			foreach ( self::team_matches( isset( $matches_by_league[ $group ] ) ? $matches_by_league[ $group ] : array(), $team['team'] ) as $match ) {
+				$side = self::side_of( $match, $team['team'] );
+				foreach ( isset( $match['players'] ) ? $match['players'] : array() as $player ) {
+					if ( $player['side'] === $side ) {
+						$by_team[ $key ][ strtoupper( $player['code'] ) ] = $player;
+					}
+				}
+			}
+		}
+
+		return array_map( 'array_values', $by_team );
+	}
+
+	/**
+	 * Put the players who played for a team in its squad, when they are on the club's member
+	 * records (matched by ECF code). Nobody is ever taken out of a squad here: that is for the
+	 * admin or captain.
+	 *
+	 * @param array[] $players_by_team From players_by_team().
+	 * @return array { added, unmatched } How many people were added to a squad, and how many players (by ECF code) are on no member record.
+	 */
+	protected static function sync_squads( array $players_by_team ) {
+		$added     = 0;
+		$unmatched = array();
+
+		foreach ( $players_by_team as $season_key => $players ) {
+			$team = Chess_Army_Knife_Teams::team_for_season( $season_key );
+			if ( ! $team ) {
+				continue;
+			}
+
+			$have = Chess_Army_Knife_Teams::squad( $team['id'] );
+			$new  = array();
+			foreach ( $players as $player ) {
+				$member = Chess_Army_Knife_Membership_Store::find_by_ecf_code( $player['code'] );
+				if ( ! $member || Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER === $member['status'] ) {
+					$unmatched[ strtoupper( $player['code'] ) ] = true;
+				} elseif ( ! in_array( $member['id'], $have, true ) ) {
+					$new[] = $member['id'];
+				}
+			}
+
+			if ( $new ) {
+				Chess_Army_Knife_Teams::add_to_squad( $team['id'], $new );
+				$added += count( array_unique( $new ) );
+			}
+		}
+
+		return array(
+			'added'     => $added,
+			'unmatched' => count( $unmatched ),
+		);
+	}
+
+	/**
 	 * A venue as event meta: only what is known, so an unknown venue changes nothing.
 	 *
 	 * @param string[] $venue { location, map_url, what3words }.
@@ -364,6 +432,8 @@ class Chess_Army_Knife_Events_Import {
 	 *     @type int      $updated   Untouched imported events that were refreshed.
 	 *     @type int      $unchanged Events that already matched.
 	 *     @type int      $kept      Events left alone (edited by hand, or trashed).
+	 *     @type int      $squad_added       People added to a squad because they played for the team.
+	 *     @type int      $players_unmatched Players (by ECF code) who are on no member record.
 	 *     @type int      $unsorted  Team names seen that are not in a club yet, so their home fixtures have no venue.
 	 *     @type int      $skipped   Fixtures with a date that couldn't be read.
 	 *     @type string[] $errors    Leagues that couldn't be loaded.
@@ -371,13 +441,15 @@ class Chess_Army_Knife_Events_Import {
 	 */
 	public static function import() {
 		$summary = array(
-			'created'   => 0,
-			'updated'   => 0,
-			'unchanged' => 0,
-			'kept'      => 0,
-			'unsorted'  => 0,
-			'skipped'   => 0,
-			'errors'    => array(),
+			'created'           => 0,
+			'updated'           => 0,
+			'unchanged'         => 0,
+			'kept'              => 0,
+			'unsorted'          => 0,
+			'squad_added'       => 0,
+			'players_unmatched' => 0,
+			'skipped'           => 0,
+			'errors'            => array(),
 		);
 
 		$teams = Chess_Army_Knife_Settings::get_club_teams();
@@ -394,6 +466,11 @@ class Chess_Army_Knife_Events_Import {
 		$plan    = self::plan( $teams, $matches, current_time( 'Y-m-d' ), $default_time );
 
 		$summary['skipped'] = $plan['skipped'];
+
+		// Anyone who played for one of the club's teams is in that team's squad.
+		$squads                       = self::sync_squads( self::players_by_team( $teams, $matches ) );
+		$summary['squad_added']       = $squads['added'];
+		$summary['players_unmatched'] = $squads['unmatched'];
 
 		// Remember every team name seen, so the Sort Clubs screen can ask where they play.
 		$names = array();
@@ -535,6 +612,20 @@ class Chess_Army_Knife_Events_Import {
 					);
 					?>
 				</p></div>
+				<?php if ( ! empty( $result['squad_added'] ) || ! empty( $result['players_unmatched'] ) ) : ?>
+					<div class="notice notice-info"><p>
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: 1: people added to squads, 2: players with no member record */
+								__( 'Squads: %1$d people who played for a team were added to its squad. %2$d players are not on your member records (no matching ECF code).', 'chess-army-knife' ),
+								(int) $result['squad_added'],
+								(int) $result['players_unmatched']
+							)
+						);
+						?>
+					</p></div>
+				<?php endif; ?>
 				<?php if ( ! empty( $result['unsorted'] ) ) : ?>
 					<div class="notice notice-info"><p>
 						<?php
@@ -563,7 +654,7 @@ class Chess_Army_Knife_Events_Import {
 				</p></div>
 			<?php endif; ?>
 
-			<p><?php esc_html_e( 'Creates an event for each upcoming fixture of your club teams, tagged "League match" and linked to its league. Running it again never duplicates events. An imported event you have edited, or moved to the trash, is left alone.', 'chess-army-knife' ); ?></p>
+			<p><?php esc_html_e( 'Creates an event for each upcoming fixture of your club teams, tagged "League match" and linked to its league, and adds the people who played for each team to its squad. Running it again never duplicates events. An imported event you have edited, or moved to the trash, is left alone.', 'chess-army-knife' ); ?></p>
 			<p>
 				<?php
 				printf(

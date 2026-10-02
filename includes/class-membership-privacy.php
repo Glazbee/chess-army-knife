@@ -86,7 +86,6 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Agreed to the club keeping these details (UTC)', 'chess-army-knife' ) => $member['consent_at'],
 				__( 'Agreed to receive the newsletter (UTC)', 'chess-army-knife' ) => $member['newsletter_consent_at'],
 				__( 'Agreed to be added to WhatsApp groups (UTC)', 'chess-army-knife' ) => $member['whatsapp_consent_at'],
-				__( 'WhatsApp groups for teams', 'chess-army-knife' ) => implode( ', ', Chess_Army_Knife_Teams::labels( $member['whatsapp_teams'] ) ),
 				__( 'Last renewal reminder sent (expiry date and days before it)', 'chess-army-knife' ) => $member['renewal_reminder'],
 				__( 'Record created (UTC)', 'chess-army-knife' ) => $member['created_at'],
 			);
@@ -374,7 +373,7 @@ class Chess_Army_Knife_Membership_Privacy {
 					__( 'We also keep the name and ECF rating code of people who take part in tournaments without being members, and of anyone whose ECF rating we show on this website, marked as not being members. They are left out of our membership lists. Tournament entries refer to these records, so a person\'s details are only ever held in one place.', 'chess-army-knife' ),
 					__( 'You can see and correct your details, choose what we email you, and delete your details yourself, at any time, from the members\' page on this website. You sign in with a link we email to the address we hold for you.', 'chess-army-knife' ),
 					__( 'If you play in a club team, the team captain can see your name and rating. The captain can ask if you can play in a match, and can record your reply and whether they pick you. We delete a reply or line-up when we delete the match, when you ask us to delete your details, or after the retention period.', 'chess-army-knife' ),
-					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. Only club officers can see this.', 'chess-army-knife' ),
+					__( 'If you play for one of our teams we record which team or teams you are in, and whether you are its captain. A club officer puts you in a team, or you are added when the league\'s match results show you played for it. Only club officers can see this.', 'chess-army-knife' ),
 					__( 'For members under 18, we collect the junior\'s date of birth. We also collect a parent or guardian\'s name, email address and phone number. We write to the parent or guardian, not to the junior. We keep the junior\'s own email address or phone number only if their parent or guardian says we may contact the junior.', 'chess-army-knife' ),
 				),
 			),

@@ -46,6 +46,7 @@ Branch: `claude/wonderful-archimedes-07ikpe` (PR 27). The next PR should start f
 ## Decisions already made (do not re-ask)
 
 - Tournament pagination is by **rounds**, not games.
+- Squads are managed **only by admins in the admin panel**; captains who are not admins ask an admin. No captain-facing squad editing.
 - A membership created in the admin panel is marked **junior** when its type is a junior one. A junior type does **not** offer "I am applying for my child"; the junior section simply appears for junior types.
 - Clubs are a **private** directory; they only feed the location of events.
 - Venues are entered by hand by the site admin (a Google Maps link and/or what3words), not looked up.
@@ -53,7 +54,7 @@ Branch: `claude/wonderful-archimedes-07ikpe` (PR 27). The next PR should start f
 
 ## Open question
 
-- When members can no longer choose their teams, should they get a free-text note ("Which team would you like to play for?") that goes to the officers? Not yet answered.
+- Should an applicant be able to tell the officers which team they would like to play for (a free-text note on the application form)? Teams can no longer be ticked. Not yet answered.
 
 ## Backlog for the next PR, in the proposed order
 
@@ -61,7 +62,7 @@ Each step should be its own commit, with unit tests and (where it touches WordPr
 
 ### 1. Membership flow
 - **Junior section only for junior types.** Add an "Is a junior membership" setting to the membership type (admin). The Membership Application Form shows the "Juniors (under 18)" section (junior tick box, date of birth, guardian details, contact permission) only when a junior type is selected, with scripted show/hide and a no-script fallback that shows everything. A member record created from a junior type is marked junior. Files: `src/membership-form/render.php` (the fieldset around line 117), `includes/class-memberships.php`, `includes/class-memberships-admin.php`, `includes/class-membership-form.php`.
-- **Members do not pick their teams.** Remove the "Which team(s) do you play for?" ticks from the Membership Form, Manage My Data and the Member Portal. Show a member's teams read-only. The admin or captain sets squads on the Teams screen. Keep one member choice: "add me to the WhatsApp group for my team(s)". Files: `src/membership-form/render.php:153`, `src/my-data/render.php:76`, `src/member-portal/render.php:216`, and the matching save code in `includes/class-membership-form.php`, `includes/class-member-portal.php`, `includes/class-notification-preferences.php`.
+- **Members do not pick their teams: DONE in PR 27.** The team ticks are gone from the Membership Form, Manage My Data and the Member Portal, and the `whatsapp_teams` column and everything that used it are removed. Squads are set by an admin only (Teams or Members screen); captains who are not admins ask an admin. Import Events adds the people who played for a team to its squad, matched by ECF code. A WhatsApp agreement now means "add me to the groups of the squads I am in".
 
 ### 2. Calendar
 - "Add to my calendar" link on each event (a one-event `.ics`; the feed code is in `includes/class-events-feed.php`).

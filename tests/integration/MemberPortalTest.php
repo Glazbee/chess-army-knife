@@ -354,14 +354,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '0123', Chess_Army_Knife_Membership_Store::get_member( $ada )['phone'] );
 	}
 
-	public function test_a_member_chooses_what_they_are_emailed_and_their_whatsapp_teams() {
-		$team  = self::factory()->post->create(
-			array(
-				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
-				'post_status' => 'publish',
-				'post_title'  => 'Club A',
-			)
-		);
+	public function test_a_member_chooses_what_they_are_emailed_and_whether_to_be_in_whatsapp() {
 		$ada   = $this->person(
 			'Ada Lovelace',
 			array(
@@ -375,7 +368,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 			return Chess_Army_Knife_Member_Portal::save_choices( $this->post( Chess_Army_Knife_Member_Portal::ACTION_CHOICES, $token, array( 'person' => $ada ) + $extra ) );
 		};
 
-		// Newsletter and renewals on, everything else off; WhatsApp with one team.
+		// Newsletter and renewals on, everything else off; WhatsApp on. A team in the form is ignored.
 		$this->assertTrue(
 			$save(
 				array(
@@ -384,7 +377,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 						'renewals'   => '1',
 					),
 					'whatsapp' => '1',
-					'teams'    => array( (string) $team, '99999' ),
+					'teams'    => array( '99999' ),
 				)
 			)
 		);
@@ -392,7 +385,6 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '2026-01-01 10:00:00', $member['newsletter_consent_at'], 'An existing agreement keeps its time.' );
 		$this->assertSame( array( 'announcements', 'event_notices', 'fixtures' ), Chess_Army_Knife_Notification_Preferences::get_opt_outs( $ada ) );
 		$this->assertNotSame( '', $member['whatsapp_consent_at'] );
-		$this->assertSame( array( $team ), $member['whatsapp_teams'] );
 
 		// Newsletter off, everything else on, WhatsApp off.
 		$this->assertTrue(
@@ -411,7 +403,6 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '', $member['newsletter_consent_at'] );
 		$this->assertSame( array(), Chess_Army_Knife_Notification_Preferences::get_opt_outs( $ada ) );
 		$this->assertSame( '', $member['whatsapp_consent_at'] );
-		$this->assertSame( array(), $member['whatsapp_teams'] );
 	}
 
 	public function test_whatsapp_needs_a_phone_number() {

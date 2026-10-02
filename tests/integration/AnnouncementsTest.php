@@ -304,11 +304,18 @@ class AnnouncementsTest extends WP_UnitTestCase {
 			array(
 				'phone'               => '0123',
 				'whatsapp_consent_at' => '2026-01-01 10:00:00',
-				'whatsapp_teams'      => wp_json_encode( array( $team ) ),
 			)
 		);
-		$this->person( 'Bob Smith', array( 'phone' => '0456' ) );
-		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
+		$bob  = $this->person( 'Bob Smith', array( 'phone' => '0456' ) );
+		$cat  = $this->person(
+			'Cat Jones',
+			array(
+				'phone'               => '0789',
+				'whatsapp_consent_at' => '2026-01-01 10:00:00',
+			)
+		);
+		// Ada is in the squad and agreed; Bob is in it but has not agreed; Cat agreed but is not in it.
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada, $bob ) );
 		$id = $this->announcement(
 			array(
 				Chess_Army_Knife_Announcements::META_AUDIENCE => 'teams',
@@ -324,6 +331,7 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Right now that is 1 people', $html );
 		$this->assertStringContainsString( 'Ada Lovelace — 0123', $html );
 		$this->assertStringNotContainsString( 'Bob Smith', $html );
+		$this->assertStringNotContainsString( 'Cat Jones', $html, 'Only squad members are listed for a team.' );
 	}
 
 	/* -------------------------------------------------------------

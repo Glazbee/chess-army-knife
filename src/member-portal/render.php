@@ -29,11 +29,10 @@ $error_text = isset( $_GET['cak_portal_error'] ) ? Chess_Army_Knife_Member_Porta
 $session = '' !== $token ? Chess_Army_Knife_Member_Portal::session( $token ) : null;
 $change  = '' !== $email_link ? Chess_Army_Knife_Member_Portal::pending_email_change( $email_link ) : null;
 
-$team_choices = Chess_Army_Knife_Teams::choices();
-$categories   = Chess_Army_Knife_Notification_Preferences::categories();
-$labels       = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
-$date_format  = get_option( 'date_format' );
-$today        = current_time( 'Y-m-d' );
+$categories  = Chess_Army_Knife_Notification_Preferences::categories();
+$labels      = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
+$date_format = get_option( 'date_format' );
+$today       = current_time( 'Y-m-d' );
 
 /**
  * The hidden fields every portal form carries.
@@ -212,10 +211,7 @@ $heading      = function ( $depth, $text ) {
 					<?php foreach ( $categories as $category => $category_label ) : ?>
 						<p class="cak-portal__check"><label><input type="checkbox" name="category[<?php echo esc_attr( $category ); ?>]" value="1" <?php checked( Chess_Army_Knife_Notification_Preferences::allows( $person, $category ) ); ?> /> <?php echo esc_html( $category_label ); ?></label></p>
 					<?php endforeach; ?>
-					<p class="cak-portal__check"><label><input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $person['whatsapp_consent_at'] ); ?> /> <?php esc_html_e( 'Add me to the WhatsApp group for the team(s) ticked below (my phone number is visible to the group)', 'chess-army-knife' ); ?></label></p>
-					<?php foreach ( $team_choices as $team_id => $team_name ) : ?>
-						<p class="cak-portal__check"><label><input type="checkbox" name="teams[]" value="<?php echo esc_attr( $team_id ); ?>" <?php checked( in_array( $team_id, $person['whatsapp_teams'], true ) ); ?> /> <?php echo esc_html( $team_name ); ?></label></p>
-					<?php endforeach; ?>
+					<p class="cak-portal__check"><label><input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $person['whatsapp_consent_at'] ); ?> /> <?php esc_html_e( 'Add me to the WhatsApp group of the team(s) the club has me in (my phone number is visible to the group)', 'chess-army-knife' ); ?></label></p>
 					</fieldset>
 					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my choices', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), $person['name'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
 				</form>

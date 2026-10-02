@@ -459,7 +459,6 @@ class Chess_Army_Knife_Member_Portal {
 			array(
 				'id'                  => $person['id'],
 				'whatsapp_consent_at' => $whatsapp ? ( '' !== $person['whatsapp_consent_at'] ? $person['whatsapp_consent_at'] : current_time( 'mysql', true ) ) : null, // An existing agreement keeps its original time.
-				'whatsapp_teams'      => $whatsapp ? Chess_Army_Knife_Membership_Store::clean_teams( isset( $input['teams'] ) ? $input['teams'] : array() ) : '',
 			)
 		);
 		return true;

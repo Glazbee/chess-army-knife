@@ -81,7 +81,6 @@ class Chess_Army_Knife_Membership_Store {
 			consent_at DATETIME NULL,
 			newsletter_consent_at DATETIME NULL,
 			whatsapp_consent_at DATETIME NULL,
-			whatsapp_teams TEXT NULL,
 			renewal_reminder VARCHAR(24) NOT NULL DEFAULT '',
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
@@ -221,8 +220,6 @@ class Chess_Army_Knife_Membership_Store {
 			// Optional extras, each agreed separately; blank means not agreed.
 			'newsletter_consent_at' => ! empty( $input['newsletter'] ) ? $now : null,
 			'whatsapp_consent_at'   => ! empty( $input['whatsapp'] ) ? $now : null,
-			// Which teams' groups, only for someone who agreed to WhatsApp, and only teams the club has.
-			'whatsapp_teams'        => ! empty( $input['whatsapp'] ) ? self::clean_teams( isset( $input['whatsapp_teams'] ) ? $input['whatsapp_teams'] : array() ) : '',
 		);
 
 		if ( ! $is_admin ) {
@@ -277,26 +274,6 @@ class Chess_Army_Knife_Membership_Store {
 	 */
 	public static function contact_email( array $member ) {
 		return '' !== $member['email'] ? $member['email'] : $member['guardian_email'];
-	}
-
-	/**
-	 * Keep only the teams the club has, as the text stored for them.
-	 *
-	 * @param mixed $submitted Team ids ticked on a form.
-	 * @return string JSON list of team ids, or '' for none.
-	 */
-	public static function clean_teams( $submitted ) {
-		$allowed = array_keys( Chess_Army_Knife_Teams::choices() );
-		$teams   = array();
-
-		foreach ( (array) $submitted as $team ) {
-			$team = absint( $team );
-			if ( in_array( $team, $allowed, true ) ) {
-				$teams[ $team ] = $team;
-			}
-		}
-
-		return $teams ? wp_json_encode( array_values( $teams ) ) : '';
 	}
 
 	/**
@@ -1004,7 +981,6 @@ class Chess_Army_Knife_Membership_Store {
 				'consent_at'            => null,
 				'newsletter_consent_at' => null,
 				'whatsapp_consent_at'   => null,
-				'whatsapp_teams'        => '',
 				'renewal_reminder'      => '',
 			)
 		);
@@ -1041,8 +1017,6 @@ class Chess_Army_Knife_Membership_Store {
 		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
 		$row['ecf_checked_at']     = null === $row['ecf_checked_at'] ? '' : (string) $row['ecf_checked_at'];
-		$teams                     = json_decode( (string) $row['whatsapp_teams'], true );
-		$row['whatsapp_teams']     = is_array( $teams ) ? Chess_Army_Knife_Teams::normalise_ids( $teams ) : array();
 
 		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];

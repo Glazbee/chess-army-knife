@@ -137,7 +137,6 @@ class MemberRequestsTest extends WP_UnitTestCase {
 		$this->assertNotSame( '', $member['consent_at'], 'The privacy acknowledgement is recorded.' );
 		$this->assertSame( '', $member['newsletter_consent_at'] );
 		$this->assertSame( '', $member['whatsapp_consent_at'] );
-		$this->assertSame( array(), $member['whatsapp_teams'] );
 	}
 
 	public function test_an_application_that_could_not_be_saved_is_reported_not_thanked() {
@@ -162,7 +161,7 @@ class MemberRequestsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'could not save', Chess_Army_Knife_Membership_Form::error_message( 'save_failed' ) );
 	}
 
-	public function test_each_opt_in_is_recorded_on_its_own_with_the_teams_chosen() {
+	public function test_each_opt_in_is_recorded_on_its_own_and_a_team_cannot_be_chosen() {
 		$this->club_teams();
 
 		$newsletter_only = Chess_Army_Knife_Membership_Store::get_member( $this->apply( array( 'newsletter' => '1' ) ) );
@@ -175,16 +174,16 @@ class MemberRequestsTest extends WP_UnitTestCase {
 					'email'          => 'grace@example.test',
 					'phone'          => '0123',
 					'whatsapp'       => '1',
-					'whatsapp_teams' => array( (string) $this->team_b, (string) $this->team_a, '999999' ),
+					'whatsapp_teams' => array( (string) $this->team_b ),
 				)
 			)
 		);
 		$this->assertSame( '', $whatsapp['newsletter_consent_at'] );
 		$this->assertNotSame( '', $whatsapp['whatsapp_consent_at'] );
-		$this->assertSame( array( $this->team_b, $this->team_a ), $whatsapp['whatsapp_teams'], 'Only the club\'s own teams are kept.' );
+		$this->assertSame( array(), Chess_Army_Knife_Teams::teams_of_person( $whatsapp['id'] ), 'A submitted team is ignored: the club puts people in squads.' );
 	}
 
-	public function test_the_form_offers_separate_unticked_choices_and_each_team() {
+	public function test_the_form_offers_separate_unticked_choices_and_no_teams() {
 		$this->club_teams();
 		$this->adult_type();
 
@@ -194,25 +193,13 @@ class MemberRequestsTest extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/name="newsletter" value="1"\s*\/>/', $html );
 		$this->assertMatchesRegularExpression( '/name="whatsapp" value="1"\s*\/>/', $html );
 		$this->assertDoesNotMatchRegularExpression( '/name="(newsletter|whatsapp)"[^>]*checked/', $html, 'Nothing is pre-ticked.' );
-		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="' . $this->team_a . '"', $html );
-		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="' . $this->team_b . '"', $html );
+		$this->assertStringNotContainsString( 'whatsapp_teams', $html, 'Members do not choose their teams.' );
+		$this->assertStringNotContainsString( 'Which team', $html );
 		$this->assertStringContainsString( 'You can say no to both and still be a member', $html );
 		$this->assertStringNotContainsString( 'emailing me the club newsletter', $html, 'The required tick no longer covers them.' );
 	}
 
-	public function test_the_form_shows_no_team_list_when_the_club_has_no_teams() {
-		foreach ( Chess_Army_Knife_Teams::all() as $club_team ) {
-			wp_delete_post( $club_team['id'], true );
-		}
-		$this->adult_type();
-
-		$html = do_blocks( '<!-- wp:chess-army-knife/membership-form /-->' );
-
-		$this->assertStringContainsString( 'name="whatsapp" value="1"', $html );
-		$this->assertStringNotContainsString( 'whatsapp_teams', $html );
-	}
-
-	public function test_a_member_added_by_the_club_starts_with_nothing_ticked_and_the_teams_to_choose() {
+	public function test_a_member_added_by_the_club_starts_with_nothing_ticked_and_the_squads_to_choose() {
 		$this->club_teams();
 		$user = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
@@ -225,7 +212,8 @@ class MemberRequestsTest extends WP_UnitTestCase {
 
 		$this->assertMatchesRegularExpression( '/name="newsletter" value="1"\s*\/>/', $html );
 		$this->assertMatchesRegularExpression( '/name="whatsapp" value="1"\s*\/>/', $html );
-		$this->assertStringContainsString( 'name="whatsapp_teams[]" value="' . $this->team_a . '"', $html );
+		$this->assertStringNotContainsString( 'name="whatsapp_teams[]"', $html );
+		$this->assertStringContainsString( 'name="squad_teams[]" value="' . $this->team_a . '"', $html, 'An admin puts a member in squads.' );
 	}
 
 	/* -------------------------------------------------------------
@@ -523,62 +511,43 @@ class MemberRequestsTest extends WP_UnitTestCase {
 	 * Teams
 	 * ------------------------------------------------------------- */
 
-	public function test_the_private_page_lets_someone_change_their_teams_and_withdrawing_whatsapp_clears_them() {
+	public function test_the_private_page_keeps_or_withdraws_whatsapp_without_touching_squads() {
 		$this->club_teams();
-		$id    = $this->member(
-			array(
-				'whatsapp_consent_at' => '2026-01-01 09:00:00',
-				'whatsapp_teams'      => wp_json_encode( array( $this->team_a ) ),
-			)
-		);
+		$id = $this->member( array( 'whatsapp_consent_at' => '2026-01-01 09:00:00' ) );
+		Chess_Army_Knife_Teams::set_squad( $this->team_a, array( $id ) );
 		$token = $this->link_for( 'ada@example.test' );
 
-		$this->assertTrue(
-			$this->withdraw(
-				$token,
-				array(
-					'whatsapp' => array( $id => '1' ),
-					'teams'    => array( $id => array( (string) $this->team_b, '999999' ) ),
-				)
-			)
-		);
+		$this->assertTrue( $this->withdraw( $token, array( 'whatsapp' => array( $id => '1' ) ) ) );
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
-		$this->assertSame( array( $this->team_b ), $member['whatsapp_teams'] );
 		$this->assertSame( '2026-01-01 09:00:00', $member['whatsapp_consent_at'], 'The original agreement time stays.' );
 
 		$token = $this->link_for_again( 'ada@example.test' );
-		$this->withdraw( $token, array( 'teams' => array( $id => array( (string) $this->team_a ) ) ) ); // WhatsApp box left unticked.
+		$this->withdraw( $token, array() ); // WhatsApp box left unticked.
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
 		$this->assertSame( '', $member['whatsapp_consent_at'] );
-		$this->assertSame( array(), $member['whatsapp_teams'], 'No agreement, no team memberships.' );
+		$this->assertSame( array( $this->team_a ), Chess_Army_Knife_Teams::squad_team_ids_of_person( $id ), 'Withdrawing from WhatsApp does not take anyone out of a squad.' );
 	}
 
-	public function test_the_private_page_shows_each_team_with_the_current_ones_ticked() {
+	public function test_the_private_page_offers_no_team_choice() {
 		$this->club_teams();
-		$this->member(
-			array(
-				'whatsapp_consent_at' => '2026-01-01 09:00:00',
-				'whatsapp_teams'      => wp_json_encode( array( $this->team_b ) ),
-			)
-		);
+		$this->member( array( 'whatsapp_consent_at' => '2026-01-01 09:00:00' ) );
 		$_GET = array( 'cak_withdraw' => $this->link_for( 'ada@example.test' ) );
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/my-data /-->' );
 
-		$this->assertMatchesRegularExpression( '/name="teams\[\d+\]\[\]" value="' . $this->team_b . '"\s+checked=\'checked\'/', $html );
-		$this->assertDoesNotMatchRegularExpression( '/value="' . $this->team_a . '"\s+checked/', $html );
-		$this->assertStringContainsString( 'value="' . $this->team_a . '"', $html );
+		$this->assertStringContainsString( 'name="whatsapp[', $html );
+		$this->assertDoesNotMatchRegularExpression( '/name="teams\[/', $html );
 	}
 
-	public function test_the_members_list_and_export_show_which_teams_a_member_asked_for() {
+	public function test_the_members_list_and_export_show_agreements_and_squads() {
 		$this->club_teams();
-		$id   = $this->member(
+		$id = $this->member(
 			array(
 				'newsletter_consent_at' => '2026-01-01 09:00:00',
 				'whatsapp_consent_at'   => '2026-01-01 09:00:00',
-				'whatsapp_teams'        => wp_json_encode( array( $this->team_a, $this->team_b ) ),
 			)
 		);
+		Chess_Army_Knife_Teams::set_squad( $this->team_a, array( $id ) );
 		$user = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
 		wp_set_current_user( $user );
@@ -587,30 +556,30 @@ class MemberRequestsTest extends WP_UnitTestCase {
 		ob_start();
 		Chess_Army_Knife_Members_Page::render_page();
 		$html = ob_get_clean();
-		$this->assertStringContainsString( 'WhatsApp (Club A, Club B)', $html );
-		$this->assertStringContainsString( 'Newsletter', $html );
+		$this->assertStringContainsString( 'Newsletter, WhatsApp', $html );
 
 		$values = wp_list_pluck( Chess_Army_Knife_Membership_Privacy::export( 'ada@example.test' )['data'][0]['data'], 'value', 'name' );
-		$this->assertSame( 'Club A, Club B', $values['WhatsApp groups for teams'] );
+		$this->assertArrayNotHasKey( 'WhatsApp groups for teams', $values );
+		$this->assertNotSame( '', $values['Agreed to be added to WhatsApp groups (UTC)'] );
 
 		Chess_Army_Knife_Membership_Privacy::erase( 'ada@example.test' );
 		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id ), 'A record with nothing tying it to payments, photos or tournaments is deleted.' );
 	}
 
-	public function test_erasing_a_record_that_is_kept_clears_the_teams_too() {
+	public function test_erasing_a_record_that_is_kept_clears_its_squads_and_agreements() {
 		$this->club_teams();
 		$id = $this->member(
 			array(
 				'paid_on'             => '2026-09-05',
 				'whatsapp_consent_at' => '2026-01-01 09:00:00',
-				'whatsapp_teams'      => wp_json_encode( array( $this->team_a ) ),
 			)
 		);
+		Chess_Army_Knife_Teams::set_squad( $this->team_a, array( $id ) );
 
 		Chess_Army_Knife_Membership_Privacy::erase( 'ada@example.test' );
 
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
-		$this->assertSame( array(), $member['whatsapp_teams'] );
+		$this->assertSame( array(), Chess_Army_Knife_Teams::squad( $this->team_a ) );
 		$this->assertSame( '', $member['whatsapp_consent_at'] );
 	}
 }

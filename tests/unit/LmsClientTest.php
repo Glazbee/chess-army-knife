@@ -408,4 +408,71 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( 'lms_not_found', Chess_Army_Knife_LMS_Client::get_fixtures( '999', 'Division One' )->get_error_code() );
 	}
+
+	public function test_a_fixture_lists_the_players_who_played_by_their_ecf_code() {
+		$row = Chess_Army_Knife_LMS_Client::normalise_fixture(
+			array(
+				'date'      => '2026-10-05',
+				'home_team' => 'Our A',
+				'away_team' => 'Rivals',
+				'games'     => array(
+					array(
+						'board'       => 1,
+						'home_player' => array(
+							'lms_id'      => 7,
+							'rating_code' => '123456A',
+							'name'        => 'Lovelace, Ada',
+						),
+						'away_player' => array(
+							'lms_id'      => 8,
+							'rating_code' => null,
+							'name'        => 'Unrated, Una',
+						),
+					),
+					array(
+						'board'       => 2,
+						'home_player' => array(
+							'lms_id'      => -1,
+							'rating_code' => '000000X',
+							'name'        => 'Default',
+						),
+						'away_player' => array(
+							'lms_id'      => 9,
+							'rating_code' => '654321B',
+							'name'        => 'Babbage, Bea',
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'side' => 'home',
+					'code' => '123456A',
+					'name' => 'Lovelace, Ada',
+				),
+				array(
+					'side' => 'away',
+					'code' => '654321B',
+					'name' => 'Babbage, Bea',
+				),
+			),
+			$row['players'],
+			'A player with no code, and a default slot, are left out.'
+		);
+	}
+
+	public function test_a_fixture_with_no_games_has_no_players() {
+		$this->assertSame(
+			array(),
+			Chess_Army_Knife_LMS_Client::normalise_fixture(
+				array(
+					'home_team' => 'A',
+					'away_team' => 'B',
+				)
+			)['players']
+		);
+	}
 }
