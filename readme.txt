@@ -17,6 +17,18 @@ This plugin adds eighteen blocks to the WordPress block editor, pulling live dat
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
 
+**Getting started**
+
+1. Activate the plugin. A **Setup** screen asks for your club's name and venue, your regular weekly events, and your ECF and LMS details. You can skip it and use **Settings** instead.
+2. Enter your **LMS API key** and press **Test the LMS connection** to check it.
+3. Add your **Teams** under Chess Army Knife → Teams, each with the league it plays in. Run **Import Events** (it also runs by itself once a day) and then **Sort Clubs** to say where other clubs play.
+4. Look at the **Overview**: its **Still to do** list says what is missing, and links to the fix.
+5. Make your **Policies** (Chess Army Knife → Policies) and add the blocks you want to your pages. **Block Help** explains each one.
+
+**Admin screens**
+
+**Overview** (what is not set up, and every screen) · **Setup** (first-run questions) · **Settings** · **Policies** · **Teams**, **Clubs**, **Sort Clubs** and **Squad Review** · **Import Events** · **Club Events** · **Tournaments** · **Memberships**, **Members**, **Member Checks**, **Renewals** and **Do Not Record** · **Announcements** · **Templates** · **Block Help**. Each is described below under the part of the plugin it belongs to.
+
 **Blocks included**
 
 Blocks are grouped in the inserter under five headings: **Chess: Ratings & Players**, **Chess: Leagues & Teams**, **Chess: Tournaments**, **Chess: Events** and **Chess: Membership**. **Chess Army Knife → Block Help** explains how to add each block, what to choose in its settings and what to set up first; everyone who can open the admin area can read it.
@@ -118,9 +130,9 @@ All API responses are cached in a dedicated database table (so cached data survi
 
 = A note on the LMS API =
 
-The ECF itself describes the LMS API as "experimental," and its response fields aren't formally documented. The League Standings & Matchups and Team Fixtures Carousel blocks parse this data defensively. The League Standings block includes a "Show raw API data (debug)" toggle in its sidebar so you can see exactly what your league's LMS instance returns if a table or matchup doesn't look right.
+The league blocks, **Import Events** and the **Test the LMS connection** button use version 2 of the ECF LMS API, which needs an API key: create one on your LMS account's "API keys" page and enter it under **Settings** (or on the **Setup** screen). The key is stored encrypted and is never shown again; it can instead be set in `wp-config.php` with `define( 'CHESS_ARMY_KNIFE_LMS_API_KEY', '...' );`. The plugin reads an organisation's seasons, the events in a season and an event's results (fixtures, scores and the players on each board); the league table is worked out from the results, because the API gives none. The field names were checked against real responses from the LMS, but the ECF can change them. The League Standings block has a **Show raw API data (debug)** toggle that shows what was read.
 
-The ECF's own API documentation page currently points requests at a legacy host (`ecflms.org.uk`) that no longer resolves for most networks. This plugin defaults to the live host (`lms.englishchess.org.uk`) instead, with an automatic fallback and a settings-page override in case the ECF changes it again.
+The API gives no venues, so the plugin gets them from your own teams and from the **Clubs** directory (see **Sort Clubs**).
 
 == Installation ==
 

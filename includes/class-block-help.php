@@ -194,11 +194,12 @@ class Chess_Army_Knife_Block_Help {
 				'settings' => array(
 					__( 'Show only events with chosen tags or teams, and only home or away fixtures.', 'chess-army-knife' ),
 					__( 'Choose what each entry shows, and whether visitors get a link to subscribe from their own calendar.', 'chess-army-knife' ),
+					__( 'In the month grid each event is a coloured bubble that opens its details. An event\'s colour is its own, else its team\'s, else its first tag\'s. A key to the tag colours is shown unless you switch it off. Cancelled and moved events stay on the calendar, marked in words.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
-					__( 'Club events, added by hand or brought in from the LMS with Import Events.', 'chess-army-knife' ),
+					__( 'Club events, added by hand or brought in from the LMS with Import Events. Venues of away fixtures come from the Clubs directory: run Sort Clubs after an import.', 'chess-army-knife' ),
 				),
-				'where'    => array( 'club_events', 'import_events' ),
+				'where'    => array( 'club_events', 'import_events', 'sort_clubs' ),
 			),
 			'next-club-event'      => array(
 				'use'      => __( 'The next club event, the next three, or today and tomorrow, optionally only those with a chosen tag such as "in-house".', 'chess-army-knife' ),
