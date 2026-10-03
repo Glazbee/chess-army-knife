@@ -24,7 +24,7 @@ $officers     = Chess_Army_Knife_Officers::listing(
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'officers', $attributes ) ); ?>>
-	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-officers__heading', '' !== $block_title ? $block_title : __( 'Club officers', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-officers__heading', '' !== $block_title ? $block_title : sprintf( /* translators: %s: the club's name */ __( '%s officers', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<?php if ( ! $officers ) : ?>
 		<p><?php esc_html_e( 'No officers to show yet.', 'chess-army-knife' ); ?></p>
 	<?php else : ?>

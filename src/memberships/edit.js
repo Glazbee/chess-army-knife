@@ -29,6 +29,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Custom title (optional)',
 							'chess-army-knife'
 						) }
+						help={ __(
+							"Use {club} for the club's name.",
+							'chess-army-knife'
+						) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )

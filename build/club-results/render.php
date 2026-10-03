@@ -99,7 +99,7 @@ usort(
 
 $results = array_slice( $results, 0, $max_results );
 
-$heading = $block_title ? $block_title : __( 'Recent club results', 'chess-army-knife' );
+$heading = $block_title ? $block_title : sprintf( /* translators: %s: the club's name */ __( 'Recent results for %s', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>

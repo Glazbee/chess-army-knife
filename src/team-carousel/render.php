@@ -165,7 +165,7 @@ foreach ( $team_specs as $spec ) {
 	);
 }
 
-$heading     = $block_title ? $block_title : ( 'club-teams' === $team_source ? __( 'Our teams', 'chess-army-knife' ) : $event_name );
+$heading     = $block_title ? $block_title : ( 'club-teams' === $team_source ? sprintf( /* translators: %s: the club's name */ __( '%s teams', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) : $event_name );
 $multi_event = count( array_unique( wp_list_pluck( $team_specs, 'event' ) ) ) > 1;
 $team_tag    = Chess_Army_Knife_Headings::tag( 1 );
 

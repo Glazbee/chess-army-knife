@@ -1,4 +1,5 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+import useClubName from '../shared/use-club-name';
 import TemplatePicker from '../shared/template-picker';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { Disabled, PanelBody, TextControl } from '@wordpress/components';
@@ -8,6 +9,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const { title, introText, consentText } = attributes;
 
 	const blockProps = useBlockProps();
+	const clubName = useClubName();
 
 	return (
 		<div { ...blockProps }>
@@ -28,13 +30,17 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Custom title (optional)',
 							'chess-army-knife'
 						) }
+						help={ __(
+							"Use {club} for the club's name.",
+							'chess-army-knife'
+						) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
-						placeholder={ __(
-							'Apply for membership',
-							'chess-army-knife'
+						placeholder={ sprintf(
+							__( 'Join %s', 'chess-army-knife' ),
+							clubName
 						) }
 					/>
 					<TextControl

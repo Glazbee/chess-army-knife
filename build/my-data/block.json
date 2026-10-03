@@ -35,7 +35,11 @@
     ],
     "color": {
       "background": true,
-      "text": true
+      "text": true,
+      "link": true,
+      "heading": true,
+      "button": true,
+      "gradients": true
     },
     "spacing": {
       "margin": true,
@@ -43,8 +47,13 @@
     },
     "typography": {
       "fontSize": true,
-      "lineHeight": true
+      "lineHeight": true,
+      "fontFamily": true
     },
+    "dimensions": {
+      "minHeight": true
+    },
+    "shadow": true,
     "border": {
       "color": true,
       "radius": true,

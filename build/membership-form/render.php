@@ -12,8 +12,8 @@
 defined( 'ABSPATH' ) || exit;
 
 $block_title  = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$intro_text   = isset( $attributes['introText'] ) ? trim( (string) $attributes['introText'] ) : '';
-$consent_text = isset( $attributes['consentText'] ) ? trim( (string) $attributes['consentText'] ) : '';
+$intro_text   = Chess_Army_Knife_Settings::with_club( isset( $attributes['introText'] ) ? trim( (string) $attributes['introText'] ) : '' );
+$consent_text = Chess_Army_Knife_Settings::with_club( isset( $attributes['consentText'] ) ? trim( (string) $attributes['consentText'] ) : '' );
 
 $membership_types = Chess_Army_Knife_Memberships::types();
 $page_url         = get_permalink();
@@ -47,7 +47,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'membership-form', $attributes, array( 'id' => Chess_Army_Knife_Membership_Form::ANCHOR ) ) ); ?>>
-	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-membership-form__heading', '' !== $block_title ? $block_title : __( 'Apply for membership', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-membership-form__heading', '' !== $block_title ? $block_title : sprintf( /* translators: %s: the club's name */ __( 'Join %s', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( null !== $applied_id ) : ?>
 		<div id="cak-membership-done" class="cak-form-notice cak-form-notice--success" role="status" tabindex="-1">
@@ -173,7 +173,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 			<p class="cak-membership-form__consent">
 				<label>
 					<input type="checkbox" id="cak-member-consent" name="consent" value="1" required <?php echo $attrs( 'cak-member-consent' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> />
-					<?php echo esc_html( '' !== $consent_text ? $consent_text : __( 'I have read how the club uses these details. If this is for someone under 18, I am their parent or guardian, and I agree for them.', 'chess-army-knife' ) ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?>
+					<?php echo esc_html( '' !== $consent_text ? $consent_text : sprintf( /* translators: %s: the club's name */ __( 'I have read how %s uses these details. If this is for someone under 18, I am their parent or guardian, and I agree for them.', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?>
 				</label>
 			</p>
 

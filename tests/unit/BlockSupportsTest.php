@@ -29,6 +29,11 @@ class BlockSupportsTest extends Chess_Army_Knife_TestCase {
 			foreach ( array( 'color', 'spacing', 'typography', 'border' ) as $support ) {
 				$this->assertArrayHasKey( $support, $json['supports'], "$slug should support $support." );
 			}
+			foreach ( array( 'link', 'heading', 'button', 'gradients' ) as $colour ) {
+				$this->assertTrue( $json['supports']['color'][ $colour ], "$slug should support $colour colours." );
+			}
+			$this->assertArrayHasKey( 'minHeight', $json['supports']['dimensions'], "$slug should support a minimum height." );
+			$this->assertTrue( $json['supports']['shadow'], "$slug should support shadows." );
 			$this->assertFalse( $json['supports']['html'], "$slug is a dynamic block, so no HTML editing." );
 		}
 	}

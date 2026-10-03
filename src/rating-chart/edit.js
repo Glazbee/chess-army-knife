@@ -106,6 +106,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Custom title (optional)',
 							'chess-army-knife'
 						) }
+						help={ __(
+							"Use {club} for the club's name.",
+							'chess-army-knife'
+						) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
@@ -144,7 +148,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						</p>
 						<p className="description">
 							{ __(
-								'Leave this empty to follow the text colour. A colour that is hard to see against white is ignored.',
+								"Leave this empty to use the theme's accent colour, or the text colour if the theme has none.",
 								'chess-army-knife'
 							) }
 						</p>

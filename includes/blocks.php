@@ -158,8 +158,9 @@ function Chess_Army_Knife_rest_get_defaults() {
 
 	return rest_ensure_response(
 		array(
-			'orgId'  => $options['default_org_id'],
-			'domain' => $options['default_domain'],
+			'orgId'    => $options['default_org_id'],
+			'domain'   => $options['default_domain'],
+			'clubName' => Chess_Army_Knife_Settings::club_name(),
 		)
 	);
 }

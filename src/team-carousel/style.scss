@@ -2,8 +2,6 @@
 @use "../shared/a11y";
 
 .wp-block-chess-army-knife-team-carousel {
-	margin-bottom: 1.5em;
-
 	.cak-carousel__title {
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
@@ -13,14 +11,14 @@
 	.cak-carousel__list {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(min(100%, 18em), 1fr));
-		gap: 1em;
+		gap: var(--cak-gap, 1em);
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
 	.cak-carousel__slide {
-		padding: 1em;
+		padding: var(--cak-card-padding, 1em);
 		border: 1px solid currentcolor;
 		border-radius: 6px;
 

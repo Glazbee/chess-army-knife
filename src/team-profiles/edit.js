@@ -1,4 +1,5 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+import useClubName from '../shared/use-club-name';
 import TemplatePicker from '../shared/template-picker';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, SelectControl, TextControl } from '@wordpress/components';
@@ -11,6 +12,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ teams, setTeams ] = useState( [] );
 
 	const blockProps = useBlockProps();
+	const clubName = useClubName();
 
 	useEffect( () => {
 		apiFetch( { path: '/chess-army-knife/v1/teams' } )
@@ -37,11 +39,18 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Custom title (optional)',
 							'chess-army-knife'
 						) }
+						help={ __(
+							"Use {club} for the club's name.",
+							'chess-army-knife'
+						) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
-						placeholder={ __( 'Our teams', 'chess-army-knife' ) }
+						placeholder={ sprintf(
+							__( '%s teams', 'chess-army-knife' ),
+							clubName
+						) }
 					/>
 					<SelectControl
 						label={ __( 'Team', 'chess-army-knife' ) }

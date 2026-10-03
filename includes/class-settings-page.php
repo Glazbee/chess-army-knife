@@ -267,6 +267,17 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
+	 * Text with {club} replaced by the club's name, so a block's title or message can use it.
+	 *
+	 * @param string $text Plain text.
+	 * @return string
+	 */
+	public static function with_club( $text ) {
+		$text = (string) $text;
+		return false === strpos( $text, '{club}' ) ? $text : str_replace( '{club}', self::club_name(), $text );
+	}
+
+	/**
 	 * Sanitize the settings form submission.
 	 *
 	 * @param array $input Raw form input.
