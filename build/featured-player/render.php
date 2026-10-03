@@ -5,7 +5,7 @@
  * Shows a current club member's name, optional photo, current ECF rating and club, a free-text blurb on why
  * they're featured, and links to their chess.com and/or Lichess profiles. Only current members can be
  * featured. The block can instead rotate: every hour, day, week or month it moves on to another current
- * member whose rating has risen over the period, and says so in place of the blurb.
+ * member whose rating has risen over the period, and shows that member's own blurb (set on their record).
  *
  * @package Chess_Army_Knife
  *
@@ -57,7 +57,9 @@ if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
 	$image_id    = 0;
 	$image_url   = '';
 	$show_links  = false;
-	$blurb       = '';
+	// The member's own blurb, read fresh so an edit shows at once.
+	$chosen_row = Chess_Army_Knife_Membership_Store::find_by_ecf_code( $chosen['code'] );
+	$blurb      = $chosen_row ? $chosen_row['blurb'] : '';
 } else {
 	// Only a current member can be featured; the name comes from their record.
 	$member = '' === $player_code ? null : Chess_Army_Knife_Rotating_Member::current_member_by_code( $player_code );
@@ -70,6 +72,10 @@ if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
 		return;
 	}
 	$name = Chess_Army_Knife_Names::format( $member['name'], $name_style, $member['nickname'] );
+	// The block's own blurb comes first, then the member's.
+	if ( '' === $blurb ) {
+		$blurb = $member['blurb'];
+	}
 }
 
 /**

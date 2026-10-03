@@ -27,6 +27,7 @@ class Chess_Army_Knife_Membership_Store {
 	const STATUS_EXPIRED = 'expired';
 
 	/** The lowest rating that can be entered by hand for someone without an ECF rating. */
+	const MAX_BLURB_LENGTH  = 500;
 	const MIN_MANUAL_RATING = 1300;
 	const MAX_MANUAL_RATING = 4000;
 
@@ -59,6 +60,7 @@ class Chess_Army_Knife_Membership_Store {
 			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			name VARCHAR(191) NOT NULL,
 			nickname VARCHAR(60) NOT NULL DEFAULT '',
+			blurb VARCHAR(500) NOT NULL DEFAULT '',
 			email VARCHAR(191) NOT NULL DEFAULT '',
 			phone VARCHAR(40) NOT NULL DEFAULT '',
 			date_of_birth DATE NULL,
@@ -104,6 +106,7 @@ class Chess_Army_Knife_Membership_Store {
 	protected static function added_columns() {
 		return array(
 			'nickname'          => "VARCHAR(60) NOT NULL DEFAULT '' AFTER name",
+			'blurb'             => "VARCHAR(500) NOT NULL DEFAULT '' AFTER nickname",
 			'guardian_id'       => 'BIGINT(20) UNSIGNED NOT NULL DEFAULT 0 AFTER guardian_phone',
 			'payment_reference' => "VARCHAR(40) NOT NULL DEFAULT '' AFTER payment_method",
 		);
@@ -334,6 +337,8 @@ class Chess_Army_Knife_Membership_Store {
 			'payment_reference' => isset( $input['payment_reference'] ) ? mb_substr( preg_replace( '/[^A-Za-z0-9\-_\/ ]/', '', trim( sanitize_text_field( $input['payment_reference'] ) ) ), 0, 40 ) : '',
 			'paid_on'           => '' === $paid_on ? null : $paid_on,
 			'notes'             => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
+			// Shown on the website when the member is the Featured Player, so only an officer can write it.
+			'blurb'             => isset( $input['blurb'] ) ? mb_substr( sanitize_textarea_field( $input['blurb'] ), 0, self::MAX_BLURB_LENGTH ) : '',
 			'manual_rating'     => $rating,
 		);
 	}
@@ -1102,6 +1107,7 @@ class Chess_Army_Knife_Membership_Store {
 				'id'                    => $member['id'],
 				'name'                  => self::erased_name(),
 				'nickname'              => '',
+				'blurb'                 => '',
 				'email'                 => '',
 				'phone'                 => '',
 				'date_of_birth'         => null,
@@ -1176,6 +1182,7 @@ class Chess_Army_Knife_Membership_Store {
 	protected static function cast_member( array $row ) {
 		$row['id']                 = (int) $row['id'];
 		$row['nickname']           = isset( $row['nickname'] ) ? (string) $row['nickname'] : '';
+		$row['blurb']              = isset( $row['blurb'] ) ? (string) $row['blurb'] : '';
 		$row['guardian_id']        = isset( $row['guardian_id'] ) ? (int) $row['guardian_id'] : 0;
 		$row['payment_reference']  = isset( $row['payment_reference'] ) ? (string) $row['payment_reference'] : '';
 		$row['membership_type_id'] = (int) $row['membership_type_id'];

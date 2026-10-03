@@ -751,7 +751,7 @@ class Chess_Army_Knife_Members_Page {
 		$editing = null !== $member;
 		$member  = $editing ? $member : array(
 			'manual_rating' => null,
-		) + array_fill_keys( array( 'name', 'nickname', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
+		) + array_fill_keys( array( 'name', 'nickname', 'blurb', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
 			'guardian_id'        => 0,
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
@@ -785,6 +785,13 @@ class Chess_Army_Knife_Members_Page {
 						<td>
 							<input type="text" id="nickname" name="nickname" class="regular-text" maxlength="60" value="<?php echo esc_attr( $member['nickname'] ); ?>" />
 							<p class="description"><?php esc_html_e( 'Optional. Used in place of their first name on the website, for example Maddy for Madeline.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="blurb"><?php esc_html_e( 'Featured Player blurb', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<textarea id="blurb" name="blurb" rows="3" maxlength="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MAX_BLURB_LENGTH ); ?>" class="large-text"><?php echo esc_textarea( $member['blurb'] ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Optional. A few words shown on the website when this member is the Featured Player, for example when that block rotates. It is public, so check they are happy with it.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

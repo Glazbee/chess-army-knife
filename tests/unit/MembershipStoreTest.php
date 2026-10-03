@@ -309,6 +309,19 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertArrayNotHasKey( 'status', $member );
 		$this->assertArrayNotHasKey( 'expiry_date', $member );
 		$this->assertArrayNotHasKey( 'notes', $member );
+		$this->assertArrayNotHasKey( 'blurb', $member );
+	}
+
+	public function test_admin_can_write_a_blurb_which_is_cut_to_length() {
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member(
+			array(
+				'name'  => 'Grace',
+				'blurb' => str_repeat( 'x', 600 ),
+			),
+			true
+		);
+
+		$this->assertSame( Chess_Army_Knife_Membership_Store::MAX_BLURB_LENGTH, mb_strlen( $member['blurb'] ) );
 	}
 
 	/**

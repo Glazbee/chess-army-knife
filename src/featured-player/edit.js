@@ -121,6 +121,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Why are they featured?',
 							'chess-army-knife'
 						) }
+						help={ __(
+							"Empty shows the member's own blurb, from their record. A rotating block always uses the member's blurb.",
+							'chess-army-knife'
+						) }
 						value={ blurb }
 						onChange={ ( value ) =>
 							setAttributes( { blurb: value } )

@@ -98,7 +98,7 @@ class Chess_Army_Knife_Block_Help {
 			'featured-player'      => array(
 				'use'      => __( 'Spotlight a current member with a photo, a short blurb on why they are featured, their ECF rating and links to their chess.com and Lichess profiles.', 'chess-army-knife' ),
 				'settings' => array(
-					__( 'Choose a current club member with an ECF code. Or rotate: every hour, day, week or month the block moves on to another current member whose rating has risen over the days you choose, and says so in place of the blurb.', 'chess-army-knife' ),
+					__( 'Choose a current club member with an ECF code. Or rotate: every hour, day, week or month the block moves on to another current member whose rating has risen over the days you choose, and shows that member\'s own blurb, which an officer writes on their record (Members, Featured Player blurb).', 'chess-army-knife' ),
 					__( 'Pick a photo from the media library, and choose which of rating, club and links to show. The title (default Featured Player) and subtitle can use {player} for the member\'s name. Rotation looks at Standard OTB ratings only.', 'chess-army-knife' ),
 				),
 				'needs'    => array( $ecf_code ),
