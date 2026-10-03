@@ -199,13 +199,13 @@ $date_format = get_option( 'date_format' );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-carousel__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-carousel__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Fixtures data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<?php if ( $is_carousel ) : ?>
 		<div
-			class="ecf-carousel"
+			class="cak-carousel"
 			data-cak-carousel
 			data-auto="<?php echo $auto_advance ? '1' : '0'; ?>"
 			data-interval="<?php echo (int) $interval_seconds; ?>"
@@ -222,24 +222,24 @@ $date_format = get_option( 'date_format' );
 			data-msg-controls="<?php esc_attr_e( 'Carousel controls', 'chess-army-knife' ); ?>"
 		>
 	<?php endif; ?>
-	<ul class="ecf-carousel__list">
+	<ul class="cak-carousel__list">
 		<?php foreach ( $slides as $slide ) : ?>
 			<?php $is_highlighted = '' !== $highlight_team && false !== stripos( $slide['team'], $highlight_team ); ?>
-			<li class="ecf-carousel__slide<?php echo $is_highlighted ? ' is-highlighted' : ''; ?>">
-				<<?php echo esc_attr( $team_tag ); ?> class="ecf-carousel__team-name">
+			<li class="cak-carousel__slide<?php echo $is_highlighted ? ' is-highlighted' : ''; ?>">
+				<<?php echo esc_attr( $team_tag ); ?> class="cak-carousel__team-name">
 					<?php echo esc_html( $slide['team'] ); ?>
 					<?php if ( $is_highlighted ) : ?>
 						<span class="cak-visually-hidden"><?php esc_html_e( '(our team)', 'chess-army-knife' ); ?></span>
 					<?php endif; ?>
 					<?php if ( $multi_event ) : ?>
-						<span class="ecf-carousel__event-name"><?php echo esc_html( $slide['event'] ); ?></span>
+						<span class="cak-carousel__event-name"><?php echo esc_html( $slide['event'] ); ?></span>
 					<?php endif; ?>
 				</<?php echo esc_attr( $team_tag ); ?>>
 
 				<?php if ( $slide['error'] ) : ?>
-					<p class="ecf-carousel__row"><?php echo esc_html( $slide['error'] ); ?></p>
+					<p class="cak-carousel__row"><?php echo esc_html( $slide['error'] ); ?></p>
 				<?php else : ?>
-					<dl class="ecf-carousel__details">
+					<dl class="cak-carousel__details">
 						<dt><?php esc_html_e( 'Last result', 'chess-army-knife' ); ?></dt>
 						<dd>
 							<?php if ( $slide['last_result'] ) : ?>

@@ -156,13 +156,13 @@ $admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-rating-chart__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-rating-chart__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( array( $admin_cache_key ), __( 'Games data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
-	<figure class="ecf-rating-chart__figure">
+	<figure class="cak-rating-chart__figure">
 		<svg
-			class="ecf-rating-chart__svg"
+			class="cak-rating-chart__svg"
 			style="height: <?php echo (int) $height; ?>px; color: <?php echo esc_attr( $line_colour ); ?>;"
 			viewBox="0 0 <?php echo (int) Chess_Army_Knife_Rating_Chart::WIDTH; ?> <?php echo (int) Chess_Army_Knife_Rating_Chart::HEIGHT; ?>"
 			preserveAspectRatio="none"
@@ -170,21 +170,21 @@ $admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $
 			focusable="false"
 		>
 			<?php foreach ( $geometry['grid'] as $grid_y ) : ?>
-				<line class="ecf-rating-chart__grid" x1="0" x2="<?php echo (int) Chess_Army_Knife_Rating_Chart::WIDTH; ?>" y1="<?php echo (int) $grid_y; ?>" y2="<?php echo (int) $grid_y; ?>" vector-effect="non-scaling-stroke" />
+				<line class="cak-rating-chart__grid" x1="0" x2="<?php echo (int) Chess_Army_Knife_Rating_Chart::WIDTH; ?>" y1="<?php echo (int) $grid_y; ?>" y2="<?php echo (int) $grid_y; ?>" vector-effect="non-scaling-stroke" />
 			<?php endforeach; ?>
-			<path class="ecf-rating-chart__area" d="<?php echo esc_attr( $geometry['area'] ); ?>" />
-			<path class="ecf-rating-chart__line" d="<?php echo esc_attr( $geometry['line'] ); ?>" vector-effect="non-scaling-stroke" />
+			<path class="cak-rating-chart__area" d="<?php echo esc_attr( $geometry['area'] ); ?>" />
+			<path class="cak-rating-chart__line" d="<?php echo esc_attr( $geometry['line'] ); ?>" vector-effect="non-scaling-stroke" />
 			<?php if ( '' !== $geometry['dots'] ) : ?>
-				<path class="ecf-rating-chart__dots" d="<?php echo esc_attr( $geometry['dots'] ); ?>" vector-effect="non-scaling-stroke" />
+				<path class="cak-rating-chart__dots" d="<?php echo esc_attr( $geometry['dots'] ); ?>" vector-effect="non-scaling-stroke" />
 			<?php endif; ?>
 		</svg>
-		<figcaption class="ecf-rating-chart__caption"><?php echo esc_html( $summary ); ?></figcaption>
+		<figcaption class="cak-rating-chart__caption"><?php echo esc_html( $summary ); ?></figcaption>
 	</figure>
 
-	<details class="ecf-rating-chart__data">
+	<details class="cak-rating-chart__data">
 		<summary><?php esc_html_e( 'Show the ratings as a table', 'chess-army-knife' ); ?></summary>
-		<div class="ecf-rating-chart__scroll" tabindex="0" role="region" aria-label="<?php esc_attr_e( 'Ratings table', 'chess-army-knife' ); ?>">
-			<table class="ecf-rating-chart__table">
+		<div class="cak-rating-chart__scroll" tabindex="0" role="region" aria-label="<?php esc_attr_e( 'Ratings table', 'chess-army-knife' ); ?>">
+			<table class="cak-rating-chart__table">
 				<caption><?php echo esc_html( $heading ); ?></caption>
 				<thead>
 					<tr>
@@ -207,7 +207,7 @@ $admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $
 	</details>
 
 	<?php if ( $show_stats ) : ?>
-		<dl class="ecf-rating-chart__stats">
+		<dl class="cak-rating-chart__stats">
 			<div>
 				<dt><?php esc_html_e( 'Current', 'chess-army-knife' ); ?></dt>
 				<dd><?php echo esc_html( (int) $current ); ?></dd>

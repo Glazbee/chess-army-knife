@@ -148,7 +148,7 @@ The accent, background and text colours that admins can choose under Templates a
 |---|---|---|---|---|
 | F-LT1 | 1.3.1 | Major | No `<caption>`; team cell isn't a row header; `#`, P, W, D, L, Pts are bare. | Caption, `<th scope="row">` for team, expanded headings. |
 | F-LT2 | 1.3.1 | Major | The highlighted team is shown by background and bold only. | Add hidden text "(our team)". |
-| F-LT3 | — | Minor | `class=\"ecf-league__match-venue\"` has stray backslashes, so the venue style never applies. | Fix the markup (an existing bug found in passing). |
+| F-LT3 | — | Minor | `class=\"cak-league__match-venue\"` has stray backslashes, so the venue style never applies. | Fix the markup (an existing bug found in passing). |
 | F-LT4 | 1.3.1 | Minor | The "Matchups" sub-heading is a `<p>`. | Real heading. |
 
 ### Club Results

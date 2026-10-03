@@ -464,8 +464,8 @@ class Chess_Army_Knife_Templates {
 		$style = array();
 
 		if ( ! empty( $v['accent'] ) && sanitize_hex_color( $v['accent'] ) ) {
-			$style[] = '--ecf-accent:' . $v['accent'];
-			$style[] = '--ecf-accent-soft:' . $v['accent'] . ( 7 === strlen( $v['accent'] ) ? '22' : '' );
+			$style[] = '--cak-accent:' . $v['accent'];
+			$style[] = '--cak-accent-soft:' . $v['accent'] . ( 7 === strlen( $v['accent'] ) ? '22' : '' );
 		}
 		if ( ! empty( $v['bg'] ) && sanitize_hex_color( $v['bg'] ) ) {
 			$style[] = 'background-color:' . $v['bg'];

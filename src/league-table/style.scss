@@ -4,13 +4,13 @@
 .wp-block-chess-army-knife-league-table {
 	margin-bottom: 1.5em;
 
-	.ecf-league__title {
+	.cak-league__title {
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 600;
 	}
 
-	.ecf-league__event-heading {
+	.cak-league__event-heading {
 		margin: 1.25em 0 0.4em;
 		font-size: 1em;
 		font-weight: 700;
@@ -23,13 +23,13 @@
 		}
 	}
 
-	.ecf-league__subheading {
+	.cak-league__subheading {
 		margin: 1em 0 0.5em;
 		font-size: 1em;
 		font-weight: 600;
 	}
 
-	.ecf-league__table {
+	.cak-league__table {
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.95em;
@@ -46,7 +46,7 @@
 		}
 
 		thead th {
-			border-bottom: 3px solid var(--ecf-accent, currentcolor);
+			border-bottom: 3px solid var(--cak-accent, currentcolor);
 		}
 
 		td.is-numeric,
@@ -56,7 +56,7 @@
 
 		tr.is-highlighted :is(th, td) {
 			background: var(
-				--ecf-accent-soft,
+				--cak-accent-soft,
 				color-mix(in srgb, currentcolor 10%, transparent)
 			);
 			font-weight: 700;
@@ -71,12 +71,12 @@
 		}
 	}
 
-	.ecf-league__legend {
+	.cak-league__legend {
 		margin: 0.5em 0 0;
 		font-size: 0.9em;
 	}
 
-	.ecf-league__matches {
+	.cak-league__matches {
 		list-style: none;
 		margin: 0;
 		padding: 0;
@@ -94,22 +94,22 @@
 			}
 		}
 
-		.ecf-league__match-date {
+		.cak-league__match-date {
 			flex: 0 0 auto;
 			font-size: 0.9em;
 			min-width: 7em;
 		}
 
-		.ecf-league__match-teams {
+		.cak-league__match-teams {
 			flex: 1 1 auto;
 		}
 
-		.ecf-league__match-score {
+		.cak-league__match-score {
 			flex: 0 0 auto;
 			font-weight: 600;
 		}
 
-		.ecf-league__match-venue {
+		.cak-league__match-venue {
 			flex: 0 0 100%;
 			font-size: 0.9em;
 		}
@@ -119,7 +119,7 @@
 		}
 	}
 
-	.ecf-league__debug {
+	.cak-league__debug {
 		margin-top: 1em;
 
 		summary {

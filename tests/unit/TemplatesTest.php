@@ -148,7 +148,7 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame(
 			array(
 				'class' => 'cak-tpl-t1',
-				'style' => '--ecf-accent:#ff0000;--ecf-accent-soft:#ff000022;border-radius:8px;overflow:hidden',
+				'style' => '--cak-accent:#ff0000;--cak-accent-soft:#ff000022;border-radius:8px;overflow:hidden',
 			),
 			$captured
 		);

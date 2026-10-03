@@ -59,7 +59,7 @@ $cak-scope: '[class*="wp-block-chess-army-knife-"]';
 
 // Titles take the accent as an underline, not as text colour, so the text keeps the theme's contrast.
 #{$cak-scope} .cak-block-title {
-	border-bottom: 3px solid var(--ecf-accent, currentcolor);
+	border-bottom: 3px solid var(--cak-accent, currentcolor);
 	padding-bottom: 0.2em;
 }
 

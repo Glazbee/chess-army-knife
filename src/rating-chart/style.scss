@@ -4,52 +4,52 @@
 .wp-block-chess-army-knife-rating-chart {
 	margin-bottom: 1.5em;
 
-	.ecf-rating-chart__title {
+	.cak-rating-chart__title {
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 600;
 	}
 
-	.ecf-rating-chart__figure {
+	.cak-rating-chart__figure {
 		margin: 0;
 	}
 
-	.ecf-rating-chart__svg {
+	.cak-rating-chart__svg {
 		display: block;
 		width: 100%;
 		overflow: visible;
 	}
 
-	.ecf-rating-chart__grid {
+	.cak-rating-chart__grid {
 		stroke: currentcolor;
 		stroke-opacity: 0.25;
 		stroke-width: 1;
 	}
 
-	.ecf-rating-chart__area {
+	.cak-rating-chart__area {
 		fill: currentcolor;
 		fill-opacity: 0.12;
 	}
 
-	.ecf-rating-chart__line {
+	.cak-rating-chart__line {
 		fill: none;
 		stroke: currentcolor;
 		stroke-width: 3;
 		stroke-linejoin: round;
 	}
 
-	.ecf-rating-chart__dots {
+	.cak-rating-chart__dots {
 		fill: none;
 		stroke: currentcolor;
 		stroke-width: 8;
 		stroke-linecap: round;
 	}
 
-	.ecf-rating-chart__caption {
+	.cak-rating-chart__caption {
 		margin-top: 0.5em;
 	}
 
-	.ecf-rating-chart__data {
+	.cak-rating-chart__data {
 		margin-top: 0.75em;
 
 		summary {
@@ -58,12 +58,12 @@
 		}
 	}
 
-	.ecf-rating-chart__scroll {
+	.cak-rating-chart__scroll {
 		max-height: 24em;
 		overflow: auto;
 	}
 
-	.ecf-rating-chart__table {
+	.cak-rating-chart__table {
 		width: 100%;
 		border-collapse: collapse;
 
@@ -85,7 +85,7 @@
 		}
 	}
 
-	.ecf-rating-chart__stats {
+	.cak-rating-chart__stats {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1.5em;

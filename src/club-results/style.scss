@@ -4,13 +4,13 @@
 .wp-block-chess-army-knife-club-results {
 	margin-bottom: 1.5em;
 
-	.ecf-club-results__title {
+	.cak-club-results__title {
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 600;
 	}
 
-	.ecf-club-results__table {
+	.cak-club-results__table {
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.95em;
@@ -28,7 +28,7 @@
 		}
 
 		thead th {
-			border-bottom: 3px solid var(--ecf-accent, currentcolor);
+			border-bottom: 3px solid var(--cak-accent, currentcolor);
 		}
 
 		tr:last-child :is(th, td) {
@@ -37,9 +37,9 @@
 	}
 
 	// The result is written out as a word; it needs no colour to be understood.
-	.ecf-result-win,
-	.ecf-result-loss,
-	.ecf-result-draw {
+	.cak-result-win,
+	.cak-result-loss,
+	.cak-result-draw {
 		font-weight: 700;
 	}
 }
