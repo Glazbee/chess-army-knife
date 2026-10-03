@@ -219,7 +219,7 @@ class Chess_Army_Knife_Membership_Store {
 
 		$email          = isset( $input['email'] ) ? sanitize_email( $input['email'] ) : '';
 		$guardian_email = isset( $input['guardian_email'] ) ? sanitize_email( $input['guardian_email'] ) : '';
-		if ( ( '' !== $email && ! is_email( $email ) ) || ( '' !== $guardian_email && ! is_email( $guardian_email ) ) ) {
+		if ( ( '' !== $email && ( ! is_email( $email ) || strlen( $email ) > self::MAX_EMAIL_LENGTH ) ) || ( '' !== $guardian_email && ( ! is_email( $guardian_email ) || strlen( $guardian_email ) > self::MAX_EMAIL_LENGTH ) ) ) {
 			return new WP_Error( 'member_email', __( 'Please enter a valid email address.', 'chess-army-knife' ) );
 		}
 
