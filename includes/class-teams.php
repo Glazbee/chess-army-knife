@@ -31,15 +31,16 @@ class Chess_Army_Knife_Teams {
 	const MIGRATED_OPTION = 'Chess_Army_Knife_club_teams_migrated';
 	const LEGACY_OPTION   = 'Chess_Army_Knife_club_teams';
 
-	const META_VENUE     = '_chess_army_team_venue';
-	const META_CAPTAIN   = '_chess_army_team_captain';
-	const META_SEASONS   = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
-	const META_LEAGUES   = '_chess_army_team_leagues';
-	const META_COLOUR    = '_chess_army_team_colour';
-	const META_GROUP     = '_chess_army_team_group'; // Id of the Group (see Chess_Army_Knife_Team_Groups) the team is listed under; set from the group's screen.
-	const META_GROUP_POS = '_chess_army_team_group_pos'; // The team's place within its group, from 0.
-	const META_TAG       = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
-	const META_WHATSAPP  = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
+	const META_VENUE        = '_chess_army_team_venue';
+	const META_CAPTAIN_NAME = '_chess_army_team_captain_name'; // The name of a captain who is not a member, used only while no member is the captain.
+	const META_CAPTAIN      = '_chess_army_team_captain';
+	const META_SEASONS      = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
+	const META_LEAGUES      = '_chess_army_team_leagues';
+	const META_COLOUR       = '_chess_army_team_colour';
+	const META_GROUP        = '_chess_army_team_group'; // Id of the Group (see Chess_Army_Knife_Team_Groups) the team is listed under; set from the group's screen.
+	const META_GROUP_POS    = '_chess_army_team_group_pos'; // The team's place within its group, from 0.
+	const META_TAG          = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
+	const META_WHATSAPP     = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
 	/**
 	 * Hook up registration and cleanup.
@@ -173,7 +174,7 @@ class Chess_Army_Knife_Teams {
 	/**
 	 * The teams on offer, in their page order.
 	 *
-	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, group_id, group, group_blurb, group_order, group_pos, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
+	 * @return array[] Each { id, name, description, venue, captain_id, captain_name, colour, tag, group_id, group, group_blurb, group_order, group_pos, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
 		$kept = wp_cache_get( 'teams', self::MEMO_GROUP );
@@ -220,21 +221,22 @@ class Chess_Army_Knife_Teams {
 		$leagues = self::clean_leagues( get_post_meta( $post->ID, self::META_LEAGUES, true ) );
 		$group   = Chess_Army_Knife_Team_Groups::get( (int) get_post_meta( $post->ID, self::META_GROUP, true ) );
 		return array(
-			'id'          => (int) $post->ID,
-			'name'        => $name,
-			'description' => (string) $post->post_excerpt,
-			'venue'       => (string) get_post_meta( $post->ID, self::META_VENUE, true ),
-			'captain_id'  => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
-			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
-			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
-			'whatsapp'    => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
-			'group_id'    => $group ? $group['id'] : 0,
-			'group'       => $group ? $group['name'] : '',
-			'group_blurb' => $group ? $group['blurb'] : '',
-			'group_order' => $group ? $group['order'] : 0,
-			'group_pos'   => $group ? (int) get_post_meta( $post->ID, self::META_GROUP_POS, true ) : 0,
-			'leagues'     => $leagues,
-			'seasons'     => array_map(
+			'id'           => (int) $post->ID,
+			'name'         => $name,
+			'description'  => (string) $post->post_excerpt,
+			'venue'        => (string) get_post_meta( $post->ID, self::META_VENUE, true ),
+			'captain_id'   => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
+			'captain_name' => trim( (string) get_post_meta( $post->ID, self::META_CAPTAIN_NAME, true ) ),
+			'colour'       => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
+			'tag'          => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
+			'whatsapp'     => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
+			'group_id'     => $group ? $group['id'] : 0,
+			'group'        => $group ? $group['name'] : '',
+			'group_blurb'  => $group ? $group['blurb'] : '',
+			'group_order'  => $group ? $group['order'] : 0,
+			'group_pos'    => $group ? (int) get_post_meta( $post->ID, self::META_GROUP_POS, true ) : 0,
+			'leagues'      => $leagues,
+			'seasons'      => array_map(
 				function ( $league ) use ( $name ) {
 					return self::season_key( self::league_entry( $league, $name ) );
 				},
@@ -338,7 +340,7 @@ class Chess_Army_Knife_Teams {
 	public static function public_roster( array $team, $sort = 'surname' ) {
 		$squad = self::squad( $team['id'] );
 		$ids   = $team['captain_id'] ? array_merge( $squad, array( $team['captain_id'] ) ) : $squad;
-		return self::build_roster( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ), $squad, $team['captain_id'], $sort );
+		return self::build_roster( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ), $squad, $team['captain_id'], $sort, $team['captain_name'] );
 	}
 
 	/**
@@ -348,9 +350,10 @@ class Chess_Army_Knife_Teams {
 	 * @param int[]   $squad      Member ids in the squad.
 	 * @param int     $captain_id Captain's member id, or 0.
 	 * @param string  $sort       'surname' (default) or 'rating' (highest first).
+	 * @param string  $captain_name The name of a captain who is not a member; used only when there is no member captain.
 	 * @return array See public_roster().
 	 */
-	public static function build_roster( array $members, array $squad, $captain_id, $sort = 'surname' ) {
+	public static function build_roster( array $members, array $squad, $captain_id, $sort = 'surname', $captain_name = '' ) {
 		$roster = array(
 			'players'             => array(),
 			'non_playing_captain' => '',
@@ -366,6 +369,9 @@ class Chess_Army_Knife_Teams {
 			} elseif ( $is_captain ) {
 				$roster['non_playing_captain'] = $member['name'];
 			}
+		}
+		if ( ! $captain_id && '' !== $captain_name ) {
+			$roster['non_playing_captain'] = $captain_name;
 		}
 		$roster['players'] = self::sort_players( $roster['players'], $sort );
 		return $roster;

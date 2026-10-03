@@ -74,11 +74,12 @@ class Chess_Army_Knife_Teams_Admin {
 	 * @param WP_Post $post Team being edited.
 	 */
 	public static function render_details( $post ) {
-		$venue    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
-		$captain  = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
-		$colour   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
-		$tag      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_TAG, true );
-		$whatsapp = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_WHATSAPP, true );
+		$venue        = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
+		$captain      = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
+		$captain_name = trim( (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN_NAME, true ) );
+		$colour       = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
+		$tag          = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_TAG, true );
+		$whatsapp     = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_WHATSAPP, true );
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
@@ -150,14 +151,19 @@ class Chess_Army_Knife_Teams_Admin {
 					<?php if ( Chess_Army_Knife_Memberships::user_can_manage() ) : ?>
 						<select id="chess_army_team_captain" name="chess_army_team_captain">
 							<option value="0"><?php esc_html_e( 'None', 'chess-army-knife' ); ?></option>
+							<option value="-1" <?php selected( ! $captain && '' !== $captain_name ); ?>><?php esc_html_e( 'Someone who is not a member…', 'chess-army-knife' ); ?></option>
 							<?php foreach ( self::candidates( array_filter( array( $captain ) ) ) as $person ) : ?>
 								<option value="<?php echo esc_attr( $person['id'] ); ?>" <?php selected( $captain, $person['id'] ); ?>><?php echo esc_html( $person['name'] ); ?></option>
 							<?php endforeach; ?>
 						</select>
-						<p class="description"><?php esc_html_e( 'Shown on the website in the Club Officers block, where team captains are listed as officers, and marked in the squad list of the Club Teams block.', 'chess-army-knife' ); ?></p>
+						<p>
+							<label for="chess_army_team_captain_name"><?php esc_html_e( 'Name of a captain who is not a member', 'chess-army-knife' ); ?></label><br />
+							<input type="text" id="chess_army_team_captain_name" name="chess_army_team_captain_name" value="<?php echo esc_attr( $captain_name ); ?>" class="regular-text" />
+						</p>
+						<p class="description"><?php esc_html_e( 'A member captain is shown on the website in the Club Officers block, where team captains are listed as officers, and marked in the squad list of the Club Teams block. Choose "Someone who is not a member" for, say, a parent who runs a juniors team: the name you type is shown on the Club Teams block as the non-playing captain, but they are not a club officer and have no record here.', 'chess-army-knife' ); ?></p>
 					<?php else : ?>
 						<?php $captain_person = $captain ? Chess_Army_Knife_Membership_Store::get_member( $captain ) : null; ?>
-						<?php echo esc_html( $captain_person ? $captain_person['name'] : __( 'None', 'chess-army-knife' ) ); ?>
+						<?php echo esc_html( $captain_person ? $captain_person['name'] : ( '' !== $captain_name ? $captain_name : __( 'None', 'chess-army-knife' ) ) ); ?>
 						<p class="description"><?php esc_html_e( 'Only someone who can manage members can change this.', 'chess-army-knife' ); ?></p>
 					<?php endif; ?>
 				</td>
@@ -344,7 +350,11 @@ class Chess_Army_Knife_Teams_Admin {
 		}
 
 		// Only someone the club holds a record of can captain a team.
-		$captain = isset( $_POST['chess_army_team_captain'] ) ? absint( $_POST['chess_army_team_captain'] ) : 0;
+		// "-1" is a captain who is not a member, named in the text field; a member as captain replaces any name.
+		$choice  = isset( $_POST['chess_army_team_captain'] ) ? (int) $_POST['chess_army_team_captain'] : 0;
+		$captain = max( 0, $choice );
+		$name    = -1 === $choice && isset( $_POST['chess_army_team_captain_name'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_captain_name'] ) ) : '';
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_CAPTAIN_NAME, $name );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_CAPTAIN, $captain && Chess_Army_Knife_Membership_Store::get_member( $captain ) ? $captain : 0 );
 
 		$squad = isset( $_POST['chess_army_team_squad'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['chess_army_team_squad'] ) ) : array();

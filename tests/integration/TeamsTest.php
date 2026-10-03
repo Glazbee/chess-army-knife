@@ -345,6 +345,37 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertSame( 'Hall', Chess_Army_Knife_Teams::get( $team )['venue'] );
 	}
 
+	public function test_a_captain_who_is_not_a_member_can_be_named_and_is_shown_as_the_non_playing_captain() {
+		$ada  = $this->person( 'Ada Lovelace' );
+		$team = $this->team();
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+		wp_set_current_user( $user );
+
+		$_POST = array(
+			Chess_Army_Knife_Teams_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
+			'chess_army_team_captain'                 => '-1',
+			'chess_army_team_captain_name'            => 'Pat Parent',
+		);
+		Chess_Army_Knife_Teams_Admin::save( $team );
+
+		$data = Chess_Army_Knife_Teams::get( $team );
+		$this->assertSame( 0, $data['captain_id'] );
+		$this->assertSame( 'Pat Parent', $data['captain_name'] );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true} /-->' );
+		$this->assertStringContainsString( 'Non-playing captain', $html );
+		$this->assertStringContainsString( 'Pat Parent', $html );
+
+		// Choosing a member as captain forgets the name.
+		$_POST['chess_army_team_captain'] = (string) $ada;
+		Chess_Army_Knife_Teams_Admin::save( $team );
+		$_POST = array();
+		$data  = Chess_Army_Knife_Teams::get( $team );
+		$this->assertSame( $ada, $data['captain_id'] );
+		$this->assertSame( '', $data['captain_name'] );
+	}
+
 	public function test_a_team_manager_edits_leagues_but_cannot_choose_the_captain_or_squad() {
 		$team = $this->team();
 		$ada  = $this->person();

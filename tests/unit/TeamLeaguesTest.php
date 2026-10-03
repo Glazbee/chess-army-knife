@@ -284,6 +284,19 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'Cat', $outside['non_playing_captain'] );
 	}
 
+	public function test_a_captain_who_is_not_a_member_is_the_non_playing_captain() {
+		$members = array( $this->member( 1, 'Ann' ) );
+
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1 ), 0, 'surname', 'Pat Parent' );
+		$this->assertSame( 'Pat Parent', $roster['non_playing_captain'] );
+		$this->assertCount( 1, $roster['players'] );
+
+		// A member as captain wins over the typed name.
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1 ), 1, 'surname', 'Pat Parent' );
+		$this->assertSame( '', $roster['non_playing_captain'] );
+		$this->assertTrue( $roster['players'][0]['captain'] );
+	}
+
 	public function test_build_roster_sorts_by_surname_by_default() {
 		$members = array( $this->member( 1, 'Zack Norris' ), $this->member( 2, 'Ian Robson' ), $this->member( 3, 'Mike Ashworth' ) );
 
