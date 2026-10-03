@@ -1,6 +1,6 @@
 <?php
 /**
- * The tabs that make Members one place: the members themselves, Checks, Types and Renewals. Each screen draws
+ * The tabs that make Members one place: the members themselves, Checks, Types, Renewals, Players from the LMS and Do not record. Each screen draws
  * the same tab bar above its own content, and only Members has a menu item.
  *
  * @package Chess_Army_Knife
@@ -31,6 +31,8 @@ class Chess_Army_Knife_Member_Tabs {
 			'checks'   => array( __( 'Checks', 'chess-army-knife' ), admin_url( 'admin.php?page=' . Chess_Army_Knife_Member_Checks_Page::SLUG ) ),
 			'types'    => array( __( 'Membership types', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE ) ),
 			'renewals' => array( __( 'Renewals', 'chess-army-knife' ), admin_url( 'admin.php?page=' . Chess_Army_Knife_Renewals_Page::SLUG ) ),
+			'players'  => array( __( 'Players from the LMS', 'chess-army-knife' ), admin_url( 'admin.php?page=' . Chess_Army_Knife_LMS_Players::PAGE ) ),
+			'dnr'      => array( __( 'Do not record', 'chess-army-knife' ), admin_url( 'admin.php?page=' . Chess_Army_Knife_Do_Not_Record::PAGE ) ),
 		);
 	}
 
@@ -82,7 +84,7 @@ class Chess_Army_Knife_Member_Tabs {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only decides which menu item is lit.
 		$page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		return in_array( $page, array( Chess_Army_Knife_Member_Checks_Page::SLUG, Chess_Army_Knife_Renewals_Page::SLUG ), true )
+		return in_array( $page, array( Chess_Army_Knife_Member_Checks_Page::SLUG, Chess_Army_Knife_Renewals_Page::SLUG, Chess_Army_Knife_LMS_Players::PAGE, Chess_Army_Knife_Do_Not_Record::PAGE ), true )
 			|| ( $screen && Chess_Army_Knife_Memberships::POST_TYPE === $screen->post_type );
 	}
 

@@ -27,7 +27,7 @@ if ( Chess_Army_Knife_Form_State::has_values() ) {
 }
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-$payment_text = Chess_Army_Knife_Memberships::payment_instructions();
+$payment_text = Chess_Army_Knife_Memberships::payment_instructions( isset( $applied_id ) && $applied_id > 0 ? (int) $applied_id : 0 );
 
 // The field each error is about, so the message can link to it and the field can point back.
 $error_fields = array(

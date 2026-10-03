@@ -174,6 +174,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_LMS_Players', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $members_group,
@@ -184,6 +185,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Do_Not_Record', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $members_group,
@@ -247,8 +249,8 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $teams_group,
-				'title'       => __( 'Clubs', 'chess-army-knife' ),
-				'description' => __( 'Other clubs and where they play, so away fixtures get a venue.', 'chess-army-knife' ),
+				'title'       => __( 'Other clubs', 'chess-army-knife' ),
+				'description' => __( 'Other clubs and where they play, so away fixtures get a venue, with a Sort clubs tab to say which team names in the LMS belong to one club.', 'chess-army-knife' ),
 				'key'         => 'clubs',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Clubs::POST_TYPE,
 				'callback'    => null,
@@ -265,6 +267,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Clubs', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $teams_group,
@@ -275,6 +278,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Squad_Review', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $teams_group,
@@ -285,6 +289,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Events_Import', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $club_group,
@@ -330,6 +335,7 @@ class Chess_Army_Knife_Menu {
 				'can'         => function () {
 					return current_user_can( Chess_Army_Knife_Policies::REQUIRED_CAP );
 				},
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $setup_group,

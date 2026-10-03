@@ -413,6 +413,7 @@ class Chess_Army_Knife_Settings {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Chess Army Knife', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Section_Tabs::render( 'settings', 'settings' ); ?>
 
 			<?php if ( isset( $_GET['chess_army_knife_cache_cleared'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only notice; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible">
@@ -543,7 +544,7 @@ class Chess_Army_Knife_Settings {
 						<th scope="row"><label for="membership_payment_info"><?php esc_html_e( 'How to pay for membership', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<textarea id="membership_payment_info" name="<?php echo esc_attr( self::OPTION ); ?>[membership_payment_info]" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'e.g. Bank transfer to Any Chess Club, sort code 00-00-00, account 12345678, quoting your reference. Or pay cash at the club.', 'chess-army-knife' ); ?>"><?php echo esc_textarea( $options['membership_payment_info'] ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. Write {reference} where a payment reference should go: it becomes the member\'s own reference (or "your payment reference" where there is no member). The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

@@ -116,7 +116,7 @@ class Chess_Army_Knife_Team_Tabs {
 	/**
 	 * Draw the switch between the list of teams, the list of groups and the leagues.
 	 *
-	 * @param string $active 'teams', 'groups' or 'leagues'.
+	 * @param string $active 'teams', 'groups', 'leagues' or 'review'.
 	 */
 	public static function render_sections( $active ) {
 		if ( ! Chess_Army_Knife_Teams::user_can_manage() ) {
@@ -126,6 +126,7 @@ class Chess_Army_Knife_Team_Tabs {
 			'teams'   => array( __( 'Teams', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ),
 			'groups'  => array( __( 'Groups', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE ) ),
 			'leagues' => array( __( 'Leagues', 'chess-army-knife' ), admin_url( 'admin.php?page=' . Chess_Army_Knife_Leagues_Page::PAGE ) ),
+			'review'  => array( __( 'Squad review', 'chess-army-knife' ), admin_url( 'admin.php?page=' . Chess_Army_Knife_Squad_Review::PAGE ) ),
 		);
 		?>
 		<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Teams, groups and leagues', 'chess-army-knife' ); ?>">
@@ -146,7 +147,7 @@ class Chess_Army_Knife_Team_Tabs {
 		$page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 		// Groups have no menu item either: they are a tab of Teams.
-		return in_array( $page, array( Chess_Army_Knife_Team_Overview::PAGE, Chess_Army_Knife_Selection_Page::SLUG, Chess_Army_Knife_Leagues_Page::PAGE ), true )
+		return in_array( $page, array( Chess_Army_Knife_Team_Overview::PAGE, Chess_Army_Knife_Selection_Page::SLUG, Chess_Army_Knife_Leagues_Page::PAGE, Chess_Army_Knife_Squad_Review::PAGE ), true )
 			|| ( $screen && Chess_Army_Knife_Team_Groups::POST_TYPE === $screen->post_type );
 	}
 

@@ -313,13 +313,29 @@ class Chess_Army_Knife_Memberships {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * The club's instructions for paying, as entered on the Settings page.
+	 * The club's instructions for paying, as entered on the Settings page. {reference} is filled in with the
+	 * member's payment reference when it is for a particular member, and says "your payment reference" when
+	 * it is not (the text shown beside the advertised memberships); it is left out if the club uses no references.
 	 *
+	 * @param int        $member_id Member the instructions are for, or 0 for no one in particular.
+	 * @param array|null $member    The member's row, if there is one to hand.
 	 * @return string Plain text.
 	 */
-	public static function payment_instructions() {
+	public static function payment_instructions( $member_id = 0, $member = null ) {
 		$options = Chess_Army_Knife_Settings::get_options();
-		return isset( $options['membership_payment_info'] ) ? trim( (string) $options['membership_payment_info'] ) : '';
+		$text    = isset( $options['membership_payment_info'] ) ? trim( (string) $options['membership_payment_info'] ) : '';
+		if ( false === strpos( $text, '{reference}' ) ) {
+			return $text;
+		}
+
+		if ( ! self::use_references() ) {
+			$reference = '';
+		} elseif ( $member_id > 0 ) {
+			$reference = self::payment_reference( $member_id, $member );
+		} else {
+			$reference = __( 'your payment reference', 'chess-army-knife' );
+		}
+		return str_replace( '{reference}', $reference, $text );
 	}
 
 	/**

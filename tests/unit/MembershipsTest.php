@@ -160,4 +160,26 @@ class MembershipsTest extends Chess_Army_Knife_TestCase {
 		$this->set_settings( array( 'membership_thanks_message' => 'Welcome! Bank transfer? Quote {reference}. Cash is fine too.' ) );
 		$this->assertSame( 'Welcome! Bank transfer? Quote MEM-42. Cash is fine too.', Chess_Army_Knife_Memberships::thanks_text( 42 ) );
 	}
+
+	public function test_the_how_to_pay_text_puts_the_members_own_reference_where_the_club_says() {
+		$this->set_settings( array( 'membership_payment_info' => 'Bank transfer to 00-00-00 12345678, quoting {reference}. Or pay cash.' ) );
+
+		$this->assertSame( 'Bank transfer to 00-00-00 12345678, quoting MEM-42. Or pay cash.', Chess_Army_Knife_Memberships::payment_instructions( 42 ) );
+		$this->assertSame( 'Bank transfer to 00-00-00 12345678, quoting TREASURER-7. Or pay cash.', Chess_Army_Knife_Memberships::payment_instructions( 42, array( 'payment_reference' => 'TREASURER-7' ) ) );
+		$this->assertSame( 'Bank transfer to 00-00-00 12345678, quoting your payment reference. Or pay cash.', Chess_Army_Knife_Memberships::payment_instructions(), 'With no member, it says what to quote.' );
+
+		$this->set_settings(
+			array(
+				'membership_payment_info'   => 'Pay at the club{reference}.',
+				'membership_use_references' => 0,
+			)
+		);
+		$this->assertSame( 'Pay at the club.', Chess_Army_Knife_Memberships::payment_instructions( 42 ) );
+	}
+
+	public function test_instructions_without_a_placeholder_are_left_alone() {
+		$this->set_settings( array( 'membership_payment_info' => 'Cash at the club.' ) );
+
+		$this->assertSame( 'Cash at the club.', Chess_Army_Knife_Memberships::payment_instructions( 42 ) );
+	}
 }

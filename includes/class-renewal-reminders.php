@@ -229,8 +229,10 @@ class Chess_Army_Knife_Renewal_Reminders {
 		}
 
 		$reference    = Chess_Army_Knife_Memberships::payment_reference( $member['id'], $member );
-		$instructions = Chess_Army_Knife_Memberships::payment_instructions();
-		if ( '' !== $instructions && '' !== $reference ) {
+		$instructions = Chess_Army_Knife_Memberships::payment_instructions( $member['id'], $member );
+		// Instructions that already say where the reference goes need no sentence added about it.
+		$says_reference = false !== strpos( (string) Chess_Army_Knife_Settings::get_options()['membership_payment_info'], '{reference}' );
+		if ( '' !== $instructions && '' !== $reference && ! $says_reference ) {
 			/* translators: 1: the club's payment instructions, 2: the member's payment reference */
 			$payment = sprintf( __( "To renew, please pay as follows:\n\n%1\$s\n\nIf you pay by bank transfer, please quote this reference: %2\$s", 'chess-army-knife' ), $instructions, $reference );
 		} elseif ( '' !== $instructions ) {

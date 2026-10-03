@@ -692,7 +692,9 @@ class Chess_Army_Knife_Policies {
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Policies', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Settings', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Section_Tabs::render( 'settings', 'policies' ); ?>
+			<h2><?php esc_html_e( 'Policies', 'chess-army-knife' ); ?></h2>
 			<p>
 				<?php esc_html_e( 'A club\'s policies are specific to that club, so the plugin makes nothing until you ask. For each policy you can have a draft page made for you to edit, or say that you will write it yourself. A page is an ordinary page: edit it in the block editor, publish it, put it in a menu and link to it from anywhere on the site.', 'chess-army-knife' ); ?>
 			</p>

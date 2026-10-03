@@ -827,7 +827,9 @@ class Chess_Army_Knife_Events_Import {
 		delete_transient( self::result_key() . '_old' );
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Import Events from LMS', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Club events', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Section_Tabs::render( 'events', 'import' ); ?>
+			<h2><?php esc_html_e( 'Import events from the LMS', 'chess-army-knife' ); ?></h2>
 			<?php $last_line = self::last_run_text( self::last_run(), time() ); ?>
 			<?php if ( '' !== $last_line ) : ?>
 				<p><strong><?php echo esc_html( $last_line ); ?></strong></p>
