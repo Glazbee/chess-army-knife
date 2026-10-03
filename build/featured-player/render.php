@@ -21,6 +21,7 @@ $name_style    = Chess_Army_Knife_Names::style_for( $attributes );
 $player_code   = Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ?? '' );
 $name          = '';
 $heading       = trim( (string) ( $attributes['heading'] ?? '' ) );
+$subtitle      = trim( (string) ( $attributes['subtitle'] ?? '' ) );
 $blurb         = trim( (string) ( $attributes['blurb'] ?? '' ) );
 $image_id      = (int) ( $attributes['imageId'] ?? 0 );
 $image_url     = (string) ( $attributes['imageUrl'] ?? '' );
@@ -38,9 +39,9 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'featured-
 if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
 	// Whose turn it is among the members whose rating has risen; a chosen photo, blurb and links belong to one person, so they are not used.
 	$chosen = Chess_Army_Knife_Rotating_Member::pick(
-		Chess_Army_Knife_Rotating_Member::growing_members( $rating_domain, $days_back, 2 ),
+		Chess_Army_Knife_Rotating_Member::growing_members( 'S', $days_back, 2 ),
 		$rotation,
-		Chess_Army_Knife_Rotating_Member::salt( 'featured|' . $rating_domain ),
+		Chess_Army_Knife_Rotating_Member::salt( 'featured|S' ),
 		Chess_Army_Knife_Rotating_Member::local_time()
 	);
 	if ( ! $chosen ) {
@@ -132,6 +133,10 @@ if ( '' === $name ) {
 	$name = $player_code;
 }
 
+// The title is "Featured Player" unless the block has its own; both lines can use {player} and {club}.
+$heading  = Chess_Army_Knife_Settings::with_player( '' !== $heading ? $heading : __( 'Featured Player', 'chess-army-knife' ), $name );
+$subtitle = Chess_Army_Knife_Settings::with_player( $subtitle, $name );
+
 $domain_labels = array(
 	'S'  => __( 'Standard', 'chess-army-knife' ),
 	'R'  => __( 'Rapid', 'chess-army-knife' ),
@@ -145,8 +150,9 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<?php if ( '' !== $heading ) : ?>
-		<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-featured__heading', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-featured__heading', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php if ( '' !== $subtitle ) : ?>
+		<p class="cak-featured__subtitle"><?php echo esc_html( $subtitle ); ?></p>
 	<?php endif; ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_keys, __( 'Player data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
@@ -166,7 +172,7 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 		<?php endif; ?>
 
 		<div class="cak-featured__body">
-			<?php echo Chess_Army_Knife_A11y::heading( '' !== $heading ? 1 : 0, 'cak-featured__name', trim( $player_title . ' ' . $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+			<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-featured__name', trim( $player_title . ' ' . $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 			<?php if ( '' !== $rating || ( $show_club && '' !== $club ) ) : ?>
 				<p class="cak-featured__meta">

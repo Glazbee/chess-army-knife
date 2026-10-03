@@ -70,10 +70,10 @@ class Chess_Army_Knife_Block_Help {
 
 		return array(
 			'rating-chart'         => array(
-				'use'      => __( 'A line chart of how one player\'s rating has moved over their recent rated games, with current, peak, lowest and change figures There is a written summary of the chart, and the ratings can be shown as a table.', 'chess-army-knife' ),
+				'use'      => __( 'A line chart of how one member\'s rating has moved over their recent rated games, with their Standard, Rapid and Blitz OTB ratings and the change over the period. There is a written summary of the chart, and the ratings can be shown as a table.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Search for the member by name: only current members with an ECF code can be charted. Or rotate: every hour, day, week or month the chart moves on to another current member whose rating has risen over the days you choose.', 'chess-army-knife' ),
-					__( 'Choose the rating list (standard, rapid, blitz or an online list), how many games to draw, the height, and whether to show the figures.', 'chess-army-knife' ),
+					__( 'Choose which rating list the chart draws, how many games to draw, the height, and whether to show the figures. The title (default Featured Player) and subtitle can use {player} for the member\'s name.', 'chess-army-knife' ),
 				),
 				'needs'    => array( $ecf_code ),
 				'where'    => array( 'members' ),
@@ -99,7 +99,7 @@ class Chess_Army_Knife_Block_Help {
 				'use'      => __( 'Spotlight a current member with a photo, a short blurb on why they are featured, their ECF rating and links to their chess.com and Lichess profiles.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Choose a current club member with an ECF code. Or rotate: every hour, day, week or month the block moves on to another current member whose rating has risen over the days you choose, and says so in place of the blurb.', 'chess-army-knife' ),
-					__( 'Pick a photo from the media library, and choose which of rating, club and links to show.', 'chess-army-knife' ),
+					__( 'Pick a photo from the media library, and choose which of rating, club and links to show. The title (default Featured Player) and subtitle can use {player} for the member\'s name. Rotation looks at Standard OTB ratings only.', 'chess-army-knife' ),
 				),
 				'needs'    => array( $ecf_code ),
 				'where'    => array( 'members' ),

@@ -27,7 +27,7 @@ export default function RotationControl( { attributes, setAttributes } ) {
 			<SelectControl
 				label={ __( 'Rotate to another member', 'chess-army-knife' ) }
 				help={ __(
-					'Rotating picks, in a random order, a current member whose rating has risen over the period below.',
+					'Rotating picks, in a random order, a current member whose Standard OTB rating has risen over the period below.',
 					'chess-army-knife'
 				) }
 				value={ attributes.rotation || 'none' }
@@ -41,7 +41,7 @@ export default function RotationControl( { attributes, setAttributes } ) {
 					max={ 365 }
 					label={ __( 'Days to look back', 'chess-army-knife' ) }
 					help={ __(
-						'Leave empty for the site default. Only members whose rating went up in this many days are included.',
+						'Leave empty for the site default. Only members whose Standard OTB rating went up in this many days are included.',
 						'chess-army-knife'
 					) }
 					value={ attributes.daysBack || '' }

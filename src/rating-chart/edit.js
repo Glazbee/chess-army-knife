@@ -75,7 +75,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					initialOpen={ true }
 				>
 					<SelectControl
-						label={ __( 'Rating list', 'chess-army-knife' ) }
+						label={ __(
+							'Rating shown in the chart',
+							'chess-army-knife'
+						) }
 						value={ domain }
 						options={ DOMAIN_OPTIONS }
 						onChange={ ( value ) =>
@@ -97,25 +100,34 @@ export default function Edit( { attributes, setAttributes } ) {
 						step={ 10 }
 					/>
 					<TextControl
-						label={ __(
-							'Custom title (optional)',
-							'chess-army-knife'
-						) }
+						label={ __( 'Title (optional)', 'chess-army-knife' ) }
 						help={ __(
-							"Use {club} for the club's name.",
+							"Use {player} for the member's name and {club} for the club's name.",
 							'chess-army-knife'
 						) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
-						placeholder={
-							playerName ||
-							__(
-								'Defaults to the player name',
-								'chess-army-knife'
-							)
+						placeholder={ __(
+							'Featured Player',
+							'chess-army-knife'
+						) }
+					/>
+					<TextControl
+						label={ __(
+							'Subtitle (optional)',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'Use {player} for the name. Empty shows the name.',
+							'chess-army-knife'
+						) }
+						value={ attributes.subtitle }
+						onChange={ ( value ) =>
+							setAttributes( { subtitle: value } )
 						}
+						placeholder="{player}"
 					/>
 					<RangeControl
 						label={ __( 'Chart height (px)', 'chess-army-knife' ) }
@@ -129,7 +141,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 					<ToggleControl
 						label={ __(
-							'Show summary stats (current, peak, change)',
+							'Show the Standard, Rapid and Blitz OTB ratings and the change over the period',
 							'chess-army-knife'
 						) }
 						checked={ showStats }

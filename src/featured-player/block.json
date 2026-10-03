@@ -15,6 +15,7 @@
 		"playerCode": { "type": "string", "default": "" },
 		"playerName": { "type": "string", "default": "" },
 		"heading": { "type": "string", "default": "" },
+		"subtitle": { "type": "string", "default": "" },
 		"blurb": { "type": "string", "default": "" },
 		"imageId": { "type": "number", "default": 0 },
 		"imageUrl": { "type": "string", "default": "" },

@@ -51,6 +51,10 @@
       "type": "string",
       "default": ""
     },
+    "subtitle": {
+      "type": "string",
+      "default": ""
+    },
     "rotation": {
       "type": "string",
       "default": "none"

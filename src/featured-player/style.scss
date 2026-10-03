@@ -2,6 +2,10 @@
 @use "../shared/a11y";
 
 .wp-block-chess-army-knife-featured-player {
+	.cak-featured__subtitle {
+		margin: 0 0 0.75em;
+	}
+
 	.cak-featured__heading {
 		margin: 0 0 0.5em;
 		font-size: 0.85em;

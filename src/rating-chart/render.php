@@ -16,14 +16,15 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'rating-chart', $attributes );
 
-$player_code   = isset( $attributes['playerCode'] ) ? Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ) : '';
-$player_name   = isset( $attributes['playerName'] ) ? $attributes['playerName'] : '';
-$rating_domain = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
-$games_limit   = isset( $attributes['gamesLimit'] ) ? (int) $attributes['gamesLimit'] : 100;
-$block_title   = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
-$height        = isset( $attributes['height'] ) ? max( 120, (int) $attributes['height'] ) : 320;
-$show_stats    = ! isset( $attributes['showStats'] ) || (bool) $attributes['showStats'];
-$line_color    = isset( $attributes['lineColor'] ) ? (string) $attributes['lineColor'] : '';
+$player_code    = isset( $attributes['playerCode'] ) ? Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ) : '';
+$player_name    = isset( $attributes['playerName'] ) ? $attributes['playerName'] : '';
+$rating_domain  = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
+$games_limit    = isset( $attributes['gamesLimit'] ) ? (int) $attributes['gamesLimit'] : 100;
+$block_title    = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
+$block_subtitle = isset( $attributes['subtitle'] ) ? trim( (string) $attributes['subtitle'] ) : '';
+$height         = isset( $attributes['height'] ) ? max( 120, (int) $attributes['height'] ) : 320;
+$show_stats     = ! isset( $attributes['showStats'] ) || (bool) $attributes['showStats'];
+$line_color     = isset( $attributes['lineColor'] ) ? (string) $attributes['lineColor'] : '';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'rating-chart', $attributes );
 
@@ -34,9 +35,9 @@ $since      = '';
 
 if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
 	$chosen = Chess_Army_Knife_Rotating_Member::pick(
-		Chess_Army_Knife_Rotating_Member::growing_members( $rating_domain, $days_back, 2 ),
+		Chess_Army_Knife_Rotating_Member::growing_members( 'S', $days_back, 2 ),
 		$rotation,
-		Chess_Army_Knife_Rotating_Member::salt( 'chart|' . $rating_domain ),
+		Chess_Army_Knife_Rotating_Member::salt( 'chart|S' ),
 		Chess_Army_Knife_Rotating_Member::local_time()
 	);
 	if ( ! $chosen ) {
@@ -131,12 +132,9 @@ $domain_labels = array(
 	'BW' => __( 'Online Blitz', 'chess-army-knife' ),
 );
 
-$heading = $block_title ? $block_title : sprintf(
-	/* translators: 1: player name, 2: rating list e.g. Standard */
-	__( '%1$s — %2$s rating', 'chess-army-knife' ),
-	$player_name ? $player_name : $player_code,
-	isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : $rating_domain
-);
+// The title is "Featured Player" unless the block has its own; the subtitle shows the player's name unless it has its own. Both can use {player} and {club}.
+$heading  = Chess_Army_Knife_Settings::with_player( '' !== $block_title ? $block_title : __( 'Featured Player', 'chess-army-knife' ), $player_name );
+$subtitle = Chess_Army_Knife_Settings::with_player( '' !== $block_subtitle ? $block_subtitle : '{player}', $player_name );
 
 // The chart is decorative: the summary below it and the table carry the same information.
 // The chosen line colour, or else the accent from the theme (or template), or else the text colour.
@@ -183,12 +181,30 @@ if ( 1 === count( $points ) ) {
 
 $geometry        = Chess_Army_Knife_Rating_Chart::geometry( $values );
 $admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $rating_domain, $games_limit );
+$admin_keys      = array( $admin_cache_key );
+
+// The player's current Standard, Rapid and Blitz over-the-board ratings, whichever list the chart draws.
+$otb_ratings = array();
+if ( $show_stats ) {
+	$otb_lists = array(
+		__( 'Standard OTB', 'chess-army-knife' ) => 'S',
+		__( 'Rapid OTB', 'chess-army-knife' )    => 'R',
+		__( 'Blitz OTB', 'chess-army-knife' )    => 'B',
+	);
+	foreach ( $otb_lists as $otb_label => $otb_domain ) {
+		$otb_ratings[ $otb_label ] = Chess_Army_Knife_Tournaments::rating_from_data( Chess_Army_Knife_ECF_Client::get_rating( $player_code, $otb_domain ) );
+		$admin_keys[]              = Chess_Army_Knife_ECF_Client::cache_key_rating( $player_code, $otb_domain );
+	}
+}
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-rating-chart__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php if ( '' !== $subtitle ) : ?>
+		<p class="cak-rating-chart__subtitle"><?php echo esc_html( $subtitle ); ?></p>
+	<?php endif; ?>
 
-	<?php echo Chess_Army_Knife_Admin_Refresh::bar( array( $admin_cache_key ), __( 'Games data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
+	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_keys, __( 'Games data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
 	<figure class="cak-rating-chart__figure">
 		<svg
@@ -238,18 +254,12 @@ $admin_cache_key = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $
 
 	<?php if ( $show_stats ) : ?>
 		<dl class="cak-rating-chart__stats">
-			<div>
-				<dt><?php esc_html_e( 'Current', 'chess-army-knife' ); ?></dt>
-				<dd><?php echo esc_html( (int) $current ); ?></dd>
-			</div>
-			<div>
-				<dt><?php esc_html_e( 'Peak', 'chess-army-knife' ); ?></dt>
-				<dd><?php echo esc_html( (int) $peak ); ?></dd>
-			</div>
-			<div>
-				<dt><?php esc_html_e( 'Lowest', 'chess-army-knife' ); ?></dt>
-				<dd><?php echo esc_html( (int) $low ); ?></dd>
-			</div>
+			<?php foreach ( $otb_ratings as $otb_label => $otb_rating ) : ?>
+				<div>
+					<dt><?php echo esc_html( $otb_label ); ?></dt>
+					<dd><?php echo null === $otb_rating ? esc_html__( 'Unrated', 'chess-army-knife' ) : esc_html( $otb_rating ); ?></dd>
+				</div>
+			<?php endforeach; ?>
 			<div>
 				<dt><?php esc_html_e( 'Change over period', 'chess-army-knife' ); ?></dt>
 				<dd class="<?php echo esc_attr( $change >= 0 ? 'is-up' : 'is-down' ); ?>">

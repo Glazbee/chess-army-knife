@@ -38,6 +38,10 @@
       "type": "string",
       "default": ""
     },
+    "subtitle": {
+      "type": "string",
+      "default": ""
+    },
     "blurb": {
       "type": "string",
       "default": ""

@@ -88,14 +88,32 @@ export default function Edit( { attributes, setAttributes } ) {
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Heading (optional)', 'chess-army-knife' ) }
+						label={ __( 'Title (optional)', 'chess-army-knife' ) }
+						help={ __(
+							"Use {player} for the member's name and {club} for the club's name.",
+							'chess-army-knife'
+						) }
 						placeholder={ __(
-							'e.g. Player of the month',
+							'Featured Player',
 							'chess-army-knife'
 						) }
 						value={ heading }
 						onChange={ ( value ) =>
 							setAttributes( { heading: value } )
+						}
+					/>
+					<TextControl
+						label={ __(
+							'Subtitle (optional)',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'Use {player} for the name, for example "{player} is our player of the month".',
+							'chess-army-knife'
+						) }
+						value={ attributes.subtitle }
+						onChange={ ( value ) =>
+							setAttributes( { subtitle: value } )
 						}
 					/>
 					<TextareaControl

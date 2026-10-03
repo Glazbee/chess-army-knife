@@ -282,6 +282,18 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
+	 * Text with {club} and {player} replaced, for the title and subtitle of the blocks about one player.
+	 *
+	 * @param string $text        Plain text.
+	 * @param string $player_name The player's name as it should show.
+	 * @return string
+	 */
+	public static function with_player( $text, $player_name ) {
+		$text = self::with_club( $text );
+		return false === strpos( $text, '{player}' ) ? $text : str_replace( '{player}', (string) $player_name, $text );
+	}
+
+	/**
 	 * Sanitize the settings form submission.
 	 *
 	 * @param array $input Raw form input.
