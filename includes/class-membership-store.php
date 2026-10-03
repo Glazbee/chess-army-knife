@@ -58,6 +58,7 @@ class Chess_Army_Knife_Membership_Store {
 			"CREATE TABLE {$table} (
 			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			name VARCHAR(191) NOT NULL,
+			nickname VARCHAR(60) NOT NULL DEFAULT '',
 			email VARCHAR(191) NOT NULL DEFAULT '',
 			phone VARCHAR(40) NOT NULL DEFAULT '',
 			date_of_birth DATE NULL,
@@ -91,6 +92,31 @@ class Chess_Army_Knife_Membership_Store {
 			KEY ecf_checked_at (ecf_checked_at)
 			) {$charset};"
 		);
+	}
+
+	/**
+	 * Add the nickname column to a members table made before it existed, once. The schema version is not bumped
+	 * while the plugin is in development, so installs made earlier would otherwise fail to save members.
+	 */
+	public static function maybe_add_nickname_column() {
+		global $wpdb;
+
+		if ( '1' === get_option( 'Chess_Army_Knife_members_nickname' ) ) {
+			return;
+		}
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal.
+		$exists = $wpdb->get_var( "SHOW TABLES LIKE '" . esc_sql( $table ) . "'" );
+		if ( $exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal.
+			$has = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'nickname'" );
+			if ( ! $has ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal.
+				$wpdb->query( "ALTER TABLE {$table} ADD COLUMN nickname VARCHAR(60) NOT NULL DEFAULT '' AFTER name" );
+			}
+			update_option( 'Chess_Army_Knife_members_nickname', '1', true );
+		}
 	}
 
 	/**
@@ -208,6 +234,7 @@ class Chess_Army_Knife_Membership_Store {
 		$now    = current_time( 'mysql', true );
 		$member = array(
 			'name'                  => $name,
+			'nickname'              => isset( $input['nickname'] ) ? mb_substr( sanitize_text_field( $input['nickname'] ), 0, 60 ) : '',
 			'email'                 => $email,
 			'phone'                 => $phone,
 			'date_of_birth'         => '' === $date_of_birth ? null : $date_of_birth,
@@ -988,6 +1015,7 @@ class Chess_Army_Knife_Membership_Store {
 			array(
 				'id'                    => $member['id'],
 				'name'                  => self::erased_name(),
+				'nickname'              => '',
 				'email'                 => '',
 				'phone'                 => '',
 				'date_of_birth'         => null,
@@ -1036,6 +1064,7 @@ class Chess_Army_Knife_Membership_Store {
 	 */
 	protected static function cast_member( array $row ) {
 		$row['id']                 = (int) $row['id'];
+		$row['nickname']           = isset( $row['nickname'] ) ? (string) $row['nickname'] : '';
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
 		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
@@ -1049,4 +1078,5 @@ class Chess_Army_Knife_Membership_Store {
 	}
 }
 
+add_action( 'init', array( 'Chess_Army_Knife_Membership_Store', 'maybe_add_nickname_column' ), 1 );
 add_filter( 'Chess_Army_Knife_before_ecf_player_lookup', array( 'Chess_Army_Knife_Membership_Store', 'allow_ecf_lookup' ), 10, 2 );

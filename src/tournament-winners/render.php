@@ -17,6 +17,7 @@ $limit       = isset( $attributes['limit'] ) ? max( 1, (int) $attributes['limit'
 $rows        = Chess_Army_Knife_Tournament_Summary::winners( $limit );
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'tournament-winners', $attributes );
+$name_style         = Chess_Army_Knife_Names::style_for( $attributes );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
@@ -40,7 +41,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'tournamen
 					<?php $finished = strtotime( $row['completed_at'] . ' UTC' ); ?>
 					<tr>
 						<th scope="row"><?php echo esc_html( $row['tournament'] ); ?></th>
-						<td><?php echo esc_html( $row['winner'] ); ?></td>
+						<td><?php echo esc_html( Chess_Army_Knife_Names::format( $row['winner'], $name_style, $row['nickname'] ) ); ?></td>
 						<td><?php echo esc_html( $finished ? wp_date( get_option( 'date_format' ), $finished ) : '' ); ?></td>
 					</tr>
 				<?php endforeach; ?>

@@ -726,7 +726,7 @@ class Chess_Army_Knife_Members_Page {
 		$editing = null !== $member;
 		$member  = $editing ? $member : array(
 			'manual_rating' => null,
-		) + array_fill_keys( array( 'name', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at' ), '' ) + array(
+		) + array_fill_keys( array( 'name', 'nickname', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at' ), '' ) + array(
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
 			'start_date'         => current_time( 'Y-m-d' ),
@@ -752,6 +752,13 @@ class Chess_Army_Knife_Members_Page {
 					<tr>
 						<th scope="row"><label for="name"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></label></th>
 						<td><input type="text" id="name" name="name" class="regular-text" value="<?php echo esc_attr( $member['name'] ); ?>" required /></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="nickname"><?php esc_html_e( 'Nickname', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="nickname" name="nickname" class="regular-text" maxlength="60" value="<?php echo esc_attr( $member['nickname'] ); ?>" />
+							<p class="description"><?php esc_html_e( 'Optional. Used in place of their first name on the website, for example Maddy for Madeline.', 'chess-army-knife' ); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="email"><?php esc_html_e( 'Email', 'chess-army-knife' ); ?></label></th>

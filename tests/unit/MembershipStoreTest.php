@@ -117,6 +117,7 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame(
 			array(
 				'name'                  => 'Ada Lovelace',
+				'nickname'              => '',
 				'email'                 => 'ada@example.test',
 				'phone'                 => '07700 900123',
 				'date_of_birth'         => null,

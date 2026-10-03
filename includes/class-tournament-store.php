@@ -192,7 +192,7 @@ class Chess_Army_Knife_Tournament_Store {
 	 */
 	protected static function entry_select() {
 		// An entry with no person (player_id 0) keeps the name it was given, and has no ECF code or any link to a record.
-		return 'SELECT e.*, COALESCE( p.name, e.player_name ) AS name, p.ecf_code AS ecf_code FROM ' . self::table( 'entries' ) . ' e LEFT JOIN ' . self::table( 'members' ) . ' p ON p.id = e.player_id';
+		return 'SELECT e.*, COALESCE( p.name, e.player_name ) AS name, COALESCE( p.nickname, \'\' ) AS nickname, p.ecf_code AS ecf_code FROM ' . self::table( 'entries' ) . ' e LEFT JOIN ' . self::table( 'members' ) . ' p ON p.id = e.player_id';
 	}
 
 	/**

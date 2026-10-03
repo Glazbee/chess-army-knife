@@ -32,6 +32,7 @@ $block_title   = isset( $attributes['title'] ) ? trim( (string) $attributes['tit
 $games_per_player = 40;
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'biggest-gainers', $attributes );
+$name_style         = Chess_Army_Knife_Names::style_for( $attributes );
 
 // The club's own current members with an ECF code: nobody is looked up on the ECF without a record here.
 $players = array();
@@ -133,7 +134,7 @@ $heading = $block_title ? $block_title : __( 'Biggest improvers', 'chess-army-kn
 			<?php foreach ( $movers as $i => $mover ) : ?>
 				<li class="cak-gainers__item">
 					<span class="cak-gainers__rank" aria-hidden="true">#<?php echo (int) ( $i + 1 ); ?></span>
-					<span class="cak-gainers__name"><?php echo esc_html( $mover['name'] ); ?></span>
+					<span class="cak-gainers__name"><?php echo esc_html( Chess_Army_Knife_Names::format( $mover['name'], $name_style ) ); ?></span>
 					<?php
 					if ( $show_detail ) :
 						?>

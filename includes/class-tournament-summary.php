@@ -56,7 +56,7 @@ class Chess_Army_Knife_Tournament_Summary {
 	 * so only a manual rating is shown and no ECF request is made for the page.
 	 *
 	 * @param array $tournament Tournament row.
-	 * @return array[] Each: seed, name, ecf_code, rating, source ('ecf'|'manual'|'none'|'pending'), withdrawn.
+	 * @return array[] Each: seed, name, nickname, ecf_code, rating, source ('ecf'|'manual'|'none'|'pending'), withdrawn.
 	 */
 	public static function players( array $tournament ) {
 		$started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
@@ -82,6 +82,7 @@ class Chess_Army_Knife_Tournament_Summary {
 			$rows[] = array(
 				'seed'      => $entry['seed'],
 				'name'      => $entry['name'],
+				'nickname'  => $entry['nickname'],
 				'ecf_code'  => $entry['ecf_code'],
 				'rating'    => $rating,
 				'source'    => $source,
@@ -200,6 +201,7 @@ class Chess_Army_Knife_Tournament_Summary {
 			$rows[] = array(
 				'rank'      => $standing['rank'],
 				'name'      => $standing['name'],
+				'nickname'  => $standing['nickname'],
 				'withdrawn' => $standing['withdrawn'],
 				'total'     => $standing['points'],
 				'scores'    => $cells,
@@ -216,7 +218,7 @@ class Chess_Army_Knife_Tournament_Summary {
 	 * Winners of completed tournaments, most recently finished first.
 	 *
 	 * @param int $limit Maximum number of tournaments (0 for all).
-	 * @return array[] Each: { tournament, winner, completed_at }.
+	 * @return array[] Each: { tournament, winner, nickname, completed_at }.
 	 */
 	public static function winners( $limit = 0 ) {
 		$rows = array();
@@ -231,6 +233,7 @@ class Chess_Army_Knife_Tournament_Summary {
 			$rows[] = array(
 				'tournament'   => $tournament['name'],
 				'winner'       => $champion['name'],
+				'nickname'     => $champion['nickname'],
 				'completed_at' => (string) $tournament['completed_at'],
 			);
 		}

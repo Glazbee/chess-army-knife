@@ -3,6 +3,7 @@ import TemplatePicker from '../shared/template-picker';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
+import NameFormatControl from '../shared/name-format-control';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { orgId, eventName, team, season, title, showBoards } = attributes;
@@ -68,6 +69,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ season }
 						onChange={ ( value ) =>
 							setAttributes( { season: value } )
+						}
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>

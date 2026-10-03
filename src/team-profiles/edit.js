@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
+import NameFormatControl from '../shared/name-format-control';
 
 const HEADING_LEVELS = [
 	{ label: __( 'Automatic', 'chess-army-knife' ), value: 0 },
@@ -168,6 +169,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						checked={ showLeagues }
 						onChange={ ( value ) =>
 							setAttributes( { showLeagues: value } )
+						}
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>

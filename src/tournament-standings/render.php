@@ -17,6 +17,7 @@ $tournament_id = isset( $attributes['tournamentId'] ) ? (int) $attributes['tourn
 $tournament    = $tournament_id ? Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id ) : null;
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'tournament-standings', $attributes );
+$name_style         = Chess_Army_Knife_Names::style_for( $attributes );
 
 if ( ! $tournament ) {
 	printf(
@@ -73,7 +74,7 @@ if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'] && 'kn
 						<tr class="<?php echo $row['withdrawn'] ? 'is-withdrawn' : ''; ?>">
 							<td class="is-numeric"><?php echo esc_html( $row['rank'] ); ?></td>
 							<th scope="row">
-								<?php echo esc_html( $row['name'] ); ?>
+								<?php echo esc_html( Chess_Army_Knife_Names::person( $row, $name_style ) ); ?>
 								<?php if ( $row['withdrawn'] ) : ?>
 									<em>(<?php esc_html_e( 'withdrawn', 'chess-army-knife' ); ?>)</em>
 								<?php endif; ?>

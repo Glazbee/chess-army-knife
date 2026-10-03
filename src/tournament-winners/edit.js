@@ -3,6 +3,7 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextControl, RangeControl } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import TemplatePicker from '../shared/template-picker';
+import NameFormatControl from '../shared/name-format-control';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { title, limit } = attributes;
@@ -29,6 +30,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 						onChange={ ( value ) =>
 							setAttributes( { limit: value || 10 } )
+						}
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>

@@ -290,6 +290,33 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertLessThan( strpos( $html, 'Club A' ), strpos( $html, 'Club B' ), 'The group puts Club B first.' );
 	}
 
+	public function test_the_block_writes_names_the_way_the_site_or_block_chooses_and_uses_nicknames() {
+		$team  = $this->team( 'Club A' );
+		$maddy = $this->person( 'Madeline Rose Dupree', array( 'nickname' => 'Maddy' ) );
+		$ada   = $this->person( 'Ada Lovelace' );
+		Chess_Army_Knife_Teams::set_squad( $team, array( $maddy, $ada ) );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true} /-->' );
+		$this->assertStringContainsString( 'Maddy Dupree', $html, 'The default is Firstname Surname, with the nickname.' );
+		$this->assertStringNotContainsString( 'Madeline', $html );
+		$this->assertLessThan( strpos( $html, 'Ada Lovelace' ), strpos( $html, 'Maddy Dupree' ), 'Listed by surname: Dupree comes before Lovelace.' );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true,"nameFormat":"surname_first"} /-->' );
+		$this->assertStringContainsString( 'Dupree, Maddy R', $html );
+		$this->assertStringContainsString( 'Lovelace, Ada', $html );
+
+		// The site setting applies to a block that does not choose.
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'name_format'     => 'surname_first',
+			)
+		);
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true} /-->' );
+		$this->assertStringContainsString( 'Lovelace, Ada', $html );
+	}
+
 	public function test_the_block_can_hide_team_descriptions() {
 		$this->team( 'Club A' );
 

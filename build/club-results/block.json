@@ -15,6 +15,10 @@
   "version": "1.0.0",
   "textdomain": "chess-army-knife",
   "attributes": {
+    "nameFormat": {
+      "type": "string",
+      "default": ""
+    },
     "domain": {
       "type": "string",
       "default": ""

@@ -17,6 +17,7 @@ import {
 import ServerSideRender from '@wordpress/server-side-render';
 import PlayerPicker from '../shared/player-picker';
 import TemplatePicker from '../shared/template-picker';
+import NameFormatControl from '../shared/name-format-control';
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -86,6 +87,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ playerName }
 						onChange={ ( value ) =>
 							setAttributes( { playerName: value } )
+						}
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>

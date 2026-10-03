@@ -16,6 +16,10 @@
   "version": "0.0.1",
   "textdomain": "chess-army-knife",
   "attributes": {
+    "nameFormat": {
+      "type": "string",
+      "default": ""
+    },
     "templateId": {
       "type": "string",
       "default": ""
@@ -35,10 +39,6 @@
     "columns": {
       "type": "number",
       "default": 1
-    },
-    "nameFormat": {
-      "type": "string",
-      "default": ""
     },
     "groupBy": {
       "type": "string",

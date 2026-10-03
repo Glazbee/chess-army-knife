@@ -54,6 +54,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-clubs.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-import.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-feed.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-names.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-captains.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-selection.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-announcements.php';

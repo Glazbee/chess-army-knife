@@ -333,7 +333,7 @@ class Chess_Army_Knife_Teams {
 	 *
 	 * @param array  $team Team from all().
 	 * @param string $sort 'surname' (default) or 'rating'.
-	 * @return array { players: array[] of { name, captain, rating }, non_playing_captain: string }
+	 * @return array { players: array[] of { name, nickname, captain, rating }, non_playing_captain: array { name, nickname } or empty }
 	 */
 	public static function public_roster( array $team, $sort = 'surname' ) {
 		$squad = self::squad( $team['id'] );
@@ -354,22 +354,29 @@ class Chess_Army_Knife_Teams {
 	public static function build_roster( array $members, array $squad, $captain_id, $sort = 'surname', $captain_name = '' ) {
 		$roster = array(
 			'players'             => array(),
-			'non_playing_captain' => '',
+			'non_playing_captain' => array(),
 		);
 		foreach ( $members as $member ) {
 			$is_captain = (int) $member['id'] === (int) $captain_id;
 			if ( in_array( (int) $member['id'], $squad, true ) ) {
 				$roster['players'][] = array(
-					'name'    => $member['name'],
-					'captain' => $is_captain,
-					'rating'  => self::rating_of( $member ),
+					'name'     => $member['name'],
+					'nickname' => isset( $member['nickname'] ) ? $member['nickname'] : '',
+					'captain'  => $is_captain,
+					'rating'   => self::rating_of( $member ),
 				);
 			} elseif ( $is_captain ) {
-				$roster['non_playing_captain'] = $member['name'];
+				$roster['non_playing_captain'] = array(
+					'name'     => $member['name'],
+					'nickname' => isset( $member['nickname'] ) ? $member['nickname'] : '',
+				);
 			}
 		}
 		if ( ! $captain_id && '' !== $captain_name ) {
-			$roster['non_playing_captain'] = $captain_name;
+			$roster['non_playing_captain'] = array(
+				'name'     => $captain_name,
+				'nickname' => '',
+			);
 		}
 		$roster['players'] = self::sort_players( $roster['players'], $sort );
 		return $roster;
@@ -402,22 +409,11 @@ class Chess_Army_Knife_Teams {
 				if ( 'rating' === $sort && $a['rating'] !== $b['rating'] ) {
 					return $b['rating'] <=> $a['rating'];
 				}
-				$by_surname = strcasecmp( self::surname( $a['name'] ), self::surname( $b['name'] ) );
+				$by_surname = strcasecmp( Chess_Army_Knife_Names::surname( $a['name'] ), Chess_Army_Knife_Names::surname( $b['name'] ) );
 				return 0 !== $by_surname ? $by_surname : strcasecmp( $a['name'], $b['name'] );
 			}
 		);
 		return $players;
-	}
-
-	/**
-	 * The surname of a name: its last word.
-	 *
-	 * @param string $name Full name.
-	 * @return string
-	 */
-	protected static function surname( $name ) {
-		$words = preg_split( '/\s+/', trim( (string) $name ) );
-		return (string) end( $words );
 	}
 
 	/**

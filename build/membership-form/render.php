@@ -100,6 +100,11 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 					<input type="text" id="cak-member-name" name="name" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'name' ) ); ?>" autocomplete="name" required <?php echo $attrs( 'cak-member-name' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> />
 				</p>
 				<p>
+					<label for="cak-member-nickname"><?php esc_html_e( 'Preferred first name (optional)', 'chess-army-knife' ); ?></label>
+					<span id="cak-member-nickname-hint" class="cak-membership-form__hint"><?php esc_html_e( 'If you would rather we used a different first name, for example Maddy instead of Madeline.', 'chess-army-knife' ); ?></span>
+					<input type="text" id="cak-member-nickname" name="nickname" maxlength="60" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'nickname' ) ); ?>" autocomplete="nickname" aria-describedby="cak-member-nickname-hint" />
+				</p>
+				<p>
 					<label for="cak-member-email"><?php esc_html_e( 'Email address (adults)', 'chess-army-knife' ); ?></label>
 					<input type="email" id="cak-member-email" name="email" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'email' ) ); ?>" autocomplete="email" <?php echo $attrs( 'cak-member-email' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> />
 				</p>

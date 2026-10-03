@@ -37,6 +37,7 @@ $rating_style = array_filter(
 	)
 );
 $show_players = ! empty( $attributes['showPlayers'] );
+$name_style   = Chess_Army_Knife_Names::style_for( $attributes );
 $show_desc    = ! isset( $attributes['showDescription'] ) || $attributes['showDescription'];
 $hero_teams   = isset( $attributes['heroTeams'] ) && is_array( $attributes['heroTeams'] ) ? array_map( 'absint', $attributes['heroTeams'] ) : array();
 $show_title   = ! isset( $attributes['showTitle'] ) || $attributes['showTitle'];
@@ -81,12 +82,12 @@ $groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, 
 						<p class="cak-team__players-label"><strong><?php esc_html_e( 'Player list', 'chess-army-knife' ); ?></strong></p>
 						<ul class="cak-team__players">
 							<?php foreach ( $roster['players'] as $player ) : ?>
-								<li><?php echo esc_html( $player['name'] ); ?><?php echo $show_ratings && $player['rating'] ? ' <span class="cak-team__rating"' . ( $rating_style ? ' style="' . esc_attr( implode( ';', $rating_style ) ) . '"' : '' ) . '>' . esc_html( $player['rating'] ) . '</span>' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above. ?><?php echo $player['captain'] ? ' <strong>' . esc_html__( '(Captain)', 'chess-army-knife' ) . '</strong>' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above. ?></li>
+								<li><?php echo esc_html( Chess_Army_Knife_Names::person( $player, $name_style ) ); ?><?php echo $show_ratings && $player['rating'] ? ' <span class="cak-team__rating"' . ( $rating_style ? ' style="' . esc_attr( implode( ';', $rating_style ) ) . '"' : '' ) . '>' . esc_html( $player['rating'] ) . '</span>' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above. ?><?php echo $player['captain'] ? ' <strong>' . esc_html__( '(Captain)', 'chess-army-knife' ) . '</strong>' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above. ?></li>
 							<?php endforeach; ?>
 						</ul>
 					<?php endif; ?>
 					<?php if ( ! empty( $roster['non_playing_captain'] ) ) : ?>
-						<p><strong><?php esc_html_e( 'Non-playing captain', 'chess-army-knife' ); ?></strong> - <?php echo esc_html( $roster['non_playing_captain'] ); ?></p>
+						<p><strong><?php esc_html_e( 'Non-playing captain', 'chess-army-knife' ); ?></strong> - <?php echo esc_html( Chess_Army_Knife_Names::person( $roster['non_playing_captain'], $name_style ) ); ?></p>
 					<?php endif; ?>
 					<?php $seasons = $show_leagues ? Chess_Army_Knife_Teams::seasons_of( $team ) : array(); ?>
 					<?php if ( $seasons ) : ?>

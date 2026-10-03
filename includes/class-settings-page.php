@@ -77,6 +77,7 @@ class Chess_Army_Knife_Settings {
 			'cache_lms_minutes'         => 30,  // League tables / matches / fixtures.
 			'use_local_cache'           => 1,   // Persistent custom-table cache vs. plain transients.
 			'delete_data_on_uninstall'  => 0, // Also delete tournaments and players when the plugin is deleted.
+			'name_format'               => 'first_surname', // How people's names are written: 'first_surname' or 'surname_first'.
 			'heading_level'             => 2, // Level of each block's main title, 1 to 5; its sub-headings follow.
 			'contrast_mode'             => 'device', // High contrast for the blocks: 'off', 'device' (follow the visitor's device) or 'always'.
 		);
@@ -357,6 +358,9 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['cache_lms_minutes'] ) ) {
 			$clean['cache_lms_minutes'] = max( 5, (int) $input['cache_lms_minutes'] );
 		}
+		if ( isset( $input['name_format'] ) && Chess_Army_Knife_Names::is_style( $input['name_format'] ) ) {
+			$clean['name_format'] = $input['name_format'];
+		}
 		if ( isset( $input['heading_level'] ) ) {
 			$clean['heading_level'] = max( 1, min( 5, (int) $input['heading_level'] ) );
 		}
@@ -555,6 +559,21 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<textarea id="renewal_reminder_message" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminder_message]" rows="6" class="large-text" placeholder="<?php echo esc_attr( Chess_Army_Knife_Renewal_Reminders::default_text()['body'] ); ?>"><?php echo esc_textarea( $options['renewal_reminder_message'] ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'Leave blank to use the wording shown. You can use {name}, {type}, {expiry}, {when} (for example "runs out on 31 March"), {reference} and {payment} (your payment instructions with the member\'s reference). Plain text only.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Names', 'chess-army-knife' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="name_format"><?php esc_html_e( 'How names are written', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<select id="name_format" name="<?php echo esc_attr( self::OPTION ); ?>[name_format]">
+								<?php foreach ( Chess_Army_Knife_Names::styles() as $key => $label ) : ?>
+									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $options['name_format'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="description"><?php esc_html_e( 'How people\'s names are shown on the website, for example "Ada Lovelace" or "Lovelace, Ada A". Each block can use the other way in its own settings. A member\'s nickname, if they have one, is used in place of their first name.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>

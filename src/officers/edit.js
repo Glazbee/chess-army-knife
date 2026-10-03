@@ -8,6 +8,7 @@ import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
 import './editor.scss';
+import NameFormatControl from '../shared/name-format-control';
 
 // The club's items in the order this block asks for, then any it does not mention.
 function inBlockOrder( items, order ) {
@@ -90,6 +91,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						checked={ includeCaptains }
 						onChange={ ( value ) =>
 							setAttributes( { includeCaptains: value } )
+						}
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>

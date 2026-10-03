@@ -67,6 +67,7 @@ class Chess_Army_Knife_Membership_Privacy {
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
 			$fields = array(
 				__( 'Name', 'chess-army-knife' )           => $member['name'],
+				__( 'Nickname', 'chess-army-knife' )       => $member['nickname'],
 				__( 'Email', 'chess-army-knife' )          => $member['email'],
 				__( 'Phone', 'chess-army-knife' )          => $member['phone'],
 				__( 'Date of birth', 'chess-army-knife' )  => $member['date_of_birth'],

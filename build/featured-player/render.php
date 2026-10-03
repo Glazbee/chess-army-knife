@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit;
 // Apply the chosen template (if any): its settings override this block's own.
 $attributes = Chess_Army_Knife_Templates::apply( 'featured-player', $attributes );
 
+$name_style    = Chess_Army_Knife_Names::style_for( $attributes );
 $player_code   = Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ?? '' );
 $name          = trim( (string) ( $attributes['playerName'] ?? '' ) );
 $heading       = trim( (string) ( $attributes['heading'] ?? '' ) );
@@ -72,8 +73,8 @@ if ( '' !== $player_code ) {
 
 	if ( ! is_wp_error( $player ) && is_array( $player ) ) {
 		if ( '' === $name && ! empty( $player['full_name'] ) ) {
-			// The ECF returns "Surname, Forename".
-			$name = implode( ' ', array_reverse( array_map( 'trim', explode( ',', $player['full_name'], 2 ) ) ) );
+			// The ECF returns "Surname, Forename"; written the way the site or block chooses.
+			$name = Chess_Army_Knife_Names::format( $player['full_name'], $name_style );
 		}
 		$club         = isset( $player['club_name'] ) ? (string) $player['club_name'] : '';
 		$player_title = isset( $player['title'] ) ? (string) $player['title'] : '';

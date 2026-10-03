@@ -10,6 +10,7 @@
 	"version": "0.0.1",
 	"textdomain": "chess-army-knife",
 	"attributes": {
+		"nameFormat": { "type": "string", "default": "" },
 		"templateId": { "type": "string", "default": "" },
 		"title": { "type": "string", "default": "" },
 		"showTenure": { "type": "boolean", "default": false },

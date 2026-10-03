@@ -538,9 +538,11 @@ class Chess_Army_Knife_Officers {
 		foreach ( $holders as $terms ) {
 			$ids = array_merge( $ids, wp_list_pluck( $terms, 'person_id' ) );
 		}
-		$names = array();
+		$names     = array();
+		$nicknames = array();
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_ids( array_unique( array_map( 'intval', $ids ) ) ) as $person ) {
-			$names[ $person['id'] ] = $person['name'];
+			$names[ $person['id'] ]     = $person['name'];
+			$nicknames[ $person['id'] ] = $person['nickname'];
 		}
 
 		$listing = array();
@@ -551,15 +553,17 @@ class Chess_Army_Knife_Officers {
 				foreach ( array_reverse( isset( $holders[ $item['key'] ] ) ? $holders[ $item['key'] ] : array() ) as $term ) {
 					if ( isset( $names[ $term['person_id'] ] ) ) {
 						$people[] = array(
-							'name'  => $names[ $term['person_id'] ],
-							'since' => $term['start_date'],
+							'name'     => $names[ $term['person_id'] ],
+							'nickname' => $nicknames[ $term['person_id'] ],
+							'since'    => $term['start_date'],
 						);
 					}
 				}
 			} elseif ( isset( $captains[ $item['key'] ], $names[ $captains[ $item['key'] ] ] ) ) {
 				$people[] = array(
-					'name'  => $names[ $captains[ $item['key'] ] ],
-					'since' => isset( $since[ $item['key'] ] ) && $since[ $item['key'] ]['person_id'] === $captains[ $item['key'] ] ? $since[ $item['key'] ]['start_date'] : '',
+					'name'     => $names[ $captains[ $item['key'] ] ],
+					'nickname' => $nicknames[ $captains[ $item['key'] ] ],
+					'since'    => isset( $since[ $item['key'] ] ) && $since[ $item['key'] ]['person_id'] === $captains[ $item['key'] ] ? $since[ $item['key'] ]['start_date'] : '',
 				);
 			}
 

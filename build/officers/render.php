@@ -23,6 +23,7 @@ $officers     = Chess_Army_Knife_Officers::listing(
 );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
+<?php $name_style = Chess_Army_Knife_Names::style_for( $attributes ); ?>
 <div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'officers', $attributes ) ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-officers__heading', '' !== $block_title ? $block_title : sprintf( /* translators: %s: the club's name */ __( '%s officers', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<?php if ( ! $officers ) : ?>
@@ -34,7 +35,7 @@ $officers     = Chess_Army_Knife_Officers::listing(
 					<dt class="cak-officer__position"><?php echo esc_html( $officer['label'] ); ?></dt>
 					<?php foreach ( $officer['people'] as $person ) : ?>
 						<dd class="cak-officer__name">
-							<?php echo esc_html( $person['name'] ); ?>
+							<?php echo esc_html( Chess_Army_Knife_Names::person( $person, $name_style ) ); ?>
 							<?php if ( $show_tenure && '' !== $person['since'] ) : ?>
 								<span class="cak-officer__tenure">
 									<?php

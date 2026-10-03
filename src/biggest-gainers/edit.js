@@ -10,6 +10,7 @@ import {
 	Notice,
 } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
+import NameFormatControl from '../shared/name-format-control';
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -111,6 +112,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						min={ 1 }
 						max={ 10 }
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
+						}
 					/>
 				</PanelBody>
 				<PanelBody
