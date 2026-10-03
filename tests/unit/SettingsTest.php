@@ -191,4 +191,23 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 120, Chess_Army_Knife_Settings::clean_retention_months( '9999' ) );
 		$this->assertSame( 0, Chess_Army_Knife_Settings::clean_retention_months( '-5' ) );
 	}
+
+	public function test_a_saved_lms_key_is_kept_when_the_box_is_left_blank_and_replaced_or_removed_on_request() {
+		Functions\when( 'sanitize_textarea_field' )->alias( 'trim' );
+		Functions\when( 'sanitize_key' )->alias( 'strtolower' );
+		$this->set_settings( array( 'lms_api_key' => 'lmsk_saved' ) );
+
+		$this->assertSame( 'lmsk_saved', Chess_Army_Knife_Settings::sanitize( array( 'lms_api_key' => '' ) )['lms_api_key'], 'Blank keeps it: the key is never shown again.' );
+		$this->assertSame( 'lmsk_saved', Chess_Army_Knife_Settings::sanitize( array() )['lms_api_key'], 'A form without the box keeps it too.' );
+		$this->assertSame( 'lmsk_new', Chess_Army_Knife_Settings::sanitize( array( 'lms_api_key' => ' lmsk_new ' ) )['lms_api_key'] );
+		$this->assertSame(
+			'',
+			Chess_Army_Knife_Settings::sanitize(
+				array(
+					'lms_api_key'       => '',
+					'lms_api_key_clear' => '1',
+				)
+			)['lms_api_key']
+		);
+	}
 }

@@ -147,6 +147,10 @@ class Chess_Army_Knife_Events_Admin {
 
 		$repeat = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_REPEAT, true );
 		$until  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_UNTIL, true );
+		$type   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_TYPE, true );
+		$skips  = Chess_Army_Knife_Events::skipped_dates( $post->ID );
+		$status = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS, true );
+		$note   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS_NOTE, true );
 		$page   = (int) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_PAGE, true );
 		$colour = (string) sanitize_hex_color( (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_COLOUR, true ) );
 		$map    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_MAP, true );
@@ -166,6 +170,18 @@ class Chess_Army_Knife_Events_Admin {
 		?>
 		<table class="form-table" role="presentation">
 			<tr>
+				<th scope="row"><label for="chess_army_event_type"><?php esc_html_e( 'Type', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<select id="chess_army_event_type" name="chess_army_event_type">
+						<option value=""><?php esc_html_e( 'No type', 'chess-army-knife' ); ?></option>
+						<?php foreach ( Chess_Army_Knife_Events::types() as $value => $details ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $type, $value ); ?>><?php echo esc_html( $details['label'] ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description"><?php esc_html_e( 'Gives the event a tag and, if that tag has no colour yet, a colour. Use tags for anything more particular, such as a team\'s name.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
 				<th scope="row"><label for="chess_army_event_repeat"><?php esc_html_e( 'Repeats', 'chess-army-knife' ); ?></label></th>
 				<td>
 					<select id="chess_army_event_repeat" name="chess_army_event_repeat">
@@ -184,6 +200,27 @@ class Chess_Army_Knife_Events_Admin {
 				<td>
 					<input type="date" id="chess_army_event_until" name="chess_army_event_until" value="<?php echo esc_attr( $until ); ?>" />
 					<p class="description"><?php esc_html_e( 'For a repeating event: the last day it can happen. Leave blank to repeat with no end.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_skip"><?php esc_html_e( 'Dates to skip', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<textarea id="chess_army_event_skip" name="chess_army_event_skip" rows="3" class="small-text" placeholder="2026-12-28"><?php echo esc_textarea( implode( "\n", $skips ) ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'For a repeating event: dates on which it does not happen, such as holidays. One date per line, YYYY-MM-DD.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="chess_army_event_status"><?php esc_html_e( 'Status', 'chess-army-knife' ); ?></label></th>
+				<td>
+					<select id="chess_army_event_status" name="chess_army_event_status">
+						<option value=""><?php esc_html_e( 'Going ahead', 'chess-army-knife' ); ?></option>
+						<?php foreach ( Chess_Army_Knife_Events::status_labels() as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $status, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<label for="chess_army_event_status_note" class="screen-reader-text"><?php esc_html_e( 'Note about the status', 'chess-army-knife' ); ?></label>
+					<input type="text" id="chess_army_event_status_note" name="chess_army_event_status_note" value="<?php echo esc_attr( $note ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'For example: moved to Thursday', 'chess-army-knife' ); ?>" />
+					<p class="description"><?php esc_html_e( 'A cancelled or moved event stays on the calendar, marked as such, so nobody turns up for nothing. For a repeating event this applies to every date; to drop one date, skip it instead.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -255,7 +292,7 @@ class Chess_Army_Knife_Events_Admin {
 							<?php esc_html_e( 'Create a draft page for this event when I save', 'chess-army-knife' ); ?>
 						</label>
 					<?php endif; ?>
-					<p class="description"><?php esc_html_e( 'An event has no page of its own. Attach a page to link the event to it wherever it is listed.', 'chess-army-knife' ); ?></p>
+					<p class="description"><?php esc_html_e( 'An event has no page of its own. Attach a page to link the event to it wherever it is listed. A page made here has the Club Event Details block on it, which shows the date, place and calendar link.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -330,10 +367,22 @@ class Chess_Army_Knife_Events_Admin {
 			update_post_meta( $post_id, Chess_Army_Knife_Events_Import::META_EDITED, 1 );
 		}
 
+		// The type adds its tag, after WordPress has saved the tags the box offered.
+		Chess_Army_Knife_Events::apply_type( $post_id, isset( $_POST['chess_army_event_type'] ) ? sanitize_key( wp_unslash( $_POST['chess_army_event_type'] ) ) : '' );
+
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_START, $start );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_END, $end );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_REPEAT, $repeat );
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_UNTIL, $until );
+
+		// Skipped dates only make sense for a repeating event.
+		$skips = '' !== $repeat && isset( $_POST['chess_army_event_skip'] ) ? Chess_Army_Knife_Events::parse_dates( sanitize_textarea_field( wp_unslash( $_POST['chess_army_event_skip'] ) ) ) : array();
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_SKIP, $skips );
+
+		$status = isset( $_POST['chess_army_event_status'] ) ? sanitize_key( wp_unslash( $_POST['chess_army_event_status'] ) ) : '';
+		$status = isset( Chess_Army_Knife_Events::status_labels()[ $status ] ) ? $status : '';
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_STATUS, $status );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_STATUS_NOTE, '' !== $status && isset( $_POST['chess_army_event_status_note'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_event_status_note'] ) ) : '' );
 		self::save_page( $post_id );
 
 		// The colour picker always sends a value, so "default" has its own box.
@@ -378,9 +427,11 @@ class Chess_Army_Knife_Events_Admin {
 		if ( ! empty( $_POST['chess_army_event_create_page'] ) && ! $page_id && current_user_can( 'edit_pages' ) ) {
 			$created = wp_insert_post(
 				array(
-					'post_type'   => 'page',
-					'post_status' => 'draft',
-					'post_title'  => get_the_title( $post_id ),
+					'post_type'    => 'page',
+					'post_status'  => 'draft',
+					'post_title'   => get_the_title( $post_id ),
+					// The block shows this event's date, place and calendar link, found from the page.
+					'post_content' => '<!-- wp:chess-army-knife/club-event-details /-->',
 				)
 			);
 			$page_id = is_wp_error( $created ) ? 0 : (int) $created;

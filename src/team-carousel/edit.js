@@ -226,14 +226,15 @@ export default function Edit( { attributes, setAttributes } ) {
 							) }
 						</>
 					) }
-					<ToggleControl
-						label={ __(
-							'Show match location / venue',
+					<TextControl
+						label={ __( 'Season (optional)', 'chess-army-knife' ) }
+						help={ __(
+							'Leave empty for the current season. To show an earlier one, type its name as the LMS has it, such as 2025-2026.',
 							'chess-army-knife'
 						) }
-						checked={ attributes.showLocation }
+						value={ attributes.season }
 						onChange={ ( value ) =>
-							setAttributes( { showLocation: value } )
+							setAttributes( { season: value } )
 						}
 					/>
 					<TextControl

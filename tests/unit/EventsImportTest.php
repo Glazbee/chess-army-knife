@@ -237,4 +237,57 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( array(), Chess_Army_Knife_Events_Import::players_by_team( array( $this->team( 'Our A' ) ), $matches ) );
 	}
+
+	public function test_the_latest_game_each_player_played_for_the_team_is_noted() {
+		$players = function ( $code, $name ) {
+			return array(
+				'side' => 'home',
+				'code' => $code,
+				'name' => $name,
+			);
+		};
+		$matches = array(
+			'613|division 1' => array(
+				$this->match( 'Our A', 'Rivals', '2026-10-05', array( 'players' => array( $players( '111111A', 'Ada' ), $players( '222222B', 'Bea' ) ) ) ),
+				$this->match( 'Our A', 'Others', '2026-11-02', array( 'players' => array( $players( '111111A', 'Ada' ) ) ) ),
+				$this->match( 'Our A', 'More', '2026-10-19', array( 'players' => array( $players( '111111A', 'Ada' ) ) ) ),
+			),
+		);
+
+		$players_by_team = array_values( Chess_Army_Knife_Events_Import::players_by_team( array( $this->team( 'Our A' ) ), $matches ) )[0];
+		$last            = array_column( $players_by_team, 'last_played', 'name' );
+
+		$this->assertSame( '2026-11-02', $last['Ada'], 'The latest of her three games, whatever the order.' );
+		$this->assertSame( '2026-10-05', $last['Bea'] );
+	}
+
+	public function test_plan_with_no_cut_off_keeps_every_fixture_of_an_earlier_season() {
+		$matches = array(
+			'613|division 1' => array(
+				$this->match( 'Our A', 'Rivals', '2019-09-01' ),
+				$this->match( 'Our A', 'Other', '2020-01-15' ),
+				$this->match( 'Our A', 'Mystery', 'TBC' ),
+			),
+		);
+
+		$plan = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '', '19:30' );
+
+		$this->assertCount( 2, $plan['candidates'] );
+		$this->assertSame( '2019-09-01 19:30:00', $plan['candidates'][0]['start'] );
+		$this->assertSame( 1, $plan['skipped'] );
+	}
+
+	public function test_importing_seasons_ignores_ones_that_are_not_on_offer() {
+		$summary = Chess_Army_Knife_Events_Import::import_seasons( array( 999, 0, 230 ), array( 231 => '2018 season' ) );
+
+		$this->assertSame( 0, $summary['seasons'], 'Only a listed earlier season can be imported.' );
+		$this->assertSame( 0, $summary['created'] );
+		$this->assertSame( array(), $summary['errors'] );
+	}
+
+	public function test_importing_no_seasons_does_nothing() {
+		$summary = Chess_Army_Knife_Events_Import::import_seasons( array(), array( 231 => '2018 season' ) );
+
+		$this->assertSame( 0, $summary['seasons'] );
+	}
 }

@@ -53,6 +53,23 @@ jobs:
       - run: npm ci
       - run: npm run format:js
 
+  build-up-to-date:
+    name: Built JS/CSS is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # build/ is committed, so a change under src/ without a rebuild would ship stale files.
+      - name: Fail if the build changed
+        run: |
+          git add -N build
+          git diff --exit-code --stat build || { echo "::error::build/ is out of date. Run npm run build and commit the result."; exit 1; }
+
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
@@ -106,4 +123,18 @@ jobs:
       - name: Download WordPress core
         run: tests/bin/install-wp-core.sh "${{ matrix.wp }}" /tmp/wordpress
       - name: Run tests inside WordPress
+        env:
+          # The tests also write the blocks' markup here, for the accessibility check below.
+          CAK_A11Y_DIR: ${{ runner.temp }}/a11y
         run: composer test:integration
+      - name: Set up Node for the accessibility check
+        if: matrix.wp == 'latest'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check the blocks' markup with axe
+        if: matrix.wp == 'latest'
+        run: |
+          npm ci
+          node scripts/axe-check.js "${{ runner.temp }}/a11y"

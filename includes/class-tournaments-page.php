@@ -16,7 +16,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Boot the admin page and its form handlers.
 	 */
 	public static function init() {
-		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye', 'create_page' ) as $action ) {
+		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye', 'create_page', 'create_event', 'anonymise_entry' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -129,6 +129,34 @@ class Chess_Army_Knife_Tournaments_Page {
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
 
 		self::finish( Chess_Army_Knife_Tournaments::remove_player( $tournament_id, $entry_id ), __( 'Player removed.', 'chess-army-knife' ), $tournament_id );
+	}
+
+	/**
+	 * Put the tournament on the calendar.
+	 */
+	public static function handle_create_event() {
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_create_event' );
+
+		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
+		$date          = isset( $_POST['event_date'] ) ? sanitize_text_field( wp_unslash( $_POST['event_date'] ) ) : '';
+		$time          = isset( $_POST['event_time'] ) ? sanitize_text_field( wp_unslash( $_POST['event_time'] ) ) : '';
+		$result        = Chess_Army_Knife_Tournaments::create_event( $tournament_id, $date, $time );
+
+		self::finish( is_wp_error( $result ) ? $result : true, __( 'The tournament is on the calendar.', 'chess-army-knife' ), $tournament_id );
+	}
+
+	/**
+	 * Replace a name left on a result, for someone who asked to be deleted and objects to it.
+	 */
+	public static function handle_anonymise_entry() {
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_anonymise_entry' );
+
+		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
+		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
+
+		self::finish( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament_id, $entry_id ), __( 'The name has been replaced.', 'chess-army-knife' ), $tournament_id );
 	}
 
 	/**
@@ -512,6 +540,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		</p>
 
 		<?php self::render_page_section( $tournament ); ?>
+		<?php self::render_event_section( $tournament ); ?>
 
 		<h2><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h2>
 		<table class="wp-list-table widefat fixed striped">
@@ -589,6 +618,24 @@ class Chess_Army_Knife_Tournaments_Page {
 									onclick="return confirm('<?php echo esc_js( __( 'Withdraw this player? Their unplayed games will be dropped.', 'chess-army-knife' ) ); ?>');"
 								><?php esc_html_e( 'Withdraw', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $entry['name'] ); ?></span></a>
 							<?php endif; ?>
+							<?php if ( 0 === $entry['player_id'] ) : ?>
+								<a
+									href="
+									<?php
+									echo esc_url(
+										self::action_url(
+											'anonymise_entry',
+											array(
+												'tournament_id' => $id,
+												'entry_id' => $entry['id'],
+											)
+										)
+									);
+									?>
+											"
+									onclick="return confirm('<?php echo esc_js( __( 'Replace this name on the results with "Anonymous player"? This cannot be undone.', 'chess-army-knife' ) ); ?>');"
+								><?php esc_html_e( 'Anonymise name', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $entry['name'] ); ?></span></a>
+							<?php endif; ?>
 						</td>
 					</tr>
 				<?php endforeach; ?>
@@ -601,6 +648,37 @@ class Chess_Army_Knife_Tournaments_Page {
 			<?php self::render_swiss_controls( $tournament ); ?>
 			<?php self::render_standings( $tournament ); ?>
 			<?php self::render_games( $tournament, $entries ); ?>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * The tournament's calendar event, or a form to put it on the calendar.
+	 *
+	 * @param array $tournament Tournament row.
+	 */
+	protected static function render_event_section( array $tournament ) {
+		$event_id = Chess_Army_Knife_Events::for_tournament( $tournament['id'] );
+		?>
+		<p>
+			<strong><?php esc_html_e( 'Calendar:', 'chess-army-knife' ); ?></strong>
+			<?php if ( $event_id && get_edit_post_link( $event_id ) ) : ?>
+				<a href="<?php echo esc_url( get_edit_post_link( $event_id ) ); ?>"><?php esc_html_e( 'Edit the calendar event', 'chess-army-knife' ); ?></a>
+			<?php elseif ( ! $event_id ) : ?>
+				<span class="description"><?php esc_html_e( 'Not on the calendar yet.', 'chess-army-knife' ); ?></span>
+			<?php endif; ?>
+		</p>
+		<?php if ( ! $event_id ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="chess_army_knife_tournament_create_event" />
+				<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
+				<?php wp_nonce_field( 'chess_army_knife_tournament_create_event' ); ?>
+				<label for="cak-tournament-event-date"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></label>
+				<input type="date" id="cak-tournament-event-date" name="event_date" required />
+				<label for="cak-tournament-event-time"><?php esc_html_e( 'Start time', 'chess-army-knife' ); ?></label>
+				<input type="time" id="cak-tournament-event-time" name="event_time" value="<?php echo esc_attr( Chess_Army_Knife_Events::default_time() ); ?>" />
+				<?php submit_button( __( 'Put this tournament on the calendar', 'chess-army-knife' ), 'secondary', 'submit', false ); ?>
+			</form>
 		<?php endif; ?>
 		<?php
 	}

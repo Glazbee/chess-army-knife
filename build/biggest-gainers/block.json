@@ -55,7 +55,25 @@
     "align": [
       "wide",
       "full"
-    ]
+    ],
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true
+    },
+    "border": {
+      "color": true,
+      "radius": true,
+      "style": true,
+      "width": true
+    }
   },
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",

@@ -45,7 +45,8 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 	return Chess_Army_Knife_A11y::field_attrs( $field_id, $error_field[0], $notice_id, $hint_id );
 };
 ?>
-<div <?php echo wp_kses_post( get_block_wrapper_attributes( array( 'id' => Chess_Army_Knife_Membership_Form::ANCHOR ) ) ); ?>>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
+<div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'membership-form', $attributes, array( 'id' => Chess_Army_Knife_Membership_Form::ANCHOR ) ) ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-membership-form__heading', '' !== $block_title ? $block_title : __( 'Apply for membership', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( null !== $applied_id ) : ?>
@@ -86,7 +87,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				<select id="cak-member-type" name="membership_type_id" required <?php echo $attrs( 'cak-member-type' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?>>
 					<option value=""><?php esc_html_e( 'Choose a membership', 'chess-army-knife' ); ?></option>
 					<?php foreach ( $membership_types as $membership_type ) : ?>
-						<option value="<?php echo esc_attr( $membership_type['id'] ); ?>" <?php selected( $chosen_id, $membership_type['id'] ); ?>>
+						<option value="<?php echo esc_attr( $membership_type['id'] ); ?>" <?php selected( $chosen_id, $membership_type['id'] ); ?> data-junior="<?php echo $membership_type['is_junior'] ? '1' : '0'; ?>">
 							<?php echo esc_html( $membership_type['name'] . ' (' . $membership_type['price_label'] . ( $membership_type['price'] > 0 ? ' ' . $membership_type['period_label'] : '' ) . ')' ); ?>
 						</option>
 					<?php endforeach; ?>
@@ -113,10 +114,11 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				</p>
 			</fieldset>
 
-			<fieldset class="cak-membership-form__group" aria-describedby="cak-junior-hint">
+			<?php // Scripts hide this unless a junior type is chosen (see view.js); without a script it always shows. ?>
+			<fieldset class="cak-membership-form__group" id="cak-junior-section" aria-describedby="cak-junior-hint">
 				<legend><?php esc_html_e( 'Juniors (under 18)', 'chess-army-knife' ); ?></legend>
 				<p id="cak-junior-hint" class="cak-membership-form__hint"><?php esc_html_e( 'A parent or guardian must fill in this form for a junior. We write to the parent or guardian. Leave the email and phone boxes above empty, unless you tick the last box below to say we may contact the junior.', 'chess-army-knife' ); ?></p>
-				<p class="cak-membership-form__check">
+				<p class="cak-membership-form__check" data-cak-junior-tick>
 					<label><input type="checkbox" name="is_junior" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'is_junior' ) ); ?> /> <?php esc_html_e( 'This application is for someone under 18', 'chess-army-knife' ); ?></label>
 				</p>
 				<p>

@@ -315,6 +315,23 @@ class Chess_Army_Knife_Tournament_Store {
 	}
 
 	/**
+	 * Replace the name on an entry that has no member record behind it.
+	 *
+	 * @param int    $id   Entry id.
+	 * @param string $name The name to leave there.
+	 * @return bool Whether an entry was changed. An entry linked to a record is never changed here.
+	 */
+	public static function rename_unlinked_entry( $id, $name ) {
+		global $wpdb;
+
+		$entries = self::table( 'entries' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$changed = $wpdb->query( $wpdb->prepare( "UPDATE {$entries} SET player_name = %s WHERE id = %d AND player_id = 0 AND player_name IS NOT NULL AND player_name <> %s", (string) $name, (int) $id, (string) $name ) );
+
+		return (bool) $changed;
+	}
+
+	/**
 	 * Normalise types on an entry row.
 	 *
 	 * @param array $row Raw row.

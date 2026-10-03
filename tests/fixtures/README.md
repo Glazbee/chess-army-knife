@@ -26,3 +26,11 @@ added; the plugin's engine now gives the same pairings, colours and bye, and doe
 ## `berger-annex.php`
 
 The Berger tables from FIDE General Regulations for Competitions, Annex 1, for 4 to 16 players.
+
+## `lms-v2-results.json`
+
+A small invented league (Test Club A, B and C) in the shape the LMS v2 `event/{id}/results` call
+returns: the field names, whole scores as integers and half scores as decimals, a player with a
+`null` rating, and a fixture not yet played (`null` scores and winner, no games). It was shaped from a
+real response, but every name, rating code and result is made up. Used by
+`tests/unit/LeagueDataTest.php`.

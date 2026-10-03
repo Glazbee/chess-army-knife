@@ -105,10 +105,11 @@ class Chess_Army_Knife_Block_Help {
 				'where'    => array(),
 			),
 			'league-table'         => array(
-				'use'      => __( 'A league table and the recent and upcoming matches of a league on the ECF League Management System (LMS).', 'chess-army-knife' ),
+				'use'      => __( 'A league table and the recent and upcoming matches of a league on the ECF League Management System (LMS). Needs the LMS API key from Settings.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Give the LMS organisation ID and the exact event or division name. Put one event per line to show several divisions.', 'chess-army-knife' ),
-					__( 'Show the table, the matches or both, and how many matches to list.', 'chess-army-knife' ),
+					__( 'Show the table, the matches or both, and how many matches to list: the next ones coming up, then the latest results. The table is worked out from the results, with one point for a win and half a point for a draw.', 'chess-army-knife' ),
+					__( 'Leave Season empty for the current season, or type an earlier one as the LMS names it (for example 2025-2026) to show its final table.', 'chess-army-knife' ),
 					__( 'Teams with a league entry on a team of yours are highlighted automatically; "highlight team" is only for extra teams.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
@@ -120,12 +121,24 @@ class Chess_Army_Knife_Block_Help {
 				'use'      => __( 'Every team with its last result and next fixture, as a list or as a carousel. The list is the default: nothing moves, and it works without scripts.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Teams come from your own teams\' league entries (the default), from every team in one event\'s league table, or from a list you type.', 'chess-army-knife' ),
-					__( 'Choose a list (every team at once) or a carousel (one team at a time, with buttons and a pause button), whether the carousel may move on by itself, and whether to show the venue. A carousel that moves on by itself never starts for visitors whose device asks for less motion, and stops when they use any button.', 'chess-army-knife' ),
+					__( 'Choose a list (every team at once) or a carousel (one team at a time, with buttons and a pause button), and whether the carousel may move on by itself. A carousel that moves on by itself never starts for visitors whose device asks for less motion, and stops when they use any button.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
 					__( 'For "my club\'s teams", each team needs at least one league entry.', 'chess-army-knife' ),
 				),
 				'where'    => array( 'teams' ),
+			),
+			'team-page'            => array(
+				'use'      => __( 'One team\'s league position, next fixture and every result, with the players on each board and who won. Handy for a team\'s own page.', 'chess-army-knife' ),
+				'settings' => array(
+					__( 'Type the team name as the LMS spells it, the organisation ID and the event. With no team typed, your first team (and its league) is used.', 'chess-army-knife' ),
+					__( 'Leave Season empty for the current season, or type an earlier one (for example 2025-2026) to show how that season went.', 'chess-army-knife' ),
+					__( 'Board-by-board results can be switched off.', 'chess-army-knife' ),
+				),
+				'needs'    => array(
+					__( 'The LMS API key from Settings.', 'chess-army-knife' ),
+				),
+				'where'    => array( 'settings', 'teams' ),
 			),
 			'team-profiles'        => array(
 				'use'      => __( 'The club\'s teams: name, description, home venue and the leagues they play in. The captain and squad are never shown.', 'chess-army-knife' ),
@@ -167,19 +180,29 @@ class Chess_Army_Knife_Block_Help {
 				'needs'    => array( __( 'A tournament, created on the Tournaments screen.', 'chess-army-knife' ) ),
 				'where'    => array( 'tournaments' ),
 			),
+			'club-event-details'   => array(
+				'use'      => __( 'When and where one club event is: the date, time, venue with a map link and what3words address, whether it is cancelled or moved, and an Add to my calendar link. Put it on the page attached to the event and it finds the event by itself.', 'chess-army-knife' ),
+				'settings' => array(
+					__( 'Leave the event on "the event this page is attached to", or choose a particular event.', 'chess-army-knife' ),
+					__( 'Choose whether to show the location, the team, the tournaments and leagues with the calendar link, and the tags.', 'chess-army-knife' ),
+				),
+				'needs'    => array( __( 'A club event. Ticking "Create a draft page for this event" on the event makes a page with this block already on it.', 'chess-army-knife' ) ),
+				'where'    => array( 'club_events' ),
+			),
 			'club-event-calendar'  => array(
 				'use'      => __( 'Upcoming club events, as a list by date or a month grid.', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Show only events with chosen tags or teams, and only home or away fixtures.', 'chess-army-knife' ),
 					__( 'Choose what each entry shows, and whether visitors get a link to subscribe from their own calendar.', 'chess-army-knife' ),
+					__( 'In the month grid each event is a coloured bubble that opens its details. An event\'s colour is its own, else its team\'s, else its first tag\'s. A key to the tag colours is shown unless you switch it off. Cancelled and moved events stay on the calendar, marked in words.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
-					__( 'Club events, added by hand or brought in from the LMS with Import Events.', 'chess-army-knife' ),
+					__( 'Club events, added by hand or brought in from the LMS with Import Events. Venues of away fixtures come from the Clubs directory: run Sort Clubs after an import.', 'chess-army-knife' ),
 				),
-				'where'    => array( 'club_events', 'import_events' ),
+				'where'    => array( 'club_events', 'import_events', 'sort_clubs' ),
 			),
 			'next-club-event'      => array(
-				'use'      => __( 'The next club event, optionally only one with a chosen tag such as "in-house".', 'chess-army-knife' ),
+				'use'      => __( 'The next club event, the next three, or today and tomorrow, optionally only those with a chosen tag such as "in-house".', 'chess-army-knife' ),
 				'settings' => array(
 					__( 'Choose the tags to match, what to show, and the message when nothing is coming up.', 'chess-army-knife' ),
 				),

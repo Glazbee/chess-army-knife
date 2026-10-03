@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "chess-army-knife/team-page",
+	"title": "Team Results",
+	"category": "chess-army-knife-leagues",
+	"icon": "groups",
+	"description": "One team's league position, results, next fixture and board-by-board results, from the ECF League Management System (LMS).",
+	"keywords": [ "chess", "team", "league", "results", "fixtures", "boards", "lms" ],
+	"version": "1.0.0",
+	"textdomain": "chess-army-knife",
+	"attributes": {
+		"templateId": { "type": "string", "default": "" },
+		"orgId": { "type": "string", "default": "" },
+		"eventName": { "type": "string", "default": "" },
+		"team": { "type": "string", "default": "" },
+		"season": { "type": "string", "default": "" },
+		"title": { "type": "string", "default": "" },
+		"showBoards": { "type": "boolean", "default": true }
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"color": { "background": true, "text": true },
+		"spacing": { "margin": true, "padding": true },
+		"typography": { "fontSize": true, "lineHeight": true },
+		"border": { "color": true, "radius": true, "style": true, "width": true }
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

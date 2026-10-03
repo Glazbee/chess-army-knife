@@ -1,0 +1,77 @@
+@use "../shared/admin-bar";
+@use "../shared/a11y";
+
+.wp-block-chess-army-knife-team-page {
+	margin-bottom: 1.5em;
+
+	.cak-team__title {
+		margin: 0 0 0.25em;
+	}
+
+	.cak-team__event {
+		margin: 0 0 1em;
+	}
+
+	.cak-team__standing {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(6.5em, 1fr));
+		gap: 0.5em 1em;
+		margin: 0 0 1em;
+
+		div {
+			margin: 0;
+		}
+
+		dt {
+			font-size: 0.85em;
+			font-weight: 600;
+		}
+
+		dd {
+			margin: 0;
+			font-size: 1.25em;
+			font-weight: 700;
+		}
+	}
+
+	.cak-team__next {
+		margin: 0 0 1em;
+	}
+
+	.cak-team__results {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.cak-team__result {
+		padding: 0.5em 0;
+		border-top: 1px solid currentcolor;
+	}
+
+	.cak-team__outcome {
+		font-weight: 700;
+	}
+
+	.cak-team__boards {
+		margin-top: 0.4em;
+
+		summary {
+			cursor: pointer;
+		}
+
+		table {
+			width: 100%;
+			margin-top: 0.4em;
+			border-collapse: collapse;
+			font-size: 0.9em;
+		}
+
+		th,
+		td {
+			padding: 0.3em 0.5em;
+			text-align: left;
+			border-bottom: 1px solid currentcolor;
+		}
+	}
+}

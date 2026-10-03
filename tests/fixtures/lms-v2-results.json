@@ -1,0 +1,346 @@
+{
+  "event_name": "Division 1",
+  "event_type": "team_league",
+  "fixtures": [
+    {
+      "fixture_id": 1,
+      "round": 1,
+      "date": "2025-09-24",
+      "time": "19:30",
+      "home_team": "Test Club A",
+      "away_team": "Test Club B",
+      "home_score": 1.5,
+      "away_score": 3.5,
+      "winner": "away",
+      "board_count": 5,
+      "games": [
+        {
+          "board": 1,
+          "home_colour": "B",
+          "result": "draw",
+          "home_player": {
+            "lms_id": 1101,
+            "rating_code": "000101A",
+            "name": "Player 1, A",
+            "rating": 1940,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1201,
+            "rating_code": "000201B",
+            "name": "Player 1, B",
+            "rating": 1940,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 2,
+          "home_colour": "W",
+          "result": "home_win",
+          "home_player": {
+            "lms_id": 1102,
+            "rating_code": "000102A",
+            "name": "Player 2, A",
+            "rating": 1880,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1202,
+            "rating_code": "000202B",
+            "name": "Player 2, B",
+            "rating": 1880,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 3,
+          "home_colour": "B",
+          "result": "away_win",
+          "home_player": {
+            "lms_id": 1103,
+            "rating_code": "000103A",
+            "name": "Player 3, A",
+            "rating": 1820,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1203,
+            "rating_code": "000203B",
+            "name": "Player 3, B",
+            "rating": 1820,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 4,
+          "home_colour": "W",
+          "result": "away_win",
+          "home_player": {
+            "lms_id": 1104,
+            "rating_code": "000104A",
+            "name": "Player 4, A",
+            "rating": 1760,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1204,
+            "rating_code": "000204B",
+            "name": "Player 4, B",
+            "rating": 1760,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 5,
+          "home_colour": "B",
+          "result": "away_win",
+          "home_player": {
+            "lms_id": 1105,
+            "rating_code": "000105A",
+            "name": "Player 5, A",
+            "rating": 1700,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1205,
+            "rating_code": "000205B",
+            "name": "Player 5, B",
+            "rating": 1700,
+            "secondary_rating": null
+          }
+        }
+      ]
+    },
+    {
+      "fixture_id": 2,
+      "round": 1,
+      "date": "2025-10-07",
+      "time": "19:30",
+      "home_team": "Test Club B",
+      "away_team": "Test Club C",
+      "home_score": 2.5,
+      "away_score": 2.5,
+      "winner": "draw",
+      "board_count": 5,
+      "games": [
+        {
+          "board": 1,
+          "home_colour": "B",
+          "result": "draw",
+          "home_player": {
+            "lms_id": 1201,
+            "rating_code": "000201B",
+            "name": "Player 1, B",
+            "rating": 1940,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1301,
+            "rating_code": "000301C",
+            "name": "Player 1, C",
+            "rating": 1940,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 2,
+          "home_colour": "W",
+          "result": "home_win",
+          "home_player": {
+            "lms_id": 1202,
+            "rating_code": "000202B",
+            "name": "Player 2, B",
+            "rating": 1880,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1302,
+            "rating_code": "000302C",
+            "name": "Player 2, C",
+            "rating": 1880,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 3,
+          "home_colour": "B",
+          "result": "away_win",
+          "home_player": {
+            "lms_id": 1203,
+            "rating_code": "000203B",
+            "name": "Player 3, B",
+            "rating": 1820,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1303,
+            "rating_code": "000303C",
+            "name": "Player 3, C",
+            "rating": 1820,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 4,
+          "home_colour": "W",
+          "result": "draw",
+          "home_player": {
+            "lms_id": 1204,
+            "rating_code": "000204B",
+            "name": "Player 4, B",
+            "rating": 1760,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1304,
+            "rating_code": "000304C",
+            "name": "Player 4, C",
+            "rating": 1760,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 5,
+          "home_colour": "B",
+          "result": "draw",
+          "home_player": {
+            "lms_id": 1205,
+            "rating_code": "000205B",
+            "name": "Player 5, B",
+            "rating": 1700,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1305,
+            "rating_code": "000305C",
+            "name": "Player 5, C",
+            "rating": null,
+            "secondary_rating": null
+          }
+        }
+      ]
+    },
+    {
+      "fixture_id": 3,
+      "round": 1,
+      "date": "2025-10-21",
+      "time": "19:30",
+      "home_team": "Test Club C",
+      "away_team": "Test Club A",
+      "home_score": 3,
+      "away_score": 2,
+      "winner": "home",
+      "board_count": 5,
+      "games": [
+        {
+          "board": 1,
+          "home_colour": "B",
+          "result": "home_win",
+          "home_player": {
+            "lms_id": 1301,
+            "rating_code": "000301C",
+            "name": "Player 1, C",
+            "rating": 1940,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1101,
+            "rating_code": "000101A",
+            "name": "Player 1, A",
+            "rating": 1940,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 2,
+          "home_colour": "W",
+          "result": "home_win",
+          "home_player": {
+            "lms_id": 1302,
+            "rating_code": "000302C",
+            "name": "Player 2, C",
+            "rating": 1880,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1102,
+            "rating_code": "000102A",
+            "name": "Player 2, A",
+            "rating": 1880,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 3,
+          "home_colour": "B",
+          "result": "away_win",
+          "home_player": {
+            "lms_id": 1303,
+            "rating_code": "000303C",
+            "name": "Player 3, C",
+            "rating": 1820,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1103,
+            "rating_code": "000103A",
+            "name": "Player 3, A",
+            "rating": 1820,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 4,
+          "home_colour": "W",
+          "result": "home_win",
+          "home_player": {
+            "lms_id": 1304,
+            "rating_code": "000304C",
+            "name": "Player 4, C",
+            "rating": 1760,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1104,
+            "rating_code": "000104A",
+            "name": "Player 4, A",
+            "rating": 1760,
+            "secondary_rating": null
+          }
+        },
+        {
+          "board": 5,
+          "home_colour": "B",
+          "result": "away_win",
+          "home_player": {
+            "lms_id": 1305,
+            "rating_code": "000305C",
+            "name": "Player 5, C",
+            "rating": null,
+            "secondary_rating": null
+          },
+          "away_player": {
+            "lms_id": 1105,
+            "rating_code": "000105A",
+            "name": "Player 5, A",
+            "rating": 1700,
+            "secondary_rating": null
+          }
+        }
+      ]
+    },
+    {
+      "fixture_id": 4,
+      "round": 1,
+      "date": "2099-11-04",
+      "time": "19:30",
+      "home_team": "Test Club A",
+      "away_team": "Test Club C",
+      "home_score": null,
+      "away_score": null,
+      "winner": null,
+      "board_count": 5,
+      "games": []
+    }
+  ]
+}

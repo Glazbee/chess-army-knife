@@ -5,7 +5,7 @@
   "title": "Next Club Event",
   "category": "chess-army-knife-events",
   "icon": "calendar-alt",
-  "description": "Shows the next club event, optionally only one with a chosen tag such as in-house.",
+  "description": "Shows the next club event, the next three, or today's and tomorrow's, optionally only one with a chosen tag such as in-house.",
   "keywords": [
     "chess",
     "club",
@@ -19,6 +19,15 @@
     "title": {
       "type": "string",
       "default": ""
+    },
+    "show": {
+      "type": "string",
+      "enum": [
+        "next",
+        "three",
+        "today"
+      ],
+      "default": "next"
     },
     "tags": {
       "type": "array",
@@ -53,7 +62,25 @@
     "align": [
       "wide",
       "full"
-    ]
+    ],
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true
+    },
+    "border": {
+      "color": true,
+      "radius": true,
+      "style": true,
+      "width": true
+    }
   },
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",

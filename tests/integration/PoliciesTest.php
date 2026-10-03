@@ -296,4 +296,62 @@ class PoliciesTest extends WP_UnitTestCase {
 	public function test_the_old_data_policy_block_is_gone() {
 		$this->assertFalse( WP_Block_Type_Registry::get_instance()->is_registered( 'chess-army-knife/data-policy' ) );
 	}
+
+	public function test_only_an_administrator_or_a_membership_officer_may_change_how_long_details_are_kept() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue( current_user_can( Chess_Army_Knife_Policies::REQUIRED_CAP ), 'An editor can edit the policy pages.' );
+		$this->assertFalse( Chess_Army_Knife_Policies::can_set_retention(), 'But not decide when people\'s records are deleted.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( Chess_Army_Knife_Policies::can_set_retention() );
+
+		$officer = self::factory()->user->create( array( 'role' => 'editor' ) );
+		get_userdata( $officer )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+		wp_set_current_user( $officer );
+		$this->assertTrue( Chess_Army_Knife_Policies::can_set_retention() );
+	}
+
+	public function test_the_saved_lms_key_is_not_written_into_the_settings_page() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'lms_api_key'     => 'lmsk_very_secret',
+			)
+		);
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		ob_start();
+		Chess_Army_Knife_Settings::render_page();
+		$html = ob_get_clean();
+
+		$this->assertStringNotContainsString( 'lmsk_very_secret', $html );
+		$this->assertStringContainsString( 'A key is saved', $html );
+	}
+
+	public function test_the_lms_key_is_encrypted_in_the_database_however_the_settings_are_saved() {
+		// A key saved in plain text before encryption existed is encrypted by the next tidy.
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		global $wpdb;
+		$wpdb->update( $wpdb->options, array( 'option_value' => maybe_serialize( array( 'lms_api_key' => 'lmsk_old_plain' ) ) ), array( 'option_name' => 'Chess_Army_Knife_settings' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		wp_cache_delete( 'Chess_Army_Knife_settings', 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
+		$this->assertSame( 'lmsk_old_plain', get_option( 'Chess_Army_Knife_settings' )['lms_api_key'] );
+
+		Chess_Army_Knife_Secrets::migrate();
+		$this->assertStringStartsWith( 'enc1:', get_option( 'Chess_Army_Knife_settings' )['lms_api_key'] );
+		$this->assertSame( 'lmsk_old_plain', Chess_Army_Knife_LMS_Client::api_key(), 'The plugin still reads it.' );
+
+		// Code that reads the settings and writes them straight back does not undo it.
+		Chess_Army_Knife_Policies::set_retention_months( 12 );
+		$stored = get_option( 'Chess_Army_Knife_settings' )['lms_api_key'];
+		$this->assertStringStartsWith( 'enc1:', $stored );
+		$this->assertStringNotContainsString( 'lmsk_old_plain', $stored );
+		$this->assertSame( 'lmsk_old_plain', Chess_Army_Knife_LMS_Client::api_key() );
+
+		// A blank box on the settings form keeps it, and it stays encrypted.
+		Chess_Army_Knife_Settings::save( array( 'club_name' => 'Our Club' ) );
+		$this->assertStringStartsWith( 'enc1:', get_option( 'Chess_Army_Knife_settings' )['lms_api_key'] );
+		$this->assertSame( 'lmsk_old_plain', Chess_Army_Knife_LMS_Client::api_key() );
+	}
 }

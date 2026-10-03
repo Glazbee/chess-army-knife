@@ -501,6 +501,7 @@ class Chess_Army_Knife_Members_Page {
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
 			<a href="<?php echo esc_url( self::url( array( 'edit' => 'new' ) ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add member', 'chess-army-knife' ); ?></a>
 			<a href="<?php echo esc_url( self::action_url( 'refresh_ratings', 0 ) ); ?>" class="page-title-action"><?php esc_html_e( 'Refresh ECF ratings', 'chess-army-knife' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_LMS_Players::PAGE ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add players from the LMS', 'chess-army-knife' ); ?></a>
 			<hr class="wp-header-end" />
 
 			<?php self::render_notices(); ?>

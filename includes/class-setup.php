@@ -104,21 +104,24 @@ class Chess_Army_Knife_Setup {
 		return array(
 			'club_night'  => array(
 				'title'   => __( 'Club night', 'chess-army-knife' ),
-				'tag'     => __( 'Club night', 'chess-army-knife' ),
+				'type'    => 'club_night',
+				'tag'     => Chess_Army_Knife_Events::types()['club_night']['tag'],
 				'weekday' => 2,
 				'start'   => '19:30',
 				'end'     => '22:00',
 			),
 			'coaching'    => array(
 				'title'   => __( 'Coaching session', 'chess-army-knife' ),
-				'tag'     => __( 'Coaching', 'chess-army-knife' ),
+				'type'    => 'coaching',
+				'tag'     => Chess_Army_Knife_Events::types()['coaching']['tag'],
 				'weekday' => 6,
 				'start'   => '10:00',
 				'end'     => '12:00',
 			),
 			'competitive' => array(
 				'title'   => __( 'Competitive games', 'chess-army-knife' ),
-				'tag'     => __( 'Competitive games', 'chess-army-knife' ),
+				'type'    => 'competitive',
+				'tag'     => Chess_Army_Knife_Events::types()['competitive']['tag'],
 				'weekday' => 4,
 				'start'   => '19:30',
 				'end'     => '22:00',
@@ -184,7 +187,9 @@ class Chess_Army_Knife_Setup {
 				continue;
 			}
 
-			if ( '' !== $row['tag'] ) {
+			if ( ! empty( $row['type'] ) ) {
+				Chess_Army_Knife_Events::apply_type( $post_id, $row['type'] );
+			} elseif ( '' !== $row['tag'] ) {
 				wp_set_object_terms( $post_id, array( $row['tag'] ), Chess_Army_Knife_Events::TAXONOMY );
 			}
 			++$made;
@@ -256,6 +261,8 @@ class Chess_Army_Knife_Setup {
 					?>
 				</p></div>
 			<?php endif; ?>
+
+			<?php echo self::first_import_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in first_import_html(). ?>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
@@ -365,8 +372,12 @@ class Chess_Army_Knife_Setup {
 					<tr>
 						<th scope="row"><label for="cak-setup-lms-key"><?php esc_html_e( 'LMS API key', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="password" id="cak-setup-lms-key" name="lms_api_key" value="<?php echo esc_attr( $options['lms_api_key'] ); ?>" class="regular-text" autocomplete="off" />
-							<p class="description"><?php esc_html_e( 'Create a key on your LMS account\'s "API keys" page. It is needed to import your teams\' fixtures into the calendar.', 'chess-army-knife' ); ?></p>
+							<?php if ( Chess_Army_Knife_LMS_Client::key_in_config() ) : ?>
+								<p><strong><?php esc_html_e( 'The key is set in wp-config.php, so it is not stored in the database.', 'chess-army-knife' ); ?></strong></p>
+							<?php else : ?>
+								<input type="password" id="cak-setup-lms-key" name="lms_api_key" value="" class="regular-text" autocomplete="new-password" aria-describedby="cak-setup-lms-key-help" placeholder="<?php echo esc_attr( '' !== $options['lms_api_key'] ? __( 'A key is saved. Type a new one to replace it.', 'chess-army-knife' ) : '' ); ?>" />
+								<p class="description" id="cak-setup-lms-key-help"><?php esc_html_e( 'Create a key on your LMS account\'s "API keys" page. It is needed to import your teams\' fixtures into the calendar. Once saved, the key is not shown again.', 'chess-army-knife' ); ?></p>
+							<?php endif; ?>
 						</td>
 					</tr>
 					<tr>
@@ -378,11 +389,39 @@ class Chess_Army_Knife_Setup {
 					</tr>
 				</table>
 
+				<h2><?php esc_html_e( 'Your first team', 'chess-army-knife' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Optional. Add a team and the league it plays in, and the plugin can fetch its fixtures straight away. More teams, with their venues and captains, are added under Teams.', 'chess-army-knife' ); ?></p>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="cak-setup-team"><?php esc_html_e( 'Team name', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="cak-setup-team" name="team_name" value="" class="regular-text" aria-describedby="cak-setup-team-help" />
+							<p class="description" id="cak-setup-team-help"><?php esc_html_e( 'As the LMS spells it, for example Stroud Badgers.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="cak-setup-team-event"><?php esc_html_e( 'League or division', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="cak-setup-team-event" name="team_event" value="" class="regular-text" aria-describedby="cak-setup-team-event-help" />
+							<p class="description" id="cak-setup-team-event-help"><?php esc_html_e( 'The exact event name in the LMS, for example Division 1. It uses the organisation ID above.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Fixtures', 'chess-army-knife' ); ?></th>
+						<td>
+							<label for="cak-setup-import"><input type="checkbox" id="cak-setup-import" name="run_import" value="1" checked="checked" /> <?php esc_html_e( 'Fetch the fixtures from the LMS now', 'chess-army-knife' ); ?></label>
+							<p class="description"><?php esc_html_e( 'Needs the LMS API key above. It can take a little while. Fixtures are also fetched once a day.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
 				<p>
 					<button type="submit" class="button button-primary"><?php esc_html_e( 'Save and continue', 'chess-army-knife' ); ?></button>
 					<button type="submit" name="skip" value="1" class="button" formnovalidate><?php esc_html_e( 'Skip for now', 'chess-army-knife' ); ?></button>
 				</p>
 			</form>
+
+			<?php echo Chess_Army_Knife_LMS_Test::panel_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in panel_html(). ?>
 
 			<h2><?php esc_html_e( 'Next', 'chess-army-knife' ); ?></h2>
 			<ul class="ul-disc">
@@ -407,6 +446,90 @@ class Chess_Army_Knife_Setup {
 			</ul>
 		</div>
 		<?php
+	}
+
+	/** Where the answer to the first import is kept, for one page view. */
+	const IMPORT_RESULT_PREFIX = 'chess_army_knife_setup_import_';
+
+	/**
+	 * What the first import did, and what to do next, shown once after Setup is saved.
+	 *
+	 * @return string Escaped HTML, or '' if there is nothing to say.
+	 */
+	public static function first_import_html() {
+		$key    = self::IMPORT_RESULT_PREFIX . get_current_user_id();
+		$result = get_transient( $key );
+		delete_transient( $key );
+		if ( ! is_array( $result ) ) {
+			return '';
+		}
+
+		if ( isset( $result['problem'] ) ) {
+			return '<div class="notice notice-warning inline" role="status"><p>' . esc_html( $result['problem'] ) . '</p></div>';
+		}
+
+		$html = '<div class="notice notice-success inline" role="status"><p>' . esc_html(
+			sprintf(
+				/* translators: 1: new events, 2: refreshed events */
+				__( 'Fixtures fetched: %1$d events created, %2$d updated.', 'chess-army-knife' ),
+				(int) $result['created'],
+				(int) $result['updated']
+			)
+		) . '</p></div>';
+		foreach ( (array) $result['errors'] as $error ) {
+			$html .= '<div class="notice notice-error inline" role="alert"><p>' . esc_html( $error ) . '</p></div>';
+		}
+		if ( ! empty( $result['unsorted'] ) ) {
+			$html .= '<div class="notice notice-info inline"><p>' . esc_html(
+				sprintf(
+					/* translators: %d: number of team names */
+					_n( '%d team name has not been put in a club, so its home fixtures have no venue.', '%d team names have not been put in a club, so their home fixtures have no venue.', (int) $result['unsorted'], 'chess-army-knife' ),
+					(int) $result['unsorted']
+				)
+			) . ' <a href="' . esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Clubs::PAGE ) ) . '">' . esc_html__( 'Sort them into clubs', 'chess-army-knife' ) . '</a></p></div>';
+		}
+
+		return $html;
+	}
+
+	/**
+	 * Add the first team and its league, and fetch its fixtures if asked.
+	 *
+	 * @param string $team_name  Team name.
+	 * @param string $event_name League or division name.
+	 * @param bool   $import     Whether to fetch the fixtures now.
+	 * @return array|null What to tell the person (see first_import_html()), or null if no team was given.
+	 */
+	public static function add_first_team( $team_name, $event_name, $import ) {
+		$team_name  = trim( (string) $team_name );
+		$event_name = trim( (string) $event_name );
+		if ( '' === $team_name ) {
+			return null;
+		}
+
+		$org = trim( (string) Chess_Army_Knife_Settings::get_options()['default_org_id'] );
+		if ( '' === $event_name || '' === $org ) {
+			return array( 'problem' => __( 'The team was not added: give the LMS organisation ID and the league or division name too, or add the team under Teams.', 'chess-army-knife' ) );
+		}
+
+		Chess_Army_Knife_Teams::assign_league_entries(
+			array(
+				array(
+					'org'   => $org,
+					'event' => $event_name,
+					'team'  => $team_name,
+				),
+			)
+		);
+
+		if ( ! $import ) {
+			return array( 'problem' => __( 'The team was added. Fetch its fixtures from Import Events when you are ready.', 'chess-army-knife' ) );
+		}
+		if ( '' === Chess_Army_Knife_LMS_Client::api_key() ) {
+			return array( 'problem' => __( 'The team was added, but there is no LMS API key yet, so no fixtures were fetched. Enter the key and use Import Events.', 'chess-army-knife' ) );
+		}
+
+		return Chess_Army_Knife_Events_Import::import_and_record( 'manual' );
 	}
 
 	/**
@@ -445,12 +568,23 @@ class Chess_Army_Knife_Setup {
 				'key'     => $key,
 				'title'   => isset( $row['title'] ) ? sanitize_text_field( $row['title'] ) : $preset['title'],
 				'tag'     => $preset['tag'],
+				'type'    => $preset['type'],
 				'weekday' => isset( $row['weekday'] ) ? max( 0, min( 6, (int) $row['weekday'] ) ) : $preset['weekday'],
 				'start'   => isset( $row['start'] ) ? sanitize_text_field( $row['start'] ) : $preset['start'],
 				'end'     => isset( $row['end'] ) ? sanitize_text_field( $row['end'] ) : '',
 			);
 		}
 		$made = self::create_events( $rows, current_time( 'Y-m-d' ) );
+
+		// The first team, and its fixtures if asked.
+		$first = self::add_first_team(
+			isset( $_POST['team_name'] ) ? sanitize_text_field( wp_unslash( $_POST['team_name'] ) ) : '',
+			isset( $_POST['team_event'] ) ? sanitize_text_field( wp_unslash( $_POST['team_event'] ) ) : '',
+			! empty( $_POST['run_import'] )
+		);
+		if ( null !== $first ) {
+			set_transient( self::IMPORT_RESULT_PREFIX . get_current_user_id(), $first, MINUTE_IN_SECONDS );
+		}
 
 		wp_safe_redirect(
 			self::screen_url(

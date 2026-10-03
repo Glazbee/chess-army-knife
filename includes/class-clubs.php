@@ -15,14 +15,18 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Clubs {
 
-	const POST_TYPE    = 'chess_army_club';
-	const META_VENUE   = '_chess_army_club_venue';
-	const META_MAP     = '_chess_army_club_map';
-	const META_W3W     = '_chess_army_club_w3w';
-	const META_TEAM    = '_chess_army_club_team'; // One row for each team name the club plays under.
-	const SEEN_OPTION  = 'Chess_Army_Knife_clubs_seen'; // Team names seen in imports: lower case => as written.
-	const PAGE         = 'chess-army-knife-sort-clubs';
-	const ACTION_SORT  = 'chess_army_knife_sort_clubs';
+	const POST_TYPE   = 'chess_army_club';
+	const META_VENUE  = '_chess_army_club_venue';
+	const META_MAP    = '_chess_army_club_map';
+	const META_W3W    = '_chess_army_club_w3w';
+	const META_TEAM   = '_chess_army_club_team'; // One row for each team name the club plays under.
+	const SEEN_OPTION = 'Chess_Army_Knife_clubs_seen'; // Team names seen in imports: lower case => as written.
+	const PAGE        = 'chess-army-knife-sort-clubs';
+	const ACTION_SORT = 'chess_army_knife_sort_clubs';
+	const ACTION_CSV  = 'chess_army_knife_import_clubs_csv';
+
+	/** Most clubs taken from one pasted list. */
+	const MAX_CSV_ROWS = 500;
 	const NONCE_ACTION = 'chess_army_knife_save_club';
 	const NONCE_FIELD  = 'chess_army_knife_club_nonce';
 
@@ -34,13 +38,22 @@ class Chess_Army_Knife_Clubs {
 		add_action( 'add_meta_boxes_' . self::POST_TYPE, array( __CLASS__, 'add_meta_box' ) );
 		add_action( 'save_post_' . self::POST_TYPE, array( __CLASS__, 'save' ) );
 		add_action( 'admin_post_' . self::ACTION_SORT, array( __CLASS__, 'handle_sort' ) );
+		add_action( 'admin_post_' . self::ACTION_CSV, array( __CLASS__, 'handle_csv' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'list_notice' ) );
-	}
+
+		// The list is kept for the request (an import looks teams and clubs up for every fixture) and forgotten when one changes.
+		foreach ( array( 'save_post', 'before_delete_post', 'wp_trash_post', 'untrashed_post' ) as $hook ) {
+			add_action( $hook, array( __CLASS__, 'flush_memo_for_post' ) );
+		}
+		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
+			add_action( $hook, array( __CLASS__, 'flush_memo_for_meta' ), 10, 2 );
+		}   }
 
 	/**
 	 * Register the club post type: private, listed in the plugin's menu.
 	 */
 	public static function register() {
+		wp_cache_add_non_persistent_groups( self::MEMO_GROUP ); // Kept for the request only.
 		register_post_type(
 			self::POST_TYPE,
 			array(
@@ -145,12 +158,41 @@ class Chess_Army_Knife_Clubs {
 	 * The directory
 	 * ------------------------------------------------------------- */
 
+	/** Object cache group holding the list from all() for the request. */
+	const MEMO_GROUP = 'chess_army_knife_memo';
+
+	/**
+	 * Forget the kept list, because a post of this type changed.
+	 *
+	 * @param int $post_id Post id.
+	 */
+	public static function flush_memo_for_post( $post_id ) {
+		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+			wp_cache_delete( 'clubs', self::MEMO_GROUP );
+		}
+	}
+
+	/**
+	 * Forget the kept list, because a post of this type had a meta value changed.
+	 *
+	 * @param int $meta_id Meta id.
+	 * @param int $post_id Post id.
+	 */
+	public static function flush_memo_for_meta( $meta_id, $post_id ) {
+		self::flush_memo_for_post( $post_id );
+	}
+
 	/**
 	 * Every club in the directory.
 	 *
 	 * @return array[] Each { id, name, venue, map_url, what3words, teams }.
 	 */
 	public static function all() {
+		$kept = wp_cache_get( 'clubs', self::MEMO_GROUP );
+		if ( is_array( $kept ) ) {
+			return $kept;
+		}
+
 		$clubs = array();
 		foreach ( get_posts(
 			array(
@@ -163,6 +205,7 @@ class Chess_Army_Knife_Clubs {
 		) as $post ) {
 			$clubs[] = self::data( $post );
 		}
+		wp_cache_set( 'clubs', $clubs, self::MEMO_GROUP );
 
 		return $clubs;
 	}
@@ -461,6 +504,36 @@ class Chess_Army_Knife_Clubs {
 			<?php if ( $done ) : ?>
 				<div class="notice notice-success" role="status"><p><?php esc_html_e( 'Saved. Import Events again to give the fixtures their venues.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
+			<?php if ( isset( $_GET['cak_csv_created'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of a form. ?>
+				<div class="notice notice-success" role="status"><p>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: 1: clubs made, 2: clubs updated, 3: lines skipped */
+							__( 'Clubs imported: %1$d new, %2$d updated, %3$d lines skipped (no club name).', 'chess-army-knife' ),
+							absint( $_GET['cak_csv_created'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+							isset( $_GET['cak_csv_updated'] ) ? absint( $_GET['cak_csv_updated'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+							isset( $_GET['cak_csv_skipped'] ) ? absint( $_GET['cak_csv_skipped'] ) : 0 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+						)
+					);
+					?>
+					<?php if ( ! empty( $_GET['cak_csv_too_many'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+						<?php echo esc_html( sprintf( /* translators: %d: most clubs in one list */ __( 'Only the first %d clubs were taken; paste the rest again.', 'chess-army-knife' ), self::MAX_CSV_ROWS ) ); ?>
+					<?php endif; ?>
+				</p></div>
+			<?php endif; ?>
+
+			<h2><?php esc_html_e( 'Add many clubs at once', 'chess-army-knife' ); ?></h2>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_CSV ); ?>" />
+				<?php wp_nonce_field( self::ACTION_CSV ); ?>
+				<p>
+					<label for="cak-clubs-csv"><?php esc_html_e( 'Paste a list from a spreadsheet: one club a line', 'chess-army-knife' ); ?></label><br />
+					<textarea id="cak-clubs-csv" name="clubs_csv" rows="6" class="large-text code" aria-describedby="cak-clubs-csv-help" placeholder="Stroud,Stroud Badgers;Stroud Hedgehogs,The Library,https://maps.app.goo.gl/example,index.home.raft"></textarea>
+					<span id="cak-clubs-csv-help" class="description"><?php esc_html_e( 'Columns: club name, its team names (separated by semicolons), venue, map link, what3words address. Only the club name is needed. A club you already have gets the new team names and any venue details given. Save a spreadsheet as CSV and paste its contents, or paste cells straight from it.', 'chess-army-knife' ); ?></span>
+				</p>
+				<p><button type="submit" class="button"><?php esc_html_e( 'Add these clubs', 'chess-army-knife' ); ?></button></p>
+			</form>
 
 			<?php if ( ! $groups ) : ?>
 				<p><?php esc_html_e( 'Every team name seen is in a club, or none has been seen yet. Run Import Events to look for more.', 'chess-army-knife' ); ?></p>
@@ -517,6 +590,147 @@ class Chess_Army_Knife_Clubs {
 			<?php endforeach; ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Read a pasted list of clubs: one club a line with its team names, venue, map link and what3words
+	 * address, as comma-separated (or tab-separated) values from a spreadsheet. Team names are separated
+	 * by a semicolon or a bar. A first line that says "club" is a heading and is skipped.
+	 *
+	 * @param string $text Pasted text.
+	 * @return array { rows: array[] each { name, teams, venue, map_url, what3words }; skipped: int lines that could not be used; too_many: bool }
+	 */
+	public static function parse_csv( $text ) {
+		$lines    = preg_split( '/\R/', (string) $text );
+		$rows     = array();
+		$skipped  = 0;
+		$too_many = false;
+		$tabbed   = false !== strpos( (string) $text, "\t" ) && false === strpos( (string) reset( $lines ), ',' );
+
+		foreach ( $lines as $index => $line ) {
+			if ( '' === trim( $line ) ) {
+				continue;
+			}
+			$cells = array_map( 'trim', str_getcsv( $line, $tabbed ? "\t" : ',', '"', '' ) );
+			if ( 0 === $index && in_array( strtolower( $cells[0] ), array( 'club', 'club name', 'name' ), true ) ) {
+				continue; // The heading.
+			}
+
+			$name = sanitize_text_field( $cells[0] );
+			if ( '' === $name ) {
+				++$skipped;
+				continue;
+			}
+			if ( count( $rows ) >= self::MAX_CSV_ROWS ) {
+				$too_many = true;
+				break;
+			}
+
+			$teams  = isset( $cells[1] ) ? preg_split( '/\s*[;|]\s*/', $cells[1], -1, PREG_SPLIT_NO_EMPTY ) : array();
+			$rows[] = array(
+				'name'       => $name,
+				'teams'      => array_map( 'sanitize_text_field', $teams ),
+				'venue'      => isset( $cells[2] ) ? sanitize_text_field( $cells[2] ) : '',
+				'map_url'    => isset( $cells[3] ) ? Chess_Army_Knife_Events::clean_map_url( $cells[3] ) : '',
+				'what3words' => isset( $cells[4] ) ? Chess_Army_Knife_Events::clean_what3words( $cells[4] ) : '',
+			);
+		}
+
+		return array(
+			'rows'     => $rows,
+			'skipped'  => $skipped,
+			'too_many' => $too_many,
+		);
+	}
+
+	/**
+	 * Add or update clubs from rows made by parse_csv(). A club with a name already held (any case) has the
+	 * new team names added to its own and its venue details filled in where the row has them; one not
+	 * held is made.
+	 *
+	 * @param array[] $rows Rows from parse_csv().
+	 * @return array { created, updated: counts }
+	 */
+	public static function import_rows( array $rows ) {
+		$created = 0;
+		$updated = 0;
+
+		foreach ( $rows as $row ) {
+			$existing = null;
+			foreach ( self::all() as $club ) {
+				if ( 0 === strcasecmp( $club['name'], $row['name'] ) ) {
+					$existing = $club;
+					break;
+				}
+			}
+
+			if ( $existing ) {
+				self::store(
+					$existing['id'],
+					array(
+						'venue'      => '' !== $row['venue'] ? $row['venue'] : $existing['venue'],
+						'map_url'    => '' !== $row['map_url'] ? $row['map_url'] : $existing['map_url'],
+						'what3words' => '' !== $row['what3words'] ? $row['what3words'] : $existing['what3words'],
+					),
+					array_merge( $existing['teams'], $row['teams'] )
+				);
+				++$updated;
+				continue;
+			}
+
+			$id = wp_insert_post(
+				array(
+					'post_type'   => self::POST_TYPE,
+					'post_status' => 'publish',
+					'post_title'  => $row['name'],
+				),
+				true
+			);
+			if ( ! is_wp_error( $id ) ) {
+				self::store(
+					$id,
+					array(
+						'venue'      => $row['venue'],
+						'map_url'    => $row['map_url'],
+						'what3words' => $row['what3words'],
+					),
+					$row['teams']
+				);
+				++$created;
+			}
+		}
+
+		return array(
+			'created' => $created,
+			'updated' => $updated,
+		);
+	}
+
+	/**
+	 * Handle the pasted list of clubs.
+	 */
+	public static function handle_csv() {
+		if ( ! Chess_Army_Knife_Teams::user_can_manage() || ! check_admin_referer( self::ACTION_CSV ) ) {
+			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ), 403 );
+		}
+
+		$text   = isset( $_POST['clubs_csv'] ) ? wp_unslash( $_POST['clubs_csv'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each cell is cleaned by parse_csv().
+		$parsed = self::parse_csv( is_string( $text ) ? $text : '' );
+		$done   = self::import_rows( $parsed['rows'] );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'             => self::PAGE,
+					'cak_csv_created'  => $done['created'],
+					'cak_csv_updated'  => $done['updated'],
+					'cak_csv_skipped'  => $parsed['skipped'],
+					'cak_csv_too_many' => $parsed['too_many'] ? 1 : 0,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	/**

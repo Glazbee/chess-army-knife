@@ -75,7 +75,8 @@ $heading      = function ( $depth, $text ) {
 	return Chess_Army_Knife_A11y::heading( $depth, 'cak-portal__subheading', $text );
 };
 ?>
-<div <?php echo wp_kses_post( get_block_wrapper_attributes( array( 'id' => Chess_Army_Knife_Member_Portal::ANCHOR ) ) ); ?>>
+<?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
+<div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'member-portal', $attributes, array( 'id' => Chess_Army_Knife_Member_Portal::ANCHOR ) ) ); ?>>
 	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-portal__heading', '' !== $block_title ? $block_title : __( 'My membership', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( '' !== $error_text ) : ?>
@@ -161,6 +162,16 @@ $heading      = function ( $depth, $text ) {
 						<dd><?php echo esc_html( (string) $person['ecf_rating'] ); ?></dd>
 					<?php endif; ?>
 				</dl>
+				<?php $whatsapp_groups = Chess_Army_Knife_Teams::whatsapp_groups_for_person( $person ); ?>
+				<?php if ( $whatsapp_groups ) : ?>
+					<?php echo $heading( 2, __( 'WhatsApp groups', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+					<p><?php esc_html_e( 'You agreed to be added to the WhatsApp groups of your teams. You can join with these links. Please do not pass them on: anyone with the link can join, and everyone in a group can see members\' names and phone numbers.', 'chess-army-knife' ); ?></p>
+					<ul class="cak-portal__whatsapp">
+						<?php foreach ( $whatsapp_groups as $group ) : ?>
+							<li><a href="<?php echo esc_url( $group['link'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( sprintf( /* translators: %s: team name */ __( 'Join the %s WhatsApp group', 'chess-army-knife' ), $group['name'] ) ); ?> <?php echo Chess_Army_Knife_A11y::hidden( __( '(opens in a new tab)', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a></li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
 				<?php if ( in_array( $person_status, array( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, Chess_Army_Knife_Membership_Store::STATUS_EXPIRED ), true ) && '' !== Chess_Army_Knife_Memberships::payment_instructions() ) : ?>
 					<p class="cak-portal__pay"><?php echo esc_html( Chess_Army_Knife_Memberships::payment_instructions() ); ?></p>
 				<?php endif; ?>

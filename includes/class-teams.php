@@ -31,12 +31,13 @@ class Chess_Army_Knife_Teams {
 	const MIGRATED_OPTION = 'Chess_Army_Knife_club_teams_migrated';
 	const LEGACY_OPTION   = 'Chess_Army_Knife_club_teams';
 
-	const META_VENUE   = '_chess_army_team_venue';
-	const META_CAPTAIN = '_chess_army_team_captain';
-	const META_SEASONS = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
-	const META_LEAGUES = '_chess_army_team_leagues';
-	const META_COLOUR  = '_chess_army_team_colour';
-	const META_TAG     = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
+	const META_VENUE    = '_chess_army_team_venue';
+	const META_CAPTAIN  = '_chess_army_team_captain';
+	const META_SEASONS  = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
+	const META_LEAGUES  = '_chess_army_team_leagues';
+	const META_COLOUR   = '_chess_army_team_colour';
+	const META_TAG      = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
+	const META_WHATSAPP = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
 	/**
 	 * Hook up registration and cleanup.
@@ -46,7 +47,14 @@ class Chess_Army_Knife_Teams {
 		add_action( 'before_delete_post', array( __CLASS__, 'forget_team' ) );
 		add_action( 'init', array( __CLASS__, 'maybe_migrate' ), 20 );
 		add_filter( 'user_has_cap', array( __CLASS__, 'officers_manage_teams' ) );
-	}
+
+		// The list is kept for the request (an import looks teams and clubs up for every fixture) and forgotten when one changes.
+		foreach ( array( 'save_post', 'before_delete_post', 'wp_trash_post', 'untrashed_post' ) as $hook ) {
+			add_action( $hook, array( __CLASS__, 'flush_memo_for_post' ) );
+		}
+		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
+			add_action( $hook, array( __CLASS__, 'flush_memo_for_meta' ), 10, 2 );
+		}   }
 
 	/**
 	 * Whether the current user may edit teams and see every team.
@@ -75,6 +83,7 @@ class Chess_Army_Knife_Teams {
 	 * Register the team post type.
 	 */
 	public static function register() {
+		wp_cache_add_non_persistent_groups( self::MEMO_GROUP ); // Kept for the request only.
 		register_post_type(
 			self::POST_TYPE,
 			array(
@@ -124,6 +133,7 @@ class Chess_Army_Knife_Teams {
 			team_id BIGINT(20) UNSIGNED NOT NULL,
 			person_id BIGINT(20) UNSIGNED NOT NULL,
 			added_at DATETIME NOT NULL,
+			last_played DATE NULL,
 			PRIMARY KEY  (team_id,person_id),
 			KEY person_id (person_id)
 			) {$charset};"
@@ -134,12 +144,41 @@ class Chess_Army_Knife_Teams {
 	 * Teams
 	 * ------------------------------------------------------------- */
 
+	/** Object cache group holding the list from all() for the request. */
+	const MEMO_GROUP = 'chess_army_knife_memo';
+
+	/**
+	 * Forget the kept list, because a post of this type changed.
+	 *
+	 * @param int $post_id Post id.
+	 */
+	public static function flush_memo_for_post( $post_id ) {
+		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+			wp_cache_delete( 'teams', self::MEMO_GROUP );
+		}
+	}
+
+	/**
+	 * Forget the kept list, because a post of this type had a meta value changed.
+	 *
+	 * @param int $meta_id Meta id.
+	 * @param int $post_id Post id.
+	 */
+	public static function flush_memo_for_meta( $meta_id, $post_id ) {
+		self::flush_memo_for_post( $post_id );
+	}
+
 	/**
 	 * The teams on offer, in their page order.
 	 *
 	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
+		$kept = wp_cache_get( 'teams', self::MEMO_GROUP );
+		if ( is_array( $kept ) ) {
+			return $kept;
+		}
+
 		$posts = get_posts(
 			array(
 				'post_type'      => self::POST_TYPE,
@@ -151,7 +190,10 @@ class Chess_Army_Knife_Teams {
 				),
 			)
 		);
-		return array_map( array( __CLASS__, 'team_data' ), $posts );
+		$teams = array_map( array( __CLASS__, 'team_data' ), $posts );
+		wp_cache_set( 'teams', $teams, self::MEMO_GROUP );
+
+		return $teams;
 	}
 
 	/**
@@ -182,6 +224,7 @@ class Chess_Army_Knife_Teams {
 			'captain_id'  => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
 			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
+			'whatsapp'    => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -465,32 +508,126 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
+	 * Note the latest game each person has played for a team, from a league import.
+	 *
+	 * @param int      $team_id Team id.
+	 * @param string[] $dates   Latest date played, "Y-m-d", by member id. Only a later date than the one held is kept.
+	 */
+	public static function record_appearances( $team_id, array $dates ) {
+		global $wpdb;
+
+		$table = self::squad_table();
+		foreach ( $dates as $person_id => $date ) {
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) $date ) ) {
+				continue;
+			}
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+			$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET last_played = %s WHERE team_id = %d AND person_id = %d AND ( last_played IS NULL OR last_played < %s )", $date, (int) $team_id, (int) $person_id, $date ) );
+		}
+	}
+
+	/**
+	 * A team's squad with when each person joined it and last played for it.
+	 *
+	 * @param int $team_id Team id.
+	 * @return array[] Each { person_id, added, last_played }; added is "Y-m-d" and last_played is "Y-m-d" or '' if never.
+	 */
+	public static function squad_rows( $team_id ) {
+		global $wpdb;
+
+		$table = self::squad_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT person_id, added_at, last_played FROM {$table} WHERE team_id = %d ORDER BY person_id ASC", (int) $team_id ), ARRAY_A );
+
+		return array_map(
+			function ( $row ) {
+				return array(
+					'person_id'   => (int) $row['person_id'],
+					'added'       => substr( (string) $row['added_at'], 0, 10 ),
+					'last_played' => null === $row['last_played'] ? '' : (string) $row['last_played'],
+				);
+			},
+			$rows
+		);
+	}
+
+	/**
+	 * Who in a squad has not played for the team since a date. Someone who has never played counts from
+	 * the day they were added, so a person added yesterday is not listed.
+	 *
+	 * @param array[] $rows   Rows from squad_rows().
+	 * @param string  $cutoff "Y-m-d": those last seen before this are listed.
+	 * @return array[] The same rows with seen (the date counted from) added, longest away first.
+	 */
+	public static function not_seen_since( array $rows, $cutoff ) {
+		$stale = array();
+		foreach ( $rows as $row ) {
+			$row['seen'] = '' !== $row['last_played'] ? $row['last_played'] : $row['added'];
+			if ( $row['seen'] < $cutoff ) {
+				$stale[] = $row;
+			}
+		}
+
+		usort(
+			$stale,
+			function ( $a, $b ) {
+				return strcmp( $a['seen'], $b['seen'] );
+			}
+		);
+
+		return $stale;
+	}
+
+	/**
+	 * A WhatsApp group invite link: only an https://chat.whatsapp.com/ address is kept.
+	 *
+	 * @param string $url What was entered.
+	 * @return string The link, or '' if it is not one.
+	 */
+	public static function clean_whatsapp_link( $url ) {
+		$url = trim( (string) $url );
+
+		return preg_match( '#^https://chat\.whatsapp\.com/[A-Za-z0-9]{10,40}/?$#', $url ) ? $url : '';
+	}
+
+	/**
+	 * The WhatsApp groups a person may be shown a link to: those of the teams whose squad they are in (or
+	 * that they captain), and only if they agreed to WhatsApp. Anyone with a link can join the group, so
+	 * it is shown nowhere else.
+	 *
+	 * @param array $person Member row.
+	 * @return array[] Each { name, link }.
+	 */
+	public static function whatsapp_groups_for_person( array $person ) {
+		if ( '' === (string) $person['whatsapp_consent_at'] ) {
+			return array();
+		}
+
+		$groups = array();
+		foreach ( self::teams_of_person( $person['id'] ) as $team ) {
+			if ( '' !== $team['whatsapp'] ) {
+				$groups[] = array(
+					'name' => $team['name'],
+					'link' => $team['whatsapp'],
+				);
+			}
+		}
+
+		return $groups;
+	}
+
+	/**
 	 * Replace a team's squad. Only people the club holds a record of can be in it.
 	 *
 	 * @param int   $team_id    Team id.
 	 * @param int[] $person_ids Member ids.
 	 */
 	public static function set_squad( $team_id, array $person_ids ) {
-		global $wpdb;
+		$wanted = array_filter( array_unique( array_map( 'absint', $person_ids ) ) );
 
-		$table = self::squad_table();
-		$now   = current_time( 'mysql', true );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$wpdb->delete( $table, array( 'team_id' => (int) $team_id ), array( '%d' ) );
-		foreach ( array_unique( array_map( 'absint', $person_ids ) ) as $person_id ) {
-			if ( $person_id && Chess_Army_Knife_Membership_Store::get_member( $person_id ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal.
-				$wpdb->insert(
-					$table,
-					array(
-						'team_id'   => (int) $team_id,
-						'person_id' => $person_id,
-						'added_at'  => $now,
-					)
-				);
-			}
-		}
+		// Only the changes are made, so a person who stays keeps when they were added and last played.
+		self::remove_from_squad( $team_id, array_diff( self::squad( $team_id ), $wanted ) );
+		self::add_to_squad( $team_id, $wanted );
 	}
 
 	/**
@@ -616,9 +753,10 @@ class Chess_Army_Knife_Teams {
 			$captain = (int) $person_id === $team['captain_id'];
 			if ( $captain || in_array( $team['id'], $in_squad, true ) ) {
 				$teams[] = array(
-					'id'      => $team['id'],
-					'name'    => $team['name'],
-					'captain' => $captain,
+					'id'       => $team['id'],
+					'name'     => $team['name'],
+					'captain'  => $captain,
+					'whatsapp' => $team['whatsapp'],
 				);
 			}
 		}

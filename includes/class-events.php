@@ -26,6 +26,10 @@ class Chess_Army_Knife_Events {
 	const META_END         = '_chess_army_event_end'; // End of the first occurrence; later ones last as long.
 	const META_REPEAT      = '_chess_army_event_repeat'; // 'weekly', 'monthly' or 'annually'; absent for a one-off.
 	const META_UNTIL       = '_chess_army_event_until'; // Last date a repeating event can occur, "Y-m-d"; absent for no end.
+	const META_SKIP        = '_chess_army_event_skip'; // Dates, "Y-m-d", on which a repeating event does not happen (holidays).
+	const META_STATUS      = '_chess_army_event_status'; // 'cancelled' or 'moved'; absent for an event going ahead as planned.
+	const META_STATUS_NOTE = '_chess_army_event_status_note'; // A few words for the status, such as where a moved event went.
+	const META_TYPE        = '_chess_army_event_type'; // A key of types(); absent for an event with no type.
 	const META_PAGE        = '_chess_army_event_page'; // Id of the page attached to the event.
 	const META_COLOUR      = '_chess_army_event_colour'; // Hex colour of the event's bubble in the calendar; absent for the default.
 	const META_LOCATION    = '_chess_army_event_location';
@@ -140,6 +144,79 @@ class Chess_Army_Knife_Events {
 			'map_url'    => (string) $options['club_venue_map'],
 			'what3words' => (string) $options['club_venue_w3w'],
 		);
+	}
+
+	/**
+	 * The kinds of event a club has. A type gives an event a tag and, if that tag has no colour chosen, a
+	 * colour (always one of tag_palette(), so the text on its calendar bubble stays readable). Anything
+	 * finer than a type, such as a team's name, is still a tag.
+	 *
+	 * @return array[] By key: { label, tag, colour }.
+	 */
+	public static function types() {
+		$palette = self::tag_palette();
+		$types   = array(
+			'club_night'   => array(
+				'label'  => __( 'Club night', 'chess-army-knife' ),
+				'tag'    => __( 'Club night', 'chess-army-knife' ),
+				'colour' => $palette[0],
+			),
+			'coaching'     => array(
+				'label'  => __( 'Coaching', 'chess-army-knife' ),
+				'tag'    => __( 'Coaching', 'chess-army-knife' ),
+				'colour' => $palette[2],
+			),
+			'competitive'  => array(
+				'label'  => __( 'Competitive games', 'chess-army-knife' ),
+				'tag'    => __( 'Competitive games', 'chess-army-knife' ),
+				'colour' => $palette[3],
+			),
+			'tournament'   => array(
+				'label'  => __( 'Tournament', 'chess-army-knife' ),
+				'tag'    => __( 'Tournament', 'chess-army-knife' ),
+				'colour' => $palette[4],
+			),
+			'league_match' => array(
+				'label'  => __( 'League match', 'chess-army-knife' ),
+				'tag'    => __( 'League match', 'chess-army-knife' ),
+				'colour' => $palette[1],
+			),
+		);
+
+		/**
+		 * Filter the kinds of event.
+		 *
+		 * @param array[] $types By key: { label, tag, colour (a hex code) }.
+		 */
+		$filtered = apply_filters( 'Chess_Army_Knife_event_types', $types );
+
+		return is_array( $filtered ) ? $filtered : $types;
+	}
+
+	/**
+	 * Give an event a type: it gets the type's tag, and the tag gets the type's colour unless a colour was already
+	 * chosen for it.
+	 *
+	 * @param int    $post_id Event id.
+	 * @param string $type    A key of types(); '' takes the type away (the tag stays: it may have been added by hand).
+	 * @return bool Whether the event now has a type.
+	 */
+	public static function apply_type( $post_id, $type ) {
+		$types = self::types();
+		if ( '' === (string) $type || ! isset( $types[ $type ] ) ) {
+			delete_post_meta( $post_id, self::META_TYPE );
+			return false;
+		}
+
+		update_post_meta( $post_id, self::META_TYPE, $type );
+		wp_set_object_terms( $post_id, array( $types[ $type ]['tag'] ), self::TAXONOMY, true );
+
+		$term = get_term_by( 'name', $types[ $type ]['tag'], self::TAXONOMY );
+		if ( $term && ! is_wp_error( $term ) && '' === (string) get_term_meta( $term->term_id, self::TAG_COLOUR_META, true ) && sanitize_hex_color( $types[ $type ]['colour'] ) ) {
+			update_term_meta( $term->term_id, self::TAG_COLOUR_META, sanitize_hex_color( $types[ $type ]['colour'] ) );
+		}
+
+		return true;
 	}
 
 	/**
@@ -268,9 +345,10 @@ class Chess_Army_Knife_Events {
 	 * @param string $until  Last date it can occur, "Y-m-d", or '' for no end.
 	 * @param string $from   Earliest start wanted, "Y-m-d H:i:s", or '' for no limit.
 	 * @param string $to     Starts must be before this, "Y-m-d H:i:s", or '' to look a year ahead.
+	 * @param array  $skip   Dates, "Y-m-d", on which a repeating event does not happen.
 	 * @return string[] Starts, "Y-m-d H:i:s", earliest first.
 	 */
-	public static function occurrence_starts( $first, $repeat, $until, $from, $to ) {
+	public static function occurrence_starts( $first, $repeat, $until, $from, $to, array $skip = array() ) {
 		if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}:\d{2})$/', (string) $first, $m ) ) {
 			return array();
 		}
@@ -302,7 +380,7 @@ class Chess_Army_Knife_Events {
 			if ( $start >= $to || ( '' !== $until && $date > $until ) ) {
 				break;
 			}
-			if ( '' === $from || $start >= $from ) {
+			if ( ( '' === $from || $start >= $from ) && ! in_array( $date, $skip, true ) ) {
 				$starts[] = $start;
 			}
 		}
@@ -393,7 +471,8 @@ class Chess_Army_Knife_Events {
 				(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
 				(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
 				$earliest,
-				(string) $args['before']
+				(string) $args['before'],
+				self::skipped_dates( $post->ID )
 			);
 			foreach ( $starts as $start ) {
 				$events[] = self::data( $post, $start );
@@ -413,6 +492,164 @@ class Chess_Army_Knife_Events {
 		);
 
 		return $args['limit'] > 0 ? array_slice( $events, 0, (int) $args['limit'] ) : $events;
+	}
+
+	/**
+	 * Read dates typed one per line, or separated by commas or spaces.
+	 *
+	 * @param string $text Typed dates, YYYY-MM-DD.
+	 * @return string[] The valid ones, earliest first, each once.
+	 */
+	public static function parse_dates( $text ) {
+		$dates = array();
+		foreach ( preg_split( '/[\s,;]+/', (string) $text ) as $date ) {
+			if ( '' !== self::combine_datetime( $date, '00:00' ) ) {
+				$dates[ $date ] = $date;
+			}
+		}
+		ksort( $dates );
+
+		return array_values( $dates );
+	}
+
+	/**
+	 * The dates a repeating event skips.
+	 *
+	 * @param int $event_id Event id.
+	 * @return string[] "Y-m-d" dates.
+	 */
+	public static function skipped_dates( $event_id ) {
+		return array_values( array_filter( (array) get_post_meta( $event_id, self::META_SKIP, true ) ) );
+	}
+
+	/**
+	 * Labels for the states an event can be in other than going ahead.
+	 *
+	 * @return string[] Label for each status.
+	 */
+	public static function status_labels() {
+		return array(
+			'cancelled' => __( 'Cancelled', 'chess-army-knife' ),
+			'moved'     => __( 'Moved', 'chess-army-knife' ),
+		);
+	}
+
+	/**
+	 * One occurrence of a published event, for downloading it.
+	 *
+	 * @param int    $event_id Event id.
+	 * @param string $start    Start of the occurrence, "Y-m-d H:i:s".
+	 * @return array|null See data(); null if there is no such published event or it does not happen then.
+	 */
+	public static function get_occurrence( $event_id, $start ) {
+		// get_post( 0 ) would give the page being viewed.
+		$post = $event_id ? get_post( (int) $event_id ) : null;
+		if ( ! $post || self::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
+			return null;
+		}
+
+		$start  = (string) $start;
+		$starts = self::occurrence_starts(
+			(string) get_post_meta( $post->ID, self::META_START, true ),
+			(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
+			(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
+			$start,
+			gmdate( 'Y-m-d H:i:s', strtotime( $start . ' UTC' ) + 1 ),
+			self::skipped_dates( $post->ID )
+		);
+
+		return in_array( $start, $starts, true ) ? self::data( $post, $start ) : null;
+	}
+
+	/**
+	 * The event that has a tournament attached, if any.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int The event's id, or 0 if no event (published, draft or private) has it attached.
+	 */
+	public static function for_tournament( $tournament_id ) {
+		$tournament_id = (int) $tournament_id;
+		if ( ! $tournament_id ) {
+			return 0;
+		}
+
+		$ids = get_posts(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'meta_key'       => self::META_TOURNAMENTS, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Events that have tournaments; the post type is small.
+			)
+		);
+
+		foreach ( $ids as $id ) {
+			$attached = array_map( 'intval', (array) get_post_meta( $id, self::META_TOURNAMENTS, true ) );
+			if ( in_array( $tournament_id, $attached, true ) ) {
+				return (int) $id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * The published event a page is attached to.
+	 *
+	 * @param int $page_id Page id.
+	 * @return int The event's id, or 0 if no published event has this page attached.
+	 */
+	public static function event_for_page( $page_id ) {
+		$page_id = (int) $page_id;
+		if ( ! $page_id ) {
+			return 0;
+		}
+
+		$ids = get_posts(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'meta_key'       => self::META_PAGE, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- One lookup of a page's event; the post type is small.
+				'meta_value'     => $page_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- As above.
+			)
+		);
+
+		return $ids ? (int) $ids[0] : 0;
+	}
+
+	/**
+	 * One published event as data, at its next occurrence (or its first, if a one-off is over or a
+	 * repeat has ended), for the page that is about it.
+	 *
+	 * @param int $event_id Event id.
+	 * @return array|null See data(); null if there is no such published event.
+	 */
+	public static function details( $event_id ) {
+		// get_post( 0 ) would give the page being viewed.
+		$post = $event_id ? get_post( (int) $event_id ) : null;
+		if ( ! $post || self::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
+			return null;
+		}
+
+		$first  = (string) get_post_meta( $post->ID, self::META_START, true );
+		$end    = (string) get_post_meta( $post->ID, self::META_END, true );
+		$length = '' !== $end ? max( 0, (int) self::to_timestamp( $end ) - (int) self::to_timestamp( $first ) ) : 0;
+		$now    = gmdate( 'Y-m-d H:i:s', strtotime( current_time( 'mysql' ) . ' UTC' ) - $length ); // An occurrence still under way counts.
+
+		$starts = self::occurrence_starts(
+			$first,
+			(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
+			(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
+			$now,
+			'',
+			self::skipped_dates( $post->ID )
+		);
+
+		return self::data( $post, $starts ? $starts[0] : '' );
 	}
 
 	/**
@@ -442,6 +679,9 @@ class Chess_Army_Knife_Events {
 	 *     @type int|null $start_ts            Unix timestamp of the start.
 	 *     @type string   $end                 Site-local "Y-m-d H:i:s", or ''.
 	 *     @type string   $repeat              'weekly', 'monthly', 'annually' or ''.
+	 *     @type string   $type                A key of types(), or ''.
+	 *     @type string   $status              'cancelled', 'moved' or ''.
+	 *     @type string   $status_note         A few words about the status, or ''.
 	 *     @type string   $colour              The event's own colour, a hex code, or ''.
 	 *     @type string   $location            The event's own location, or the club venue.
 	 *     @type string   $map_url             Link to it on a map, or ''.
@@ -523,6 +763,9 @@ class Chess_Army_Knife_Events {
 			$end = gmdate( 'Y-m-d H:i:s', strtotime( $start . ' UTC' ) + ( strtotime( $end . ' UTC' ) - strtotime( $first . ' UTC' ) ) );
 		}
 
+		$status = (string) get_post_meta( $id, self::META_STATUS, true );
+		$status = isset( self::status_labels()[ $status ] ) ? $status : '';
+
 		return array(
 			'id'          => $id,
 			'title'       => get_the_title( $post ),
@@ -531,6 +774,9 @@ class Chess_Army_Knife_Events {
 			'start_ts'    => $start_ts,
 			'end'         => $end,
 			'repeat'      => (string) get_post_meta( $id, self::META_REPEAT, true ),
+			'type'        => (string) get_post_meta( $id, self::META_TYPE, true ),
+			'status'      => $status,
+			'status_note' => $status ? (string) get_post_meta( $id, self::META_STATUS_NOTE, true ) : '',
 			'colour'      => (string) sanitize_hex_color( (string) get_post_meta( $id, self::META_COLOUR, true ) ),
 			'location'    => $venue['location'],
 			'map_url'     => $venue['map_url'],

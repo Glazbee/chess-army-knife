@@ -5,6 +5,8 @@
  * @package Chess_Army_Knife
  */
 
+use Brain\Monkey\Functions;
+
 class ClubsTest extends Chess_Army_Knife_TestCase {
 
 	/**
@@ -52,5 +54,56 @@ class ClubsTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertCount( 1, $groups );
 		$this->assertSame( array( 'Stroud Otters' ), $groups[0]['teams'] );
+	}
+
+	private function stub_cleaning() {
+		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
+		Functions\when( 'esc_url_raw' )->returnArg();
+	}
+
+	public function test_a_pasted_list_is_read_into_clubs_with_their_teams_and_venue() {
+		$this->stub_cleaning();
+		$text = "Club,Teams,Venue,Map,what3words\n"
+			. "Stroud,Stroud Badgers;Stroud Hedgehogs,The Library,https://maps.app.goo.gl/x,///Index.Home.Raft\n"
+			. "\n"
+			. "\"Wotton, Hall\",Wotton Hall Lions | Wotton Hall Leopards,\"Hall, High Street\",,\n"
+			. "Only A Name\n"
+			. ",Nameless Team\n";
+
+		$parsed = Chess_Army_Knife_Clubs::parse_csv( $text );
+
+		$this->assertSame( array( 'Stroud', 'Wotton, Hall', 'Only A Name' ), array_column( $parsed['rows'], 'name' ) );
+		$this->assertSame( array( 'Stroud Badgers', 'Stroud Hedgehogs' ), $parsed['rows'][0]['teams'] );
+		$this->assertSame( 'index.home.raft', $parsed['rows'][0]['what3words'], 'Cleaned the way the event form cleans it.' );
+		$this->assertSame( array( 'Wotton Hall Lions', 'Wotton Hall Leopards' ), $parsed['rows'][1]['teams'] );
+		$this->assertSame( 'Hall, High Street', $parsed['rows'][1]['venue'], 'A comma inside quotes is part of the cell.' );
+		$this->assertSame( array(), $parsed['rows'][2]['teams'] );
+		$this->assertSame( 1, $parsed['skipped'], 'The line with no club name.' );
+		$this->assertFalse( $parsed['too_many'] );
+	}
+
+	public function test_cells_pasted_straight_from_a_spreadsheet_are_tab_separated() {
+		$this->stub_cleaning();
+
+		$parsed = Chess_Army_Knife_Clubs::parse_csv( "Stroud\tStroud Badgers\tThe Library\n" );
+
+		$this->assertSame( 'The Library', $parsed['rows'][0]['venue'] );
+		$this->assertSame( array( 'Stroud Badgers' ), $parsed['rows'][0]['teams'] );
+	}
+
+	public function test_a_very_long_list_is_cut_short_and_a_non_web_map_link_is_dropped() {
+		$this->stub_cleaning();
+		Functions\when( 'esc_url_raw' )->alias(
+			function ( $url ) {
+				return preg_match( '#^https?://#', $url ) ? $url : '';
+			}
+		);
+
+		$text   = "A,,,javascript:alert(1)\n" . str_repeat( "Club\n", Chess_Army_Knife_Clubs::MAX_CSV_ROWS + 5 );
+		$parsed = Chess_Army_Knife_Clubs::parse_csv( $text );
+
+		$this->assertCount( Chess_Army_Knife_Clubs::MAX_CSV_ROWS, $parsed['rows'] );
+		$this->assertTrue( $parsed['too_many'] );
+		$this->assertSame( '', $parsed['rows'][0]['map_url'] );
 	}
 }

@@ -173,8 +173,8 @@ class Chess_Army_Knife_Membership_Store {
 		$guardian_phone = isset( $input['guardian_phone'] ) ? sanitize_text_field( $input['guardian_phone'] ) : '';
 
 		if ( ! $is_admin ) {
-			// Someone whose date of birth says they are under 18 is a junior even if the box was not ticked.
-			$junior = ! empty( $input['is_junior'] ) || Chess_Army_Knife_Memberships::is_under_18( $date_of_birth, $today );
+			// A junior type, or a date of birth under 18, makes a junior even if the box was not ticked.
+			$junior = ( $type && ! empty( $type['is_junior'] ) ) || ! empty( $input['is_junior'] ) || Chess_Army_Knife_Memberships::is_under_18( $date_of_birth, $today );
 
 			if ( $junior ) {
 				if ( '' === $date_of_birth ) {
@@ -965,6 +965,9 @@ class Chess_Army_Knife_Membership_Store {
 
 		// Tournament results keep the name, as a historical record, but no longer lead to this person.
 		Chess_Army_Knife_Tournament_Store::unlink_person( $id, $member['name'] );
+
+		// League results keep the board and its result, but no longer name this person.
+		Chess_Army_Knife_Event_Results::remove_person( $member['ecf_code'], $member['name'] );
 
 		// A record is kept, without personal details, while it has a payment on it or is tagged
 		// in photos: the photos may show other people, so someone has to review them by hand.

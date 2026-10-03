@@ -468,4 +468,36 @@ class EventsDisplayTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '<p class="cak-event__location">Town Hall</p>', Chess_Army_Knife_Events_Display::location_html( $this->event( array( 'location' => 'Town Hall' ) ) ) );
 		$this->assertSame( '', Chess_Army_Knife_Events_Display::location_html( $this->event( array( 'location' => '' ) ) ) );
 	}
+
+	public function test_status_text_names_a_cancelled_or_moved_event() {
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::status_text( $this->event() ) );
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::status_text( $this->event( array( 'status' => 'bogus' ) ) ) );
+		$this->assertSame( 'Cancelled', Chess_Army_Knife_Events_Display::status_text( $this->event( array( 'status' => 'cancelled' ) ) ) );
+		$this->assertSame(
+			'Moved: to Thursday',
+			Chess_Army_Knife_Events_Display::status_text(
+				$this->event(
+					array(
+						'status'      => 'moved',
+						'status_note' => ' to Thursday ',
+					)
+				)
+			)
+		);
+	}
+
+	public function test_there_is_no_calendar_link_for_a_cancelled_event() {
+		$this->assertSame(
+			'',
+			Chess_Army_Knife_Events_Display::calendar_link_html(
+				$this->event(
+					array(
+						'id'     => 4,
+						'status' => 'cancelled',
+					)
+				)
+			)
+		);
+		$this->assertSame( '', Chess_Army_Knife_Events_Display::calendar_link_html( $this->event() ), 'An event with no id cannot be fetched.' );
+	}
 }

@@ -10,6 +10,7 @@
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       chess-army-knife
+ * Domain Path:       /languages
  *
  * @package Chess_Army_Knife
  */
@@ -24,7 +25,10 @@ define( 'Chess_Army_Knife_URL', plugin_dir_url( __FILE__ ) );
 require_once Chess_Army_Knife_DIR . 'includes/class-chess-army-knife-cache.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-ecf-client.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-lms-client.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-league-data.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-lms-test.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-settings-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-secrets.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-contrast.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-headings.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-a11y.php';
@@ -82,7 +86,12 @@ require_once Chess_Army_Knife_DIR . 'includes/class-member-stats.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-dashboard-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-block-help.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-access.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-squad-review.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-event-results.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-lms-players.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-team-overview.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-setup.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-setup-checklist.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-menu.php';
 require_once Chess_Army_Knife_DIR . 'includes/blocks.php';
 
@@ -137,6 +146,7 @@ function Chess_Army_Knife_deactivate() {
 	Chess_Army_Knife_Mailer::unschedule();
 	Chess_Army_Knife_Renewal_Reminders::unschedule();
 	Chess_Army_Knife_Announcements::unschedule();
+	Chess_Army_Knife_Events_Import::unschedule();
 }
 register_deactivation_hook( __FILE__, 'Chess_Army_Knife_deactivate' );
 

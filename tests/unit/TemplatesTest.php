@@ -114,7 +114,7 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_wrapper_attributes_without_template_uses_plain_wrapper() {
-		Functions\expect( 'get_block_wrapper_attributes' )->once()->withNoArgs()->andReturn( 'class="plain"' );
+		Functions\expect( 'get_block_wrapper_attributes' )->once()->with( array() )->andReturn( 'class="plain"' );
 
 		$this->assertSame( 'class="plain"', Chess_Army_Knife_Templates::wrapper_attributes( 'rating-chart', array() ) );
 	}

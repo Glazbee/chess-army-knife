@@ -15,12 +15,18 @@ $attributes = Chess_Army_Knife_Templates::apply( 'next-club-event', $attributes 
 $block_title   = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $empty_message = isset( $attributes['emptyMessage'] ) ? trim( (string) $attributes['emptyMessage'] ) : '';
 $options       = Chess_Army_Knife_Events_Display::options( $attributes );
-$events        = Chess_Army_Knife_Events::query(
-	array(
-		'tags'  => Chess_Army_Knife_Events_Display::tag_slugs( isset( $attributes['tags'] ) ? $attributes['tags'] : array() ),
-		'limit' => 1,
-	)
+$show          = isset( $attributes['show'] ) ? (string) $attributes['show'] : 'next';
+$query_args    = array(
+	'tags'  => Chess_Army_Knife_Events_Display::tag_slugs( isset( $attributes['tags'] ) ? $attributes['tags'] : array() ),
+	'limit' => 'three' === $show ? 3 : 1,
 );
+if ( 'today' === $show ) {
+	// From the start of today to the end of tomorrow, so a game already played tonight still shows.
+	$query_args['after']  = current_time( 'Y-m-d' ) . ' 00:00:00';
+	$query_args['before'] = gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' UTC' ) + 2 * DAY_IN_SECONDS ) . ' 00:00:00';
+	$query_args['limit']  = 0;
+}
+$events = Chess_Army_Knife_Events::query( $query_args );
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'next-club-event', $attributes );
 ?>
@@ -31,7 +37,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'next-club
 	<?php if ( empty( $events ) ) : ?>
 		<div class="chess-army-knife-empty"><?php echo esc_html( '' !== $empty_message ? $empty_message : __( 'No upcoming events.', 'chess-army-knife' ) ); ?></div>
 	<?php else : ?>
-		<?php $event = $events[0]; ?>
+		<?php foreach ( $events as $event ) : ?>
 		<div class="cak-event">
 			<p class="cak-event__when">
 				<span class="cak-event__date"><?php echo esc_html( Chess_Army_Knife_Events_Display::date_label( $event ) ); ?></span>
@@ -40,5 +46,6 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'next-club
 			<p class="cak-event__title"><?php echo Chess_Army_Knife_Events_Display::title_html( $event ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in title_html(). ?></p>
 			<?php echo Chess_Army_Knife_Events_Display::details_html( $event, $options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in details_html(). ?>
 		</div>
+		<?php endforeach; ?>
 	<?php endif; ?>
 </div>

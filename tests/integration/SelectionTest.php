@@ -549,4 +549,38 @@ class SelectionTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Club A v Rivals', $html );
 		$this->assertStringContainsString( 'board 2', $html );
 	}
+
+	public function test_the_team_overview_gathers_the_teams_details_squad_fixtures_and_silent_players() {
+		$ada = $this->player( 'Ada Lovelace', 1900 );
+		$bea = $this->player( 'Bea Babbage', 1800 );
+		Chess_Army_Knife_Selection::request( $this->event, $this->team );
+		$row = Chess_Army_Knife_Selection::availability( $this->event, $this->team )[ $ada ];
+		Chess_Army_Knife_Selection::respond( $row['id'], 'yes' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$user = wp_get_current_user();
+		$user->add_cap( Chess_Army_Knife_Teams::CAPABILITY );
+
+		ob_start();
+		Chess_Army_Knife_Team_Overview::render_page();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'Club A', $html );
+		$this->assertStringContainsString( 'Club A v Rivals', $html );
+		$this->assertStringContainsString( '1 yes, 0 maybe, 0 no, 1 not replied', $html );
+		$this->assertStringContainsString( 'Not yet replied for the next fixture', $html );
+		$this->assertStringContainsString( 'Bea Babbage', $html, 'She has not replied.' );
+		$this->assertStringContainsString( '1900', $html );
+		$this->assertNotNull( $bea );
+	}
+
+	public function test_the_team_overview_is_for_those_who_look_after_teams() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		ob_start();
+		Chess_Army_Knife_Team_Overview::render_page();
+		$html = ob_get_clean();
+
+		$this->assertStringNotContainsString( 'Club A v Rivals', $html );
+	}
 }

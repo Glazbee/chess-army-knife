@@ -24,6 +24,7 @@ class Chess_Army_Knife_Memberships {
 	const META_DESCRIPTION = '_chess_army_membership_description';
 	const META_PRICE       = '_chess_army_membership_price';
 	const META_MONTHS      = '_chess_army_membership_months';
+	const META_JUNIOR      = '_chess_army_membership_junior';
 
 	/**
 	 * Hook up registration.
@@ -251,6 +252,7 @@ class Chess_Army_Knife_Memberships {
 	 *     @type string $price_label  For example "£25".
 	 *     @type int    $months       Length in months, 0 for no expiry.
 	 *     @type string $period_label For example "per year".
+	 *     @type bool   $is_junior    Whether the type is for juniors (under 18).
 	 *     @type string $status       Post status.
 	 * }
 	 */
@@ -267,6 +269,7 @@ class Chess_Army_Knife_Memberships {
 			'price_label'  => self::format_price( $price ),
 			'months'       => $months,
 			'period_label' => self::period_label( $months ),
+			'is_junior'    => '1' === (string) get_post_meta( $id, self::META_JUNIOR, true ),
 			'status'       => $post->post_status,
 		);
 	}

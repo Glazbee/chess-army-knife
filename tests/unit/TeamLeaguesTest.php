@@ -163,4 +163,25 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( Chess_Army_Knife_Teams::league_entries(), Chess_Army_Knife_Settings::get_club_teams() );
 	}
+
+	/**
+	 * @dataProvider whatsapp_links
+	 */
+	public function test_only_a_whatsapp_group_invite_link_is_kept( $given, $expected ) {
+		$this->assertSame( $expected, Chess_Army_Knife_Teams::clean_whatsapp_link( $given ) );
+	}
+
+	public function whatsapp_links() {
+		return array(
+			'an invite link'      => array( 'https://chat.whatsapp.com/AbCdEfGhIjKlMn12', 'https://chat.whatsapp.com/AbCdEfGhIjKlMn12' ),
+			'padded'              => array( "  https://chat.whatsapp.com/AbCdEfGhIjKlMn12/ \n", 'https://chat.whatsapp.com/AbCdEfGhIjKlMn12/' ),
+			'plain http'          => array( 'http://chat.whatsapp.com/AbCdEfGhIjKlMn12', '' ),
+			'another site'        => array( 'https://example.com/AbCdEfGhIjKlMn12', '' ),
+			'a look-alike host'   => array( 'https://chat.whatsapp.com.evil.example/AbCdEfGhIjKlMn12', '' ),
+			'extra path or query' => array( 'https://chat.whatsapp.com/AbCdEfGhIjKlMn12?x=1', '' ),
+			'a script'            => array( 'javascript:alert(1)', '' ),
+			'no code'             => array( 'https://chat.whatsapp.com/', '' ),
+			'blank'               => array( '', '' ),
+		);
+	}
 }

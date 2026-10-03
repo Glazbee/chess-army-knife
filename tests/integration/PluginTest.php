@@ -169,6 +169,19 @@ class PluginTest extends WP_UnitTestCase {
 		$this->assertSame( array(), rest_do_request( $one_letter )->get_data() );
 	}
 
+	public function test_the_member_search_is_for_editors_not_contributors_or_authors() {
+		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request->set_param( 'search', 'Test' );
+
+		foreach ( array( 'contributor', 'author' ) as $role ) {
+			wp_set_current_user( self::factory()->user->create( array( 'role' => $role ) ) );
+			$this->assertSame( 403, rest_do_request( $request )->get_status(), $role . ' can see members\' names and ECF codes.' );
+		}
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+	}
+
 	public function test_the_member_search_permission_can_be_narrowed_to_membership_officers() {
 		add_filter(
 			'Chess_Army_Knife_member_search_capability',

@@ -648,4 +648,34 @@ class EventsTest extends WP_UnitTestCase {
 		$this->assertSame( '', $venues['Away match'] );
 		$this->assertSame( 'The Club Room', $venues['Home match'] );
 	}
+
+	public function test_giving_an_event_a_type_adds_its_tag_and_a_colour_the_first_time_only() {
+		$id = $this->event( 'Tuesday club', '2099-01-05 19:30:00' );
+
+		$this->assertTrue( Chess_Army_Knife_Events::apply_type( $id, 'club_night' ) );
+
+		$data = Chess_Army_Knife_Events::query( array( 'after' => '' ) )[0];
+		$this->assertSame( 'club_night', $data['type'] );
+		$this->assertSame( 'Club night', $data['tags'][0]['name'] );
+		$this->assertSame( Chess_Army_Knife_Events::types()['club_night']['colour'], $data['tags'][0]['colour'] );
+
+		// A colour chosen on the tag is not taken back.
+		$term = get_term_by( 'name', 'Club night', Chess_Army_Knife_Events::TAXONOMY );
+		update_term_meta( $term->term_id, Chess_Army_Knife_Events::TAG_COLOUR_META, '#123456' );
+		Chess_Army_Knife_Events::apply_type( $id, 'club_night' );
+		$this->assertSame( '#123456', Chess_Army_Knife_Events::query( array( 'after' => '' ) )[0]['tags'][0]['colour'] );
+
+		// Taking the type away leaves the tag, which may have been put there by hand.
+		$this->assertFalse( Chess_Army_Knife_Events::apply_type( $id, '' ) );
+		$data = Chess_Army_Knife_Events::query( array( 'after' => '' ) )[0];
+		$this->assertSame( '', $data['type'] );
+		$this->assertSame( 'Club night', $data['tags'][0]['name'] );
+	}
+
+	public function test_an_unknown_type_is_not_applied() {
+		$id = $this->event( 'Odd one', '2099-01-05 19:30:00' );
+
+		$this->assertFalse( Chess_Army_Knife_Events::apply_type( $id, 'not-a-type' ) );
+		$this->assertSame( '', Chess_Army_Knife_Events::query( array( 'after' => '' ) )[0]['type'] );
+	}
 }

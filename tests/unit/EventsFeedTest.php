@@ -117,4 +117,40 @@ class EventsFeedTest extends Chess_Army_Knife_TestCase {
 		$this->assertStringContainsString( "DTEND:20261005T210000Z\r\n", $ics );
 		$this->assertSame( 1, substr_count( $ics, 'BEGIN:VEVENT' ) );
 	}
+
+	public function test_a_cancelled_event_is_marked_cancelled_and_a_moved_one_says_where() {
+		$cancelled = Chess_Army_Knife_Events_Feed::build(
+			array(
+				$this->event(
+					array(
+						'status'      => 'cancelled',
+						'status_note' => 'Hall closed',
+					)
+				),
+			),
+			'Our Club',
+			'example.test',
+			0
+		);
+		$moved     = Chess_Army_Knife_Events_Feed::build(
+			array(
+				$this->event(
+					array(
+						'status'      => 'moved',
+						'status_note' => 'now Thursday',
+					)
+				),
+			),
+			'Our Club',
+			'example.test',
+			0
+		);
+		$normal    = Chess_Army_Knife_Events_Feed::build( array( $this->event() ), 'Our Club', 'example.test', 0 );
+
+		$this->assertStringContainsString( "STATUS:CANCELLED\r\n", $cancelled );
+		$this->assertStringContainsString( 'DESCRIPTION:Cancelled: Hall closed', $cancelled );
+		$this->assertStringNotContainsString( 'STATUS:', $moved );
+		$this->assertStringContainsString( 'DESCRIPTION:Moved: now Thursday', $moved );
+		$this->assertStringNotContainsString( 'STATUS:', $normal );
+	}
 }

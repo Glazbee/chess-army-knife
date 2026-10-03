@@ -14,10 +14,14 @@ defined( 'ABSPATH' ) || exit;
 function Chess_Army_Knife_register() {
 	$blocks_dir = Chess_Army_Knife_DIR . 'build/';
 
-	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'next-club-event', 'club-event-calendar', 'memberships', 'membership-form', 'my-data', 'team-profiles', 'member-portal' ) as $block ) {
+	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'team-page', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'next-club-event', 'club-event-calendar', 'club-event-details', 'memberships', 'membership-form', 'my-data', 'team-profiles', 'member-portal' ) as $block ) {
 		$path = $blocks_dir . $block;
 		if ( file_exists( $path . '/block.json' ) ) {
-			register_block_type( $path );
+			$registered = register_block_type( $path );
+			// The editor's own text, translated from the languages folder.
+			if ( $registered && ! empty( $registered->editor_script_handles ) ) {
+				wp_set_script_translations( $registered->editor_script_handles[0], 'chess-army-knife', Chess_Army_Knife_DIR . 'languages' );
+			}
 		}
 	}
 }
@@ -150,9 +154,10 @@ function Chess_Army_Knife_rest_member_search_permission() {
 	/**
 	 * Filter the capability needed to search club members by name.
 	 *
-	 * @param string $capability Capability name, edit_posts by default.
+	 * @param string $capability Capability name, edit_others_posts (an editor) by default. The search shows
+	 *                           names and ECF codes, including juniors', so it is not for contributors.
 	 */
-	return current_user_can( (string) apply_filters( 'Chess_Army_Knife_member_search_capability', 'edit_posts' ) );
+	return current_user_can( (string) apply_filters( 'Chess_Army_Knife_member_search_capability', 'edit_others_posts' ) );
 }
 
 /**

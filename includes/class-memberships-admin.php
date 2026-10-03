@@ -60,6 +60,7 @@ class Chess_Army_Knife_Memberships_Admin {
 		$description = (string) get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_DESCRIPTION, true );
 		$price       = get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_PRICE, true );
 		$months      = get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_MONTHS, true );
+		$is_junior   = '1' === (string) get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_JUNIOR, true );
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
@@ -83,6 +84,13 @@ class Chess_Army_Knife_Memberships_Admin {
 				<td>
 					<input type="number" id="chess_army_membership_months" name="chess_army_membership_months" value="<?php echo esc_attr( '' === $months ? 12 : (int) $months ); ?>" min="0" max="120" class="small-text" />
 					<p class="description"><?php esc_html_e( 'How long a membership lasts once approved, used to suggest its expiry date. 12 is a year; 0 means it does not expire.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Juniors', 'chess-army-knife' ); ?></th>
+				<td>
+					<label for="chess_army_membership_junior"><input type="checkbox" id="chess_army_membership_junior" name="chess_army_membership_junior" value="1" <?php checked( $is_junior ); ?> /> <?php esc_html_e( 'Is a junior membership', 'chess-army-knife' ); ?></label>
+					<p class="description"><?php esc_html_e( 'The application form asks for a date of birth and a parent or guardian\'s details only when a junior membership is chosen.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 		</table>
@@ -115,6 +123,8 @@ class Chess_Army_Knife_Memberships_Admin {
 
 		$months = isset( $_POST['chess_army_membership_months'] ) ? absint( $_POST['chess_army_membership_months'] ) : 12;
 		update_post_meta( $post_id, Chess_Army_Knife_Memberships::META_MONTHS, min( 120, $months ) );
+
+		update_post_meta( $post_id, Chess_Army_Knife_Memberships::META_JUNIOR, empty( $_POST['chess_army_membership_junior'] ) ? '0' : '1' );
 	}
 
 	/* -------------------------------------------------------------

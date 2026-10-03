@@ -336,6 +336,83 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
+	 * Make a calendar event for a tournament: its name, the date and time given, the tournament
+	 * attached and, if it has one, the tournament's page. Run twice it makes one event.
+	 *
+	 * @param int    $tournament_id Tournament id.
+	 * @param string $date          "Y-m-d".
+	 * @param string $time          "HH:MM"; the usual start time for events if blank.
+	 * @return int|WP_Error The event's id.
+	 */
+	public static function create_event( $tournament_id, $date, $time = '' ) {
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( (int) $tournament_id );
+		if ( ! $tournament ) {
+			return new WP_Error( 'tournament_missing', __( 'That tournament does not exist.', 'chess-army-knife' ) );
+		}
+
+		$existing = Chess_Army_Knife_Events::for_tournament( $tournament['id'] );
+		if ( $existing ) {
+			return new WP_Error( 'event_exists', __( 'This tournament already has an event on the calendar.', 'chess-army-knife' ) );
+		}
+
+		$time  = '' === trim( (string) $time ) ? Chess_Army_Knife_Events::default_time() : trim( (string) $time );
+		$start = Chess_Army_Knife_Events::combine_datetime( (string) $date, $time );
+		if ( '' === $start ) {
+			return new WP_Error( 'event_date', __( 'Please give the date as YYYY-MM-DD and the time as HH:MM.', 'chess-army-knife' ) );
+		}
+
+		$meta = array(
+			Chess_Army_Knife_Events::META_START       => $start,
+			Chess_Army_Knife_Events::META_TOURNAMENTS => array( (int) $tournament['id'] ),
+		);
+		$page = self::get_page( $tournament );
+		if ( $page ) {
+			$meta[ Chess_Army_Knife_Events::META_PAGE ] = (int) $page->ID;
+		}
+
+		$id = wp_insert_post(
+			array(
+				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => $tournament['name'],
+				'meta_input'  => $meta,
+			),
+			true
+		);
+		if ( is_wp_error( $id ) ) {
+			return $id;
+		}
+		Chess_Army_Knife_Events::apply_type( $id, 'tournament' );
+
+		return (int) $id;
+	}
+
+	/**
+	 * Blank the name on a result: a person who asked to be deleted keeps their name on the results of
+	 * tournaments already started, which is a legitimate record, but if they object it can be replaced.
+	 * Only an entry with no member record behind it can be changed.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @param int $entry_id      Entry id.
+	 * @return true|WP_Error
+	 */
+	public static function anonymise_entry( $tournament_id, $entry_id ) {
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( (int) $tournament_id ) as $entry ) {
+			if ( $entry['id'] !== (int) $entry_id ) {
+				continue;
+			}
+			if ( 0 !== $entry['player_id'] ) {
+				return new WP_Error( 'entry_linked', __( 'That entry is linked to a member record. Delete or change the record instead.', 'chess-army-knife' ) );
+			}
+			/* translators: %d: entry number, so each anonymous player can be told apart */
+			Chess_Army_Knife_Tournament_Store::rename_unlinked_entry( $entry['id'], sprintf( __( 'Anonymous player %d', 'chess-army-knife' ), $entry['id'] ) );
+			return true;
+		}
+
+		return new WP_Error( 'tournament_missing', __( 'That player is not in this tournament.', 'chess-army-knife' ) );
+	}
+
+	/**
 	 * Remove an entrant from a draft tournament.
 	 *
 	 * @param int $tournament_id Tournament id.

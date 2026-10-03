@@ -12,10 +12,22 @@ Gutenberg blocks for English chess clubs: ECF ratings and league data, club tour
 
 == Description ==
 
-This plugin adds sixteen blocks to the WordPress block editor, pulling live data from:
+This plugin adds eighteen blocks to the WordPress block editor, pulling live data from:
 
 * The [ECF Ratings API](https://rating.englishchess.org.uk/help/api) — England's official chess rating database.
 * The [ECF League Management System (LMS) API](https://lms.englishchess.org.uk/lms/node/34) — used by most English chess leagues to run their divisions.
+
+**Getting started**
+
+1. Activate the plugin. A **Setup** screen asks for your club's name and venue, your regular weekly events, and your ECF and LMS details. You can skip it and use **Settings** instead.
+2. Enter your **LMS API key** and press **Test the LMS connection** to check it.
+3. Add your **Teams** under Chess Army Knife → Teams, each with the league it plays in. Run **Import Events** (it also runs by itself once a day) and then **Sort Clubs** to say where other clubs play.
+4. Look at the **Overview**: its **Still to do** list says what is missing, and links to the fix.
+5. Make your **Policies** (Chess Army Knife → Policies) and add the blocks you want to your pages. **Block Help** explains each one.
+
+**Admin screens**
+
+**Overview** (what is not set up, and every screen) · **Setup** (first-run questions) · **Settings** · **Policies** · **Teams**, **Clubs**, **Sort Clubs** and **Squad Review** · **Import Events** · **Club Events** · **Tournaments** · **Memberships**, **Members**, **Member Checks**, **Renewals** and **Do Not Record** · **Announcements** · **Templates** · **Block Help**. Each is described below under the part of the plugin it belongs to.
 
 **Blocks included**
 
@@ -24,7 +36,7 @@ Blocks are grouped in the inserter under five headings: **Chess: Ratings & Playe
 1. **ECF Rating Chart** — choose a club member and show how their rating has moved over their recent rated games, as a line chart, with current/peak/lowest/change stats. Works for standard, rapid, blitz, and their online equivalents.
 2. **ECF Club Results** — a merged feed of recent rated results for the club's current members who have an ECF rating code (win/draw/loss, colour, event). Opponents are not shown.
 3. **ECF League Standings & Matchups** — enter your league's LMS organisation ID and an exact event/division name to show the league table and/or recent and upcoming matchups. Includes an optional "highlight team" so your own club's row stands out.
-4. **ECF Team Fixtures** — every team with its last result and next fixture. Show it as a list (the default: nothing moves and it works without scripts) or as a carousel with buttons, a button for each team and a pause button. Teams are read automatically from the league table, or you can supply your own list.
+4. **ECF Team Fixtures** — every team with its last result and next fixture. Show it as a list (the default: nothing moves and it works without scripts) or as a carousel with buttons, a button for each team and a pause button. Teams are read automatically from the league, or you can supply your own list.
 5. **ECF Biggest Rating Gainers** — showcase the club's current members whose rating has risen the most over a recent period.
 
 6. **ECF Featured Player** — spotlight a player with a photo, a short blurb on why they're featured, their ECF rating, and chess.com / Lichess profile links.
@@ -34,10 +46,12 @@ Blocks are grouped in the inserter under five headings: **Chess: Ratings & Playe
 10. **Tournament Past Winners** — the winners of completed tournaments, most recent first.
 11. **Tournament Players** — the players in a tournament with their ECF codes and ratings.
 12. **Club Event Calendar** — upcoming club events by date, as a list or a month grid where each event is a coloured bubble (start time and title) that opens its details, optionally only those with chosen tags.
-13. **Next Club Event** — the next club event, optionally only one with a chosen tag.
+13. **Next Club Event** — the next club event, the next three, or today's and tomorrow's, optionally only those with a chosen tag.
 14. **Club Memberships** — advertise the memberships the club offers (junior, adult, senior or any others) with their prices and descriptions, and how to pay. Optionally link each one to your application form.
 15. **Membership Application Form** — a form for people to apply for a membership. Applications wait for the club to review them.
 O. **Manage My Data** — lets a member stop the newsletter or WhatsApp groups, ask for a copy of their details, or ask for them to be deleted, without an account. Changes are confirmed by an emailed link.
+S. **Club Event Details** — when and where one club event is, with a map link and an Add to my calendar link. On the page attached to an event it finds the event by itself; the draft page made from an event already has it.
+R. **Team Results** — one team's league position, next fixture and results, with the board-by-board results of each match.
 P. **Club Teams** — shows the club's teams: name, description, home venue and leagues (never the captain or squad). Show all teams or pick one.
 Q. **Member Portal** — lets members see and correct their own details, choose their emails, change their email address and delete their data, using an emailed link.
 
@@ -116,9 +130,9 @@ All API responses are cached in a dedicated database table (so cached data survi
 
 = A note on the LMS API =
 
-The ECF itself describes the LMS API as "experimental," and its response fields aren't formally documented. The League Standings & Matchups and Team Fixtures Carousel blocks parse this data defensively. The League Standings block includes a "Show raw API data (debug)" toggle in its sidebar so you can see exactly what your league's LMS instance returns if a table or matchup doesn't look right.
+The league blocks, **Import Events** and the **Test the LMS connection** button use version 2 of the ECF LMS API, which needs an API key: create one on your LMS account's "API keys" page and enter it under **Settings** (or on the **Setup** screen). The key is stored encrypted and is never shown again; it can instead be set in `wp-config.php` with `define( 'CHESS_ARMY_KNIFE_LMS_API_KEY', '...' );`. The plugin reads an organisation's seasons, the events in a season and an event's results (fixtures, scores and the players on each board); the league table is worked out from the results, because the API gives none. The field names were checked against real responses from the LMS, but the ECF can change them. The League Standings block has a **Show raw API data (debug)** toggle that shows what was read.
 
-The ECF's own API documentation page currently points requests at a legacy host (`ecflms.org.uk`) that no longer resolves for most networks. This plugin defaults to the live host (`lms.englishchess.org.uk`) instead, with an automatic fallback and a settings-page override in case the ECF changes it again.
+The API gives no venues, so the plugin gets them from your own teams and from the **Clubs** directory (see **Sort Clubs**).
 
 == Installation ==
 
@@ -146,7 +160,36 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+* Added: **match results are kept**. Import Events now keeps the score of every league match that has been played, and who played each board with its result, on the event, so earlier seasons keep their results too. The Club Event Details block shows the score and the boards (the `Chess_Army_Knife_event_result_show_names` filter turns the names off). Only your own players are kept with their ECF code and rating; an opponent is kept by name only. Someone on the Do Not Record list is not kept, and erasing a member takes their name out of every result, leaving the board and its result.
+* Added: **Players from the LMS** (Members menu, and an **Add players from the LMS** button on the Members screen). It lists the people who played for your teams in the imported results and are not on your membership records, with their games and last game. Tick them (or everyone) to add them as pending members with the name and ECF code from the LMS and their consent to the club holding those details recorded as given, then confirm each one from the Members screen. Newsletter and WhatsApp consent are not assumed. Nobody is added until you tick them.
+* Added: **Import Events** can bring in **earlier seasons** from the LMS. It lists the earlier seasons your leagues have; tick the ones you want, or all of them. Each team is matched to the event of the same name in that season, and every fixture becomes a past event (type League match). Squads and the clubs list are not touched, and running it again never duplicates events. A team whose league had a different name then is reported and skipped.
 * Added: deleting people's details from the admin panel. On the Members list, tick people and choose **Delete personal details…** (with a confirm tick) to delete a group at once, or use **Delete** or **Delete and do not record again** on a single member. A record tied to a payment or photos is kept without any personal details. A person's name stays on the results of tournaments already started, as a historical record, but is unlinked from any record, so nothing leads from it to their other games; in a tournament that has not started their entry is simply removed.
+* Changed: **ECF League Standings & Matchups** and **ECF Team Fixtures** now read the LMS v2 API (the same API key as Import Events) instead of the old LMS service. The league table is worked out from the results (a win is 1 point, a draw half a point) and also shows board points for and against; the list under it shows the next fixtures coming up, then the latest results. Both blocks have a **Season** setting: leave it empty for the current season, or type an earlier one as the LMS names it (for example 2025-2026) to show its final table. Earlier seasons are kept for a week. The LMS gives no venues, so the "show match location" setting has gone.
+* Added: an optional **WhatsApp group invite link** on each team (only an https://chat.whatsapp.com/ link is kept). The Member Portal shows it only to a member who agreed to WhatsApp groups and is in that team's squad, with a reminder that anyone with the link can join. It is shown nowhere else, and the plugin still never contacts WhatsApp.
+* Added: **event types**: club night, coaching, competitive games, tournament and league match. An event's **Type** (in its edit box) gives it that type's tag and, if the tag has no colour yet, a colour. Imported league fixtures, the regular events made by Setup and a tournament put on the calendar get their type by themselves. Tags remain for anything finer, such as a team's name. The list can be changed with the `Chess_Army_Knife_event_types` filter.
+* Added: **Sort Clubs** has **Add many clubs at once**: paste a list from a spreadsheet (club name, team names separated by semicolons, venue, map link, what3words address; only the name is needed). New clubs are made and clubs you already have get the new team names and any venue details given. Up to 500 clubs a time.
+* Added: **Team Overview** (Chess Army Knife → Team Overview) for captains and team officers: a team's captain, venue, calendar tag, boards and leagues, its next fixtures with how many have said yes, maybe or no, who has not replied for the next one, and the squad with ratings, with links to Team Selection and Squad Review. Captains who are not administrators see only their own team.
+* Added: a tournament's screen has **Put this tournament on the calendar**: it makes the event (with the date and time you give, the tag Tournament, the tournament attached and, if there is one, its page), and links to the event once it exists. A tournament gets one event.
+* Added: the **Setup** screen can add your first team and its league (using the organisation ID above it) and fetch its fixtures straight away, then points to **Sort Clubs** if other clubs' venues are still to be set.
+* Added: **Squad Review** (Chess Army Knife → Squad Review). Import Events now notes the latest game each person played for a team, and this screen lists the people in a squad who have not played for it in a chosen number of months (a year by default), with a tick box to take them out. Someone added by hand who has not played yet is counted from the day they were added. Importing adds people to squads and never removes them; this is where they are removed.
+* Added: **Do Not Record** can be backed up and restored (a text file of the one-way fingerprints, never names or codes), and the screen now says that the list depends on the site's secret keys and stops matching if they are changed.
+* Added: **Anonymise name** on a tournament entry that has no member record behind it, for someone who asked to be deleted but whose name stays on the results of tournaments already played and who objects. It replaces the name with "Anonymous player" and a number.
+* Added: the **Club Event Details** block, and the draft page made from an event now has it on it, so the page shows the event's date, time, venue, map link and calendar link as soon as it is made.
+* Security: the LMS API key is now stored encrypted in the database and is never shown again after it is saved (a blank box on Settings keeps it; there is a tick box to remove it). It can also be set in wp-config.php with `define( 'CHESS_ARMY_KNIFE_LMS_API_KEY', '...' );`, which keeps it out of the database altogether.
+* Security: changing how long members' details are kept now needs an administrator or someone with the members permission, not just anyone who can edit pages.
+* Security: the editor's player search (names and ECF codes of members) is now for Editors and above by default, not Contributors and Authors; the `Chess_Army_Knife_member_search_capability` filter changes it.
+* Security: pages opened from an emailed portal, email-change or withdraw link are not cached and do not pass their address on to other sites.
+* Added: a **Test the LMS connection** button on Settings and on the Setup screen. It makes one request with the saved key and says "connected", "the LMS did not accept the key", or "the LMS could not be reached", so a wrong key shows at once rather than as an import that finds nothing.
+* Added: every block now has WordPress's own styling controls (colour, spacing, typography and border) in the editor's sidebar.
+* Added: templates (Chess Army Knife → Templates) for the Team Results, Club Teams, Club Memberships, Membership Application Form, Manage My Data and Member Portal blocks, as for the others.
+* Added: the editor's own text can be translated: the plugin loads translations from its `languages` folder (see `languages/README.md`).
+* Added: the **Team Results** block (Leagues group): one team's league position, next fixture and every result, with each match opening to show the board-by-board results (who played, their ratings, colours and who won). Type the team as the LMS spells it, or leave it empty to use your first team. It has the same Season setting, so a team page can show how an earlier season went.
+* Added: **Import Events now runs by itself once a day** (as long as there is an LMS API key and a team with a league). The Import Events screen shows when the last import ran and what it did, whether it was the daily one or yours.
+* Added: a **Still to do** list at the top of the Overview for administrators: no LMS API key (or one the LMS refused at the last import), no teams or league entries, fixtures not imported yet, leagues that failed, team names not yet put in a club, no tournament yet, and unfinished policies, each with a link to the fix.
+* Added: an **Add to my calendar** link on each event (in the calendar panel, the list and Next Club Event) that downloads that one event as an .ics file.
+* Added: an event can be marked **Cancelled** or **Moved**, with a short note. It stays on the calendar, marked in words (and a line through a cancelled title), and the calendar feed marks a cancelled one `STATUS:CANCELLED`. A cancelled event has no Add to my calendar link.
+* Added: **Dates to skip** on a repeating event, such as holidays. Those dates are left out of the blocks and the feed.
+* Added: the Next Club Event block can show the next event, the next three, or today and tomorrow.
 * Added: **Do Not Record** (Chess Army Knife → Do Not Record). A person who asked to be deleted is not recorded again by the plugin by itself: not when their ECF rating code is used in a tournament entry, an ECF lookup or an import, and not by name when no code is given. The list holds only one-way fingerprints of the ECF code and name (no codes or names), so keeping it does not keep their details. Someone on the list who plays in a tournament is entered by name only (their ECF code is not kept). People who delete their own details, or ask for erasure through WordPress, are added automatically. An admin who adds someone by hand, or a person who applies again, is never blocked. A name can stop a different person with the same name, so give an ECF code when entering them.
 * Changed: members no longer choose their teams anywhere (application form, Manage My Data, Member Portal). Squads are set by an admin on the Teams or Members screen, and **Import Events now adds the people who played for each of your teams to its squad**, matched to member records by ECF code (a player in two teams is in both; nobody is ever removed by an import, and guests and players with no matching record are only counted). A member who agreed to WhatsApp is added to the groups of the squads they are in. Captains who are not admins ask an admin to change a squad. The WhatsApp list on an announcement is now the agreed members of the chosen teams' squads.
 * Added: the Tournament Games to Play block shows one round at a time (set how many rounds a page in the block, or 0 for all), with Previous and Next links, so a big tournament does not list every game at once.

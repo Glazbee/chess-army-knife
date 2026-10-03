@@ -638,4 +638,248 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertEqualsCanonicalizing( array( $by_name['Our A'], $by_name['Our B'] ), Chess_Army_Knife_Teams::squad_team_ids_of_person( $ada ) );
 		$this->assertContains( $old, Chess_Army_Knife_Teams::squad( $by_name['Our B'] ), 'Nobody is taken out of a squad by an import.' );
 	}
+
+	public function test_the_daily_import_does_nothing_without_a_key_and_records_what_it_did_with_one() {
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		Chess_Army_Knife_Events_Import::run_scheduled();
+		$this->assertNull( Chess_Army_Knife_Events_Import::last_run(), 'No key: nothing to record.' );
+
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'lms_api_key'     => 'lmsk_test',
+			)
+		);
+		Chess_Army_Knife_Events_Import::run_scheduled();
+		$last = Chess_Army_Knife_Events_Import::last_run();
+
+		$this->assertNotNull( $last );
+		$this->assertSame( 'scheduled', $last['source'] );
+		$this->assertArrayHasKey( 'created', $last['summary'] );
+	}
+
+	public function test_the_daily_import_is_scheduled_and_unscheduled() {
+		Chess_Army_Knife_Events_Import::schedule();
+		$this->assertNotFalse( wp_next_scheduled( Chess_Army_Knife_Events_Import::HOOK ) );
+
+		Chess_Army_Knife_Events_Import::unschedule();
+		$this->assertFalse( wp_next_scheduled( Chess_Army_Knife_Events_Import::HOOK ) );
+	}
+
+	public function test_the_overview_lists_what_is_not_set_up_for_an_administrator_only() {
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( '', Chess_Army_Knife_Setup_Checklist::html() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$html = Chess_Army_Knife_Setup_Checklist::html();
+		$this->assertStringContainsString( 'There is no LMS API key', $html );
+		$this->assertStringContainsString( 'No tournament has been created yet', $html );
+		$this->assertStringNotContainsString( 'No teams have been added', $html, 'set_up gave the club a team.' );
+	}
+
+	public function test_the_lms_test_button_is_for_administrators_and_tests_the_saved_key() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( '', Chess_Army_Knife_LMS_Test::panel_html() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertStringContainsString( 'Test the LMS connection', Chess_Army_Knife_LMS_Test::panel_html() );
+
+		$this->lms = array(); // The LMS lists the organisation's seasons, as set_up() arranged.
+		$this->assertSame( 'ok', Chess_Army_Knife_LMS_Test::run()['status'] );
+	}
+
+	public function test_setup_adds_the_first_team_with_its_league_and_fetches_its_fixtures() {
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'lms_api_key'     => 'lmsk_test',
+				'default_org_id'  => '613',
+			)
+		);
+		$this->lms['Division 2'] = array( $this->fixture( 'Our New Team', 'Rivals', '2099-10-05' ) );
+
+		$result = Chess_Army_Knife_Setup::add_first_team( 'Our New Team', 'Division 2', true );
+
+		$this->assertArrayNotHasKey( 'problem', $result );
+		$this->assertSame( 1, $result['created'] );
+		$names = wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' );
+		$this->assertContains( 'Our New Team', $names );
+		$this->assertNotNull( Chess_Army_Knife_Events_Import::last_run(), 'The import is recorded like any other.' );
+	}
+
+	public function test_setup_says_what_is_missing_instead_of_adding_half_a_team() {
+		$this->assertNull( Chess_Army_Knife_Setup::add_first_team( '', 'Division 2', true ), 'No team given: nothing to do.' );
+
+		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
+		$no_org = Chess_Army_Knife_Setup::add_first_team( 'Lonely Team', 'Division 2', true );
+		$this->assertArrayHasKey( 'problem', $no_org );
+		$this->assertNotContains( 'Lonely Team', wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' ) );
+
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'default_org_id'  => '613',
+			)
+		);
+		$no_key = Chess_Army_Knife_Setup::add_first_team( 'Keyless Team', 'Division 2', true );
+		$this->assertArrayHasKey( 'problem', $no_key );
+		$this->assertContains( 'Keyless Team', wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' ), 'The team is added; only the fetch is skipped.' );
+		$this->assertStringContainsString( 'no LMS API key', $no_key['problem'] );
+	}
+
+	public function test_a_list_of_clubs_is_added_and_a_second_paste_updates_instead_of_duplicating() {
+		$first = Chess_Army_Knife_Clubs::import_rows(
+			Chess_Army_Knife_Clubs::parse_csv( "Stroud,Stroud Badgers,The Library\nCheltenham,Cheltenham Knights;Cheltenham Rooks\n" )['rows']
+		);
+		$this->assertSame( 2, $first['created'] );
+
+		$second = Chess_Army_Knife_Clubs::import_rows(
+			Chess_Army_Knife_Clubs::parse_csv( "stroud,Stroud Hedgehogs,,,index.home.raft\n" )['rows']
+		);
+		$this->assertSame( 1, $second['updated'] );
+		$this->assertSame( 0, $second['created'] );
+
+		$stroud = Chess_Army_Knife_Clubs::find_by_team( 'Stroud Hedgehogs' );
+		$this->assertSame( 'Stroud', $stroud['name'] );
+		$this->assertSame( 'The Library', $stroud['venue'], 'A blank venue in the second list does not erase the first.' );
+		$this->assertSame( 'index.home.raft', $stroud['what3words'] );
+		$this->assertEqualsCanonicalizing( array( 'Stroud Badgers', 'Stroud Hedgehogs' ), $stroud['teams'] );
+		$this->assertCount( 2, Chess_Army_Knife_Clubs::all() );
+	}
+
+	public function test_imported_fixtures_are_league_matches_and_setup_events_get_their_types() {
+		$this->lms['Division 1'] = array( $this->fixture( 'Our A', 'Rivals', '2099-10-05' ) );
+		Chess_Army_Knife_Events_Import::import();
+		$this->assertSame( 'league_match', $this->imported()[0]['type'] );
+
+		Chess_Army_Knife_Setup::create_events(
+			array(
+				array(
+					'key'     => 'club_night',
+					'title'   => 'Club night',
+					'tag'     => 'Club night',
+					'type'    => 'club_night',
+					'weekday' => 2,
+					'start'   => '19:30',
+					'end'     => '',
+				),
+			),
+			'2099-01-01'
+		);
+		$types = wp_list_pluck(
+			Chess_Army_Knife_Events::query(
+				array(
+					'after'  => '',
+					'limit'  => 0,
+					'before' => '2099-02-01 00:00:00',
+				)
+			),
+			'type'
+		);
+		$this->assertContains( 'club_night', $types );
+	}
+
+	private function played_fixture() {
+		return $this->fixture(
+			'Our A',
+			'Rivals',
+			'2099-10-05',
+			array(
+				'home_score' => 1.5,
+				'away_score' => 0.5,
+				'winner'     => 'home',
+				'games'      => array(
+					array(
+						'board'       => 1,
+						'home_colour' => 'W',
+						'result'      => 'home_win',
+						'home_player' => $this->player( '123456A', 'Ada Lovelace' ),
+						'away_player' => $this->player( '999999Z', 'Their player' ),
+					),
+					array(
+						'board'       => 2,
+						'home_colour' => 'B',
+						'result'      => 'draw',
+						'home_player' => $this->player( '222222B', 'Bea Babbage' ),
+						'away_player' => $this->player( '888888Y', 'Another of theirs' ),
+					),
+				),
+			)
+		);
+	}
+
+	private function event_result() {
+		$events = Chess_Army_Knife_Events::query( array( 'after' => '' ) );
+		return Chess_Army_Knife_Event_Results::get( $events[0]['id'] );
+	}
+
+	public function test_a_played_fixture_keeps_its_score_and_who_played_each_board() {
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+
+		Chess_Army_Knife_Events_Import::import();
+		$result = $this->event_result();
+
+		$this->assertSame( 'home', $result['winner'] );
+		$this->assertSame( '1.5', $result['home_score'] );
+		$this->assertSame( 'Ada Lovelace', $result['games'][0]['home']['name'] );
+		$this->assertSame( '123456A', $result['games'][0]['home']['code'] );
+		$this->assertSame( array( 'name' => 'Their player' ), $result['games'][0]['away'], 'The opponent is kept by name only.' );
+	}
+
+	public function test_a_fixture_not_yet_played_keeps_no_result() {
+		$this->lms['Division 1'] = array( $this->fixture( 'Our A', 'Rivals', '2099-10-05' ) );
+
+		Chess_Army_Knife_Events_Import::import();
+
+		$this->assertNull( $this->event_result() );
+	}
+
+	public function test_players_in_the_results_can_be_added_as_pending_members() {
+		$this->member_with_code( 'Bea Babbage', '222222B' );
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+		Chess_Army_Knife_Events_Import::import();
+
+		$candidates = Chess_Army_Knife_LMS_Players::candidates();
+		$this->assertCount( 1, $candidates, 'Bea is already a member; opponents are never listed.' );
+		$this->assertSame( 'Ada Lovelace', array_values( $candidates )[0]['name'] );
+
+		$this->assertSame( 1, Chess_Army_Knife_LMS_Players::add( array_keys( $candidates ), $candidates ) );
+
+		$ada = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '123456A' );
+		$this->assertSame( 'Ada Lovelace', $ada['name'] );
+		$this->assertSame( Chess_Army_Knife_Membership_Store::STATUS_PENDING, $ada['status'] );
+		$this->assertNotSame( '', $ada['consent_at'], 'Consent to hold their details is recorded.' );
+		$this->assertSame( '', $ada['newsletter_consent_at'], 'The optional extras are not assumed.' );
+		$this->assertSame( '', $ada['whatsapp_consent_at'] );
+		$this->assertSame( array(), Chess_Army_Knife_LMS_Players::candidates(), 'Nobody is left to add.' );
+	}
+
+	public function test_a_person_asked_not_to_be_recorded_is_neither_kept_nor_listed() {
+		Chess_Army_Knife_Do_Not_Record::add( '123456A', 'Ada Lovelace' );
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+
+		Chess_Army_Knife_Events_Import::import();
+		$result = $this->event_result();
+
+		$this->assertSame( array( 'name' => '' ), $result['games'][0]['home'] );
+		$this->assertSame( 'home_win', $result['games'][0]['result'] );
+		$this->assertArrayNotHasKey( '123456', Chess_Army_Knife_LMS_Players::candidates() );
+	}
+
+	public function test_erasing_a_member_takes_their_name_out_of_the_results() {
+		$ada                     = $this->member_with_code( 'Ada Lovelace', '123456A' );
+		$this->lms['Division 1'] = array( $this->played_fixture() );
+		Chess_Army_Knife_Events_Import::import();
+
+		Chess_Army_Knife_Membership_Store::erase_member( $ada );
+		$result = $this->event_result();
+
+		$this->assertSame( array( 'name' => '' ), $result['games'][0]['home'] );
+		$this->assertSame( 'Bea Babbage', $result['games'][1]['home']['name'] );
+	}
 }

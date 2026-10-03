@@ -260,6 +260,16 @@
 		font-weight: 600;
 	}
 
+	// Cancelled or moved events say so in words; the line through a cancelled title is only extra.
+	.cak-bubble__status,
+	.cak-event__status {
+		font-weight: 700;
+	}
+
+	.cak-bubble--cancelled .cak-bubble__title {
+		text-decoration: line-through;
+	}
+
 	.cak-bubble__title {
 		min-width: 0;
 		overflow: hidden;

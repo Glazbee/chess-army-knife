@@ -80,4 +80,43 @@ class DoNotRecordTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertNotSame( $first, Chess_Army_Knife_Do_Not_Record::fingerprints( '123456A', '' ) );
 	}
+
+	public function test_a_backup_holds_only_fingerprints_and_restores_the_list() {
+		Chess_Army_Knife_Do_Not_Record::add( '123456A', 'Ada Lovelace' );
+		$backup = Chess_Army_Knife_Do_Not_Record::export_text();
+
+		$this->assertStringNotContainsString( '123456', $backup );
+		$this->assertStringNotContainsStringIgnoringCase( 'lovelace', $backup );
+		$this->assertCount(
+			3,
+			array_filter(
+				explode( "\n", $backup ),
+				function ( $line ) {
+					return preg_match( '/^[0-9a-f]{64}\t\d+$/', $line );
+				}
+			),
+			'The code, its digits and the name.'
+		);
+
+		// The database is lost; the backup puts the list back.
+		$this->options = array();
+		$this->assertFalse( Chess_Army_Knife_Do_Not_Record::is_blocked( '123456A', '' ) );
+		$this->assertSame( 3, Chess_Army_Knife_Do_Not_Record::import_text( $backup ) );
+		$this->assertTrue( Chess_Army_Knife_Do_Not_Record::is_blocked( '123456A', '' ) );
+		$this->assertSame( 0, Chess_Army_Knife_Do_Not_Record::import_text( $backup ), 'Restoring twice adds nothing.' );
+	}
+
+	public function test_only_fingerprint_lines_are_taken_from_pasted_text() {
+		$good = str_repeat( 'ab', 32 );
+
+		$added = Chess_Army_Knife_Do_Not_Record::import_text( "# a comment\n$good\t1700000000\nnot a fingerprint\n" . str_repeat( 'zz', 32 ) . "\n123456A\n" );
+
+		$this->assertSame( 1, $added );
+		$this->assertSame( 1, Chess_Army_Knife_Do_Not_Record::count() );
+	}
+
+	public function test_a_far_too_long_paste_is_refused() {
+		$this->assertNull( Chess_Army_Knife_Do_Not_Record::import_text( str_repeat( "x\n", Chess_Army_Knife_Do_Not_Record::MAX_IMPORT + 10 ) ) );
+		$this->assertSame( 0, Chess_Army_Knife_Do_Not_Record::count() );
+	}
 }

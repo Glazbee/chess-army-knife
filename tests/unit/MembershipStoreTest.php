@@ -177,6 +177,26 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'member_guardian', $result->get_error_code(), 'Leaving the box unticked does not avoid the parent details.' );
 	}
 
+	public function test_a_junior_membership_type_makes_the_application_a_junior_one() {
+		Functions\when( 'get_post_meta' )->alias(
+			function ( $id, $key ) {
+				return Chess_Army_Knife_Memberships::META_JUNIOR === $key ? '1' : '';
+			}
+		);
+		$input = $this->junior_input(
+			array(
+				'is_junior'     => '',
+				'date_of_birth' => '',
+			)
+		);
+
+		$result = Chess_Army_Knife_Membership_Store::sanitize_member( $input, false );
+		$this->assertSame( 'member_dob', $result->get_error_code(), 'The type alone asks for the date of birth.' );
+
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member( array( 'date_of_birth' => '2015-05-01' ) + $input, false );
+		$this->assertSame( '', $member['email'], 'Written to through the parent.' );
+	}
+
 	public function test_someone_who_turns_18_today_is_an_adult() {
 		Functions\when( 'current_time' )->justReturn( '2033-05-01' );
 		$member = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'date_of_birth' => '2015-05-01' ) ), false );

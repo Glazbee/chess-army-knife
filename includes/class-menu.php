@@ -161,6 +161,16 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $members_group,
+				'title'       => __( 'Players from the LMS', 'chess-army-knife' ),
+				'description' => __( 'Add the people who play for your teams, as found in the imported results, as members to confirm.', 'chess-army-knife' ),
+				'key'         => 'lms_players',
+				'slug'        => Chess_Army_Knife_LMS_Players::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_LMS_Players', 'render_page' ),
+				'kind'        => 'members',
+				'can'         => $can_members,
+			),
+			array(
+				'group'       => $members_group,
 				'title'       => __( 'Do Not Record', 'chess-army-knife' ),
 				'description' => __( 'People who asked to be deleted, so the plugin does not record them again by itself.', 'chess-army-knife' ),
 				'key'         => 'do_not_record',
@@ -222,6 +232,26 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Clubs', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Squad Review', 'chess-army-knife' ),
+				'description' => __( 'See who in a squad has not played for the team lately, and tidy the squads.', 'chess-army-knife' ),
+				'key'         => 'squad_review',
+				'slug'        => Chess_Army_Knife_Squad_Review::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Squad_Review', 'render_page' ),
+				'kind'        => 'teams',
+				'can'         => $can_teams,
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Team Overview', 'chess-army-knife' ),
+				'description' => __( 'A team\'s details, leagues, squad, next fixtures and who has not replied, all in one place.', 'chess-army-knife' ),
+				'key'         => 'team_overview',
+				'slug'        => Chess_Army_Knife_Team_Overview::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Team_Overview', 'render_page' ),
+				'kind'        => 'selection',
+				'can'         => array( 'Chess_Army_Knife_Captains', 'user_can_select' ),
 			),
 			array(
 				'group'       => $teams_group,
@@ -426,7 +456,9 @@ class Chess_Army_Knife_Menu {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Chess Army Knife', 'chess-army-knife' ); ?></h1>
 			<?php echo Chess_Army_Knife_Setup::notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in notice(). ?>
-			<?php echo Chess_Army_Knife_Policies::attention_notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in attention_notice(). ?>
+			<?php $checklist = Chess_Army_Knife_Setup_Checklist::html(); ?>
+			<?php // Administrators get the whole list, which includes the policies; everyone else just the policies. ?>
+			<?php echo '' !== $checklist ? $checklist : Chess_Army_Knife_Policies::attention_notice(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in html() and attention_notice(). ?>
 			<p class="description"><?php esc_html_e( 'Everything the plugin does is listed here. Some screens need a permission: the ones you cannot use say so.', 'chess-army-knife' ); ?></p>
 			<?php foreach ( $groups as $group => $areas ) : ?>
 				<h2><?php echo esc_html( $group ); ?></h2>
