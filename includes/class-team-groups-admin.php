@@ -32,7 +32,7 @@ class Chess_Army_Knife_Team_Groups_Admin {
 	}
 
 	/**
-	 * Load the script that moves teams up and down, on the group screen only.
+	 * Load the script that puts teams in order, on the group screen only.
 	 *
 	 * @param string $hook Admin page hook.
 	 */
@@ -41,7 +41,7 @@ class Chess_Army_Knife_Team_Groups_Admin {
 		if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) || ! $screen || Chess_Army_Knife_Team_Groups::POST_TYPE !== $screen->post_type ) {
 			return;
 		}
-		wp_enqueue_script( 'chess-army-knife-group-teams', Chess_Army_Knife_URL . 'assets/group-teams.js', array(), Chess_Army_Knife_VERSION, true );
+		wp_enqueue_script( 'chess-army-knife-group-teams', Chess_Army_Knife_URL . 'assets/group-teams.js', array( 'jquery-ui-sortable', 'jquery-touch-punch' ), Chess_Army_Knife_VERSION, true );
 	}
 
 	/**
@@ -76,11 +76,12 @@ class Chess_Army_Knife_Team_Groups_Admin {
 			return;
 		}
 		?>
-		<p class="description"><?php esc_html_e( 'Tick the teams in this group and put them in the order they should appear. A team can be in one group only: ticking a team that is in another group moves it here. A hero team gets a row to itself, with its own short blurb.', 'chess-army-knife' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Tick the teams in this group and put them in the order they should appear: drag a team by its handle, or use its Move up and Move down buttons. A team can be in one group only: ticking a team that is in another group moves it here. A hero team gets a row to itself, with its own short blurb.', 'chess-army-knife' ); ?></p>
 		<ol class="cak-group-teams" data-moved="<?php /* translators: 1: team name, 2: its new place in the list */ esc_attr_e( '%1$s is now number %2$s', 'chess-army-knife' ); ?>">
 			<?php foreach ( $teams as $team ) : ?>
 				<?php $here = (int) $post->ID === $team['group_id']; ?>
 				<li class="cak-group-team" data-name="<?php echo esc_attr( $team['name'] ); ?>" style="border:1px solid #dcdcde;padding:8px;margin:0 0 8px">
+					<span class="cak-drag-handle dashicons dashicons-menu" aria-hidden="true" style="cursor:move"></span>
 					<label>
 						<input type="checkbox" name="chess_army_group_teams[]" value="<?php echo esc_attr( $team['id'] ); ?>" <?php checked( $here ); ?> />
 						<strong><?php echo esc_html( $team['name'] ); ?></strong>
