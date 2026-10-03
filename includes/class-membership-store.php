@@ -34,6 +34,23 @@ class Chess_Army_Knife_Membership_Store {
 	const SOURCE_FORM   = 'form';
 	const SOURCE_MANUAL = 'manual';
 
+	/** The longest an email address can be and still fit its column. */
+	const MAX_EMAIL_LENGTH = 191;
+
+	/** How many characters each text column holds, so a long entry is cut to fit whatever the database's mode. Email addresses are checked instead, as a cut one is a different address. */
+	const COLUMN_LENGTHS = array(
+		'name'              => 191,
+		'nickname'          => 60,
+		'blurb'             => self::MAX_BLURB_LENGTH,
+		'phone'             => 40,
+		'guardian_name'     => 191,
+		'guardian_phone'    => 40,
+		'ecf_code'          => 20,
+		'type_name'         => 191,
+		'payment_method'    => 20,
+		'payment_reference' => 40,
+	);
+
 	/**
 	 * Full name of the members table.
 	 *
@@ -956,12 +973,27 @@ class Chess_Army_Knife_Membership_Store {
 	 * ------------------------------------------------------------- */
 
 	/**
+	 * Cut each text value to the size of its column.
+	 *
+	 * @param array $data Columns and values.
+	 * @return array
+	 */
+	protected static function clip_to_columns( array $data ) {
+		foreach ( self::COLUMN_LENGTHS as $column => $length ) {
+			if ( isset( $data[ $column ] ) && is_string( $data[ $column ] ) ) {
+				$data[ $column ] = mb_substr( $data[ $column ], 0, $length );
+			}
+		}
+		return $data;
+	}
+
+	/**
 	 * Add a member or application, or update one.
 	 *
 	 * @param array $data Columns from sanitize_member(), and 'id' to update. A new
 	 *                    member also takes 'source' (form by default) and, if it has
 	 *                    no 'status', starts pending.
-	 * @return int Member id.
+	 * @return int Member id, or 0 if the database would not update it.
 	 */
 	public static function save_member( array $data ) {
 		global $wpdb;
@@ -972,12 +1004,15 @@ class Chess_Army_Knife_Membership_Store {
 		if ( isset( $data['name'] ) && self::erased_name() !== $data['name'] ) {
 			$data['name'] = Chess_Army_Knife_Names::canonical( $data['name'] );
 		}
+		$data = self::clip_to_columns( $data );
 
 		if ( ! empty( $data['id'] ) ) {
 			$id = (int) $data['id'];
 			unset( $data['id'] );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-			$wpdb->update( self::table(), $data, array( 'id' => $id ) );
+			if ( false === $wpdb->update( self::table(), $data, array( 'id' => $id ) ) ) {
+				return 0;
+			}
 			// Only a change to the membership itself can start or extend a period.
 			if ( array_intersect( array( 'status', 'start_date', 'expiry_date', 'membership_type_id', 'paid_on' ), array_keys( $data ) ) ) {
 				Chess_Army_Knife_Member_History::record( $id );

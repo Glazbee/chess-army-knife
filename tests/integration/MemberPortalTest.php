@@ -40,6 +40,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		foreach ( array( 'ada@example.test', 'nobody@example.test' ) as $email ) {
 			delete_transient( 'chess_army_knife_portal_email_' . md5( $email ) );
 		}
+		delete_transient( Chess_Army_Knife_Member_Portal::EMAIL_CHANGE_TARGET_KEY . md5( 'ada.new@example.test' ) );
 	}
 
 	private function person( $name = 'Ada Lovelace', array $extra = array() ) {
@@ -241,6 +242,57 @@ class MemberPortalTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 1500, Chess_Army_Knife_Membership_Store::get_member( $ada )['ecf_rating'] );
+	}
+
+	public function test_details_too_long_for_their_columns_are_cut_to_fit() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+
+		$this->assertTrue(
+			Chess_Army_Knife_Member_Portal::save_details(
+				$this->post(
+					Chess_Army_Knife_Member_Portal::ACTION_DETAILS,
+					$token,
+					array(
+						'person'   => $ada,
+						'name'     => str_repeat( 'Lovelace ', 40 ),
+						'nickname' => str_repeat( 'n', 100 ),
+						'phone'    => str_repeat( '1', 100 ),
+					)
+				)
+			)
+		);
+
+		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
+		$this->assertLessThanOrEqual( 191, mb_strlen( $member['name'] ) );
+		$this->assertSame( 60, mb_strlen( $member['nickname'] ) );
+		$this->assertSame( 40, mb_strlen( $member['phone'] ), 'The phone number is cut by this plugin, not left to the database.' );
+	}
+
+	public function test_a_save_the_database_refuses_is_reported_not_called_saved() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+		$fail  = static function ( $query ) {
+			return 0 === strpos( ltrim( $query ), 'UPDATE' ) && false !== strpos( $query, Chess_Army_Knife_Membership_Store::table() ) ? 'UPDATE nonexistent_table SET x = 1' : $query;
+		};
+
+		add_filter( 'query', $fail );
+		$suppress = $GLOBALS['wpdb']->suppress_errors( true );
+		$result   = Chess_Army_Knife_Member_Portal::save_details(
+			$this->post(
+				Chess_Army_Knife_Member_Portal::ACTION_DETAILS,
+				$token,
+				array(
+					'person' => $ada,
+					'name'   => 'Ada King',
+				)
+			)
+		);
+		$GLOBALS['wpdb']->suppress_errors( $suppress );
+		remove_filter( 'query', $fail );
+
+		$this->assertSame( 'save', $result->get_error_code() );
+		$this->assertSame( 'Lovelace, Ada', Chess_Army_Knife_Membership_Store::get_member( $ada )['name'] );
 	}
 
 	public function test_details_need_a_name_and_only_the_members_own_records_can_be_changed() {
@@ -504,6 +556,27 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( 'person', $this->request_change( $token, $ada, array( 'field' => 'guardian_email' ) )->get_error_code(), 'A record with no parent address has none to change.' );
 		$this->assertSame( 'person', $this->request_change( $token, $this->person( 'Bob Smith' ) )->get_error_code() );
 		$this->assertSame( array(), $this->sent() );
+	}
+
+	public function test_an_address_too_long_for_its_column_is_refused_not_cut() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+		$long  = str_repeat( 'a', Chess_Army_Knife_Membership_Store::MAX_EMAIL_LENGTH ) . '@example.test';
+
+		$this->assertSame( 'email', $this->request_change( $token, $ada, array( 'new_email' => $long ) )->get_error_code() );
+		$this->assertSame( array(), $this->sent() );
+	}
+
+	public function test_one_address_cannot_be_sent_a_flood_of_change_requests() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+
+		for ( $request = 1; $request <= Chess_Army_Knife_Member_Requests::MAX_PER_HOUR + 2; $request++ ) {
+			delete_transient( 'chess_army_knife_data_ip_' . md5( '203.0.113.99' ) ); // Only the target address's count is being tested.
+			$this->assertSame( 'email_sent', $this->request_change( $token, $ada ), 'The visitor is told the same each time.' );
+		}
+
+		$this->assertCount( Chess_Army_Knife_Member_Requests::MAX_PER_HOUR, $this->sent(), 'No more than the hourly limit reach the address.' );
 	}
 
 	public function test_a_confirmation_link_is_no_good_once_the_address_has_changed_another_way() {

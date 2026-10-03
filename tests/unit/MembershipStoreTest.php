@@ -9,6 +9,20 @@ use Brain\Monkey\Functions;
 
 class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
+	public function test_the_clip_lengths_match_the_columns_in_the_table() {
+		$source = file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-membership-store.php' );
+		preg_match_all( '/^\s+(\w+) VARCHAR\((\d+)\)/m', $source, $found );
+		$columns = array_combine( $found[1], array_map( 'intval', $found[2] ) );
+
+		foreach ( Chess_Army_Knife_Membership_Store::COLUMN_LENGTHS as $column => $length ) {
+			$this->assertArrayHasKey( $column, $columns, "{$column} is a column." );
+			$this->assertSame( $columns[ $column ], $length, "{$column} is cut to the size of its column." );
+		}
+		foreach ( array( 'email', 'guardian_email' ) as $column ) {
+			$this->assertSame( $columns[ $column ], Chess_Army_Knife_Membership_Store::MAX_EMAIL_LENGTH );
+		}
+	}
+
 	protected function setUp(): void {
 		parent::setUp();
 		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
