@@ -17,6 +17,8 @@
 		"columns": { "type": "number", "default": 1 },
 		"nameFormat": { "type": "string", "default": "" },
 		"groupBy": { "type": "string", "default": "none" },
+		"heroTeams": { "type": "array", "items": { "type": "number" }, "default": [] },
+		"showDescription": { "type": "boolean", "default": true },
 		"showSeparators": { "type": "boolean", "default": false },
 		"groupHeadingLevel": { "type": "number", "default": 0 },
 		"teamHeadingLevel": { "type": "number", "default": 0 },

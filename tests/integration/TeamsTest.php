@@ -235,65 +235,24 @@ class TeamsTest extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_a_group_chooses_its_teams_their_order_and_its_hero_teams() {
+	public function test_a_group_chooses_its_teams_and_their_order() {
 		$a     = $this->team( 'Club A' );
 		$b     = $this->team( 'Club B' );
 		$c     = $this->team( 'Club C' );
 		$group = $this->group();
 		$other = $this->group( 'Internal' );
 
-		Chess_Army_Knife_Team_Groups::set_teams(
-			$other,
-			array(
-				array(
-					'team_id' => $c,
-					'hero'    => false,
-					'blurb'   => '',
-				),
-			)
-		);
-		Chess_Army_Knife_Team_Groups::set_teams(
-			$group,
-			array(
-				array(
-					'team_id' => $b,
-					'hero'    => true,
-					'blurb'   => 'The flagship.',
-				),
-				array(
-					'team_id' => $c,
-					'hero'    => false,
-					'blurb'   => '',
-				),
-				array(
-					'team_id' => 99999,
-					'hero'    => false,
-					'blurb'   => '',
-				),
-			)
-		);
+		Chess_Army_Knife_Team_Groups::set_teams( $other, array( $c ) );
+		Chess_Army_Knife_Team_Groups::set_teams( $group, array( $b, $c, 99999 ) );
 
 		$this->assertSame( array( $b, $c ), wp_list_pluck( Chess_Army_Knife_Team_Groups::teams_of( $group ), 'id' ) );
 		$this->assertSame( array(), Chess_Army_Knife_Team_Groups::teams_of( $other ), 'A team is in one group only.' );
 		$this->assertSame( 'NGCA', Chess_Army_Knife_Teams::get( $c )['group'] );
-		$this->assertTrue( Chess_Army_Knife_Teams::get( $b )['hero'] );
-		$this->assertSame( 'The flagship.', Chess_Army_Knife_Teams::get( $b )['hero_blurb'] );
 		$this->assertSame( 0, Chess_Army_Knife_Teams::get( $a )['group_id'] );
 
-		// Leaving the list takes a team out of the group and forgets its hero settings.
-		Chess_Army_Knife_Team_Groups::set_teams(
-			$group,
-			array(
-				array(
-					'team_id' => $c,
-					'hero'    => false,
-					'blurb'   => '',
-				),
-			)
-		);
+		// Leaving the list takes a team out of the group.
+		Chess_Army_Knife_Team_Groups::set_teams( $group, array( $c ) );
 		$this->assertSame( 0, Chess_Army_Knife_Teams::get( $b )['group_id'] );
-		$this->assertFalse( Chess_Army_Knife_Teams::get( $b )['hero'] );
-		$this->assertSame( '', Chess_Army_Knife_Teams::get( $b )['hero_blurb'] );
 	}
 
 	public function test_saving_a_group_needs_its_nonce_and_keeps_the_order_posted() {
@@ -309,48 +268,36 @@ class TeamsTest extends WP_UnitTestCase {
 
 		$_POST = array(
 			Chess_Army_Knife_Team_Groups_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Team_Groups_Admin::NONCE_ACTION ),
-			'chess_army_group_teams'      => array( (string) $b, (string) $a ),
-			'chess_army_group_hero'       => array( (string) $a => '1' ),
-			'chess_army_group_hero_blurb' => array( (string) $a => 'Our pride.' ),
+			'chess_army_group_teams' => array( (string) $b, (string) $a ),
 		);
 		Chess_Army_Knife_Team_Groups_Admin::save( $group );
 		$_POST = array();
 
-		$teams = Chess_Army_Knife_Team_Groups::teams_of( $group );
-		$this->assertSame( array( $b, $a ), wp_list_pluck( $teams, 'id' ) );
-		$this->assertFalse( $teams[0]['hero'] );
-		$this->assertTrue( $teams[1]['hero'] );
-		$this->assertSame( 'Our pride.', $teams[1]['hero_blurb'] );
+		$this->assertSame( array( $b, $a ), wp_list_pluck( Chess_Army_Knife_Team_Groups::teams_of( $group ), 'id' ) );
 	}
 
 	public function test_the_block_groups_teams_gives_hero_teams_a_row_and_can_drop_its_title() {
 		$a     = $this->team( 'Club A' );
 		$b     = $this->team( 'Club B' );
 		$group = $this->group( 'North Gloucestershire Chess Association', 'About the league.' );
-		Chess_Army_Knife_Team_Groups::set_teams(
-			$group,
-			array(
-				array(
-					'team_id' => $b,
-					'hero'    => true,
-					'blurb'   => 'The flagship.',
-				),
-				array(
-					'team_id' => $a,
-					'hero'    => false,
-					'blurb'   => '',
-				),
-			)
-		);
+		Chess_Army_Knife_Team_Groups::set_teams( $group, array( $b, $a ) );
 
-		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"groupBy":"group","showTitle":false} /-->' );
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"groupBy":"group","showTitle":false,"heroTeams":[' . $b . ']} /-->' );
 
 		$this->assertStringContainsString( 'North Gloucestershire Chess Association', $html );
 		$this->assertStringContainsString( 'About the league.', $html );
-		$this->assertStringContainsString( 'cak-team--hero', $html );
-		$this->assertStringContainsString( 'The flagship.', $html );
+		$this->assertSame( 1, substr_count( $html, 'cak-team--hero' ), 'Only the chosen team is a hero.' );
 		$this->assertStringNotContainsString( 'cak-block-title', $html, 'The block title is off.' );
 		$this->assertLessThan( strpos( $html, 'Club A' ), strpos( $html, 'Club B' ), 'The group puts Club B first.' );
+	}
+
+	public function test_the_block_can_hide_team_descriptions() {
+		$this->team( 'Club A' );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showDescription":false} /-->' );
+
+		$this->assertStringContainsString( 'Club A', $html );
+		$this->assertStringNotContainsString( 'Our first team.', $html );
 	}
 
 	public function test_saving_a_team_keeps_only_valid_choices_and_needs_permission() {

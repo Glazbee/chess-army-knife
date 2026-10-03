@@ -45,6 +45,17 @@
       "type": "string",
       "default": "none"
     },
+    "heroTeams": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "showDescription": {
+      "type": "boolean",
+      "default": true
+    },
     "showSeparators": {
       "type": "boolean",
       "default": false

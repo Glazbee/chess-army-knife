@@ -222,7 +222,7 @@ class Chess_Army_Knife_Menu {
 			array(
 				'group'       => $teams_group,
 				'title'       => __( 'Groups', 'chess-army-knife' ),
-				'description' => __( 'Headings such as an association or "Internal teams" that teams are listed under: choose each group\'s teams, their order and any hero teams. A tab of Teams.', 'chess-army-knife' ),
+				'description' => __( 'Headings such as an association or "Internal teams" that teams are listed under: choose each group\'s teams and their order. A tab of Teams.', 'chess-army-knife' ),
 				'key'         => 'team_groups',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE,
 				'callback'    => null,

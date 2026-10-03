@@ -12,6 +12,7 @@ import {
 	TextControl,
 	RangeControl,
 	ToggleControl,
+	CheckboxControl,
 } from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
@@ -30,6 +31,8 @@ export default function Edit( { attributes, setAttributes } ) {
 		title,
 		showTitle,
 		teamId,
+		heroTeams,
+		showDescription,
 		columns,
 		nameFormat,
 		groupBy,
@@ -147,6 +150,20 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
+						label={ __(
+							'Show team descriptions',
+							'chess-army-knife'
+						) }
+						help={ __(
+							"A team's description is set on its page under Teams.",
+							'chess-army-knife'
+						) }
+						checked={ showDescription }
+						onChange={ ( value ) =>
+							setAttributes( { showDescription: value } )
+						}
+					/>
+					<ToggleControl
 						label={ __( 'Show leagues list', 'chess-army-knife' ) }
 						checked={ showLeagues }
 						onChange={ ( value ) =>
@@ -217,6 +234,33 @@ export default function Edit( { attributes, setAttributes } ) {
 							} )
 						}
 					/>
+				</PanelBody>
+				<PanelBody
+					title={ __( 'Hero teams', 'chess-army-knife' ) }
+					initialOpen={ false }
+				>
+					<p>
+						{ __(
+							'A hero team gets a row to itself, with no other columns.',
+							'chess-army-knife'
+						) }
+					</p>
+					{ teams.map( ( team ) => (
+						<CheckboxControl
+							key={ team.id }
+							label={ team.name }
+							checked={ heroTeams.includes( team.id ) }
+							onChange={ ( checked ) =>
+								setAttributes( {
+									heroTeams: checked
+										? [ ...heroTeams, team.id ]
+										: heroTeams.filter(
+												( id ) => id !== team.id
+										  ),
+								} )
+							}
+						/>
+					) ) }
 				</PanelBody>
 				<PanelBody
 					title={ __( 'Players', 'chess-army-knife' ) }

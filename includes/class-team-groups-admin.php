@@ -1,7 +1,6 @@
 <?php
 /**
- * Admin side of groups: the box on a group's edit screen that chooses its teams, their order, and which
- * teams are "hero" teams (a row of their own, with a short blurb).
+ * Admin side of groups: the box on a group's edit screen that chooses its teams and puts them in order.
  *
  * A group decides which teams are in it, so teams are managed here, many at once, not one by one.
  *
@@ -45,71 +44,83 @@ class Chess_Army_Knife_Team_Groups_Admin {
 	}
 
 	/**
-	 * Every team, those in this group first and in its order.
+	 * One team in either list. The same row serves both: the script shows the buttons that fit the list
+	 * it is in, and a team not in the group has its field switched off so it is not saved.
 	 *
-	 * @param int $group_id Group id.
-	 * @return array[] Teams (see Chess_Army_Knife_Teams::all()).
+	 * @param array $team     Team (see Chess_Army_Knife_Teams::all()).
+	 * @param bool  $in_group Whether it is in the group being edited.
 	 */
-	protected static function ordered_teams( $group_id ) {
-		$in_group = Chess_Army_Knife_Team_Groups::teams_of( $group_id );
-		$ids      = wp_list_pluck( $in_group, 'id' );
-		$others   = array_filter(
-			Chess_Army_Knife_Teams::all(),
-			function ( $team ) use ( $ids ) {
-				return ! in_array( $team['id'], $ids, true );
-			}
-		);
-		return array_merge( $in_group, array_values( $others ) );
+	protected static function render_team( array $team, $in_group ) {
+		$name = $team['name'];
+		?>
+		<li class="cak-group-team" data-name="<?php echo esc_attr( $name ); ?>" style="border:1px solid #dcdcde;background:#fff;padding:6px 8px;margin:0 0 6px;display:flex;align-items:center;gap:6px">
+			<span class="cak-drag-handle dashicons dashicons-menu" aria-hidden="true" style="cursor:move"></span>
+			<input type="hidden" name="chess_army_group_teams[]" value="<?php echo esc_attr( $team['id'] ); ?>" <?php disabled( ! $in_group ); ?> />
+			<span style="flex:1">
+				<strong><?php echo esc_html( $name ); ?></strong>
+				<?php if ( ! $in_group && $team['group_id'] ) : ?>
+					<span class="description">
+						<?php
+						/* translators: %s: name of another group */
+						echo esc_html( sprintf( __( '(now in %s)', 'chess-army-knife' ), $team['group'] ) );
+						?>
+					</span>
+				<?php endif; ?>
+			</span>
+			<button type="button" class="button cak-move-up" <?php echo $in_group ? '' : 'style="display:none"'; ?>>
+				<span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: team name */ echo esc_html( sprintf( __( 'Move %s up', 'chess-army-knife' ), $name ) ); ?></span>
+			</button>
+			<button type="button" class="button cak-move-down" <?php echo $in_group ? '' : 'style="display:none"'; ?>>
+				<span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: team name */ echo esc_html( sprintf( __( 'Move %s down', 'chess-army-knife' ), $name ) ); ?></span>
+			</button>
+			<button type="button" class="button cak-remove" <?php echo $in_group ? '' : 'style="display:none"'; ?>>
+				<span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: team name */ echo esc_html( sprintf( __( 'Remove %s from the group', 'chess-army-knife' ), $name ) ); ?></span>
+			</button>
+			<button type="button" class="button cak-add" <?php echo $in_group ? 'style="display:none"' : ''; ?>>
+				<span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: team name */ echo esc_html( sprintf( __( 'Add %s to the group', 'chess-army-knife' ), $name ) ); ?></span>
+			</button>
+		</li>
+		<?php
 	}
 
 	/**
-	 * Render the box.
+	 * Render the box: the teams that are not in the group on the left, those that are on the right.
 	 *
 	 * @param WP_Post $post Group being edited.
 	 */
 	public static function render_teams( $post ) {
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 
-		$teams = self::ordered_teams( $post->ID );
-		if ( ! $teams ) {
-			echo '<p>' . esc_html__( 'There are no teams yet. Add teams on the Teams tab first.', 'chess-army-knife' ) . '</p>';
-			return;
-		}
+		$in_group = Chess_Army_Knife_Team_Groups::teams_of( $post->ID );
+		$ids      = wp_list_pluck( $in_group, 'id' );
+		$others   = array_values(
+			array_filter(
+				Chess_Army_Knife_Teams::all(),
+				function ( $team ) use ( $ids ) {
+					return ! in_array( $team['id'], $ids, true );
+				}
+			)
+		);
 		?>
-		<p class="description"><?php esc_html_e( 'Tick the teams in this group and put them in the order they should appear: drag a team by its handle, or use its Move up and Move down buttons. A team can be in one group only: ticking a team that is in another group moves it here. A hero team gets a row to itself, with its own short blurb.', 'chess-army-knife' ); ?></p>
-		<ol class="cak-group-teams" data-moved="<?php /* translators: 1: team name, 2: its new place in the list */ esc_attr_e( '%1$s is now number %2$s', 'chess-army-knife' ); ?>">
-			<?php foreach ( $teams as $team ) : ?>
-				<?php $here = (int) $post->ID === $team['group_id']; ?>
-				<li class="cak-group-team" data-name="<?php echo esc_attr( $team['name'] ); ?>" style="border:1px solid #dcdcde;padding:8px;margin:0 0 8px">
-					<span class="cak-drag-handle dashicons dashicons-menu" aria-hidden="true" style="cursor:move"></span>
-					<label>
-						<input type="checkbox" name="chess_army_group_teams[]" value="<?php echo esc_attr( $team['id'] ); ?>" <?php checked( $here ); ?> />
-						<strong><?php echo esc_html( $team['name'] ); ?></strong>
-					</label>
-					<?php if ( $team['group_id'] && ! $here ) : ?>
-						<span class="description">
-							<?php
-							/* translators: %s: name of another group */
-							echo esc_html( sprintf( __( '(now in %s)', 'chess-army-knife' ), $team['group'] ) );
-							?>
-						</span>
-					<?php endif; ?>
-					<button type="button" class="button cak-move-up">
-						<?php esc_html_e( 'Move up', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $team['name'] ); ?></span>
-					</button>
-					<button type="button" class="button cak-move-down">
-						<?php esc_html_e( 'Move down', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $team['name'] ); ?></span>
-					</button>
-					<p>
-						<label><input type="checkbox" name="chess_army_group_hero[<?php echo esc_attr( $team['id'] ); ?>]" value="1" <?php checked( $here && $team['hero'] ); ?> /> <?php esc_html_e( 'Hero team (a row of its own)', 'chess-army-knife' ); ?></label>
-					</p>
-					<p>
-						<label for="cak-hero-blurb-<?php echo esc_attr( $team['id'] ); ?>"><?php esc_html_e( 'Hero blurb', 'chess-army-knife' ); ?></label><br />
-						<textarea id="cak-hero-blurb-<?php echo esc_attr( $team['id'] ); ?>" name="chess_army_group_hero_blurb[<?php echo esc_attr( $team['id'] ); ?>]" rows="2" class="large-text"><?php echo esc_textarea( $here ? $team['hero_blurb'] : '' ); ?></textarea>
-					</p>
-				</li>
-			<?php endforeach; ?>
-		</ol>
+		<p class="description"><?php esc_html_e( 'Drag teams from the left into the group on the right, and drag them up and down to put them in order. Or use the arrow buttons. A team can be in one group only: adding a team that is in another group moves it here.', 'chess-army-knife' ); ?></p>
+		<div class="cak-group-columns" style="display:flex;gap:16px;flex-wrap:wrap" data-added="<?php /* translators: %s: team name */ esc_attr_e( '%s added to the group', 'chess-army-knife' ); ?>" data-removed="<?php /* translators: %s: team name */ esc_attr_e( '%s removed from the group', 'chess-army-knife' ); ?>" data-moved="<?php /* translators: 1: team name, 2: its new place in the list */ esc_attr_e( '%1$s is now number %2$s', 'chess-army-knife' ); ?>">
+			<div style="flex:1;min-width:240px">
+				<h3 id="cak-group-available-title"><?php esc_html_e( 'Teams not in this group', 'chess-army-knife' ); ?></h3>
+				<ul class="cak-group-available" aria-labelledby="cak-group-available-title" style="list-style:none;margin:0;padding:8px;min-height:48px;border:1px dashed #c3c4c7">
+					<?php foreach ( $others as $team ) : ?>
+						<?php self::render_team( $team, false ); ?>
+					<?php endforeach; ?>
+				</ul>
+			</div>
+			<div style="flex:1;min-width:240px">
+				<h3 id="cak-group-teams-title"><?php esc_html_e( 'Teams in this group', 'chess-army-knife' ); ?></h3>
+				<ol class="cak-group-teams" aria-labelledby="cak-group-teams-title" style="list-style:none;margin:0;padding:8px;min-height:48px;border:1px solid #8c8f94">
+					<?php foreach ( $in_group as $team ) : ?>
+						<?php self::render_team( $team, true ); ?>
+					<?php endforeach; ?>
+				</ol>
+			</div>
+		</div>
 		<p class="screen-reader-text" role="status" aria-live="polite" id="cak-group-teams-status"></p>
 		<?php
 	}
@@ -127,20 +138,9 @@ class Chess_Army_Knife_Team_Groups_Admin {
 			return;
 		}
 
-		$ids    = isset( $_POST['chess_army_group_teams'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['chess_army_group_teams'] ) ) : array();
-		$heroes = isset( $_POST['chess_army_group_hero'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['chess_army_group_hero'] ) ) : array();
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each blurb is cleaned by set_teams().
-		$blurbs = isset( $_POST['chess_army_group_hero_blurb'] ) ? (array) wp_unslash( $_POST['chess_army_group_hero_blurb'] ) : array();
+		$ids = isset( $_POST['chess_army_group_teams'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['chess_army_group_teams'] ) ) : array();
 
-		$rows = array();
-		foreach ( $ids as $team_id ) {
-			$rows[] = array(
-				'team_id' => $team_id,
-				'hero'    => ! empty( $heroes[ $team_id ] ),
-				'blurb'   => isset( $blurbs[ $team_id ] ) && is_string( $blurbs[ $team_id ] ) ? $blurbs[ $team_id ] : '',
-			);
-		}
-		Chess_Army_Knife_Team_Groups::set_teams( $post_id, $rows );
+		Chess_Army_Knife_Team_Groups::set_teams( $post_id, $ids );
 	}
 }
 
