@@ -419,30 +419,22 @@ class TeamsTest extends WP_UnitTestCase {
 
 		$done = Chess_Army_Knife_Leagues_Page::save_from(
 			array(
-				'orgs'    => array( '270' ),
-				'leagues' => array(
+				'orgs'      => array( '270' ),
+				'leagues'   => array(
 					'270' => array(
-						array(
-							'team'  => (string) $a,
+						$a => array(
 							'event' => 'Division 1',
 							'name'  => '',
 						),
-						array(
-							'team'  => (string) $b,
+						$b => array(
 							'event' => 'Division 2',
 							'name'  => 'Club B Juniors',
 						),
-						array(
-							'team'   => (string) $b,
-							'event'  => 'Division 3',
-							'remove' => '1',
-						),
-						array(
-							'team'  => '0',
-							'event' => 'No team',
-						),
+						// Not in a division: no entry.
+						77 => array( 'event' => '' ),
 					),
 				),
+				'org_names' => array( '270' => 'North Gloucestershire Chess League' ),
 			)
 		);
 
@@ -450,7 +442,9 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertSame( array( '999|Cup|Club A', '270|Division 1|Club A' ), Chess_Army_Knife_Teams::get( $a )['seasons'], 'An organisation that was not shown is left alone.' );
 		$this->assertSame( array( '270|Division 2|Club B Juniors' ), Chess_Army_Knife_Teams::get( $b )['seasons'] );
 
-		// Emptying an organisation's rows removes the entries there.
+		$this->assertSame( 'North Gloucestershire Chess League', Chess_Army_Knife_Leagues_Page::saved_org_names()['270'] );
+
+		// A team left out of every division is taken out of the organisation.
 		Chess_Army_Knife_Leagues_Page::save_from( array( 'orgs' => array( '270' ) ) );
 		$this->assertSame( array( '999|Cup|Club A' ), Chess_Army_Knife_Teams::get( $a )['seasons'] );
 		$this->assertSame( array(), Chess_Army_Knife_Teams::get( $b )['seasons'] );

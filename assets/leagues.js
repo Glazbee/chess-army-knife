@@ -1,56 +1,72 @@
 /**
- * Add another team to an organisation's table on the Leagues tab: copy the last row, blank it and give
- * its fields a new number so they are saved as a new entry.
+ * The Leagues tab: put the club's teams in divisions. Drag a team by its handle into a division (or back out),
+ * or choose the division from the team's own drop-down, which works from the keyboard. The drop-down is what
+ * is saved, so both ways agree. Every move is announced for screen readers.
  */
-( function () {
-	document.addEventListener( 'click', function ( event ) {
-		var button = event.target.closest( '.cak-league-add' );
-		var table;
-		var last;
-		var next;
-		var copy;
-		if ( ! button ) {
+( function ( $ ) {
+	var status = document.getElementById( 'cak-leagues-status' );
+
+	function say( org, item, division ) {
+		var message = $( org ).attr( 'data-moved' ) || '';
+		if ( ! status ) {
 			return;
 		}
+		status.textContent = message
+			.replace( '%1$s', item.find( 'strong' ).text() )
+			.replace(
+				'%2$s',
+				division || $( org ).attr( 'data-none' ) || ''
+			);
+	}
 
-		table = button.parentNode.previousElementSibling;
-		last = table.querySelector( 'tbody tr:last-child' );
-		next = parseInt( button.getAttribute( 'data-next' ), 10 ) || 0;
-		copy = last.cloneNode( true );
+	// A team that has moved has not been matched against its new division's teams until the page is saved.
+	function settle( item, division ) {
+		var org = item.closest( '.cak-org' );
+		item.find( '.cak-division-pick' ).val( division );
+		item.find( '.cak-match' ).empty();
+		say( org, item, division );
+	}
 
-		Array.prototype.forEach.call(
-			copy.querySelectorAll( 'select, input, label' ),
-			function ( field ) {
-				var name = field.getAttribute( 'name' );
-				var id = field.getAttribute( 'id' );
-				var label = field.getAttribute( 'for' );
-				// leagues[270][3][team] is row 3 of organisation 270; ids and labels end in the row number.
-				if ( name ) {
-					field.setAttribute(
-						'name',
-						name.replace( /^(leagues\[\d+\]\[)\d+(\])/, '$1' + next + '$2' )
-					);
-				}
-				if ( id ) {
-					field.setAttribute( 'id', id.replace( /-\d+$/, '-' + next ) );
-				}
-				if ( label ) {
-					field.setAttribute( 'for', label.replace( /-\d+$/, '-' + next ) );
-				}
-				if ( field.type === 'checkbox' ) {
-					field.checked = false;
-				} else if ( field.tagName === 'SELECT' ) {
-					field.selectedIndex = 0;
-				} else if ( field.tagName === 'INPUT' ) {
-					field.value = '';
-				}
-			}
-		);
-		// A new row has not been checked against the LMS.
-		copy.children[ 3 ].innerHTML = '&mdash;';
-
-		last.parentNode.appendChild( copy );
-		button.setAttribute( 'data-next', next + 1 );
-		copy.querySelector( 'select' ).focus();
+	$( '.cak-org' ).each( function () {
+		var $lists = $( this ).find( '.cak-division-list' );
+		$lists.sortable( {
+			connectWith: $lists,
+			handle: '.cak-drag-handle',
+			forcePlaceholderSize: true,
+			start: function ( event, ui ) {
+				ui.placeholder.css( {
+					border: '1px dashed #8c8f94',
+					visibility: 'visible',
+				} );
+			},
+			stop: function ( event, ui ) {
+				settle( ui.item, ui.item.parent().attr( 'data-division' ) );
+			},
+		} );
 	} );
-} )();
+
+	$( document ).on( 'change', '.cak-division-pick', function () {
+		var item = $( this ).closest( '.cak-league-team' );
+		var division = $( this ).val();
+		var target = item
+			.closest( '.cak-org' )
+			.find( '.cak-division-list' )
+			.filter( function () {
+				return $( this ).attr( 'data-division' ) === division;
+			} )
+			.first();
+		if ( target.length ) {
+			item.appendTo( target );
+			settle( item, division );
+			item.find( '.cak-division-pick' ).trigger( 'focus' );
+		}
+	} );
+
+	if ( $( '.cak-org' ).length && ! status ) {
+		status = $(
+			'<p class="screen-reader-text" role="status" aria-live="polite" id="cak-leagues-status"></p>'
+		)
+			.appendTo( 'body' )
+			.get( 0 );
+	}
+} )( jQuery );

@@ -451,6 +451,30 @@ class Chess_Army_Knife_LMS_Client {
 	}
 
 	/**
+	 * An organisation's name, if the LMS gives it with the organisation's seasons. The shape of that answer is
+	 * not documented, so the usual few names for it are tried; the result is '' when none is there.
+	 *
+	 * @param string $org Numeric organisation id.
+	 * @return string
+	 */
+	public static function get_org_name( $org ) {
+		$data = '' === self::api_key() ? array() : self::v2_get( 'org/' . rawurlencode( trim( (string) $org ) ) . '/seasons', self::V2_STRUCTURE_TTL );
+		if ( ! is_array( $data ) || is_wp_error( $data ) ) {
+			return '';
+		}
+
+		$names = array( 'org_name', 'organisation_name', 'organization_name', 'club_name' );
+		$name  = self::pick( $data, $names, '' );
+		foreach ( array( 'organisation', 'organization', 'org' ) as $wrapper ) {
+			if ( ! is_string( $name ) || '' === $name ) {
+				$name = isset( $data[ $wrapper ] ) && is_array( $data[ $wrapper ] ) ? self::pick( $data[ $wrapper ], array( 'name', 'org_name' ), '' ) : ( isset( $data[ $wrapper ] ) ? $data[ $wrapper ] : '' );
+			}
+		}
+
+		return is_string( $name ) ? trim( $name ) : '';
+	}
+
+	/**
 	 * The names of an organisation's events in the running season, for suggesting divisions and for
 	 * checking that one exists.
 	 *

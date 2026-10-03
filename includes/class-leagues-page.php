@@ -1,10 +1,12 @@
 <?php
 /**
- * The Leagues tab of Teams: the club's league entries by LMS organisation. For each organisation it lists
- * which of the club's teams play in which division, and can check each entry against the LMS.
+ * The Leagues tab of Teams: the club's league entries by LMS organisation. For each organisation the divisions
+ * are listed as the LMS has them, and the club's teams are dragged into the division they play in (or chosen
+ * from a drop-down). A team plays in one division of an organisation.
  *
- * The entries are stored on the teams (see Chess_Army_Knife_Teams::META_LEAGUES); this page is another
- * way to edit them, organisation by organisation, so a whole league can be set up in one place.
+ * The entries are stored on the teams (see Chess_Army_Knife_Teams::META_LEAGUES); this page is another way to
+ * edit them, so a whole league can be set up in one place. Where a team's name is not one the LMS has, the page
+ * asks which LMS team is meant, from the teams in that division, rather than taking a typed name.
  *
  * @package Chess_Army_Knife
  */
@@ -13,8 +15,9 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Leagues_Page {
 
-	const PAGE   = 'chess-army-knife-leagues';
-	const ACTION = 'chess_army_knife_leagues_save';
+	const PAGE      = 'chess-army-knife-leagues';
+	const ACTION    = 'chess_army_knife_leagues_save';
+	const ORG_NAMES = 'Chess_Army_Knife_lms_org_names'; // Names the admin gave organisations the LMS did not name.
 
 	/**
 	 * Hook up the save and the script.
@@ -25,7 +28,7 @@ class Chess_Army_Knife_Leagues_Page {
 	}
 
 	/**
-	 * Load the script that adds rows, on this page only.
+	 * Load the script that moves teams between divisions, on this page only.
 	 *
 	 * @param string $hook Admin page hook.
 	 */
@@ -33,7 +36,7 @@ class Chess_Army_Knife_Leagues_Page {
 		if ( false === strpos( (string) $hook, self::PAGE ) ) {
 			return;
 		}
-		wp_enqueue_script( 'chess-army-knife-leagues', Chess_Army_Knife_URL . 'assets/leagues.js', array(), Chess_Army_Knife_VERSION, true );
+		wp_enqueue_script( 'chess-army-knife-leagues', Chess_Army_Knife_URL . 'assets/leagues.js', array( 'jquery-ui-sortable', 'jquery-touch-punch' ), Chess_Army_Knife_VERSION, true );
 	}
 
 	/**
@@ -42,9 +45,9 @@ class Chess_Army_Knife_Leagues_Page {
 	 * The page shows every organisation the club has entries in, so for an organisation that was shown, the
 	 * rows submitted replace the team's entries there; entries in an organisation that was not shown stay.
 	 *
-	 * @param array[] $current Each team's entries now, by team id: lists of { org, event, name }.
-	 * @param string[] $orgs   The organisations the page showed.
-	 * @param array[]  $rows   Rows submitted, each { org, team_id, event, name }.
+	 * @param array[]  $current Each team's entries now, by team id: lists of { org, event, name }.
+	 * @param string[] $orgs    The organisations the page showed.
+	 * @param array[]  $rows    Rows submitted, each { org, team_id, event, name }.
 	 * @return array[] Each team's new entries, by team id, cleaned.
 	 */
 	public static function merge( array $current, array $orgs, array $rows ) {
@@ -77,19 +80,21 @@ class Chess_Army_Knife_Leagues_Page {
 	}
 
 	/**
-	 * The club's league entries by organisation.
+	 * The club's league entries by organisation: the division each team plays in there. A team that has more
+	 * than one entry in an organisation shows its first.
 	 *
-	 * @return array[] Each organisation's rows { team_id, event, name }, by organisation, lowest first.
+	 * @return array[] By organisation (lowest first), then team id: { event, name }.
 	 */
 	public static function entries_by_org() {
 		$by_org = array();
 		foreach ( Chess_Army_Knife_Teams::all() as $team ) {
 			foreach ( $team['leagues'] as $league ) {
-				$by_org[ $league['org'] ][] = array(
-					'team_id' => $team['id'],
-					'event'   => $league['event'],
-					'name'    => $league['name'],
-				);
+				if ( ! isset( $by_org[ $league['org'] ][ $team['id'] ] ) ) {
+					$by_org[ $league['org'] ][ $team['id'] ] = array(
+						'event' => $league['event'],
+						'name'  => $league['name'],
+					);
+				}
 			}
 		}
 		ksort( $by_org, SORT_NUMERIC );
@@ -97,9 +102,34 @@ class Chess_Army_Knife_Leagues_Page {
 	}
 
 	/**
+	 * The names the admin gave organisations.
+	 *
+	 * @return string[] Name by organisation id.
+	 */
+	public static function saved_org_names() {
+		$names = get_option( self::ORG_NAMES, array() );
+		return is_array( $names ) ? $names : array();
+	}
+
+	/**
+	 * An organisation's name: the LMS's if it gives one, else the one the admin typed, else ''.
+	 *
+	 * @param string $org Organisation id.
+	 * @return string
+	 */
+	public static function org_name( $org ) {
+		$name = Chess_Army_Knife_LMS_Client::get_org_name( $org );
+		if ( '' !== $name ) {
+			return $name;
+		}
+		$saved = self::saved_org_names();
+		return isset( $saved[ $org ] ) ? (string) $saved[ $org ] : '';
+	}
+
+	/**
 	 * Save what the page submitted. Returns how many teams' entries changed.
 	 *
-	 * @param array $post Unslashed form values.
+	 * @param array $post Unslashed form values: orgs[], leagues[org][team id][event|name], org_names[org].
 	 * @return array { orgs: string[] shown, changed: int }
 	 */
 	public static function save_from( array $post ) {
@@ -112,16 +142,17 @@ class Chess_Army_Knife_Leagues_Page {
 		}
 
 		$rows = array();
-		foreach ( isset( $post['leagues'] ) && is_array( $post['leagues'] ) ? $post['leagues'] : array() as $org => $list ) {
-			foreach ( is_array( $list ) ? $list : array() as $row ) {
-				if ( ! is_array( $row ) || ! empty( $row['remove'] ) ) {
-					continue;
+		foreach ( isset( $post['leagues'] ) && is_array( $post['leagues'] ) ? $post['leagues'] : array() as $org => $teams ) {
+			foreach ( is_array( $teams ) ? $teams : array() as $team_id => $entry ) {
+				$event = is_array( $entry ) && isset( $entry['event'] ) ? sanitize_text_field( (string) $entry['event'] ) : '';
+				if ( '' === $event ) {
+					continue; // Not in a division here.
 				}
 				$rows[] = array(
 					'org'     => (string) $org,
-					'team_id' => isset( $row['team'] ) ? absint( $row['team'] ) : 0,
-					'event'   => isset( $row['event'] ) ? sanitize_text_field( (string) $row['event'] ) : '',
-					'name'    => isset( $row['name'] ) ? sanitize_text_field( (string) $row['name'] ) : '',
+					'team_id' => absint( $team_id ),
+					'event'   => $event,
+					'name'    => isset( $entry['name'] ) ? sanitize_text_field( (string) $entry['name'] ) : '',
 				);
 			}
 		}
@@ -139,6 +170,22 @@ class Chess_Army_Knife_Leagues_Page {
 			}
 		}
 
+		// Names for organisations the LMS did not name.
+		$names = self::saved_org_names();
+		foreach ( isset( $post['org_names'] ) && is_array( $post['org_names'] ) ? $post['org_names'] : array() as $org => $name ) {
+			$org  = preg_replace( '/[^0-9]/', '', (string) $org );
+			$name = sanitize_text_field( (string) $name );
+			if ( '' === $org ) {
+				continue;
+			}
+			if ( '' === $name ) {
+				unset( $names[ $org ] );
+			} else {
+				$names[ $org ] = $name;
+			}
+		}
+		update_option( self::ORG_NAMES, $names, false );
+
 		return array(
 			'orgs'    => array_values( $orgs ),
 			'changed' => $changed,
@@ -146,7 +193,7 @@ class Chess_Army_Knife_Leagues_Page {
 	}
 
 	/**
-	 * Handle the form: save, then show the page again, checking against the LMS if asked.
+	 * Handle the form: save, then show the page again.
 	 */
 	public static function handle_save() {
 		if ( ! Chess_Army_Knife_Teams::user_can_manage() ) {
@@ -163,22 +210,72 @@ class Chess_Army_Knife_Leagues_Page {
 			'page'    => self::PAGE,
 			'saved'   => $done['changed'],
 			'add_org' => $new_org,
-			'check'   => ! empty( $post['check'] ) ? 1 : 0,
 		);
 		wp_safe_redirect( add_query_arg( array_filter( $args, 'strlen' ), admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
 	/**
-	 * Check one entry against the LMS.
+	 * One team in a list: its name, a drop-down to choose its division (the keyboard way to do what dragging
+	 * does), and, once it is in a division, a prompt to say which LMS team it is if the LMS has no team of its name.
+	 *
+	 * @param string $org       Organisation id.
+	 * @param array  $team      Team (see Chess_Army_Knife_Teams::all()).
+	 * @param string $division  The division it is in, or '' if none.
+	 * @param string $lms_name  The LMS name saved for it, or ''.
+	 * @param array  $divisions Division names to choose from.
+	 * @param array  $match     {names: string[] the LMS teams in its division, matched: bool, note: string}, or empty.
+	 */
+	protected static function render_team( $org, array $team, $division, $lms_name, array $divisions, array $match ) {
+		$field = 'leagues[' . $org . '][' . $team['id'] . ']';
+		$id    = 'cak-league-' . $org . '-' . $team['id'];
+		?>
+		<li class="cak-league-team" data-team="<?php echo esc_attr( $team['id'] ); ?>" style="border:1px solid #dcdcde;background:#fff;padding:6px 8px;margin:0 0 6px">
+			<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+				<span class="cak-drag-handle dashicons dashicons-menu" aria-hidden="true" style="cursor:move"></span>
+				<strong style="flex:1"><?php echo esc_html( $team['name'] ); ?></strong>
+				<label class="screen-reader-text" for="<?php echo esc_attr( $id ); ?>">
+					<?php
+					/* translators: %s: team name */
+					echo esc_html( sprintf( __( 'Division for %s', 'chess-army-knife' ), $team['name'] ) );
+					?>
+				</label>
+				<select id="<?php echo esc_attr( $id ); ?>" class="cak-division-pick" name="<?php echo esc_attr( $field ); ?>[event]">
+					<option value=""><?php esc_html_e( 'Not in this organisation', 'chess-army-knife' ); ?></option>
+					<?php foreach ( $divisions as $option ) : ?>
+						<option value="<?php echo esc_attr( $option ); ?>" <?php selected( $division, $option ); ?>><?php echo esc_html( $option ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			</div>
+			<div class="cak-match">
+				<?php if ( $match && $match['note'] ) : ?>
+					<p class="description"><?php echo esc_html( $match['note'] ); ?></p>
+				<?php elseif ( $match && $match['names'] && ( ! $match['matched'] || '' !== $lms_name ) ) : ?>
+					<label for="<?php echo esc_attr( $id ); ?>-name">
+						<?php echo esc_html( $match['matched'] ? __( 'The LMS team this is', 'chess-army-knife' ) : __( 'The LMS has no team called this. Select the team you\'re referring to:', 'chess-army-knife' ) ); ?>
+					</label>
+					<select id="<?php echo esc_attr( $id ); ?>-name" name="<?php echo esc_attr( $field ); ?>[name]">
+						<option value=""><?php echo esc_html( $match['matched'] ? __( 'The team with the same name', 'chess-army-knife' ) : __( 'Select the team…', 'chess-army-knife' ) ); ?></option>
+						<?php foreach ( $match['names'] as $lms_team ) : ?>
+							<option value="<?php echo esc_attr( $lms_team ); ?>" <?php selected( $lms_name, $lms_team ); ?>><?php echo esc_html( $lms_team ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				<?php endif; ?>
+			</div>
+		</li>
+		<?php
+	}
+
+	/**
+	 * How a team in a division matches the LMS: the LMS's teams in that division, and whether one is the team.
 	 *
 	 * @param string $org      Organisation id.
-	 * @param string $event    Event / division name.
-	 * @param string $name     The name the LMS knows the team by.
-	 * @param array  $memo     Events already loaded this request, by organisation and event (kept between calls).
-	 * @return array { ok: bool, message: string }
+	 * @param string $event    Division name.
+	 * @param string $name     The name to look for: the saved LMS name, else the team's own.
+	 * @param array  $memo     Divisions already loaded this request (kept between calls).
+	 * @return array { names: string[], matched: bool, note: string }
 	 */
-	public static function check_entry( $org, $event, $name, array &$memo ) {
+	public static function match_in_division( $org, $event, $name, array &$memo ) {
 		$key = $org . '|' . strtolower( $event );
 		if ( ! isset( $memo[ $key ] ) ) {
 			$memo[ $key ] = Chess_Army_Knife_League_Data::load( $org, $event );
@@ -187,69 +284,18 @@ class Chess_Army_Knife_Leagues_Page {
 
 		if ( $loaded['error'] ) {
 			return array(
-				'ok'      => false,
-				'message' => $loaded['error']->get_error_message(),
+				'names'   => array(),
+				'matched' => false,
+				'note'    => $loaded['error']->get_error_message(),
 			);
 		}
 
-		$found = Chess_Army_Knife_League_Data::lms_name( $loaded['fixtures'], $name );
-		if ( '' === $found ) {
-			return array(
-				'ok'      => false,
-				'message' => __( 'The division is in the LMS, but no team with this name is in it yet. The LMS may not have its fixtures, or the name needs setting under "Name in the LMS".', 'chess-army-knife' ),
-			);
-		}
-
+		$names = Chess_Army_Knife_League_Data::team_names( $loaded['fixtures'] );
 		return array(
-			'ok'      => true,
-			/* translators: %s: the team's name in the LMS */
-			'message' => sprintf( __( 'Found in the LMS as "%s".', 'chess-army-knife' ), $found ),
+			'names'   => $names,
+			'matched' => '' !== Chess_Army_Knife_League_Data::lms_name( $loaded['fixtures'], $name ),
+			'note'    => $names ? '' : __( 'The LMS has no teams in this division yet, so this cannot be checked.', 'chess-army-knife' ),
 		);
-	}
-
-	/**
-	 * One editable row of an organisation's table.
-	 *
-	 * @param string $org    Organisation id.
-	 * @param string $index  Row key.
-	 * @param array  $row    { team_id, event, name }.
-	 * @param array  $status Result of check_entry(), or empty.
-	 * @param string $list   Id of the datalist of this organisation's divisions.
-	 */
-	protected static function render_row( $org, $index, array $row, array $status, $list ) {
-		$base = 'leagues[' . $org . '][' . $index . ']';
-		?>
-		<tr class="cak-league-row">
-			<td>
-				<label class="screen-reader-text" for="cak-league-team-<?php echo esc_attr( $org . '-' . $index ); ?>"><?php esc_html_e( 'Team', 'chess-army-knife' ); ?></label>
-				<select id="cak-league-team-<?php echo esc_attr( $org . '-' . $index ); ?>" name="<?php echo esc_attr( $base ); ?>[team]">
-					<option value="0"><?php esc_html_e( 'Choose a team…', 'chess-army-knife' ); ?></option>
-					<?php foreach ( Chess_Army_Knife_Teams::all() as $team ) : ?>
-						<option value="<?php echo esc_attr( $team['id'] ); ?>" <?php selected( $row['team_id'], $team['id'] ); ?>><?php echo esc_html( $team['name'] ); ?></option>
-					<?php endforeach; ?>
-				</select>
-			</td>
-			<td>
-				<label class="screen-reader-text" for="cak-league-event-<?php echo esc_attr( $org . '-' . $index ); ?>"><?php esc_html_e( 'Division', 'chess-army-knife' ); ?></label>
-				<input type="text" id="cak-league-event-<?php echo esc_attr( $org . '-' . $index ); ?>" name="<?php echo esc_attr( $base ); ?>[event]" value="<?php echo esc_attr( $row['event'] ); ?>" class="regular-text" list="<?php echo esc_attr( $list ); ?>" placeholder="Division 1" />
-			</td>
-			<td>
-				<label class="screen-reader-text" for="cak-league-name-<?php echo esc_attr( $org . '-' . $index ); ?>"><?php esc_html_e( 'Name in the LMS, if different', 'chess-army-knife' ); ?></label>
-				<input type="text" id="cak-league-name-<?php echo esc_attr( $org . '-' . $index ); ?>" name="<?php echo esc_attr( $base ); ?>[name]" value="<?php echo esc_attr( $row['name'] ); ?>" class="regular-text" />
-			</td>
-			<td>
-				<?php if ( $status ) : ?>
-					<strong><?php echo esc_html( $status['ok'] ? __( 'Found', 'chess-army-knife' ) : __( 'Not found', 'chess-army-knife' ) ); ?></strong>
-					<br /><span class="description"><?php echo esc_html( $status['message'] ); ?></span>
-				<?php else : ?>
-					&mdash;
-				<?php endif; ?>
-			</td>
-			<td>
-				<label><input type="checkbox" name="<?php echo esc_attr( $base ); ?>[remove]" value="1" /> <?php esc_html_e( 'Remove', 'chess-army-knife' ); ?></label>
-			</td>
-		</tr>
-		<?php
 	}
 
 	/**
@@ -261,7 +307,6 @@ class Chess_Army_Knife_Leagues_Page {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
-		$check = ! empty( $_GET['check'] );
 		$added = isset( $_GET['add_org'] ) ? preg_replace( '/[^0-9]/', '', sanitize_text_field( wp_unslash( $_GET['add_org'] ) ) ) : '';
 		$saved = isset( $_GET['saved'] ) ? absint( $_GET['saved'] ) : null;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -271,7 +316,8 @@ class Chess_Army_Knife_Leagues_Page {
 			$by_org[ $added ] = array();
 			ksort( $by_org, SORT_NUMERIC );
 		}
-		$memo = array();
+		$teams = Chess_Army_Knife_Teams::all();
+		$memo  = array();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></h1>
@@ -279,8 +325,8 @@ class Chess_Army_Knife_Leagues_Page {
 			<?php if ( null !== $saved ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Leagues saved.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
-			<p class="description"><?php esc_html_e( 'For each LMS organisation, say which of the club\'s teams play in which division. Import Events, the fixtures carousel and league table highlighting all read these entries. A team can play in more than one division, and in more than one organisation.', 'chess-army-knife' ); ?></p>
-			<?php if ( ! Chess_Army_Knife_Teams::all() ) : ?>
+			<p class="description"><?php esc_html_e( 'For each LMS organisation, put the club\'s teams in the division they play in: drag a team into a division, or choose the division from the team\'s drop-down. A team plays in one division of an organisation. Import Events, the fixtures carousel and league table highlighting all read these entries.', 'chess-army-knife' ); ?></p>
+			<?php if ( ! $teams ) : ?>
 				<p><?php esc_html_e( 'There are no teams yet. Add teams on the Teams tab first.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
 
@@ -288,63 +334,72 @@ class Chess_Army_Knife_Leagues_Page {
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
 				<?php wp_nonce_field( self::ACTION ); ?>
 
-				<?php foreach ( $by_org as $org => $rows ) : ?>
+				<?php foreach ( $by_org as $org => $assigned ) : ?>
 					<?php
-					$org    = (string) $org;
-					$list   = 'cak-divisions-' . $org;
-					$events = Chess_Army_Knife_LMS_Client::get_event_names( $org );
-					$rows[] = array(
-						'team_id' => 0,
-						'event'   => '',
-						'name'    => '',
-					); // One blank row to add to.
+					$org       = (string) $org;
+					$events    = Chess_Army_Knife_LMS_Client::get_event_names( $org );
+					$divisions = is_wp_error( $events ) ? array() : $events;
+					// A division a team is already in stays listed even if the LMS no longer has it.
+					$missing = array();
+					foreach ( $assigned as $entry ) {
+						if ( ! in_array( $entry['event'], $divisions, true ) && ! in_array( $entry['event'], $missing, true ) ) {
+							$missing[] = $entry['event'];
+						}
+					}
+					$divisions = array_merge( $divisions, $missing );
+					$name      = self::org_name( $org );
+					$by_div    = array_fill_keys( $divisions, array() );
+					$free      = array();
+					foreach ( $teams as $team ) {
+						if ( isset( $assigned[ $team['id'] ] ) ) {
+							$by_div[ $assigned[ $team['id'] ]['event'] ][] = $team;
+						} else {
+							$free[] = $team;
+						}
+					}
 					?>
 					<input type="hidden" name="orgs[]" value="<?php echo esc_attr( $org ); ?>" />
-					<h2>
-						<?php
-						/* translators: %s: LMS organisation id */
-						echo esc_html( sprintf( __( 'LMS organisation %s', 'chess-army-knife' ), $org ) );
-						?>
+					<h2 class="cak-org-title">
+						<?php echo esc_html( '' !== $name ? $name : __( 'LMS organisation', 'chess-army-knife' ) ); ?>
+						<span class="cak-org-id" style="color:#0a4b78">(<?php echo esc_html( $org ); ?>)</span>
 					</h2>
-					<?php if ( ! is_wp_error( $events ) && $events ) : ?>
-						<datalist id="<?php echo esc_attr( $list ); ?>">
-							<?php foreach ( $events as $event_name ) : ?>
-								<option value="<?php echo esc_attr( $event_name ); ?>"></option>
-							<?php endforeach; ?>
-						</datalist>
+					<?php if ( '' === Chess_Army_Knife_LMS_Client::get_org_name( $org ) ) : ?>
+						<p>
+							<label for="cak-org-name-<?php echo esc_attr( $org ); ?>"><?php esc_html_e( 'Organisation name', 'chess-army-knife' ); ?></label>
+							<input type="text" id="cak-org-name-<?php echo esc_attr( $org ); ?>" name="org_names[<?php echo esc_attr( $org ); ?>]" value="<?php echo esc_attr( $name ); ?>" class="regular-text" />
+							<span class="description"><?php esc_html_e( 'The LMS did not give a name, so you can type one for your own reference.', 'chess-army-knife' ); ?></span>
+						</p>
 					<?php endif; ?>
-					<table class="widefat striped cak-league-table" style="max-width:1100px">
-						<caption class="screen-reader-text">
-							<?php
-							/* translators: %s: LMS organisation id */
-							echo esc_html( sprintf( __( 'Teams in LMS organisation %s', 'chess-army-knife' ), $org ) );
-							?>
-						</caption>
-						<thead>
-							<tr>
-								<th scope="col"><?php esc_html_e( 'Team', 'chess-army-knife' ); ?></th>
-								<th scope="col"><?php esc_html_e( 'Division', 'chess-army-knife' ); ?></th>
-								<th scope="col"><?php esc_html_e( 'Name in the LMS, if different', 'chess-army-knife' ); ?></th>
-								<th scope="col"><?php esc_html_e( 'LMS check', 'chess-army-knife' ); ?></th>
-								<th scope="col"><span class="screen-reader-text"><?php esc_html_e( 'Remove', 'chess-army-knife' ); ?></span></th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ( $rows as $index => $row ) : ?>
-								<?php
-								$status = array();
-								if ( $check && $row['team_id'] && '' !== $row['event'] ) {
-									$team   = Chess_Army_Knife_Teams::get( $row['team_id'] );
-									$status = $team ? self::check_entry( $org, $row['event'], '' !== $row['name'] ? $row['name'] : $team['name'], $memo ) : array();
-								}
-								self::render_row( $org, (string) $index, $row, $status, $list );
-								?>
+					<?php if ( is_wp_error( $events ) ) : ?>
+						<div class="notice notice-warning inline"><p><?php echo esc_html( $events->get_error_message() ); ?></p></div>
+					<?php elseif ( ! $divisions ) : ?>
+						<div class="notice notice-warning inline"><p><?php esc_html_e( 'The LMS lists no divisions for this organisation this season.', 'chess-army-knife' ); ?></p></div>
+					<?php endif; ?>
+
+					<div class="cak-org" style="display:flex;gap:24px;flex-wrap:wrap;max-width:1100px" data-moved="<?php /* translators: 1: team name, 2: division name */ esc_attr_e( '%1$s is now in %2$s', 'chess-army-knife' ); ?>" data-none="<?php esc_attr_e( 'not in this organisation', 'chess-army-knife' ); ?>">
+						<div style="flex:1;min-width:220px">
+							<h3 id="cak-free-<?php echo esc_attr( $org ); ?>"><?php esc_html_e( 'Teams not in a division', 'chess-army-knife' ); ?></h3>
+							<ul class="cak-division-list" data-division="" aria-labelledby="cak-free-<?php echo esc_attr( $org ); ?>" style="list-style:none;margin:0;padding:8px;min-height:48px;border:1px dashed #c3c4c7">
+								<?php foreach ( $free as $team ) : ?>
+									<?php self::render_team( $org, $team, '', '', $divisions, array() ); ?>
+								<?php endforeach; ?>
+							</ul>
+						</div>
+						<div style="flex:2;min-width:300px">
+							<?php foreach ( $divisions as $index => $division ) : ?>
+								<h3 id="cak-div-<?php echo esc_attr( $org . '-' . $index ); ?>"><?php echo esc_html( $division ); ?></h3>
+								<ul class="cak-division-list" data-division="<?php echo esc_attr( $division ); ?>" aria-labelledby="cak-div-<?php echo esc_attr( $org . '-' . $index ); ?>" style="list-style:none;margin:0 0 16px;padding:8px;min-height:48px;border:1px solid #8c8f94">
+									<?php foreach ( $by_div[ $division ] as $team ) : ?>
+										<?php
+										$lms_name = $assigned[ $team['id'] ]['name'];
+										$match    = self::match_in_division( $org, $division, '' !== $lms_name ? $lms_name : $team['name'], $memo );
+										self::render_team( $org, $team, $division, $lms_name, $divisions, $match );
+										?>
+									<?php endforeach; ?>
+								</ul>
 							<?php endforeach; ?>
-						</tbody>
-					</table>
-					<p>
-						<button type="button" class="button cak-league-add" data-next="<?php echo esc_attr( count( $rows ) ); ?>"><?php esc_html_e( 'Add another team', 'chess-army-knife' ); ?></button>
-					</p>
+						</div>
+					</div>
 				<?php endforeach; ?>
 
 				<?php if ( ! $by_org ) : ?>
@@ -359,9 +414,8 @@ class Chess_Army_Knife_Leagues_Page {
 
 				<p class="submit">
 					<button type="submit" class="button button-primary"><?php esc_html_e( 'Save leagues', 'chess-army-knife' ); ?></button>
-					<button type="submit" class="button" name="check" value="1"><?php esc_html_e( 'Save and check with the LMS', 'chess-army-knife' ); ?></button>
 				</p>
-				<p class="description"><?php esc_html_e( 'Checking looks each entry up in the LMS (results are kept for a while, so repeated checks are quick). It needs the LMS API key under Settings.', 'chess-army-knife' ); ?></p>
+				<p class="description"><?php esc_html_e( 'The divisions and their teams come from the LMS (they need the LMS API key under Settings), and are kept for a while. After moving a team to another division, save to match it against that division\'s teams.', 'chess-army-knife' ); ?></p>
 			</form>
 		</div>
 		<?php
