@@ -324,7 +324,7 @@ class Chess_Army_Knife_Officers_Page {
 				'key'     => $item['key'],
 				'label'   => $item['label'],
 				'kind'    => $item['kind'],
-				'holders' => isset( $held[ $item['key'] ] ) ? implode( ', ', $held[ $item['key'] ] ) : '',
+				'holders' => isset( $held[ $item['key'] ] ) ? implode( ', ', $held[ $item['key'] ] ) : ( 'position' === $item['kind'] ? __( 'Nobody holds this yet, so the block leaves it out. Add an officer below.', 'chess-army-knife' ) : '' ),
 			);
 		}
 		for ( $blank = 0; $blank < self::BLANK_POSITION; $blank++ ) {
