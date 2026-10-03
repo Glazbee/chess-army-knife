@@ -162,6 +162,7 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 
+* Added: a search box above **Members in this photo**, so a member can be found in a long list; ticks are kept as you search.
 * Added: **Club Officers** layout options. Choose 1 to 4 columns, put the position beside the name or on its own line above it (with "(since …)" after the name), show each position as plain text or as a heading of the level you pick (or the site's level), turn the block title off to use the page title, and turn the line between officers off.
 * Added: a **Featured Player blurb** on each member's record (Members, edit; officers only, 500 characters, included in the personal data export and removed on erasure). A rotating Featured Player block shows the featured member's blurb; a block that picks one member shows its own blurb, or the member's if the block has none. The blurb is public, so check the member is happy with it.
 * Changed: **Featured Player** shows the name, then the rating with how it changed, for example "1234 Standard (+12) · ECF Profile", with "Over a 60 day period" beneath. The club name and the automatic "Up N points" line are gone, and "Show club" is replaced by "Show the change in rating". The days come from the block's "Days to look back" setting (the site default if empty). The ECF Profile link opens the player's page on the ECF rating site; the address is not in the ECF's API documentation, so check it on your site (filter `Chess_Army_Knife_ecf_profile_url`).

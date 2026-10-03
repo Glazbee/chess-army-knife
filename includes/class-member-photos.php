@@ -32,6 +32,8 @@ class Chess_Army_Knife_Member_Photos {
 		add_action( 'pre_get_posts', array( __CLASS__, 'filter_media_list' ) );
 		add_filter( 'ajax_query_attachments_args', array( __CLASS__, 'filter_ajax_query' ) );
 		add_action( 'wp_enqueue_media', array( __CLASS__, 'enqueue_media_filter' ) );
+		add_action( 'wp_enqueue_media', array( __CLASS__, 'enqueue_search' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_search_on_photo_screen' ) );
 	}
 
 	/* -------------------------------------------------------------
@@ -174,9 +176,13 @@ class Chess_Army_Knife_Member_Photos {
 		}
 		asort( $candidates );
 
-		$name  = 'attachments[' . (int) $post->ID . ']';
-		$html  = '<input type="hidden" name="' . esc_attr( $name . '[' . self::SHOWN . ']' ) . '" value="1" />';
-		$html .= '<div style="max-height:10em;overflow:auto;padding:4px 8px;background:#fff;border:1px solid #c3c4c7;">';
+		$name = 'attachments[' . (int) $post->ID . ']';
+		$html = '<input type="hidden" name="' . esc_attr( $name . '[' . self::SHOWN . ']' ) . '" value="1" />';
+		if ( count( $candidates ) > 1 ) {
+			$html .= '<input type="search" class="cak-photo-members-search" style="width:100%;margin-bottom:4px" placeholder="' . esc_attr__( 'Search members', 'chess-army-knife' ) . '" aria-label="' . esc_attr__( 'Search members', 'chess-army-knife' ) . '" />';
+			$html .= '<span class="cak-photo-members-status screen-reader-text" role="status" aria-live="polite" data-label="' . esc_attr__( 'members match', 'chess-army-knife' ) . '"></span>';
+		}
+		$html .= '<div class="cak-photo-members-list" style="max-height:10em;overflow:auto;padding:4px 8px;background:#fff;border:1px solid #c3c4c7;">';
 		foreach ( $candidates as $member_id => $member_name ) {
 			$html .= '<label style="display:block"><input type="checkbox" name="' . esc_attr( $name . '[' . self::FIELD . '][]' ) . '" value="' . (int) $member_id . '"' . checked( in_array( (int) $member_id, $tagged, true ), true, false ) . ' /> ' . esc_html( $member_name ) . '</label>';
 		}
@@ -329,6 +335,27 @@ class Chess_Army_Knife_Member_Photos {
 		}
 
 		return $query;
+	}
+
+	/**
+	 * Load the search box's script, for people who manage members.
+	 */
+	public static function enqueue_search() {
+		if ( self::user_can_tag() ) {
+			wp_enqueue_script( 'chess-army-knife-photo-members-search', Chess_Army_Knife_URL . 'assets/photo-members-search.js', array(), Chess_Army_Knife_VERSION, true );
+		}
+	}
+
+	/**
+	 * The same script on a photo's own edit screen, which does not load the media dialog.
+	 *
+	 * @param string $hook Admin page hook suffix.
+	 */
+	public static function enqueue_search_on_photo_screen( $hook ) {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( in_array( $hook, array( 'post.php', 'post-new.php' ), true ) && $screen && 'attachment' === $screen->post_type ) {
+			self::enqueue_search();
+		}
 	}
 
 	/**
