@@ -70,11 +70,11 @@
       "type": "boolean",
       "default": true
     },
-    "showClub": {
+    "showLinks": {
       "type": "boolean",
       "default": true
     },
-    "showLinks": {
+    "showChange": {
       "type": "boolean",
       "default": true
     },

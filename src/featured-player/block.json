@@ -23,8 +23,8 @@
 		"lichessUser": { "type": "string", "default": "" },
 		"domain": { "type": "string", "default": "" },
 		"showRating": { "type": "boolean", "default": true },
-		"showClub": { "type": "boolean", "default": true },
 		"showLinks": { "type": "boolean", "default": true },
+		"showChange": { "type": "boolean", "default": true },
 		"rotation": { "type": "string", "default": "none" },
 		"daysBack": { "type": "number", "default": 0 }
 	},

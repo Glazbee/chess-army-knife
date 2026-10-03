@@ -27,8 +27,8 @@ $image_id      = (int) ( $attributes['imageId'] ?? 0 );
 $image_url     = (string) ( $attributes['imageUrl'] ?? '' );
 $rating_domain = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife_Settings::resolve( 'default_domain', $attributes['domain'] ?? '', 'S' ) );
 $show_rating   = ! isset( $attributes['showRating'] ) || (bool) $attributes['showRating'];
-$show_club     = ! isset( $attributes['showClub'] ) || (bool) $attributes['showClub'];
 $show_links    = ! isset( $attributes['showLinks'] ) || (bool) $attributes['showLinks'];
+$show_change   = ! isset( $attributes['showChange'] ) || (bool) $attributes['showChange'];
 $rotation      = Chess_Army_Knife_Rotating_Member::clean_rotation( $attributes['rotation'] ?? '' );
 $days_back     = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
 $chess_com     = '';
@@ -57,14 +57,7 @@ if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
 	$image_id    = 0;
 	$image_url   = '';
 	$show_links  = false;
-	$blurb       = sprintf(
-		/* translators: 1: rating points gained, 2: number of days, 3: rating at the start, 4: rating now */
-		_n( 'Up %1$d rating point in the last %2$d days, from %3$d to %4$d.', 'Up %1$d rating points in the last %2$d days, from %3$d to %4$d.', (int) $chosen['gain'], 'chess-army-knife' ),
-		(int) $chosen['gain'],
-		$days_back,
-		(int) $chosen['from'],
-		(int) $chosen['to']
-	);
+	$blurb       = '';
 } else {
 	// Only a current member can be featured; the name comes from their record.
 	$member = '' === $player_code ? null : Chess_Army_Knife_Rotating_Member::current_member_by_code( $player_code );
@@ -104,7 +97,7 @@ if ( Chess_Army_Knife_Rotating_Member::NONE === $rotation ) {
 
 // ECF details (best effort: the block still renders without them).
 $rating       = '';
-$club         = '';
+$change       = null;
 $player_title = '';
 $admin_keys   = array();
 
@@ -113,7 +106,6 @@ if ( '' !== $player_code ) {
 	$admin_keys[] = Chess_Army_Knife_ECF_Client::cache_key_player( $player_code );
 
 	if ( ! is_wp_error( $player ) && is_array( $player ) ) {
-		$club         = isset( $player['club_name'] ) ? (string) $player['club_name'] : '';
 		$player_title = isset( $player['title'] ) ? (string) $player['title'] : '';
 	}
 
@@ -126,6 +118,14 @@ if ( '' !== $player_code ) {
 				$rating = (string) (int) $value;
 			}
 		}
+	}
+
+	// How the rating moved over the period, from the games the ECF has recorded.
+	if ( $show_rating && $show_change ) {
+		$admin_keys[] = Chess_Army_Knife_ECF_Client::cache_key_games( $player_code, $rating_domain, Chess_Army_Knife_Rotating_Member::GAMES_PER_MEMBER );
+		$games        = Chess_Army_Knife_ECF_Client::get_games( $player_code, $rating_domain, Chess_Army_Knife_Rotating_Member::GAMES_PER_MEMBER );
+		$growth       = is_wp_error( $games ) ? null : Chess_Army_Knife_Rotating_Member::growth_from_games( (array) $games, gmdate( 'Y-m-d', strtotime( '-' . $days_back . ' days' ) ), 2 );
+		$change       = $growth ? (int) round( $growth['gain'] ) : null;
 	}
 }
 
@@ -174,20 +174,31 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 		<div class="cak-featured__body">
 			<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-featured__name', trim( $player_title . ' ' . $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
-			<?php if ( '' !== $rating || ( $show_club && '' !== $club ) ) : ?>
+			<?php if ( '' !== $rating || ( $show_links && '' !== $player_code ) ) : ?>
+				<?php $period_id = wp_unique_id( 'cak-featured-period-' ); ?>
 				<p class="cak-featured__meta">
 					<?php if ( '' !== $rating ) : ?>
 						<span class="cak-featured__rating"><?php echo esc_html( $rating ); ?></span>
 						<?php echo esc_html( isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : '' ); ?>
+						<?php if ( null !== $change ) : ?>
+							<span class="cak-featured__change <?php echo esc_attr( $change >= 0 ? 'is-up' : 'is-down' ); ?>" aria-describedby="<?php echo esc_attr( $period_id ); ?>">(<?php echo esc_html( ( $change >= 0 ? '+' : '−' ) . abs( $change ) ); ?>)</span>
+						<?php endif; ?>
 					<?php endif; ?>
-					<?php
-					if ( '' !== $rating && $show_club && '' !== $club ) :
-						?>
-						<span aria-hidden="true">·</span> <?php endif; ?>
-					<?php if ( $show_club && '' !== $club ) : ?>
-						<?php echo esc_html( $club ); ?>
+					<?php if ( '' !== $rating && $show_links && '' !== $player_code ) : ?>
+						<span aria-hidden="true">·</span>
+					<?php endif; ?>
+					<?php if ( $show_links && '' !== $player_code ) : ?>
+						<a class="cak-featured__link" href="<?php echo esc_url( Chess_Army_Knife_ECF_Client::profile_url( $player_code ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'ECF Profile', 'chess-army-knife' ); ?> <?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: player name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
 					<?php endif; ?>
 				</p>
+				<?php if ( null !== $change ) : ?>
+					<p class="cak-featured__period" id="<?php echo esc_attr( $period_id ); ?>">
+						<?php
+						/* translators: %d: number of days */
+						echo esc_html( sprintf( _n( 'Over a %d day period', 'Over a %d day period', $days_back, 'chess-army-knife' ), $days_back ) );
+						?>
+					</p>
+				<?php endif; ?>
 			<?php endif; ?>
 
 			<?php if ( '' !== $blurb ) : ?>

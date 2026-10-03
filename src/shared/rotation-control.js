@@ -19,7 +19,11 @@ const ROTATION_OPTIONS = [
 	{ label: __( 'Every month', 'chess-army-knife' ), value: 'month' },
 ];
 
-export default function RotationControl( { attributes, setAttributes } ) {
+export default function RotationControl( {
+	attributes,
+	setAttributes,
+	alwaysDays = false,
+} ) {
 	const rotating = attributes.rotation && 'none' !== attributes.rotation;
 
 	return (
@@ -34,14 +38,14 @@ export default function RotationControl( { attributes, setAttributes } ) {
 				options={ ROTATION_OPTIONS }
 				onChange={ ( value ) => setAttributes( { rotation: value } ) }
 			/>
-			{ rotating && (
+			{ ( rotating || alwaysDays ) && (
 				<TextControl
 					type="number"
 					min={ 1 }
 					max={ 365 }
 					label={ __( 'Days to look back', 'chess-army-knife' ) }
 					help={ __(
-						'Leave empty for the site default. Only members whose Standard OTB rating went up in this many days are included.',
+						'Leave empty for the site default. A rotating block only includes members whose Standard OTB rating went up in this many days.',
 						'chess-army-knife'
 					) }
 					value={ attributes.daysBack || '' }

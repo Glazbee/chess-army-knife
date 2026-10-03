@@ -42,7 +42,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		lichessUser,
 		domain,
 		showRating,
-		showClub,
 		showLinks,
 		rotation,
 	} = attributes;
@@ -69,6 +68,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<RotationControl
 						attributes={ attributes }
 						setAttributes={ setAttributes }
+						alwaysDays
 					/>
 					{ ! rotating && (
 						<PlayerPicker
@@ -202,7 +202,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show profile links', 'chess-army-knife' ) }
+						label={ __(
+							'Show profile links (ECF, chess.com, Lichess)',
+							'chess-army-knife'
+						) }
 						checked={ showLinks }
 						onChange={ ( value ) =>
 							setAttributes( { showLinks: value } )
@@ -232,10 +235,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show club', 'chess-army-knife' ) }
-						checked={ showClub }
+						label={ __(
+							'Show the change in rating',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'Shown beside the rating, with the number of days it covers (set above).',
+							'chess-army-knife'
+						) }
+						checked={ attributes.showChange !== false }
 						onChange={ ( value ) =>
-							setAttributes( { showClub: value } )
+							setAttributes( { showChange: value } )
 						}
 					/>
 				</PanelBody>
