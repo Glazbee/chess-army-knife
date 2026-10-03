@@ -36,6 +36,7 @@ class Chess_Army_Knife_Teams {
 	const META_SEASONS  = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
 	const META_LEAGUES  = '_chess_army_team_leagues';
 	const META_COLOUR   = '_chess_army_team_colour';
+	const META_GROUP    = '_chess_army_team_group'; // Free-text wider group the team is listed under, e.g. a league association.
 	const META_TAG      = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
 	const META_WHATSAPP = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
@@ -225,6 +226,7 @@ class Chess_Army_Knife_Teams {
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
 			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
 			'whatsapp'    => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
+			'group'       => trim( (string) get_post_meta( $post->ID, self::META_GROUP, true ) ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -233,6 +235,99 @@ class Chess_Army_Knife_Teams {
 				$leagues
 			),
 		);
+	}
+
+	/**
+	 * A team's heading from a format: {team} is its name and {league} the first
+	 * league it plays in, so "{league} - {team}" gives "Division 1 - Wotton Hall Lions".
+	 * Separators left dangling by a team with no league are trimmed.
+	 *
+	 * @param array  $team   Team from all().
+	 * @param string $format Format; empty means just the name.
+	 * @return string
+	 */
+	public static function display_name( array $team, $format ) {
+		$format = trim( (string) $format );
+		if ( '' === $format ) {
+			return $team['name'];
+		}
+		$league = self::division_of( $team );
+		$name   = trim( str_replace( array( '{league}', '{team}' ), array( $league, $team['name'] ), $format ) );
+		$name   = trim( $name, " \t-\xE2\x80\x93\xE2\x80\x94:|" );
+		return '' !== $name ? $name : $team['name'];
+	}
+
+	/**
+	 * The division a team plays in: the event of its first league.
+	 *
+	 * @param array $team Team from all().
+	 * @return string Empty if the team has no league.
+	 */
+	public static function division_of( array $team ) {
+		return $team['leagues'] ? (string) $team['leagues'][0]['event'] : '';
+	}
+
+	/**
+	 * Teams grouped by their division or by their free-text group, in the order
+	 * each label first appears. Teams with none form a group of their own with an
+	 * empty label.
+	 *
+	 * @param array[] $teams Teams from all().
+	 * @param string  $by    'division' or 'group'.
+	 * @return array[] Each { label, teams }.
+	 */
+	public static function group_teams( array $teams, $by ) {
+		$groups = array();
+		foreach ( $teams as $team ) {
+			$label = 'group' === $by ? (string) $team['group'] : self::division_of( $team );
+			if ( ! isset( $groups[ $label ] ) ) {
+				$groups[ $label ] = array(
+					'label' => $label,
+					'teams' => array(),
+				);
+			}
+			$groups[ $label ]['teams'][] = $team;
+		}
+		return array_values( $groups );
+	}
+
+	/**
+	 * The players to show publicly for a team: its squad, with the captain marked.
+	 *
+	 * @param array $team Team from all().
+	 * @return array { players: array[] of { name, captain }, non_playing_captain: string }
+	 */
+	public static function public_roster( array $team ) {
+		$squad = self::squad( $team['id'] );
+		$ids   = $team['captain_id'] ? array_merge( $squad, array( $team['captain_id'] ) ) : $squad;
+		return self::build_roster( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ), $squad, $team['captain_id'] );
+	}
+
+	/**
+	 * Sort members into the squad's players and a captain outside the squad.
+	 *
+	 * @param array[] $members    Member rows (id, name).
+	 * @param int[]   $squad      Member ids in the squad.
+	 * @param int     $captain_id Captain's member id, or 0.
+	 * @return array See public_roster().
+	 */
+	public static function build_roster( array $members, array $squad, $captain_id ) {
+		$roster = array(
+			'players'             => array(),
+			'non_playing_captain' => '',
+		);
+		foreach ( $members as $member ) {
+			$is_captain = (int) $member['id'] === (int) $captain_id;
+			if ( in_array( (int) $member['id'], $squad, true ) ) {
+				$roster['players'][] = array(
+					'name'    => $member['name'],
+					'captain' => $is_captain,
+				);
+			} elseif ( $is_captain ) {
+				$roster['non_playing_captain'] = $member['name'];
+			}
+		}
+		return $roster;
 	}
 
 	/**

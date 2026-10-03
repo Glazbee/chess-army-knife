@@ -2,14 +2,34 @@ import { __, sprintf } from '@wordpress/i18n';
 import useClubName from '../shared/use-club-name';
 import TemplatePicker from '../shared/template-picker';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, TextControl } from '@wordpress/components';
+import {
+	PanelBody,
+	SelectControl,
+	TextControl,
+	TextareaControl,
+	RangeControl,
+	ToggleControl,
+} from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, teamId } = attributes;
+	const {
+		title,
+		teamId,
+		columns,
+		nameFormat,
+		groupBy,
+		groupBlurbs,
+		showPlayers,
+		showLeagues,
+	} = attributes;
 	const [ teams, setTeams ] = useState( [] );
+
+	const groupNames = [
+		...new Set( teams.map( ( team ) => team.group ).filter( Boolean ) ),
+	];
 
 	const blockProps = useBlockProps();
 	const clubName = useClubName();
@@ -71,6 +91,93 @@ export default function Edit( { attributes, setAttributes } ) {
 						] }
 						onChange={ ( value ) =>
 							setAttributes( { teamId: parseInt( value, 10 ) } )
+						}
+					/>
+					<RangeControl
+						label={ __( 'Columns', 'chess-army-knife' ) }
+						value={ columns }
+						min={ 1 }
+						max={ 4 }
+						onChange={ ( value ) =>
+							setAttributes( { columns: value } )
+						}
+					/>
+					<SelectControl
+						label={ __( 'Group teams by', 'chess-army-knife' ) }
+						help={ __(
+							"A team's group is set under Teams.",
+							'chess-army-knife'
+						) }
+						value={ groupBy }
+						options={ [
+							{
+								label: __( 'No grouping', 'chess-army-knife' ),
+								value: 'none',
+							},
+							{
+								label: __( 'Group', 'chess-army-knife' ),
+								value: 'group',
+							},
+							{
+								label: __( 'Division', 'chess-army-knife' ),
+								value: 'division',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { groupBy: value } )
+						}
+					/>
+					{ 'group' === groupBy &&
+						groupNames.map( ( name ) => (
+							<TextareaControl
+								key={ name }
+								label={ sprintf(
+									/* translators: %s: a group's name */
+									__( 'Blurb for %s', 'chess-army-knife' ),
+									name
+								) }
+								value={ groupBlurbs[ name ] || '' }
+								onChange={ ( value ) =>
+									setAttributes( {
+										groupBlurbs: {
+											...groupBlurbs,
+											[ name ]: value,
+										},
+									} )
+								}
+							/>
+						) ) }
+					<TextControl
+						label={ __(
+							'Team heading format',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'Use {league} for the first league and {team} for the name, e.g. "{league} - {team}".',
+							'chess-army-knife'
+						) }
+						value={ nameFormat }
+						placeholder="{team}"
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Show players', 'chess-army-knife' ) }
+						help={ __(
+							'Lists the squad and captain of each team shown.',
+							'chess-army-knife'
+						) }
+						checked={ showPlayers }
+						onChange={ ( value ) =>
+							setAttributes( { showPlayers: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Show leagues list', 'chess-army-knife' ) }
+						checked={ showLeagues }
+						onChange={ ( value ) =>
+							setAttributes( { showLeagues: value } )
 						}
 					/>
 				</PanelBody>
