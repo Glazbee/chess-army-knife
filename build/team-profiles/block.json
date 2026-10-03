@@ -25,6 +25,10 @@
       "type": "string",
       "default": ""
     },
+    "showTitle": {
+      "type": "boolean",
+      "default": true
+    },
     "teamId": {
       "type": "number",
       "default": 0

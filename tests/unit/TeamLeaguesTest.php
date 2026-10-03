@@ -192,9 +192,10 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 	 * @param string $event Division of its league, or '' for none.
 	 * @param string $group Name of its group.
 	 * @param int    $order Page order of its group.
+	 * @param int    $position Its place within the group.
 	 * @return array
 	 */
-	protected function team( $name, $event = '', $group = '', $order = 0 ) {
+	protected function team( $name, $event = '', $group = '', $order = 0, $position = 0 ) {
 		$leagues = array();
 		if ( '' !== $event ) {
 			$leagues[] = array(
@@ -208,6 +209,7 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 			'group'       => $group,
 			'group_blurb' => '',
 			'group_order' => $order,
+			'group_pos'   => $position,
 			'leagues'     => $leagues,
 		);
 	}
@@ -257,6 +259,17 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( array( '', 'Internal', 'NGCA' ), array_column( $groups, 'label' ) );
 		$this->assertSame( array( $a, $c ), $groups[2]['teams'] );
+	}
+
+	public function test_group_teams_orders_teams_within_a_group_by_their_place() {
+		$first  = $this->team( 'Zebras', '', 'NGCA', 1, 0 );
+		$second = $this->team( 'Aardvarks', '', 'NGCA', 1, 1 );
+		$third  = $this->team( 'Moles', '', 'NGCA', 1, 2 );
+
+		// Handed over in page order, not the group's order.
+		$groups = Chess_Army_Knife_Teams::group_teams( array( $third, $first, $second ), 'group' );
+
+		$this->assertSame( array( $first, $second, $third ), $groups[0]['teams'] );
 	}
 
 	public function test_build_roster_marks_the_captain_and_separates_a_non_playing_one() {

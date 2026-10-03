@@ -28,6 +28,7 @@ const HEADING_LEVELS = [
 export default function Edit( { attributes, setAttributes } ) {
 	const {
 		title,
+		showTitle,
 		teamId,
 		columns,
 		nameFormat,
@@ -69,24 +70,37 @@ export default function Edit( { attributes, setAttributes } ) {
 					title={ __( 'Display', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
-					<TextControl
-						label={ __(
-							'Custom title (optional)',
-							'chess-army-knife'
-						) }
+					<ToggleControl
+						label={ __( 'Show block title', 'chess-army-knife' ) }
 						help={ __(
-							"Use {club} for the club's name.",
+							'Turn off to use the page title instead.',
 							'chess-army-knife'
 						) }
-						value={ title }
+						checked={ showTitle }
 						onChange={ ( value ) =>
-							setAttributes( { title: value } )
+							setAttributes( { showTitle: value } )
 						}
-						placeholder={ sprintf(
-							__( '%s teams', 'chess-army-knife' ),
-							clubName
-						) }
 					/>
+					{ showTitle && (
+						<TextControl
+							label={ __(
+								'Custom title (optional)',
+								'chess-army-knife'
+							) }
+							help={ __(
+								"Use {club} for the club's name.",
+								'chess-army-knife'
+							) }
+							value={ title }
+							onChange={ ( value ) =>
+								setAttributes( { title: value } )
+							}
+							placeholder={ sprintf(
+								__( '%s teams', 'chess-army-knife' ),
+								clubName
+							) }
+						/>
+					) }
 					<SelectControl
 						label={ __( 'Team', 'chess-army-knife' ) }
 						help={ __(
@@ -147,7 +161,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<SelectControl
 						label={ __( 'Group teams by', 'chess-army-knife' ) }
 						help={ __(
-							"A team's group, and the blurb under each group's heading, are set under Groups.",
+							'Groups, their blurbs, their teams and the order of those teams are set under Teams → Groups.',
 							'chess-army-knife'
 						) }
 						value={ groupBy }

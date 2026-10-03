@@ -31,14 +31,17 @@ class Chess_Army_Knife_Teams {
 	const MIGRATED_OPTION = 'Chess_Army_Knife_club_teams_migrated';
 	const LEGACY_OPTION   = 'Chess_Army_Knife_club_teams';
 
-	const META_VENUE    = '_chess_army_team_venue';
-	const META_CAPTAIN  = '_chess_army_team_captain';
-	const META_SEASONS  = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
-	const META_LEAGUES  = '_chess_army_team_leagues';
-	const META_COLOUR   = '_chess_army_team_colour';
-	const META_GROUP    = '_chess_army_team_group'; // Id of the Group (see Chess_Army_Knife_Team_Groups) the team is listed under.
-	const META_TAG      = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
-	const META_WHATSAPP = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
+	const META_VENUE      = '_chess_army_team_venue';
+	const META_CAPTAIN    = '_chess_army_team_captain';
+	const META_SEASONS    = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
+	const META_LEAGUES    = '_chess_army_team_leagues';
+	const META_COLOUR     = '_chess_army_team_colour';
+	const META_GROUP      = '_chess_army_team_group'; // Id of the Group (see Chess_Army_Knife_Team_Groups) the team is listed under; set from the group's screen.
+	const META_GROUP_POS  = '_chess_army_team_group_pos'; // The team's place within its group, from 0.
+	const META_HERO       = '_chess_army_team_hero'; // Set when the team gets a row of its own in its group.
+	const META_HERO_BLURB = '_chess_army_team_hero_blurb';
+	const META_TAG        = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
+	const META_WHATSAPP   = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
 	/**
 	 * Hook up registration and cleanup.
@@ -172,7 +175,7 @@ class Chess_Army_Knife_Teams {
 	/**
 	 * The teams on offer, in their page order.
 	 *
-	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, group_id, group, group_blurb, group_order, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
+	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, group_id, group, group_blurb, group_order, group_pos, hero, hero_blurb, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
 		$kept = wp_cache_get( 'teams', self::MEMO_GROUP );
@@ -231,6 +234,9 @@ class Chess_Army_Knife_Teams {
 			'group'       => $group ? $group['name'] : '',
 			'group_blurb' => $group ? $group['blurb'] : '',
 			'group_order' => $group ? $group['order'] : 0,
+			'group_pos'   => $group ? (int) get_post_meta( $post->ID, self::META_GROUP_POS, true ) : 0,
+			'hero'        => (bool) get_post_meta( $post->ID, self::META_HERO, true ),
+			'hero_blurb'  => (string) get_post_meta( $post->ID, self::META_HERO_BLURB, true ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -303,6 +309,18 @@ class Chess_Army_Knife_Teams {
 					return array( $a['order'], $a['seen'] ) <=> array( $b['order'], $b['seen'] );
 				}
 			);
+			// Within a group, teams are in the order set on the group's screen.
+			foreach ( $groups as &$group ) {
+				$position = array_map(
+					function ( $index, $team ) {
+						return array( (int) $team['group_pos'], $index );
+					},
+					array_keys( $group['teams'] ),
+					$group['teams']
+				);
+				array_multisort( $position, $group['teams'] );
+			}
+			unset( $group );
 		}
 
 		return array_map(

@@ -7,7 +7,7 @@ may use. Some need a permission that an administrator gives you on your user pro
 | You need | To use |
 |---|---|
 | The *Club memberships* permission | Members, Renewals, Member Checks, Announcements, Do Not Record, Officers |
-| The *Club teams* permission (or be a team's captain) | Teams (Details, Overview and Selection tabs), Groups, Clubs, Sort Clubs, Squad Review, Import Events; captains see only their own team in the Overview and Selection tabs |
+| The *Club teams* permission (or be a team's captain) | Teams (Details, Overview, Selection and Groups tabs), Clubs, Sort Clubs, Squad Review, Import Events; captains see only their own team in the Overview and Selection tabs |
 | Administrator | Settings, Setup, Policies, Templates |
 
 ## Once, when you start

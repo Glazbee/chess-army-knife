@@ -104,6 +104,7 @@ class Chess_Army_Knife_Menu {
 	 *     @type string        $kind        What it needs, a key of Chess_Army_Knife_Access::requirements().
 	 *     @type callable      $can         Whether the current user may use it.
 	 *     @type string        $post_type   For a post type list, the post type.
+	 *     @type bool          $unlisted    True for a screen opened from another's tabs, so it has no menu item.
 	 * }
 	 */
 	public static function areas() {
@@ -221,13 +222,14 @@ class Chess_Army_Knife_Menu {
 			array(
 				'group'       => $teams_group,
 				'title'       => __( 'Groups', 'chess-army-knife' ),
-				'description' => __( 'Headings such as an association or "Internal teams" that teams can be listed under, each with a short blurb.', 'chess-army-knife' ),
+				'description' => __( 'Headings such as an association or "Internal teams" that teams are listed under: choose each group\'s teams, their order and any hero teams. A tab of Teams.', 'chess-army-knife' ),
 				'key'         => 'team_groups',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE,
 				'callback'    => null,
 				'kind'        => 'teams',
 				'can'         => $can_teams,
 				'post_type'   => Chess_Army_Knife_Team_Groups::POST_TYPE,
+				'unlisted'    => true, // A tab of Teams.
 			),
 			array(
 				'group'       => $teams_group,
@@ -399,6 +401,9 @@ class Chess_Army_Knife_Menu {
 		add_submenu_page( self::SLUG, __( 'Overview', 'chess-army-knife' ), __( 'Overview', 'chess-army-knife' ), $capability, self::SLUG, array( __CLASS__, 'render_overview' ) );
 
 		foreach ( self::areas() as $area ) {
+			if ( ! empty( $area['unlisted'] ) ) {
+				continue;
+			}
 			$label = $area['title'] . ( Chess_Army_Knife_Memberships::MENU_SLUG === $area['slug'] ? $bubble : '' );
 			add_submenu_page( self::SLUG, $area['title'], $label, $capability, $area['slug'], null === $area['callback'] ? '' : $area['callback'] );
 		}

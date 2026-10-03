@@ -12,6 +12,7 @@
 	"attributes": {
 		"templateId": { "type": "string", "default": "" },
 		"title": { "type": "string", "default": "" },
+		"showTitle": { "type": "boolean", "default": true },
 		"teamId": { "type": "number", "default": 0 },
 		"columns": { "type": "number", "default": 1 },
 		"nameFormat": { "type": "string", "default": "" },

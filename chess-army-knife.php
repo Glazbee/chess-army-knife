@@ -61,6 +61,7 @@ require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-teams.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-team-groups.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-teams-admin.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-team-groups-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-officers.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-do-not-record.php';

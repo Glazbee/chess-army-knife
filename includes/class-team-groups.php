@@ -70,6 +70,74 @@ class Chess_Army_Knife_Team_Groups {
 	}
 
 	/**
+	 * The teams in a group, in the group's order.
+	 *
+	 * @param int $group_id Group id.
+	 * @return array[] Teams (see Chess_Army_Knife_Teams::all()).
+	 */
+	public static function teams_of( $group_id ) {
+		$members = array_values(
+			array_filter(
+				Chess_Army_Knife_Teams::all(),
+				function ( $team ) use ( $group_id ) {
+					return (int) $group_id === $team['group_id'];
+				}
+			)
+		);
+		$keys    = array_map(
+			function ( $index, $team ) {
+				return array( $team['group_pos'], $index );
+			},
+			array_keys( $members ),
+			$members
+		);
+		array_multisort( $keys, $members );
+		return $members;
+	}
+
+	/**
+	 * Set which teams a group has, in order. A team can be in only one group, so a team listed here
+	 * leaves whichever group it was in, and a team that was in this group but is not listed leaves it.
+	 *
+	 * @param int     $group_id Group id.
+	 * @param array[] $rows     In order, each { team_id, hero (bool), blurb (the hero blurb) }.
+	 */
+	public static function set_teams( $group_id, array $rows ) {
+		$group_id = (int) $group_id;
+		$kept     = array();
+
+		foreach ( $rows as $row ) {
+			$team_id = isset( $row['team_id'] ) ? absint( $row['team_id'] ) : 0;
+			if ( ! $team_id || isset( $kept[ $team_id ] ) || ! Chess_Army_Knife_Teams::get( $team_id ) ) {
+				continue;
+			}
+			update_post_meta( $team_id, Chess_Army_Knife_Teams::META_GROUP, $group_id );
+			update_post_meta( $team_id, Chess_Army_Knife_Teams::META_GROUP_POS, count( $kept ) );
+			update_post_meta( $team_id, Chess_Army_Knife_Teams::META_HERO, empty( $row['hero'] ) ? 0 : 1 );
+			update_post_meta( $team_id, Chess_Army_Knife_Teams::META_HERO_BLURB, isset( $row['blurb'] ) ? sanitize_textarea_field( (string) $row['blurb'] ) : '' );
+			$kept[ $team_id ] = true;
+		}
+
+		$was_here = get_posts(
+			array(
+				'post_type'      => Chess_Army_Knife_Teams::POST_TYPE,
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => Chess_Army_Knife_Teams::META_GROUP, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Teams are few.
+				'meta_value'     => $group_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Teams are few.
+			)
+		);
+		foreach ( $was_here as $team_id ) {
+			if ( ! isset( $kept[ (int) $team_id ] ) ) {
+				foreach ( array( Chess_Army_Knife_Teams::META_GROUP, Chess_Army_Knife_Teams::META_GROUP_POS, Chess_Army_Knife_Teams::META_HERO, Chess_Army_Knife_Teams::META_HERO_BLURB ) as $key ) {
+					delete_post_meta( $team_id, $key );
+				}
+			}
+		}
+	}
+
+	/**
 	 * One published group.
 	 *
 	 * @param int $id Group id.

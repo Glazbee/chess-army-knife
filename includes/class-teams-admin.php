@@ -65,7 +65,6 @@ class Chess_Army_Knife_Teams_Admin {
 		$colour   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
 		$tag      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_TAG, true );
 		$whatsapp = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_WHATSAPP, true );
-		$group    = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_GROUP, true );
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
@@ -75,15 +74,11 @@ class Chess_Army_Knife_Teams_Admin {
 				<td><input type="text" id="chess_army_team_venue" name="chess_army_team_venue" value="<?php echo esc_attr( $venue ); ?>" class="regular-text" /></td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="chess_army_team_group"><?php esc_html_e( 'Group', 'chess-army-knife' ); ?></label></th>
+				<th scope="row"><?php esc_html_e( 'Group', 'chess-army-knife' ); ?></th>
 				<td>
-					<select id="chess_army_team_group" name="chess_army_team_group">
-						<option value="0"><?php esc_html_e( 'None', 'chess-army-knife' ); ?></option>
-						<?php foreach ( Chess_Army_Knife_Team_Groups::all() as $option ) : ?>
-							<option value="<?php echo esc_attr( $option['id'] ); ?>" <?php selected( $group, $option['id'] ); ?>><?php echo esc_html( $option['name'] ); ?></option>
-						<?php endforeach; ?>
-					</select>
-					<p class="description"><?php esc_html_e( 'Optional. The Club Teams block can list teams under a heading for each group. Groups are set up under Groups.', 'chess-army-knife' ); ?></p>
+					<?php $current = Chess_Army_Knife_Teams::get( $post->ID ); ?>
+					<?php echo esc_html( $current && '' !== $current['group'] ? $current['group'] : __( 'None', 'chess-army-knife' ) ); ?>
+					<p class="description"><?php esc_html_e( 'A group chooses its teams: add this team to a group on the Groups tab of Teams.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -236,7 +231,6 @@ class Chess_Army_Knife_Teams_Admin {
 
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_TAG, isset( $_POST['chess_army_team_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_tag'] ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_WHATSAPP, isset( $_POST['chess_army_team_whatsapp'] ) ? Chess_Army_Knife_Teams::clean_whatsapp_link( sanitize_text_field( wp_unslash( $_POST['chess_army_team_whatsapp'] ) ) ) : '' );
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_GROUP, isset( $_POST['chess_army_team_group'] ) && Chess_Army_Knife_Team_Groups::get( absint( $_POST['chess_army_team_group'] ) ) ? absint( $_POST['chess_army_team_group'] ) : 0 );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_VENUE, isset( $_POST['chess_army_team_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_venue'] ) ) : '' );
 
 		$colour = ! empty( $_POST['chess_army_team_no_colour'] ) || ! isset( $_POST['chess_army_team_colour'] ) ? '' : (string) sanitize_hex_color( wp_unslash( $_POST['chess_army_team_colour'] ) );

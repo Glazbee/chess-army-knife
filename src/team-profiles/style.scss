@@ -27,6 +27,10 @@
 		margin: 0 0 1em;
 	}
 
+	.cak-team--hero {
+		grid-column: 1 / -1;
+	}
+
 	.cak-team__description {
 		font-size: 0.9em;
 	}

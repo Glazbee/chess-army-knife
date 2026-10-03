@@ -15,6 +15,7 @@ class Chess_Army_Knife_Team_Tabs {
 	 */
 	public static function init() {
 		add_action( 'edit_form_top', array( __CLASS__, 'render_on_edit_screen' ) );
+		add_action( 'all_admin_notices', array( __CLASS__, 'render_on_list_screen' ) );
 		add_filter( 'parent_file', array( __CLASS__, 'parent_file' ) );
 		add_filter( 'submenu_file', array( __CLASS__, 'submenu_file' ) );
 	}
@@ -86,20 +87,66 @@ class Chess_Army_Knife_Team_Tabs {
 	 * @param WP_Post $post Post being edited.
 	 */
 	public static function render_on_edit_screen( $post ) {
-		if ( $post && Chess_Army_Knife_Teams::POST_TYPE === $post->post_type && 'auto-draft' !== $post->post_status ) {
-			self::render( $post->ID, 'details' );
+		if ( ! $post ) {
+			return;
+		}
+		if ( Chess_Army_Knife_Teams::POST_TYPE === $post->post_type ) {
+			if ( 'auto-draft' !== $post->post_status ) {
+				self::render( $post->ID, 'details' );
+			} else {
+				self::render_sections( 'teams' );
+			}
+		} elseif ( Chess_Army_Knife_Team_Groups::POST_TYPE === $post->post_type ) {
+			self::render_sections( 'groups' );
 		}
 	}
 
 	/**
-	 * Whether the screen being shown is the Overview or Selection tab, which have no menu item of their own.
+	 * Draw the Teams and Groups switch above the lists of each.
+	 */
+	public static function render_on_list_screen() {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen && 'edit-' . Chess_Army_Knife_Teams::POST_TYPE === $screen->id ) {
+			self::render_sections( 'teams' );
+		} elseif ( $screen && 'edit-' . Chess_Army_Knife_Team_Groups::POST_TYPE === $screen->id ) {
+			self::render_sections( 'groups' );
+		}
+	}
+
+	/**
+	 * Draw the switch between the list of teams and the list of groups.
+	 *
+	 * @param string $active 'teams' or 'groups'.
+	 */
+	public static function render_sections( $active ) {
+		if ( ! Chess_Army_Knife_Teams::user_can_manage() ) {
+			return;
+		}
+		$sections = array(
+			'teams'  => array( __( 'Teams', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ),
+			'groups' => array( __( 'Groups', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE ) ),
+		);
+		?>
+		<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Teams and groups', 'chess-army-knife' ); ?>">
+			<?php foreach ( $sections as $key => $section ) : ?>
+				<a class="nav-tab<?php echo $active === $key ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( $section[1] ); ?>"<?php echo $active === $key ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $section[0] ); ?></a>
+			<?php endforeach; ?>
+		</nav>
+		<?php
+	}
+
+	/**
+	 * Whether the screen being shown is one of Teams' tabs that has no menu item of its own: Overview, Selection or Groups.
 	 *
 	 * @return bool
 	 */
 	protected static function on_hidden_tab() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only decides which menu item is lit.
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		return in_array( $page, array( Chess_Army_Knife_Team_Overview::PAGE, Chess_Army_Knife_Selection_Page::SLUG ), true );
+		$page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		// Groups have no menu item either: they are a tab of Teams.
+		return in_array( $page, array( Chess_Army_Knife_Team_Overview::PAGE, Chess_Army_Knife_Selection_Page::SLUG ), true )
+			|| ( $screen && Chess_Army_Knife_Team_Groups::POST_TYPE === $screen->post_type );
 	}
 
 	/**

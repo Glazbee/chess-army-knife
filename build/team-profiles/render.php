@@ -37,6 +37,10 @@ $rating_style = array_filter(
 	)
 );
 $show_players = ! empty( $attributes['showPlayers'] );
+$show_title   = ! isset( $attributes['showTitle'] ) || $attributes['showTitle'];
+// Headings start one level below the block's title, or at the top when the block has none.
+$title_shown  = 0 === $team_id && $show_title;
+$depth        = $title_shown ? 1 : 0;
 $show_leagues = ! isset( $attributes['showLeagues'] ) || $attributes['showLeagues'];
 $groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, $group_by ) : array(
 	array(
@@ -47,7 +51,7 @@ $groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, 
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'team-profiles', $attributes ) ); ?>>
-	<?php if ( 0 === $team_id ) : ?>
+	<?php if ( $title_shown ) : ?>
 		<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-team-profiles__heading', '' !== $block_title ? $block_title : sprintf( /* translators: %s: the club's name */ __( '%s teams', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<?php endif; ?>
 	<?php if ( ! $teams ) : ?>
@@ -58,17 +62,18 @@ $groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, 
 			<hr class="wp-block-separator has-alpha-channel-opacity" />
 		<?php endif; ?>
 		<?php if ( '' !== $group['label'] ) : ?>
-			<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-team-profiles__group', $group['label'], $group_level ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+			<?php echo Chess_Army_Knife_A11y::heading( $depth, 'cak-team-profiles__group', $group['label'], $group_level ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 			<?php if ( ! empty( $group['blurb'] ) ) : ?>
 				<div class="cak-team-profiles__blurb"><?php echo wp_kses_post( wpautop( esc_html( $group['blurb'] ) ) ); ?></div>
 			<?php endif; ?>
 		<?php endif; ?>
 		<div class="cak-team-profiles__grid" style="--cak-team-columns:<?php echo esc_attr( $columns ); ?>">
 			<?php foreach ( $group['teams'] as $team ) : ?>
-				<div class="cak-team">
-					<?php echo Chess_Army_Knife_A11y::heading( '' !== $group_by ? 2 : 1, 'cak-team__name', Chess_Army_Knife_Teams::display_name( $team, $name_format ), $team_level ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
-					<?php if ( '' !== $team['description'] ) : ?>
-						<p class="cak-team__description"><?php echo esc_html( $team['description'] ); ?></p>
+				<div class="cak-team<?php echo $team['hero'] ? ' cak-team--hero' : ''; ?>">
+					<?php echo Chess_Army_Knife_A11y::heading( '' !== $group_by ? $depth + 1 : $depth, 'cak-team__name', Chess_Army_Knife_Teams::display_name( $team, $name_format ), $team_level ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+					<?php $blurb = $team['hero'] && '' !== $team['hero_blurb'] ? $team['hero_blurb'] : $team['description']; // A hero team's own blurb stands in for its description. ?>
+					<?php if ( '' !== $blurb ) : ?>
+						<p class="cak-team__description"><?php echo esc_html( $blurb ); ?></p>
 					<?php endif; ?>
 					<?php if ( '' !== $team['venue'] ) : ?>
 						<p><strong><?php esc_html_e( 'Home venue:', 'chess-army-knife' ); ?></strong> <?php echo esc_html( $team['venue'] ); ?></p>
