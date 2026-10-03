@@ -78,18 +78,18 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_the_checklist_offers_members_and_guests_to_people_who_manage_members() {
 		$this->manager();
-		$this->member( 'Ada Member' );
-		$this->member( 'Gus Guest', array( 'status' => 'nonmember' ) );
+		$this->member( 'Member, Ada' );
+		$this->member( 'Guest, Gus', array( 'status' => 'nonmember' ) );
 		$this->member( 'Pat Applicant', array( 'status' => 'pending' ) );
 		$this->member( 'Lapsed Member', array( 'expiry_date' => '2020-01-01' ) );
 		$photo = $this->photo();
 
 		$html = $this->field_html( $photo );
 
-		$this->assertStringContainsString( 'Ada Member', $html );
-		$this->assertStringContainsString( 'Gus Guest', $html );
-		$this->assertStringNotContainsString( 'Pat Applicant', $html );
-		$this->assertStringNotContainsString( 'Lapsed Member', $html );
+		$this->assertStringContainsString( 'Member, Ada', $html );
+		$this->assertStringContainsString( 'Guest, Gus', $html );
+		$this->assertStringNotContainsString( 'Applicant, Pat', $html );
+		$this->assertStringNotContainsString( 'Member, Lapsed', $html );
 		$this->assertStringContainsString( 'name="attachments[' . $photo . '][chess_army_members][]"', $html );
 	}
 
@@ -101,7 +101,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 		$html = $this->field_html( $photo );
 
-		$this->assertStringContainsString( 'Lapsed Member', $html );
+		$this->assertStringContainsString( 'Member, Lapsed', $html );
 		$this->assertMatchesRegularExpression( '/value="' . $lapsed . '"\s+checked=\'checked\'/', $html );
 	}
 
@@ -116,7 +116,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_checklist_is_only_for_managers_and_only_on_photos() {
-		$this->member( 'Ada Member' );
+		$this->member( 'Member, Ada' );
 		$photo = $this->photo();
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
@@ -129,8 +129,8 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_ticking_members_tags_the_photo_and_unticking_removes_them() {
 		$this->manager();
-		$ada   = $this->member( 'Ada Member' );
-		$gus   = $this->member( 'Gus Guest', array( 'status' => 'nonmember' ) );
+		$ada   = $this->member( 'Member, Ada' );
+		$gus   = $this->member( 'Guest, Gus', array( 'status' => 'nonmember' ) );
 		$photo = $this->photo();
 
 		$this->submit_tags( $photo, array( $ada, $gus ) );
@@ -145,7 +145,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_a_form_that_did_not_show_the_checklist_leaves_the_tags_alone() {
 		$this->manager();
-		$ada   = $this->member( 'Ada Member' );
+		$ada   = $this->member( 'Member, Ada' );
 		$photo = $this->photo();
 		Chess_Army_Knife_Member_Photos::set_members( $photo, array( $ada ) );
 
@@ -156,7 +156,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_only_members_that_exist_can_be_tagged_and_duplicates_are_ignored() {
 		$this->manager();
-		$ada   = $this->member( 'Ada Member' );
+		$ada   = $this->member( 'Member, Ada' );
 		$photo = $this->photo();
 
 		$this->submit_tags( $photo, array( $ada, $ada, 999999, 0 ) );
@@ -165,7 +165,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	}
 
 	public function test_someone_without_the_permission_cannot_change_tags() {
-		$ada   = $this->member( 'Ada Member' );
+		$ada   = $this->member( 'Member, Ada' );
 		$photo = $this->photo();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
@@ -179,8 +179,8 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	 * ------------------------------------------------------------- */
 
 	public function test_a_members_photos_can_be_found_and_counted() {
-		$ada    = $this->member( 'Ada Member' );
-		$gus    = $this->member( 'Gus Guest', array( 'status' => 'nonmember' ) );
+		$ada    = $this->member( 'Member, Ada' );
+		$gus    = $this->member( 'Guest, Gus', array( 'status' => 'nonmember' ) );
 		$first  = $this->photo( 'First' );
 		$second = $this->photo( 'Second' );
 		$third  = $this->photo( 'Third' );
@@ -202,7 +202,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_the_media_library_can_be_filtered_to_one_members_photos() {
 		$this->manager();
-		$ada = $this->member( 'Ada Member' );
+		$ada = $this->member( 'Member, Ada' );
 		$tag = $this->photo( 'Tagged' );
 		$this->photo( 'Untagged' );
 		Chess_Army_Knife_Member_Photos::set_members( $tag, array( $ada ) );
@@ -223,7 +223,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_media_library_filter_is_ignored_without_the_permission() {
-		$ada = $this->member( 'Ada Member' );
+		$ada = $this->member( 'Member, Ada' );
 		$tag = $this->photo( 'Tagged' );
 		$this->photo( 'Untagged' );
 		Chess_Army_Knife_Member_Photos::set_members( $tag, array( $ada ) );
@@ -246,7 +246,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_the_grid_view_query_can_be_limited_to_one_members_photos() {
 		$this->manager();
-		$ada = $this->member( 'Ada Member' );
+		$ada = $this->member( 'Member, Ada' );
 		$tag = $this->photo( 'Tagged' );
 		$this->photo( 'Untagged' );
 		Chess_Army_Knife_Member_Photos::set_members( $tag, array( $ada ) );
@@ -272,7 +272,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_grid_view_filter_is_ignored_without_the_permission() {
-		$ada = $this->member( 'Ada Member' );
+		$ada = $this->member( 'Member, Ada' );
 		Chess_Army_Knife_Member_Photos::set_members( $this->photo(), array( $ada ) );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 		$_REQUEST['query'] = array( Chess_Army_Knife_Member_Photos::QUERY_VAR => (string) $ada );
@@ -282,7 +282,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_grid_filter_script_lists_only_people_who_are_in_a_photo_and_only_for_managers() {
-		$ada = $this->member( 'Ada Member' );
+		$ada = $this->member( 'Member, Ada' );
 		$this->member( 'Nobody Photographed' );
 		Chess_Army_Knife_Member_Photos::set_members( $this->photo(), array( $ada ) );
 
@@ -294,14 +294,14 @@ class MemberPhotosTest extends WP_UnitTestCase {
 		do_action( 'wp_enqueue_media' );
 		$this->assertTrue( wp_script_is( 'chess-army-knife-media-filter', 'enqueued' ) );
 		$data = wp_scripts()->get_data( 'chess-army-knife-media-filter', 'data' );
-		$this->assertStringContainsString( 'Ada Member', $data );
-		$this->assertStringNotContainsString( 'Nobody Photographed', $data );
+		$this->assertStringContainsString( 'Member, Ada', $data );
+		$this->assertStringNotContainsString( 'Photographed, Nobody', $data );
 		$this->assertStringContainsString( 'All members', $data );
 		$this->assertContains( 'media-views', wp_scripts()->registered['chess-army-knife-media-filter']->deps );
 	}
 
 	public function test_the_media_library_shows_who_is_tagged_and_only_to_managers() {
-		$ada   = $this->member( 'Ada Member' );
+		$ada   = $this->member( 'Member, Ada' );
 		$photo = $this->photo();
 		Chess_Army_Knife_Member_Photos::set_members( $photo, array( $ada ) );
 		$render = function () use ( $photo ) {
@@ -315,13 +315,13 @@ class MemberPhotosTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'chess_army_members', apply_filters( 'manage_media_columns', array() ) );
 
 		$this->manager();
-		$this->assertSame( 'Ada Member', $render() );
+		$this->assertSame( 'Member, Ada', $render() );
 		$this->assertArrayHasKey( 'chess_army_members', apply_filters( 'manage_media_columns', array() ) );
 	}
 
 	public function test_the_member_filter_lists_only_people_who_are_in_a_photo() {
 		$this->manager();
-		$ada = $this->member( 'Ada Member' );
+		$ada = $this->member( 'Member, Ada' );
 		$this->member( 'Nobody Photographed' );
 		Chess_Army_Knife_Member_Photos::set_members( $this->photo(), array( $ada ) );
 
@@ -329,13 +329,13 @@ class MemberPhotosTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Member_Photos::render_filter( 'attachment' );
 		$html = ob_get_clean();
 
-		$this->assertStringContainsString( 'Ada Member', $html );
-		$this->assertStringNotContainsString( 'Nobody Photographed', $html );
+		$this->assertStringContainsString( 'Member, Ada', $html );
+		$this->assertStringNotContainsString( 'Photographed, Nobody', $html );
 	}
 
 	public function test_a_members_page_shows_their_photos_and_a_link_from_the_list() {
 		$this->manager();
-		$ada   = $this->member( 'Ada Member' );
+		$ada   = $this->member( 'Member, Ada' );
 		$photo = $this->photo( 'Club night' );
 		Chess_Army_Knife_Member_Photos::set_members( $photo, array( $ada ) );
 
@@ -359,8 +359,8 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	 * ------------------------------------------------------------- */
 
 	public function test_deleting_a_member_takes_them_off_every_photo_but_keeps_the_photos() {
-		$ada   = $this->member( 'Ada Member' );
-		$gus   = $this->member( 'Gus Guest' );
+		$ada   = $this->member( 'Member, Ada' );
+		$gus   = $this->member( 'Guest, Gus' );
 		$photo = $this->photo();
 		Chess_Army_Knife_Member_Photos::set_members( $photo, array( $ada, $gus ) );
 
@@ -371,7 +371,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	}
 
 	public function test_deleting_a_photo_removes_its_tags() {
-		$ada   = $this->member( 'Ada Member' );
+		$ada   = $this->member( 'Member, Ada' );
 		$photo = $this->photo();
 		Chess_Army_Knife_Member_Photos::set_members( $photo, array( $ada ) );
 
@@ -381,7 +381,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_export_lists_the_photos_a_person_is_tagged_in() {
-		$ada   = $this->member( 'Ada Member', array( 'email' => 'ada@example.test' ) );
+		$ada   = $this->member( 'Member, Ada', array( 'email' => 'ada@example.test' ) );
 		$photo = $this->photo( 'Club night' );
 		Chess_Army_Knife_Member_Photos::set_members( $photo, array( $ada ) );
 
@@ -402,7 +402,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_erasing_a_person_tagged_in_photos_keeps_the_photos_and_a_bare_record_to_find_them_by() {
 		$ada   = $this->member(
-			'Ada Member',
+			'Member, Ada',
 			array(
 				'email' => 'ada@example.test',
 				'phone' => '0123',

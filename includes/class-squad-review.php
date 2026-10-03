@@ -110,7 +110,8 @@ class Chess_Army_Knife_Squad_Review {
 		$any         = false;
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Squad Review', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Team_Tabs::render_sections( 'review' ); ?>
 			<p><?php esc_html_e( 'Importing fixtures adds people to a squad when they play, and never takes anyone out. Here are the people who have not played for a team lately, so you can tidy the squads. Taking someone out of a squad changes nothing else: they stay a member, and can be put back from the Teams or Members screen.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( null !== $removed ) : ?>

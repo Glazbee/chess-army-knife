@@ -92,6 +92,7 @@ class Chess_Army_Knife_Standings {
 			$rows[ $entry['id'] ] = array(
 				'entry_id'         => (int) $entry['id'],
 				'name'             => $entry['name'],
+				'nickname'         => isset( $entry['nickname'] ) ? $entry['nickname'] : '',
 				'seed'             => isset( $entry['seed'] ) ? (int) $entry['seed'] : 0,
 				'played'           => 0,
 				'won'              => 0,

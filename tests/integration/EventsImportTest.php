@@ -387,9 +387,7 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->fail( 'No event called ' . $title );
 	}
 
-	public function test_a_home_fixture_is_held_at_the_teams_venue_and_an_away_one_has_none_until_the_club_is_known() {
-		$team_id = Chess_Army_Knife_Teams::all()[0]['id'];
-		update_post_meta( $team_id, Chess_Army_Knife_Teams::META_VENUE, 'Our Hall, High Street' );
+	public function test_a_home_fixture_is_held_at_the_club_venue_and_an_away_one_has_none_until_the_club_is_known() {
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
@@ -405,7 +403,7 @@ class EventsImportTest extends WP_UnitTestCase {
 
 		$summary = Chess_Army_Knife_Events_Import::import();
 
-		$this->assertSame( 'Our Hall, High Street', $this->event_titled( 'Our A v Stroud Otters' )['location'] );
+		$this->assertSame( 'The Club Room', $this->event_titled( 'Our A v Stroud Otters' )['location'] );
 		$away = $this->event_titled( 'Stroud Otters v Our A' );
 		$this->assertSame( '', $away['location'], 'An away fixture is not at our club venue.' );
 		$this->assertSame( 1, $summary['unsorted'], 'Stroud Otters is waiting to be put in a club.' );
@@ -851,7 +849,7 @@ class EventsImportTest extends WP_UnitTestCase {
 		$this->assertSame( 1, Chess_Army_Knife_LMS_Players::add( array_keys( $candidates ), $candidates ) );
 
 		$ada = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '123456A' );
-		$this->assertSame( 'Ada Lovelace', $ada['name'] );
+		$this->assertSame( 'Lovelace, Ada', $ada['name'] );
 		$this->assertSame( Chess_Army_Knife_Membership_Store::STATUS_PENDING, $ada['status'] );
 		$this->assertNotSame( '', $ada['consent_at'], 'Consent to hold their details is recorded.' );
 		$this->assertSame( '', $ada['newsletter_consent_at'], 'The optional extras are not assumed.' );

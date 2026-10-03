@@ -17,6 +17,10 @@
   "version": "0.0.1",
   "textdomain": "chess-army-knife",
   "attributes": {
+    "nameFormat": {
+      "type": "string",
+      "default": ""
+    },
     "templateId": {
       "type": "string",
       "default": ""
@@ -24,6 +28,26 @@
     "title": {
       "type": "string",
       "default": ""
+    },
+    "showTitle": {
+      "type": "boolean",
+      "default": true
+    },
+    "columns": {
+      "type": "number",
+      "default": 1
+    },
+    "layout": {
+      "type": "string",
+      "default": "inline"
+    },
+    "positionHeadingLevel": {
+      "type": "number",
+      "default": 0
+    },
+    "showSeparators": {
+      "type": "boolean",
+      "default": true
     },
     "showTenure": {
       "type": "boolean",

@@ -3,11 +3,28 @@ import useClubName from '../shared/use-club-name';
 import TemplatePicker from '../shared/template-picker';
 import SortableList from '../shared/sortable-list';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
+import {
+	Button,
+	PanelBody,
+	RangeControl,
+	SelectControl,
+	TextControl,
+	ToggleControl,
+} from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
 import './editor.scss';
+import NameFormatControl from '../shared/name-format-control';
+
+const HEADING_LEVELS = [
+	{ label: __( 'Plain text', 'chess-army-knife' ), value: 0 },
+	{ label: __( 'Automatic', 'chess-army-knife' ), value: -1 },
+	...[ 1, 2, 3, 4, 5, 6 ].map( ( level ) => ( {
+		label: 'H' + level,
+		value: level,
+	} ) ),
+];
 
 // The club's items in the order this block asks for, then any it does not mention.
 function inBlockOrder( items, order ) {
@@ -23,7 +40,17 @@ function inBlockOrder( items, order ) {
 }
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, showTenure, includeCaptains, order } = attributes;
+	const {
+		title,
+		showTitle,
+		showTenure,
+		includeCaptains,
+		order,
+		columns,
+		layout,
+		positionHeadingLevel,
+		showSeparators,
+	} = attributes;
 	const [ items, setItems ] = useState( [] );
 
 	const blockProps = useBlockProps();
@@ -53,23 +80,92 @@ export default function Edit( { attributes, setAttributes } ) {
 					title={ __( 'Display', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
-					<TextControl
-						label={ __(
-							'Custom title (optional)',
-							'chess-army-knife'
-						) }
+					<ToggleControl
+						label={ __( 'Show block title', 'chess-army-knife' ) }
 						help={ __(
-							"Use {club} for the club's name.",
+							'Turn off to use the page title instead.',
 							'chess-army-knife'
 						) }
-						value={ title }
+						checked={ showTitle !== false }
 						onChange={ ( value ) =>
-							setAttributes( { title: value } )
+							setAttributes( { showTitle: value } )
 						}
-						placeholder={ sprintf(
-							__( '%s officers', 'chess-army-knife' ),
-							clubName
+					/>
+					{ showTitle !== false && (
+						<TextControl
+							label={ __(
+								'Custom title (optional)',
+								'chess-army-knife'
+							) }
+							help={ __(
+								"Use {club} for the club's name.",
+								'chess-army-knife'
+							) }
+							value={ title }
+							onChange={ ( value ) =>
+								setAttributes( { title: value } )
+							}
+							placeholder={ sprintf(
+								__( '%s officers', 'chess-army-knife' ),
+								clubName
+							) }
+						/>
+					) }
+					<RangeControl
+						label={ __( 'Columns', 'chess-army-knife' ) }
+						value={ columns }
+						min={ 1 }
+						max={ 4 }
+						onChange={ ( value ) =>
+							setAttributes( { columns: value } )
+						}
+					/>
+					<SelectControl
+						label={ __( 'Layout', 'chess-army-knife' ) }
+						value={ layout }
+						options={ [
+							{
+								label: __(
+									'Position beside the name',
+									'chess-army-knife'
+								),
+								value: 'inline',
+							},
+							{
+								label: __(
+									'Position above the name',
+									'chess-army-knife'
+								),
+								value: 'stacked',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { layout: value } )
+						}
+					/>
+					<SelectControl
+						label={ __( 'Position heading', 'chess-army-knife' ) }
+						help={ __(
+							'Plain text keeps a position as bold text. Choose a heading level to make each position a heading; Automatic follows the level set for the whole site.',
+							'chess-army-knife'
 						) }
+						value={ positionHeadingLevel }
+						options={ HEADING_LEVELS }
+						onChange={ ( value ) =>
+							setAttributes( {
+								positionHeadingLevel: parseInt( value, 10 ),
+							} )
+						}
+					/>
+					<ToggleControl
+						label={ __(
+							'Line between officers',
+							'chess-army-knife'
+						) }
+						checked={ showSeparators !== false }
+						onChange={ ( value ) =>
+							setAttributes( { showSeparators: value } )
+						}
 					/>
 					<ToggleControl
 						label={ __( 'Show since when', 'chess-army-knife' ) }
@@ -92,17 +188,41 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { includeCaptains: value } )
 						}
 					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
+						}
+					/>
 				</PanelBody>
 				<PanelBody
 					title={ __( 'Order', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
 					<p>
-						{ __(
-							'Drag the positions into the order you want, or use the arrows. Positions are set up under Officers.',
-							'chess-army-knife'
-						) }
+						{ order.length
+							? __(
+									"This block has an order of its own. Drag the positions to change it, or go back to the club's order.",
+									'chess-army-knife'
+							  )
+							: __(
+									"This block follows the club's order, which is set under Officers. Drag the positions to give this block an order of its own.",
+									'chess-army-knife'
+							  ) }
 					</p>
+					{ order.length > 0 && (
+						<p>
+							<Button
+								variant="secondary"
+								onClick={ () => setAttributes( { order: [] } ) }
+							>
+								{ __(
+									"Use the club's order",
+									'chess-army-knife'
+								) }
+							</Button>
+						</p>
+					) }
 					<SortableList
 						items={ listed }
 						onChange={ ( next ) =>

@@ -40,7 +40,7 @@ class Chess_Army_Knife_Templates {
 			'league-table'         => __( 'ECF League Standings & Matchups', 'chess-army-knife' ),
 			'team-carousel'        => __( 'ECF Team Fixtures Carousel', 'chess-army-knife' ),
 			'biggest-gainers'      => __( 'ECF Biggest Rating Gainers', 'chess-army-knife' ),
-			'featured-player'      => __( 'ECF Featured Player', 'chess-army-knife' ),
+			'featured-player'      => __( 'Featured Player', 'chess-army-knife' ),
 			'tournament-status'    => __( 'Tournament Status', 'chess-army-knife' ),
 			'tournament-standings' => __( 'Tournament Standings', 'chess-army-knife' ),
 			'tournament-players'   => __( 'Tournament Players', 'chess-army-knife' ),
@@ -308,14 +308,14 @@ class Chess_Army_Knife_Templates {
 					'options' => $bool,
 				);
 				$s[] = array(
-					'key'     => 'showClub',
-					'label'   => __( 'Show club', 'chess-army-knife' ),
+					'key'     => 'showChange',
+					'label'   => __( 'Show the change in rating', 'chess-army-knife' ),
 					'type'    => 'select',
 					'options' => $bool,
 				);
 				$s[] = array(
 					'key'     => 'showLinks',
-					'label'   => __( 'Show chess.com / Lichess links', 'chess-army-knife' ),
+					'label'   => __( 'Show profile links (ECF, chess.com, Lichess)', 'chess-army-knife' ),
 					'type'    => 'select',
 					'options' => $bool,
 				);

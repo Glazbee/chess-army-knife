@@ -70,10 +70,10 @@ class Chess_Army_Knife_Block_Help {
 
 		return array(
 			'rating-chart'         => array(
-				'use'      => __( 'A line chart of how one player\'s rating has moved over their recent rated games, with current, peak, lowest and change figures There is a written summary of the chart, and the ratings can be shown as a table.', 'chess-army-knife' ),
+				'use'      => __( 'A line chart of how one member\'s rating has moved over their recent rated games, with their Standard, Rapid and Blitz OTB ratings and the change over the period. There is a written summary of the chart, and the ratings can be shown as a table.', 'chess-army-knife' ),
 				'settings' => array(
-					__( 'Search for the player by name: only people the club holds a record of, with an ECF code, are offered.', 'chess-army-knife' ),
-					__( 'Choose the rating list (standard, rapid, blitz or an online list), how many games to draw, the height, and whether to show the figures.', 'chess-army-knife' ),
+					__( 'Search for the member by name: only current members with an ECF code can be charted. Or rotate: every hour, day, week or month the chart moves on to another current member whose rating has risen over the days you choose.', 'chess-army-knife' ),
+					__( 'Choose which rating list the chart draws, how many games to draw, the height, and whether to show the figures. The title (default Featured Player) and subtitle can use {player} for the member\'s name.', 'chess-army-knife' ),
 				),
 				'needs'    => array( $ecf_code ),
 				'where'    => array( 'members' ),
@@ -96,13 +96,13 @@ class Chess_Army_Knife_Block_Help {
 				'where'    => array( 'members' ),
 			),
 			'featured-player'      => array(
-				'use'      => __( 'Spotlight a player with a photo, a short blurb on why they are featured, their ECF rating and links to their chess.com and Lichess profiles.', 'chess-army-knife' ),
+				'use'      => __( 'Spotlight a current member with a photo, a short blurb on why they are featured, their ECF rating and links to their chess.com and Lichess profiles.', 'chess-army-knife' ),
 				'settings' => array(
-					__( 'Choose a player from the club\'s records, or type a display name instead: a player with no ECF code can still be featured.', 'chess-army-knife' ),
-					__( 'Pick a photo from the media library, and choose which of rating, club and links to show.', 'chess-army-knife' ),
+					__( 'Choose a current club member with an ECF code. Or rotate: every hour, day, week or month the block moves on to another current member whose rating has risen over the days you choose, and shows that member\'s own blurb, which an officer writes on their record (Members, Featured Player blurb).', 'chess-army-knife' ),
+					__( 'Pick a photo from the media library, and choose which of rating, club and links to show. The title (default Featured Player) and subtitle can use {player} for the member\'s name. Rotation looks at Standard OTB ratings only.', 'chess-army-knife' ),
 				),
-				'needs'    => array(),
-				'where'    => array(),
+				'needs'    => array( $ecf_code ),
+				'where'    => array( 'members' ),
 			),
 			'league-table'         => array(
 				'use'      => __( 'A league table and the recent and upcoming matches of a league on the ECF League Management System (LMS). Needs the LMS API key from Settings.', 'chess-army-knife' ),
@@ -153,8 +153,9 @@ class Chess_Army_Knife_Block_Help {
 			'officers'             => array(
 				'use'      => __( 'The club\'s officers: each position with the name of whoever holds it, and team captains. Only positions and names are shown, and optionally since when.', 'chess-army-knife' ),
 				'settings' => array(
-					__( 'Drag the positions into the order you want, or use the up and down buttons.', 'chess-army-knife' ),
+					__( 'The block follows the club\'s order set on the Officers screen. Drag the positions in the block only to give it an order of its own.', 'chess-army-knife' ),
 					__( 'Show or hide since when, and team captains.', 'chess-army-knife' ),
+					__( 'Choose the columns, whether the position sits beside or above the name, whether a position is plain text or a heading (and its level), and whether the block title and the lines between officers show.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
 					__( 'Positions with officers, set up on the Officers screen. Team captains come from the Teams.', 'chess-army-knife' ),

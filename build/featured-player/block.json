@@ -2,10 +2,10 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
   "name": "chess-army-knife/featured-player",
-  "title": "ECF Featured Player",
+  "title": "Featured Player",
   "category": "chess-army-knife-ratings",
   "icon": "star-filled",
-  "description": "Spotlight a player with their ECF rating, a photo, a short blurb on why they're featured, and links to their chess.com and Lichess profiles.",
+  "description": "Spotlight a club member with their ECF rating, a photo, a short blurb on why they're featured, and links to their chess.com and Lichess profiles. Or rotate through members whose rating has risen.",
   "keywords": [
     "chess",
     "ecf",
@@ -18,6 +18,10 @@
   "version": "1.0.0",
   "textdomain": "chess-army-knife",
   "attributes": {
+    "nameFormat": {
+      "type": "string",
+      "default": ""
+    },
     "templateId": {
       "type": "string",
       "default": ""
@@ -31,6 +35,10 @@
       "default": ""
     },
     "heading": {
+      "type": "string",
+      "default": ""
+    },
+    "subtitle": {
       "type": "string",
       "default": ""
     },
@@ -62,13 +70,21 @@
       "type": "boolean",
       "default": true
     },
-    "showClub": {
-      "type": "boolean",
-      "default": true
-    },
     "showLinks": {
       "type": "boolean",
       "default": true
+    },
+    "showChange": {
+      "type": "boolean",
+      "default": true
+    },
+    "rotation": {
+      "type": "string",
+      "default": "none"
+    },
+    "daysBack": {
+      "type": "number",
+      "default": 0
     }
   },
   "supports": {

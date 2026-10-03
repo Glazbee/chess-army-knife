@@ -60,7 +60,7 @@ $notice_id    = 'cak-data-notice';
 			<p><?php esc_html_e( 'Tick what you are happy for the club to do. Untick anything you would like to stop. You stay a member either way.', 'chess-army-knife' ); ?></p>
 			<?php foreach ( $found['people'] as $person ) : ?>
 				<fieldset class="cak-my-data__person">
-					<legend><?php echo esc_html( $person['name'] ); ?></legend>
+					<legend><?php echo esc_html( Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ) ); ?></legend>
 					<p>
 						<label>
 							<input type="checkbox" name="newsletter[<?php echo esc_attr( $person['id'] ); ?>]" value="1" <?php checked( '' !== $person['newsletter_consent_at'] ); ?> />

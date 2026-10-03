@@ -507,7 +507,7 @@ class SelectionTest extends WP_UnitTestCase {
 			'team'  => (string) $this->team,
 		);
 		$page = $this->render();
-		$this->assertStringContainsString( 'Ada Lovelace', $page );
+		$this->assertStringContainsString( 'Lovelace, Ada', $page );
 		$this->assertStringContainsString( 'name="board[1]"', $page );
 		$this->assertStringContainsString( 'Publish and tell the players', $page );
 
@@ -569,7 +569,7 @@ class SelectionTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Club A v Rivals', $html );
 		$this->assertStringContainsString( '1 yes, 0 maybe, 0 no, 1 not replied', $html );
 		$this->assertStringContainsString( 'Not yet replied for the next fixture', $html );
-		$this->assertStringContainsString( 'Bea Babbage', $html, 'She has not replied.' );
+		$this->assertStringContainsString( 'Babbage, Bea', $html, 'She has not replied.' );
 		$this->assertStringContainsString( '1900', $html );
 		$this->assertNotNull( $bea );
 	}

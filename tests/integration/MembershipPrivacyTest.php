@@ -79,7 +79,7 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $result['data'] );
 		$this->assertSame( 'membership-' . $id, $result['data'][0]['item_id'] );
 		$values = wp_list_pluck( $result['data'][0]['data'], 'value', 'name' );
-		$this->assertSame( 'Ada Lovelace', $values['Name'] );
+		$this->assertSame( 'Lovelace, Ada', $values['Name'] );
 		$this->assertSame( '2015-05-01', $values['Date of birth'] );
 		$this->assertSame( 'Charles', $values['Parent or guardian'] );
 		$this->assertSame( 'Cash', $values['Payment method'] );
@@ -164,7 +164,7 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $data );
 		$this->assertSame( 'membership-' . $id, $data[0]['item_id'] );
 		$values = wp_list_pluck( $data[0]['data'], 'value', 'name' );
-		$this->assertSame( 'Junior Player', $values['Name'] );
+		$this->assertSame( 'Player, Junior', $values['Name'] );
 		$this->assertSame( 'Charles Player', $values['Parent or guardian'] );
 		$this->assertSame( 'charles@example.test', $values['Parent or guardian email'] );
 		$this->assertSame( '2026-09-01 10:00:00', $values['Agreed to receive the newsletter (UTC)'] );

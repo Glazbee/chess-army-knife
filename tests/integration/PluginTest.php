@@ -123,7 +123,7 @@ class PluginTest extends WP_UnitTestCase {
 			array(
 				array(
 					'code' => '120787J',
-					'name' => 'Test Player',
+					'name' => 'Player, Test',
 					'club' => '',
 				),
 			),
@@ -233,7 +233,7 @@ class PluginTest extends WP_UnitTestCase {
 
 		$this->assertSame( array( array( 'id' => 7 ) ), $games );
 		$person = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '120787J' );
-		$this->assertSame( 'Newly Seen', $person['name'] );
+		$this->assertSame( 'Seen, Newly', $person['name'] );
 		$this->assertSame( 'nonmember', $person['status'], 'Recorded, but not as a member.' );
 		$this->assertSame( array(), Chess_Army_Knife_Membership_Store::get_members(), 'And left out of the member lists.' );
 		$this->assertCount( 2, $this->http_requests, 'One request to learn who they are, one for their games.' );
@@ -361,12 +361,38 @@ class PluginTest extends WP_UnitTestCase {
 		$this->assertSame( 'ecf_api_error', $result->get_error_code() );
 	}
 
-	public function test_featured_player_block_renders_without_ecf_code() {
-		$html = do_blocks( '<!-- wp:chess-army-knife/featured-player {"playerName":"Jane Doe","blurb":"Club champion"} /-->' );
+	public function test_featured_player_block_shows_a_current_member_with_their_own_blurb() {
+		$this->mock_http( array() );
+		Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => 'Jane Doe',
+				'status'   => 'active',
+				'ecf_code' => '120787J',
+				'blurb'    => 'Club champion',
+			)
+		);
 
-		$this->assertStringContainsString( 'Jane Doe', $html );
-		$this->assertStringContainsString( 'Club champion', $html );
-		$this->assertCount( 0, $this->http_requests );
+		$html = do_blocks( '<!-- wp:chess-army-knife/featured-player {"playerCode":"120787J"} /-->' );
+
+		$this->assertStringContainsString( 'Jane Doe', $html, 'The name is written the way the site chooses.' );
+		$this->assertStringContainsString( 'Featured Player', $html, 'The default title.' );
+		$this->assertStringContainsString( 'Club champion', $html, 'The member\'s own blurb.' );
+	}
+
+	public function test_featured_player_block_only_features_current_members() {
+		$this->mock_http( array() );
+		Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'name'     => 'Gary Guest',
+				'status'   => 'nonmember',
+				'ecf_code' => '555555K',
+			)
+		);
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/featured-player {"playerCode":"555555K","playerName":"Gary Guest"} /-->' );
+
+		$this->assertStringNotContainsString( 'Gary Guest', $html );
+		$this->assertStringContainsString( 'chess-army-knife-notice', $html );
 	}
 
 	public function test_block_shows_notice_when_unconfigured() {

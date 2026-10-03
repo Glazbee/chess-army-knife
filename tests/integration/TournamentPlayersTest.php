@@ -53,9 +53,9 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 		$this->assertSame( 2, $outcome['added'] );
 		$guests = Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'nonmember' ) );
-		$this->assertSame( array( 'Guest Player', 'Nocode Guest' ), wp_list_pluck( $guests, 'name' ) );
-		$this->assertSame( '555555K', $guests[0]['ecf_code'] );
-		$this->assertSame( 'manual', $guests[0]['source'] );
+		$this->assertSame( array( 'Guest, Nocode', 'Player, Guest' ), wp_list_pluck( $guests, 'name' ) );
+		$this->assertSame( '555555K', $guests[1]['ecf_code'] );
+		$this->assertSame( 'manual', $guests[1]['source'] );
 		$this->assertSame( array(), Chess_Army_Knife_Membership_Store::get_members(), 'Guests are not in the member list.' );
 	}
 
@@ -127,7 +127,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertCount( 4, Chess_Army_Knife_Tournament_Store::get_entries( $tournament ) );
 
 		$cy = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '555555K' );
-		$this->assertSame( 'Cy From ECF', $cy['name'] );
+		$this->assertSame( 'ECF, Cy From', $cy['name'] );
 		$this->assertCount( 4, Chess_Army_Knife_Membership_Store::get_players() ); // Alice, Bob, Cy and Di: the duplicate Alice reuses her profile.
 	}
 
@@ -170,6 +170,65 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $outcome['errors'] );
 	}
 
+	public function test_saving_the_picker_makes_the_submitted_list_the_entrants() {
+		$tournament = $this->tournament();
+		$keep       = $this->saved_player( 'Keep Me', '', 1500 );
+		$drop       = $this->saved_player( 'Drop Me', '', 1500 );
+		$add        = $this->saved_player( 'Add Me', '', 1500 );
+		Chess_Army_Knife_Player_Selector::enter_players( $tournament, array( 'player_ids' => array( $keep, $drop ) ) );
+
+		$saved = Chess_Army_Knife_Player_Selector::sync_players( $tournament, array( 'player_ids' => array( $keep, $add ) ) );
+
+		$this->assertSame( 1, $saved['added'] );
+		$this->assertSame( 1, $saved['removed'] );
+		$this->assertSame( array( $add, $keep ), array_map( 'intval', wp_list_pluck( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), 'player_id' ) ), 'Unseeded entrants come by name.' );
+	}
+
+	public function test_saving_the_picker_after_the_start_changes_nothing() {
+		$tournament = $this->tournament();
+		$ids        = array();
+		foreach ( array( 'A', 'B', 'C' ) as $name ) {
+			$ids[] = $this->saved_player( $name, '', 1500 );
+		}
+		Chess_Army_Knife_Player_Selector::enter_players( $tournament, array( 'player_ids' => $ids ) );
+		Chess_Army_Knife_Tournaments::start( $tournament );
+
+		$saved = Chess_Army_Knife_Player_Selector::sync_players( $tournament, array( 'player_ids' => array( $ids[0] ) ) );
+
+		$this->assertSame( 0, $saved['removed'] );
+		$this->assertNotEmpty( $saved['errors'] );
+		$this->assertCount( 3, Chess_Army_Knife_Tournament_Store::get_entries( $tournament ) );
+	}
+
+	public function test_a_player_with_no_name_and_no_code_is_refused() {
+		$outcome = Chess_Army_Knife_Player_Selector::enter_players( $this->tournament(), array( 'new_players' => array( array( 'name' => '' ) ) ) );
+
+		$this->assertSame( 0, $outcome['added'] );
+		$this->assertNotEmpty( $outcome['errors'] );
+	}
+
+	public function test_the_csv_export_holds_the_players_and_their_results() {
+		$tournament = $this->tournament();
+		$ids        = array();
+		foreach ( array( 'Brown, Ann', 'Green, Bob' ) as $name ) {
+			$ids[] = $this->saved_player( $name, '', 1500 );
+		}
+		Chess_Army_Knife_Player_Selector::enter_players( $tournament, array( 'player_ids' => $ids ) );
+		Chess_Army_Knife_Tournaments::start( $tournament );
+		$game = Chess_Army_Knife_Tournament_Store::get_games( $tournament )[0];
+		Chess_Army_Knife_Tournaments::record_result( $game['id'], '1-0' );
+
+		$csv = Chess_Army_Knife_Tournament_Export::to_csv(
+			Chess_Army_Knife_Tournament_Store::get_tournament( $tournament ),
+			Chess_Army_Knife_Tournament_Store::get_entries( $tournament ),
+			Chess_Army_Knife_Tournament_Store::get_games( $tournament )
+		);
+
+		$this->assertStringContainsString( 'Brown, Ann', $csv );
+		$this->assertStringContainsString( 'Round 1 colour', $csv );
+		$this->assertStringContainsString( 'Manual', $csv );
+	}
+
 	public function test_a_tournament_page_is_created_once_as_a_draft() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$tournament = $this->tournament();
@@ -200,28 +259,25 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertWPError( Chess_Army_Knife_Tournaments::create_page( 9999 ) );
 	}
 
-	public function test_the_players_block_lists_ratings_before_and_after_the_start() {
+	public function test_the_players_block_shows_the_ecf_rating_and_never_a_manual_one() {
 		$tournament = $this->tournament();
+		$coded      = $this->saved_player( 'Coded Cat', '120787J' );
+		Chess_Army_Knife_Membership_Store::record_rating_check( $coded, 1612, 'S' );
 		Chess_Army_Knife_Player_Selector::enter_players(
 			$tournament,
 			array(
-				'player_ids' => array( $this->saved_player( 'Manual Mo', '', 1450 ), $this->saved_player( 'Coded Cat', '120787J' ), $this->saved_player( 'Unrated Ur' ) ),
+				'player_ids' => array( $this->saved_player( 'Manual Mo', '', 1450 ), $coded ),
 			)
 		);
 		$markup = '<!-- wp:chess-army-knife/tournament-players {"tournamentId":' . $tournament . '} /-->';
 
 		$html = do_blocks( $markup );
-		$this->assertStringContainsString( 'Manual Mo', $html );
-		$this->assertStringContainsString( '1450 (manual)', $html );
-		$this->assertStringContainsString( '120787J', $html );
-		$this->assertStringContainsString( 'Set at start', $html );
-		$this->assertStringContainsString( 'Unrated', $html );
 
-		// After the start the recorded rating is shown (the ECF lookup fails offline, leaving the player unrated).
-		Chess_Army_Knife_Tournaments::start( $tournament );
-		$html = do_blocks( $markup );
-		$this->assertStringContainsString( '1450 (manual)', $html );
-		$this->assertStringNotContainsString( 'Set at start', $html );
+		$this->assertStringContainsString( 'ECF Rating', $html );
+		$this->assertStringContainsString( '120787J', $html );
+		$this->assertStringContainsString( '1612', $html, 'The rating the ECF refresh keeps for the member.' );
+		$this->assertStringNotContainsString( '1450', $html, 'A manual rating is not an ECF rating.' );
+		$this->assertStringNotContainsString( 'Seed', $html );
 	}
 
 	public function test_the_players_block_asks_for_a_tournament() {
@@ -230,7 +286,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 	public function test_a_name_left_on_a_result_can_be_replaced_but_only_if_no_record_is_behind_it() {
 		$tournament = $this->tournament();
-		$person     = $this->saved_player( 'Linked Person', '111111A', 1500 );
+		$person     = $this->saved_player( 'Person, Linked', '111111A', 1500 );
 		Chess_Army_Knife_Tournaments::add_player( $tournament, $person );
 		Chess_Army_Knife_Tournaments::add_unlinked_player( $tournament, 'Gone Person', 1400 );
 
@@ -241,7 +297,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'Gone Person', $by_name );
 		$this->assertSame( 0, $by_name['Gone Person']['player_id'] );
 
-		$linked = Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, $by_name['Linked Person']['id'] );
+		$linked = Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, $by_name['Person, Linked']['id'] );
 		$this->assertWPError( $linked );
 		$this->assertSame( 'entry_linked', $linked->get_error_code() );
 
@@ -249,7 +305,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 		$names = wp_list_pluck( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), 'name' );
 		$this->assertNotContains( 'Gone Person', $names );
-		$this->assertContains( 'Linked Person', $names );
+		$this->assertContains( 'Person, Linked', $names );
 		$this->assertContains( 'Anonymous player ' . $by_name['Gone Person']['id'], $names );
 
 		$this->assertWPError( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, 999999 ) );

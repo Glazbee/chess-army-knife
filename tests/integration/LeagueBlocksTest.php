@@ -180,7 +180,7 @@ class LeagueBlocksTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Home against Test Club C', $html, 'The fixture to come.' );
 		$this->assertStringContainsString( 'Lost', $html );
 		$this->assertStringContainsString( 'Board by board', $html );
-		$this->assertStringContainsString( 'Player 1, A (1940)', $html );
+		$this->assertStringContainsString( 'A Player 1 (1940)', $html );
 		$this->assertStringContainsString( '(unrated)', $html );
 	}
 

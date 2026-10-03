@@ -190,10 +190,12 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 	 *
 	 * @param string $name  Team name.
 	 * @param string $event Division of its league, or '' for none.
-	 * @param string $group Free-text group.
+	 * @param string $group Name of its group.
+	 * @param int    $order Page order of its group.
+	 * @param int    $position Its place within the group.
 	 * @return array
 	 */
-	protected function team( $name, $event = '', $group = '' ) {
+	protected function team( $name, $event = '', $group = '', $order = 0, $position = 0 ) {
 		$leagues = array();
 		if ( '' !== $event ) {
 			$leagues[] = array(
@@ -203,9 +205,12 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 			);
 		}
 		return array(
-			'name'    => $name,
-			'group'   => $group,
-			'leagues' => $leagues,
+			'name'        => $name,
+			'group'       => $group,
+			'group_blurb' => '',
+			'group_order' => $order,
+			'group_pos'   => $position,
+			'leagues'     => $leagues,
 		);
 	}
 
@@ -244,15 +249,27 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( $lions, $leopard ), $groups[0]['teams'] );
 	}
 
-	public function test_group_teams_by_group_uses_the_free_text_group() {
-		$a = $this->team( 'A', '', 'NGCA' );
-		$b = $this->team( 'B', '', 'Internal' );
-		$c = $this->team( 'C', '', 'NGCA' );
+	public function test_group_teams_by_group_puts_ungrouped_first_then_follows_the_group_order() {
+		$a = $this->team( 'A', '', 'NGCA', 2 );
+		$b = $this->team( 'B', '', 'Internal', 1 );
+		$c = $this->team( 'C', '', 'NGCA', 2 );
+		$d = $this->team( 'D' );
 
-		$groups = Chess_Army_Knife_Teams::group_teams( array( $a, $b, $c ), 'group' );
+		$groups = Chess_Army_Knife_Teams::group_teams( array( $a, $b, $c, $d ), 'group' );
 
-		$this->assertSame( array( 'NGCA', 'Internal' ), array_column( $groups, 'label' ) );
-		$this->assertSame( array( $a, $c ), $groups[0]['teams'] );
+		$this->assertSame( array( '', 'Internal', 'NGCA' ), array_column( $groups, 'label' ) );
+		$this->assertSame( array( $a, $c ), $groups[2]['teams'] );
+	}
+
+	public function test_group_teams_orders_teams_within_a_group_by_their_place() {
+		$first  = $this->team( 'Zebras', '', 'NGCA', 1, 0 );
+		$second = $this->team( 'Aardvarks', '', 'NGCA', 1, 1 );
+		$third  = $this->team( 'Moles', '', 'NGCA', 1, 2 );
+
+		// Handed over in page order, not the group's order.
+		$groups = Chess_Army_Knife_Teams::group_teams( array( $third, $first, $second ), 'group' );
+
+		$this->assertSame( array( $first, $second, $third ), $groups[0]['teams'] );
 	}
 
 	public function test_build_roster_marks_the_captain_and_separates_a_non_playing_one() {
@@ -260,10 +277,118 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 
 		$playing = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2 ), 2 );
 		$this->assertSame( array( false, true ), array_column( $playing['players'], 'captain' ) );
-		$this->assertSame( '', $playing['non_playing_captain'] );
+		$this->assertSame( array(), $playing['non_playing_captain'] );
 
 		$outside = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2 ), 3 );
 		$this->assertCount( 2, $outside['players'] );
-		$this->assertSame( 'Cat', $outside['non_playing_captain'] );
+		$this->assertSame( 'Cat', $outside['non_playing_captain']['name'] );
+	}
+
+	public function test_a_captain_who_is_not_a_member_is_the_non_playing_captain() {
+		$members = array( $this->member( 1, 'Ann' ) );
+
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1 ), 0, 'surname', 'Pat Parent' );
+		$this->assertSame( 'Pat Parent', $roster['non_playing_captain']['name'] );
+		$this->assertCount( 1, $roster['players'] );
+
+		// A member as captain wins over the typed name.
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1 ), 1, 'surname', 'Pat Parent' );
+		$this->assertSame( array(), $roster['non_playing_captain'] );
+		$this->assertTrue( $roster['players'][0]['captain'] );
+	}
+
+	public function test_build_roster_sorts_by_surname_by_default() {
+		$members = array( $this->member( 1, 'Zack Norris' ), $this->member( 2, 'Ian Robson' ), $this->member( 3, 'Mike Ashworth' ) );
+
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2, 3 ), 0 );
+
+		$this->assertSame( array( 'Mike Ashworth', 'Zack Norris', 'Ian Robson' ), array_column( $roster['players'], 'name' ) );
+	}
+
+	public function test_build_roster_can_sort_by_rating_with_unrated_players_last() {
+		$members = array(
+			array(
+				'id'            => 1,
+				'name'          => 'Ann Able',
+				'ecf_rating'    => 1500,
+				'manual_rating' => null,
+			),
+			array(
+				'id'            => 2,
+				'name'          => 'Bob Baker',
+				'ecf_rating'    => null,
+				'manual_rating' => 1800,
+			),
+			array(
+				'id'   => 3,
+				'name' => 'Cat Cole',
+			),
+			array(
+				'id'         => 4,
+				'name'       => 'Dan Dyer',
+				'ecf_rating' => 1500,
+			),
+		);
+
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2, 3, 4 ), 0, 'rating' );
+
+		$this->assertSame( array( 'Bob Baker', 'Ann Able', 'Dan Dyer', 'Cat Cole' ), array_column( $roster['players'], 'name' ) );
+		$this->assertSame( array( 1800, 1500, 1500, 0 ), array_column( $roster['players'], 'rating' ) );
+	}
+
+	public function test_the_leagues_page_merges_rows_into_each_teams_entries() {
+		$current = array(
+			11 => array(
+				array(
+					'org'   => '999',
+					'event' => 'Cup',
+					'name'  => '',
+				),
+				array(
+					'org'   => '270',
+					'event' => 'Old division',
+					'name'  => '',
+				),
+			),
+			12 => array(),
+		);
+		$rows    = array(
+			array(
+				'org'     => '270',
+				'team_id' => 12,
+				'event'   => 'Division 1',
+				'name'    => '',
+			),
+			array(
+				'org'     => '270',
+				'team_id' => 12,
+				'event'   => '',
+				'name'    => 'No event is dropped',
+			),
+			array(
+				'org'     => '555',
+				'team_id' => 12,
+				'event'   => 'Not a shown organisation',
+				'name'    => '',
+			),
+			array(
+				'org'     => '270',
+				'team_id' => 77,
+				'event'   => 'Not a team',
+				'name'    => '',
+			),
+		);
+
+		$merged = Chess_Army_Knife_Leagues_Page::merge( $current, array( '270' ), $rows );
+
+		$this->assertSame( array( '999' ), array_column( $merged[11], 'org' ), 'The shown organisation is replaced, the rest kept.' );
+		$this->assertSame( array( 'Division 1' ), array_column( $merged[12], 'event' ) );
+		$this->assertArrayNotHasKey( 77, $merged );
+	}
+
+	public function test_divisions_are_listed_in_natural_alphabetical_order() {
+		$sorted = Chess_Army_Knife_Leagues_Page::sort_divisions( array( 'Division 10', 'Division 2', 'cup', 'Division 1', 'Division 2' ) );
+
+		$this->assertSame( array( 'cup', 'Division 1', 'Division 2', 'Division 10' ), $sorted );
 	}
 }

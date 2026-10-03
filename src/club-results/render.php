@@ -26,13 +26,15 @@ $show_event       = ! isset( $attributes['showEvent'] ) || (bool) $attributes['s
 $block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'club-results', $attributes );
+$name_style         = Chess_Army_Knife_Names::style_for( $attributes );
 
 // The club's own current members with an ECF code: nobody is looked up on the ECF without a record here.
 $players = array();
 foreach ( Chess_Army_Knife_Membership_Store::get_players( '', true, $max_players, true ) as $member ) {
 	$players[] = array(
-		'code' => $member['ecf_code'],
-		'name' => $member['name'],
+		'code'     => $member['ecf_code'],
+		'name'     => $member['name'],
+		'nickname' => $member['nickname'],
 	);
 }
 
@@ -78,6 +80,7 @@ foreach ( $players as $player ) {
 		$results[] = array(
 			'date'         => $game['game_date'],
 			'player_name'  => $player['name'],
+			'nickname'     => $player['nickname'],
 			'result_label' => $result_labels[ $score ],
 			'result_class' => array(
 				'1' => 'cak-result-win',
@@ -130,7 +133,7 @@ $heading = $block_title ? $block_title : sprintf( /* translators: %s: the club's
 				<?php foreach ( $results as $row ) : ?>
 					<tr>
 						<td><?php echo Chess_Army_Knife_A11y::date( $row['date'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in date(). ?></td>
-						<th scope="row"><?php echo esc_html( $row['player_name'] ); ?></th>
+						<th scope="row"><?php echo esc_html( Chess_Army_Knife_Names::format( $row['player_name'], $name_style, $row['nickname'] ) ); ?></th>
 						<td><span class="<?php echo esc_attr( $row['result_class'] ); ?>"><?php echo esc_html( $row['result_label'] ); ?></span></td>
 						<?php
 						if ( $show_event ) :

@@ -135,7 +135,7 @@ $heading      = function ( $depth, $text ) {
 			$picked        = Chess_Army_Knife_Selection::selections_for_person( $person['id'] );
 			?>
 			<section class="cak-portal__person">
-				<?php echo $heading( 1, $person['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+				<?php echo $heading( 1, Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 				<?php echo $heading( 2, __( 'Membership', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 				<dl class="cak-portal__summary">
@@ -149,9 +149,9 @@ $heading      = function ( $depth, $text ) {
 						<dt><?php esc_html_e( 'Last day', 'chess-army-knife' ); ?></dt>
 						<dd><?php echo esc_html( mysql2date( $date_format, $person['expiry_date'] ) ); ?></dd>
 					<?php endif; ?>
-					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER !== $person['status'] ) : ?>
+					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER !== $person['status'] && '' !== Chess_Army_Knife_Memberships::payment_reference( $person['id'], $person ) ) : ?>
 						<dt><?php esc_html_e( 'Payment reference', 'chess-army-knife' ); ?></dt>
-						<dd><?php echo esc_html( Chess_Army_Knife_Memberships::payment_reference( $person['id'] ) ); ?></dd>
+						<dd><?php echo esc_html( Chess_Army_Knife_Memberships::payment_reference( $person['id'], $person ) ); ?></dd>
 					<?php endif; ?>
 					<?php if ( $teams ) : ?>
 						<dt><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></dt>
@@ -172,14 +172,15 @@ $heading      = function ( $depth, $text ) {
 						<?php endforeach; ?>
 					</ul>
 				<?php endif; ?>
-				<?php if ( in_array( $person_status, array( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, Chess_Army_Knife_Membership_Store::STATUS_EXPIRED ), true ) && '' !== Chess_Army_Knife_Memberships::payment_instructions() ) : ?>
-					<p class="cak-portal__pay"><?php echo esc_html( Chess_Army_Knife_Memberships::payment_instructions() ); ?></p>
+				<?php if ( in_array( $person_status, array( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, Chess_Army_Knife_Membership_Store::STATUS_EXPIRED ), true ) && '' !== Chess_Army_Knife_Memberships::payment_instructions( $person['id'], $person ) ) : ?>
+					<p class="cak-portal__pay"><?php echo esc_html( Chess_Army_Knife_Memberships::payment_instructions( $person['id'], $person ) ); ?></p>
 				<?php endif; ?>
 
 				<?php echo $heading( 2, __( 'Your details', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 				<form method="post" action="<?php echo esc_url( $admin_post ); ?>">
 					<?php $cak_portal_fields( Chess_Army_Knife_Member_Portal::ACTION_DETAILS, $token, $person['id'], $page_url ); ?>
 					<p class="cak-portal__field"><label for="cak-name-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label><input type="text" id="cak-name-<?php echo esc_attr( $person['id'] ); ?>" name="name" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'name', $person['name'] ) : $person['name'] ); ?>" autocomplete="name" required <?php echo $attrs( 'cak-name-' . $person['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /></p>
+					<p class="cak-portal__field"><label for="cak-nick-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Preferred first name (optional)', 'chess-army-knife' ); ?></label><input type="text" id="cak-nick-<?php echo esc_attr( $person['id'] ); ?>" name="nickname" maxlength="60" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'nickname', $person['nickname'] ) : $person['nickname'] ); ?>" autocomplete="nickname" /></p>
 					<?php if ( ! $is_junior || '' !== $person['phone'] ) : ?>
 						<p class="cak-portal__field"><label for="cak-phone-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Phone', 'chess-army-knife' ); ?></label><input type="tel" id="cak-phone-<?php echo esc_attr( $person['id'] ); ?>" name="phone" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'phone', $person['phone'] ) : $person['phone'] ); ?>" autocomplete="tel" /></p>
 					<?php endif; ?>
@@ -188,7 +189,7 @@ $heading      = function ( $depth, $text ) {
 						<p class="cak-portal__field"><label for="cak-gname-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Parent or guardian name', 'chess-army-knife' ); ?></label><input type="text" id="cak-gname-<?php echo esc_attr( $person['id'] ); ?>" name="guardian_name" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'guardian_name', $person['guardian_name'] ) : $person['guardian_name'] ); ?>" <?php echo $attrs( 'cak-gname-' . $person['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /></p>
 						<p class="cak-portal__field"><label for="cak-gphone-<?php echo esc_attr( $person['id'] ); ?>"><?php esc_html_e( 'Parent or guardian phone', 'chess-army-knife' ); ?></label><input type="tel" id="cak-gphone-<?php echo esc_attr( $person['id'] ); ?>" name="guardian_phone" value="<?php echo esc_attr( $kept_person ? Chess_Army_Knife_Form_State::value( 'guardian_phone', $person['guardian_phone'] ) : $person['guardian_phone'] ); ?>" /></p>
 					<?php endif; ?>
-					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my details', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), $person['name'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
+					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my details', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
 				</form>
 
 				<?php echo $heading( 2, __( 'Email address', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
@@ -209,7 +210,7 @@ $heading      = function ( $depth, $text ) {
 								?>
 							</p>
 							<p class="cak-portal__field"><label for="cak-new-<?php echo esc_attr( $person['id'] . '-' . $email_field ); ?>"><?php esc_html_e( 'New address', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label><input type="email" id="cak-new-<?php echo esc_attr( $person['id'] . '-' . $email_field ); ?>" name="new_email" value="<?php echo esc_attr( $kept_person && Chess_Army_Knife_Form_State::value( 'field' ) === $email_field ? Chess_Army_Knife_Form_State::value( 'new_email' ) : '' ); ?>" autocomplete="email" required <?php echo $attrs( 'cak-new-' . $person['id'] . '-' . $email_field ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /></p>
-							<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Change address', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), $person['name'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button> <span class="cak-portal__hint"><?php esc_html_e( 'We will email the new address a link to confirm.', 'chess-army-knife' ); ?></span></p>
+							<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Change address', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button> <span class="cak-portal__hint"><?php esc_html_e( 'We will email the new address a link to confirm.', 'chess-army-knife' ); ?></span></p>
 						</form>
 					<?php endif; ?>
 				<?php endforeach; ?>
@@ -218,13 +219,13 @@ $heading      = function ( $depth, $text ) {
 				<form method="post" action="<?php echo esc_url( $admin_post ); ?>">
 					<?php $cak_portal_fields( Chess_Army_Knife_Member_Portal::ACTION_CHOICES, $token, $person['id'], $page_url ); ?>
 					<fieldset class="cak-portal__choices">
-					<legend class="cak-visually-hidden"><?php echo esc_html( sprintf( /* translators: %s: person's name */ __( 'Email choices for %s', 'chess-army-knife' ), $person['name'] ) ); ?></legend>
+					<legend class="cak-visually-hidden"><?php echo esc_html( sprintf( /* translators: %s: person's name */ __( 'Email choices for %s', 'chess-army-knife' ), Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ) ) ); ?></legend>
 					<?php foreach ( $categories as $category => $category_label ) : ?>
 						<p class="cak-portal__check"><label><input type="checkbox" name="category[<?php echo esc_attr( $category ); ?>]" value="1" <?php checked( Chess_Army_Knife_Notification_Preferences::allows( $person, $category ) ); ?> /> <?php echo esc_html( $category_label ); ?></label></p>
 					<?php endforeach; ?>
 					<p class="cak-portal__check"><label><input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $person['whatsapp_consent_at'] ); ?> /> <?php esc_html_e( 'Add me to the WhatsApp group of the team(s) the club has me in (my phone number is visible to the group)', 'chess-army-knife' ); ?></label></p>
 					</fieldset>
-					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my choices', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), $person['name'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
+					<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Save my choices', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
 				</form>
 
 				<?php if ( $picked ) : ?>
@@ -247,7 +248,7 @@ $heading      = function ( $depth, $text ) {
 						<?php $cak_portal_fields( Chess_Army_Knife_Member_Portal::ACTION_DELETE, $token, $person['id'], $page_url ); ?>
 						<p><?php esc_html_e( 'This deletes your details now and ends your membership. You cannot undo it. If a payment, tournament or event links your record to the club\'s accounts, the record stays, but with no personal details.', 'chess-army-knife' ); ?></p>
 						<p class="cak-portal__check"><label><input type="checkbox" id="cak-delete-<?php echo esc_attr( $person['id'] ); ?>" name="confirm" value="1" required <?php echo $attrs( 'cak-delete-' . $person['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> /> <?php esc_html_e( 'Yes, delete these details', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label></p>
-						<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Delete my details', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), $person['name'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
+						<p><button type="submit" class="wp-element-button"><?php esc_html_e( 'Delete my details', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: person's name */ __( ' for %s', 'chess-army-knife' ), Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></button></p>
 					</form>
 				</div>
 			</section>

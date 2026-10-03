@@ -27,7 +27,7 @@ if ( Chess_Army_Knife_Form_State::has_values() ) {
 }
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-$payment_text = Chess_Army_Knife_Memberships::payment_instructions();
+$payment_text = Chess_Army_Knife_Memberships::payment_instructions( isset( $applied_id ) && $applied_id > 0 ? (int) $applied_id : 0 );
 
 // The field each error is about, so the message can link to it and the field can point back.
 $error_fields = array(
@@ -51,15 +51,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 
 	<?php if ( null !== $applied_id ) : ?>
 		<div id="cak-membership-done" class="cak-form-notice cak-form-notice--success" role="status" tabindex="-1">
-			<p><?php esc_html_e( 'Thank you! Your application has been received and the club will be in touch once it has been reviewed.', 'chess-army-knife' ); ?></p>
-			<?php if ( $applied_id > 0 ) : ?>
-				<p>
-					<?php
-					/* translators: %s: payment reference, for example MEM-12 */
-					echo esc_html( sprintf( __( 'Your payment reference is %s.', 'chess-army-knife' ), Chess_Army_Knife_Memberships::payment_reference( $applied_id ) ) );
-					?>
-				</p>
-			<?php endif; ?>
+			<?php echo wp_kses_post( wpautop( esc_html( Chess_Army_Knife_Memberships::thanks_text( (int) $applied_id ) ) ) ); ?>
 			<?php if ( '' !== $payment_text ) : ?>
 				<p><strong><?php esc_html_e( 'How to pay', 'chess-army-knife' ); ?></strong></p>
 				<?php echo wp_kses_post( wpautop( esc_html( $payment_text ) ) ); ?>
@@ -98,6 +90,11 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				<p>
 					<label for="cak-member-name"><?php esc_html_e( 'Full name', 'chess-army-knife' ); ?><?php echo Chess_Army_Knife_A11y::required(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in required(). ?></label>
 					<input type="text" id="cak-member-name" name="name" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'name' ) ); ?>" autocomplete="name" required <?php echo $attrs( 'cak-member-name' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in field_attrs(). ?> />
+				</p>
+				<p>
+					<label for="cak-member-nickname"><?php esc_html_e( 'Preferred first name (optional)', 'chess-army-knife' ); ?></label>
+					<span id="cak-member-nickname-hint" class="cak-membership-form__hint"><?php esc_html_e( 'If you would rather we used a different first name, for example Maddy instead of Madeline.', 'chess-army-knife' ); ?></span>
+					<input type="text" id="cak-member-nickname" name="nickname" maxlength="60" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'nickname' ) ); ?>" autocomplete="nickname" aria-describedby="cak-member-nickname-hint" />
 				</p>
 				<p>
 					<label for="cak-member-email"><?php esc_html_e( 'Email address (adults)', 'chess-army-knife' ); ?></label>

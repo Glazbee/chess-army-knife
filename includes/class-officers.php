@@ -3,7 +3,9 @@
  * The club's officers: named positions (Chairman, Secretary...) held by club
  * members, and the history of who held what and when.
  *
- * Positions are a short, ordered list kept in an option. Every spell in a
+ * Positions are a short, ordered list kept in an option. The site-wide order, which also places each
+ * team's captain among them, is another option: every Club Officers block follows it unless the block was
+ * given an order of its own. Every spell in a
  * position is a row in the officers table, with a start date and, once the
  * person stood down, an end date; a row without an end date is a current
  * officer. The position's name is copied onto the row, so a position that is
@@ -25,6 +27,7 @@ defined( 'ABSPATH' ) || exit;
 class Chess_Army_Knife_Officers {
 
 	const OPTION          = 'Chess_Army_Knife_officer_positions';
+	const OPTION_ORDER    = 'Chess_Army_Knife_officer_order';
 	const CAPTAIN_KEY     = 'captain';
 	const MAX_POSITIONS   = 40;
 	const MAX_NAME_LENGTH = 100;
@@ -126,7 +129,7 @@ class Chess_Army_Knife_Officers {
 	 * @param array $taken Ids already in use, as keys.
 	 * @return string
 	 */
-	protected static function new_position_id( array $taken ) {
+	public static function new_position_id( array $taken ) {
 		do {
 			$id = 'p' . strtolower( wp_generate_password( 7, false ) );
 		} while ( isset( $taken[ $id ] ) );
@@ -444,12 +447,21 @@ class Chess_Army_Knife_Officers {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * The things the block can list, in the club's default order: each position,
-	 * then each team's captain.
+	 * The things the block can list: each position, then each team's captain, put in the club's own
+	 * order (see order()). Anything not in that order yet, such as a new position or team, comes last.
 	 *
 	 * @return array[] Each { key, label, kind ('position' or 'captain') }; a captain's key is "team-" and the team id.
 	 */
 	public static function items() {
+		return self::order_items( self::unordered_items(), self::order() );
+	}
+
+	/**
+	 * Positions then captains, before the club's order is applied.
+	 *
+	 * @return array[] See items().
+	 */
+	protected static function unordered_items() {
 		$items = array();
 		foreach ( self::positions() as $position ) {
 			$items[] = array(
@@ -471,6 +483,73 @@ class Chess_Army_Knife_Officers {
 			);
 		}
 		return $items;
+	}
+
+	/**
+	 * The club's own order of positions and captains: the default for every block.
+	 *
+	 * @return string[] Keys of items; empty until the order has been saved.
+	 */
+	public static function order() {
+		return self::clean_order( get_option( self::OPTION_ORDER, array() ) );
+	}
+
+	/**
+	 * Clean a stored or submitted list of item keys.
+	 *
+	 * @param mixed $raw List of keys.
+	 * @return string[] Unique keys, in order.
+	 */
+	public static function clean_order( $raw ) {
+		$keys = array();
+		foreach ( is_array( $raw ) ? $raw : array() as $key ) {
+			$key = is_string( $key ) ? substr( sanitize_key( $key ), 0, self::MAX_ID_LENGTH ) : '';
+			if ( '' !== $key && ! in_array( $key, $keys, true ) && count( $keys ) < self::MAX_POSITIONS * 2 ) {
+				$keys[] = $key;
+			}
+		}
+		return $keys;
+	}
+
+	/**
+	 * Save the positions and the club's order together, from the Officers screen. The rows are in the order
+	 * wanted: each a position ( id, name ) or a captain ( captain: the item key, such as "team-7" ). A
+	 * position without a name is dropped, and a new one is given an id.
+	 *
+	 * @param array[] $rows Rows in order.
+	 */
+	public static function save_layout( array $rows ) {
+		$taken     = array();
+		$positions = array();
+		$order     = array();
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			if ( ! empty( $row['captain'] ) ) {
+				$order[] = $row['captain'];
+				continue;
+			}
+
+			$name = isset( $row['name'] ) ? trim( sanitize_text_field( (string) $row['name'] ) ) : '';
+			if ( '' === $name ) {
+				continue;
+			}
+			$id = isset( $row['id'] ) ? substr( sanitize_key( (string) $row['id'] ), 0, self::MAX_ID_LENGTH ) : '';
+			if ( '' === $id || self::CAPTAIN_KEY === $id || isset( $taken[ $id ] ) ) {
+				$id = self::new_position_id( $taken );
+			}
+			$taken[ $id ] = true;
+			$positions[]  = array(
+				'id'   => $id,
+				'name' => $name,
+			);
+			$order[]      = $id;
+		}
+
+		self::save_positions( $positions );
+		update_option( self::OPTION_ORDER, self::clean_order( $order ), false );
 	}
 
 	/**
@@ -538,9 +617,11 @@ class Chess_Army_Knife_Officers {
 		foreach ( $holders as $terms ) {
 			$ids = array_merge( $ids, wp_list_pluck( $terms, 'person_id' ) );
 		}
-		$names = array();
+		$names     = array();
+		$nicknames = array();
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_ids( array_unique( array_map( 'intval', $ids ) ) ) as $person ) {
-			$names[ $person['id'] ] = $person['name'];
+			$names[ $person['id'] ]     = $person['name'];
+			$nicknames[ $person['id'] ] = $person['nickname'];
 		}
 
 		$listing = array();
@@ -551,15 +632,17 @@ class Chess_Army_Knife_Officers {
 				foreach ( array_reverse( isset( $holders[ $item['key'] ] ) ? $holders[ $item['key'] ] : array() ) as $term ) {
 					if ( isset( $names[ $term['person_id'] ] ) ) {
 						$people[] = array(
-							'name'  => $names[ $term['person_id'] ],
-							'since' => $term['start_date'],
+							'name'     => $names[ $term['person_id'] ],
+							'nickname' => $nicknames[ $term['person_id'] ],
+							'since'    => $term['start_date'],
 						);
 					}
 				}
 			} elseif ( isset( $captains[ $item['key'] ], $names[ $captains[ $item['key'] ] ] ) ) {
 				$people[] = array(
-					'name'  => $names[ $captains[ $item['key'] ] ],
-					'since' => isset( $since[ $item['key'] ] ) && $since[ $item['key'] ]['person_id'] === $captains[ $item['key'] ] ? $since[ $item['key'] ]['start_date'] : '',
+					'name'     => $names[ $captains[ $item['key'] ] ],
+					'nickname' => $nicknames[ $captains[ $item['key'] ] ],
+					'since'    => isset( $since[ $item['key'] ] ) && $since[ $item['key'] ]['person_id'] === $captains[ $item['key'] ] ? $since[ $item['key'] ]['start_date'] : '',
 				);
 			}
 

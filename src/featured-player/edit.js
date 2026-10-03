@@ -17,6 +17,8 @@ import {
 import ServerSideRender from '@wordpress/server-side-render';
 import PlayerPicker from '../shared/player-picker';
 import TemplatePicker from '../shared/template-picker';
+import NameFormatControl from '../shared/name-format-control';
+import RotationControl from '../shared/rotation-control';
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -40,9 +42,10 @@ export default function Edit( { attributes, setAttributes } ) {
 		lichessUser,
 		domain,
 		showRating,
-		showClub,
 		showLinks,
+		rotation,
 	} = attributes;
+	const rotating = rotation && 'none' !== rotation;
 
 	const blockProps = useBlockProps();
 	const pick = ( player ) =>
@@ -62,30 +65,21 @@ export default function Edit( { attributes, setAttributes } ) {
 					title={ __( 'Player', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
-					<PlayerPicker
-						value={ { code: playerCode, name: playerName } }
-						onSelect={ pick }
+					<RotationControl
+						attributes={ attributes }
+						setAttributes={ setAttributes }
+						alwaysDays
 					/>
-					<TextControl
-						label={ __( 'ECF rating code', 'chess-army-knife' ) }
-						help={ __(
-							'Optional. Enables rating and club details from the ECF.',
-							'chess-army-knife'
-						) }
-						value={ playerCode }
+					{ ! rotating && (
+						<PlayerPicker
+							value={ { code: playerCode, name: playerName } }
+							onSelect={ pick }
+						/>
+					) }
+					<NameFormatControl
+						value={ attributes.nameFormat }
 						onChange={ ( value ) =>
-							setAttributes( { playerCode: value } )
-						}
-					/>
-					<TextControl
-						label={ __( 'Display name', 'chess-army-knife' ) }
-						help={ __(
-							'Overrides the name from the ECF. Required if there is no ECF code.',
-							'chess-army-knife'
-						) }
-						value={ playerName }
-						onChange={ ( value ) =>
-							setAttributes( { playerName: value } )
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>
@@ -94,9 +88,13 @@ export default function Edit( { attributes, setAttributes } ) {
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Heading (optional)', 'chess-army-knife' ) }
+						label={ __( 'Title (optional)', 'chess-army-knife' ) }
+						help={ __(
+							"Use {player} for the member's name and {club} for the club's name.",
+							'chess-army-knife'
+						) }
 						placeholder={ __(
-							'e.g. Player of the month',
+							'Featured Player',
 							'chess-army-knife'
 						) }
 						value={ heading }
@@ -104,9 +102,27 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { heading: value } )
 						}
 					/>
+					<TextControl
+						label={ __(
+							'Subtitle (optional)',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'Use {player} for the name, for example "{player} is our player of the month".',
+							'chess-army-knife'
+						) }
+						value={ attributes.subtitle }
+						onChange={ ( value ) =>
+							setAttributes( { subtitle: value } )
+						}
+					/>
 					<TextareaControl
 						label={ __(
 							'Why are they featured?',
+							'chess-army-knife'
+						) }
+						help={ __(
+							"Empty shows the member's own blurb, from their record. A rotating block always uses the member's blurb.",
 							'chess-army-knife'
 						) }
 						value={ blurb }
@@ -190,7 +206,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show profile links', 'chess-army-knife' ) }
+						label={ __(
+							'Show profile links (ECF, chess.com, Lichess)',
+							'chess-army-knife'
+						) }
 						checked={ showLinks }
 						onChange={ ( value ) =>
 							setAttributes( { showLinks: value } )
@@ -220,21 +239,28 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show club', 'chess-army-knife' ) }
-						checked={ showClub }
+						label={ __(
+							'Show the change in rating',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'Shown beside the rating, with the number of days it covers (set above).',
+							'chess-army-knife'
+						) }
+						checked={ attributes.showChange !== false }
 						onChange={ ( value ) =>
-							setAttributes( { showClub: value } )
+							setAttributes( { showChange: value } )
 						}
 					/>
 				</PanelBody>
 			</InspectorControls>
 
-			{ ! playerCode && ! playerName ? (
+			{ ! rotating && ! playerCode ? (
 				<Placeholder
 					icon="star-filled"
-					label={ __( 'ECF Featured Player', 'chess-army-knife' ) }
+					label={ __( 'Featured Player', 'chess-army-knife' ) }
 					instructions={ __(
-						'Choose a club member, or type a display name in the sidebar.',
+						'Choose a current club member in the sidebar, or turn on rotation.',
 						'chess-army-knife'
 					) }
 				>

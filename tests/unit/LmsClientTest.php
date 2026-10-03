@@ -534,4 +534,22 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( 1, 2 ), array_column( $seasons, 'id' ) );
 		$this->assertSame( array( 'old', 'active' ), array_column( $seasons, 'status' ) );
 	}
+
+	public function test_the_running_seasons_divisions_are_listed_with_their_ids_and_link_to_the_lms() {
+		$this->set_settings(
+			array(
+				'lms_api_key'        => 'lmsk_secret',
+				'use_local_cache'    => 0,
+				'fast_cache_enabled' => 0,
+			)
+		);
+		$this->serve_v2( $this->v2_league() );
+
+		$found = Chess_Army_Knife_LMS_Client::get_season_events( '702' );
+
+		$this->assertSame( '2025-26', $found['season'], 'The running season, not the old one.' );
+		$this->assertSame( array( 20, 21 ), array_column( $found['events'], 'id' ) );
+		$this->assertSame( array( 'Division Two', 'Division One' ), array_column( $found['events'], 'name' ) );
+		$this->assertSame( 'https://lms.englishchess.org.uk/lms/event/11594/fixtures', Chess_Army_Knife_LMS_Client::event_fixtures_url( 11594 ) );
+	}
 }

@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name:       Chess Army Knife
- * Plugin URI:        https://example.com/chess-army-knife
- * Description:       Gutenberg blocks for chess clubs: English Chess Federation (ECF) ratings and League Management System (LMS) data, club tournaments, club events and club memberships.
+ * Plugin URI:        https://glazbee.com/chess-army-knife
+ * Description:       A Swiss Army knife for chess club management: manage members, teams, tournaments and more. Includes blocks that integrate with the English Chess Federation (ECF) and the League Management System (LMS).
  * Version:           0.0.1
  * Requires at least: 7.1.2
  * Requires PHP:      7.4
- * Author:            Your Club
+ * Author:            Billy Glasbey
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       chess-army-knife
@@ -46,6 +46,8 @@ require_once Chess_Army_Knife_DIR . 'includes/class-tournament-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-player-selector.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournaments-page.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-tournament-summary.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-tournament-export.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-rotating-member.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-admin-refresh.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-admin.php';
@@ -54,12 +56,15 @@ require_once Chess_Army_Knife_DIR . 'includes/class-clubs.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-import.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-rest.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-events-feed.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-names.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-captains.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-selection.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-announcements.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-memberships.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-teams.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-team-groups.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-teams-admin.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-team-groups-admin.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-officers.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-membership-store.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-do-not-record.php';
@@ -92,6 +97,10 @@ require_once Chess_Army_Knife_DIR . 'includes/class-squad-review.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-event-results.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-lms-players.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-team-overview.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-leagues-page.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-team-tabs.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-member-tabs.php';
+require_once Chess_Army_Knife_DIR . 'includes/class-section-tabs.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-setup.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-setup-checklist.php';
 require_once Chess_Army_Knife_DIR . 'includes/class-menu.php';

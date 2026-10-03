@@ -15,6 +15,10 @@
   "version": "0.0.1",
   "textdomain": "chess-army-knife",
   "attributes": {
+    "nameFormat": {
+      "type": "string",
+      "default": ""
+    },
     "tournamentId": {
       "type": "number",
       "default": 0

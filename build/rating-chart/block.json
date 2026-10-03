@@ -5,7 +5,7 @@
   "title": "ECF Rating Chart",
   "category": "chess-army-knife-ratings",
   "icon": "chart-line",
-  "description": "Show how an ECF player's rating has changed over time, drawn from their recent rated games.",
+  "description": "Show how a club member's rating has changed over time, drawn from their recent rated games. Or rotate through members whose rating has risen.",
   "keywords": [
     "chess",
     "ecf",
@@ -50,6 +50,18 @@
     "templateId": {
       "type": "string",
       "default": ""
+    },
+    "subtitle": {
+      "type": "string",
+      "default": ""
+    },
+    "rotation": {
+      "type": "string",
+      "default": "none"
+    },
+    "daysBack": {
+      "type": "number",
+      "default": 0
     }
   },
   "supports": {

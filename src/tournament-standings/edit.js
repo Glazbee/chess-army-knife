@@ -4,6 +4,7 @@ import { PanelBody, SelectControl, Placeholder } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import useTournaments from '../shared/use-tournaments';
 import TemplatePicker from '../shared/template-picker';
+import NameFormatControl from '../shared/name-format-control';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { tournamentId } = attributes;
@@ -31,6 +32,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						options={ options }
 						onChange={ ( value ) =>
 							setAttributes( { tournamentId: Number( value ) } )
+						}
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>

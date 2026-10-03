@@ -252,4 +252,9 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 			)['lms_api_key']
 		);
 	}
+
+	public function test_player_tag_is_replaced_in_a_title() {
+		$this->assertSame( 'Ada Lovelace is our player of the month', Chess_Army_Knife_Settings::with_player( '{player} is our player of the month', 'Ada Lovelace' ) );
+		$this->assertSame( 'No tag here', Chess_Army_Knife_Settings::with_player( 'No tag here', 'Ada Lovelace' ) );
+	}
 }

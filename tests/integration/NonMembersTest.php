@@ -133,7 +133,7 @@ class NonMembersTest extends WP_UnitTestCase {
 		$request->set_param( 'search', 'Pat' );
 		$data = rest_do_request( $request )->get_data();
 
-		$this->assertSame( array( 'Pat Guest', 'Pat Member' ), wp_list_pluck( $data, 'name' ) );
+		$this->assertSame( array( 'Guest, Pat', 'Member, Pat' ), wp_list_pluck( $data, 'name' ) );
 		$this->assertSame( 'not a club member', $data[0]['club'] );
 		$this->assertSame( '', $data[1]['club'] );
 	}
@@ -145,7 +145,7 @@ class NonMembersTest extends WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $first );
 		$this->assertSame( $first, $second, 'The ECF code identifies the person.' );
 		$guest = Chess_Army_Knife_Membership_Store::get_member( $first );
-		$this->assertSame( 'Guest One', $guest['name'] );
+		$this->assertSame( 'One, Guest', $guest['name'] );
 		$this->assertSame( '12345X', $guest['ecf_code'] );
 		$this->assertSame( 'nonmember', $guest['status'] );
 		$this->assertSame( 'manual', $guest['source'] );
@@ -170,7 +170,7 @@ class NonMembersTest extends WP_UnitTestCase {
 
 		$this->assertSame( $member, Chess_Army_Knife_Membership_Store::ensure_person( 'Real Member', '777777M' ) );
 		$this->assertSame( 'active', Chess_Army_Knife_Membership_Store::get_member( $member )['status'] );
-		$this->assertSame( array( 'Real Member' ), $this->names( 'active' ) );
+		$this->assertSame( array( 'Member, Real' ), $this->names( 'active' ) );
 	}
 
 	public function test_using_a_guest_again_keeps_them_from_being_deleted_as_old() {

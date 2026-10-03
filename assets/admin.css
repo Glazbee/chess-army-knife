@@ -1,36 +1,66 @@
-.cak-selector__list {
-	max-height: 260px;
-	overflow-y: auto;
-	max-width: 520px;
-	padding: 4px 8px;
+.cak-picker__columns {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.cak-picker__column {
+	flex: 1;
+	min-width: 260px;
+}
+
+.cak-picker__list {
+	list-style: none;
+	margin: 0;
+	padding: 8px;
+	min-height: 48px;
+	max-height: 420px;
+	overflow: auto;
 	background: #fff;
+	border: 1px dashed #c3c4c7;
+}
+
+.cak-picker__entered {
+	border: 1px solid #8c8f94;
+}
+
+.cak-picker-person {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0 0 6px;
+	padding: 6px 8px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+}
+
+.cak-picker-person .cak-drag-handle {
+	cursor: move;
+}
+
+.cak-picker-person__text {
+	flex: 1;
+}
+
+.cak-picker__guest {
+	margin: 1em 0;
+	padding: 0 12px;
+	max-width: 760px;
 	border: 1px solid #c3c4c7;
 }
 
-.cak-selector__item {
-	display: block;
-	padding: 3px 0;
-}
-
-.cak-selector__item[hidden] {
-	display: none;
-}
-
-.cak-selector__results,
-.cak-selector__new {
+.cak-picker__new {
 	margin: 0 0 1em;
 }
 
-.cak-selector__results li,
-.cak-selector__new li {
+.cak-picker__new li {
 	margin: 0 0 4px;
 }
 
-.cak-selector__error {
+.cak-picker__error {
 	color: #b32d2e;
 }
 
-.cak-selector [data-cak-spinner].is-active,
-[data-cak-fill] [data-cak-spinner].is-active {
-	visibility: visible;
+.cak-results__round-links a {
+	margin-right: 8px;
 }

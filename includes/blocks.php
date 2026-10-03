@@ -98,17 +98,16 @@ function Chess_Army_Knife_register_rest_routes() {
 add_action( 'rest_api_init', 'Chess_Army_Knife_register_rest_routes' );
 
 /**
- * The teams' ids, names and groups, for the Club Teams block's team picker.
+ * The teams' ids and names, for the Club Teams block's team picker.
  *
  * @return array[]
  */
 function Chess_Army_Knife_rest_get_teams() {
 	$teams = array();
-	foreach ( Chess_Army_Knife_Teams::all() as $team ) {
+	foreach ( Chess_Army_Knife_Teams::choices() as $id => $name ) {
 		$teams[] = array(
-			'id'    => $team['id'],
-			'name'  => $team['name'],
-			'group' => $team['group'],
+			'id'   => $id,
+			'name' => $name,
 		);
 	}
 	return $teams;

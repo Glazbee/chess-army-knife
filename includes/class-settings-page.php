@@ -54,31 +54,35 @@ class Chess_Army_Knife_Settings {
 	 */
 	public static function defaults() {
 		return array(
-			'club_name'                 => '', // The club's name; the site's title is used until it is set.
-			'club_venue_map'            => '', // Link to the venue on a map.
-			'club_venue_w3w'            => '', // The venue's what3words address.
-			'club_venue'                => '', // Where the club meets: used by club events that don't set their own location.
-			'default_org_id'            => '',
-			'default_domain'            => 'S',
-			'ecf_club_code'             => '', // The club's ECF code, to refresh all members' ratings in one request.
-			'default_days_back'         => 60,
-			'default_max_players'       => 12,
-			'lms_api_key'               => '', // Key for the LMS v2 API, used by Import Events.
-			'membership_payment_info'   => '', // How to pay for a membership (bank details, cash at the club...).
-			'member_retention_months'   => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
-			'renewal_reminders_enabled' => 0, // Email members as their membership runs out.
-			'renewal_reminder_days'     => '30,7,0,-7', // Days before (positive) or after (negative) the last day of membership.
-			'renewal_reminder_subject'  => '',
-			'renewal_reminder_message'  => '',
-			'club_teams'                => '',  // Raw textarea: one "org | event | team" per line.
-			'fast_cache_enabled'        => 1,
-			'match_time'                => '19:30',
-			'cache_ecf_minutes'         => 360, // Player info / games.
-			'cache_lms_minutes'         => 30,  // League tables / matches / fixtures.
-			'use_local_cache'           => 1,   // Persistent custom-table cache vs. plain transients.
-			'delete_data_on_uninstall'  => 0, // Also delete tournaments and players when the plugin is deleted.
-			'heading_level'             => 2, // Level of each block's main title, 1 to 5; its sub-headings follow.
-			'contrast_mode'             => 'device', // High contrast for the blocks: 'off', 'device' (follow the visitor's device) or 'always'.
+			'club_name'                   => '', // The club's name; the site's title is used until it is set.
+			'club_venue_map'              => '', // Link to the venue on a map.
+			'club_venue_w3w'              => '', // The venue's what3words address.
+			'club_venue'                  => '', // Where the club meets: used by club events that don't set their own location.
+			'default_org_id'              => '',
+			'default_domain'              => 'S',
+			'ecf_club_code'               => '', // The club's ECF code, to refresh all members' ratings in one request.
+			'default_days_back'           => 60,
+			'default_max_players'         => 12,
+			'lms_api_key'                 => '', // Key for the LMS v2 API, used by Import Events.
+			'membership_payment_info'     => '', // How to pay for a membership (bank details, cash at the club...).
+			'membership_use_references'   => 1, // Give members a payment reference, for bank transfers.
+			'membership_reference_prefix' => 'MEM-', // The start of a generated reference: the prefix and the member's number.
+			'membership_thanks_message'   => '', // What an applicant is told on applying; blank uses the standard wording.
+			'member_retention_months'     => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
+			'renewal_reminders_enabled'   => 0, // Email members as their membership runs out.
+			'renewal_reminder_days'       => '30,7,0,-7', // Days before (positive) or after (negative) the last day of membership.
+			'renewal_reminder_subject'    => '',
+			'renewal_reminder_message'    => '',
+			'club_teams'                  => '',  // Raw textarea: one "org | event | team" per line.
+			'fast_cache_enabled'          => 1,
+			'match_time'                  => '19:30',
+			'cache_ecf_minutes'           => 360, // Player info / games.
+			'cache_lms_minutes'           => 30,  // League tables / matches / fixtures.
+			'use_local_cache'             => 1,   // Persistent custom-table cache vs. plain transients.
+			'delete_data_on_uninstall'    => 0, // Also delete tournaments and players when the plugin is deleted.
+			'name_format'                 => 'first_surname', // How people's names are written: 'first_surname' or 'surname_first'.
+			'heading_level'               => 2, // Level of each block's main title, 1 to 5; its sub-headings follow.
+			'contrast_mode'               => 'device', // High contrast for the blocks: 'off', 'device' (follow the visitor's device) or 'always'.
 		);
 	}
 
@@ -278,6 +282,18 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
+	 * Text with {club} and {player} replaced, for the title and subtitle of the blocks about one player.
+	 *
+	 * @param string $text        Plain text.
+	 * @param string $player_name The player's name as it should show.
+	 * @return string
+	 */
+	public static function with_player( $text, $player_name ) {
+		$text = self::with_club( $text );
+		return false === strpos( $text, '{player}' ) ? $text : str_replace( '{player}', (string) $player_name, $text );
+	}
+
+	/**
 	 * Sanitize the settings form submission.
 	 *
 	 * @param array $input Raw form input.
@@ -321,6 +337,15 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['membership_payment_info'] ) ) {
 			$clean['membership_payment_info'] = sanitize_textarea_field( $input['membership_payment_info'] );
 		}
+		if ( $from_form ) {
+			$clean['membership_use_references'] = ! empty( $input['membership_use_references'] ) ? 1 : 0;
+		}
+		if ( isset( $input['membership_reference_prefix'] ) ) {
+			$clean['membership_reference_prefix'] = mb_substr( preg_replace( '/[^A-Za-z0-9\-_]/', '', (string) $input['membership_reference_prefix'] ), 0, 12 );
+		}
+		if ( isset( $input['membership_thanks_message'] ) ) {
+			$clean['membership_thanks_message'] = sanitize_textarea_field( $input['membership_thanks_message'] );
+		}
 		// Set on the Policies screen, so it is kept unless submitted here.
 		$clean['member_retention_months'] = isset( $input['member_retention_months'] ) ? self::clean_retention_months( $input['member_retention_months'] ) : (int) self::get_options()['member_retention_months'];
 		if ( $from_form ) {
@@ -356,6 +381,9 @@ class Chess_Army_Knife_Settings {
 		}
 		if ( isset( $input['cache_lms_minutes'] ) ) {
 			$clean['cache_lms_minutes'] = max( 5, (int) $input['cache_lms_minutes'] );
+		}
+		if ( isset( $input['name_format'] ) && Chess_Army_Knife_Names::is_style( $input['name_format'] ) ) {
+			$clean['name_format'] = $input['name_format'];
 		}
 		if ( isset( $input['heading_level'] ) ) {
 			$clean['heading_level'] = max( 1, min( 5, (int) $input['heading_level'] ) );
@@ -397,6 +425,7 @@ class Chess_Army_Knife_Settings {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Chess Army Knife', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Section_Tabs::render( 'settings', 'settings' ); ?>
 
 			<?php if ( isset( $_GET['chess_army_knife_cache_cleared'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only notice; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible">
@@ -527,7 +556,26 @@ class Chess_Army_Knife_Settings {
 						<th scope="row"><label for="membership_payment_info"><?php esc_html_e( 'How to pay for membership', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<textarea id="membership_payment_info" name="<?php echo esc_attr( self::OPTION ); ?>[membership_payment_info]" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'e.g. Bank transfer to Any Chess Club, sort code 00-00-00, account 12345678, quoting your reference. Or pay cash at the club.', 'chess-army-knife' ); ?>"><?php echo esc_textarea( $options['membership_payment_info'] ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Shown to people who apply for membership and, if you choose, beside the advertised memberships. Write {reference} where a payment reference should go: it becomes the member\'s own reference (or "your payment reference" where there is no member). The website never takes payments itself. Plain text only.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="membership_thanks_message"><?php esc_html_e( 'Message after applying', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<textarea id="membership_thanks_message" name="<?php echo esc_attr( self::OPTION ); ?>[membership_thanks_message]" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'Thank you! Your application has been received and the club will be in touch once it has been reviewed.', 'chess-army-knife' ); ?>"><?php echo esc_textarea( $options['membership_thanks_message'] ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'What people read straight after applying. Leave blank to use the wording shown. You can use {reference} (their payment reference, if you use them), for example "If you pay by bank transfer, please use the reference {reference}". Plain text only. The "How to pay" text above follows it.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Payment references', 'chess-army-knife' ); ?></th>
+						<td>
+							<label><input type="checkbox" name="<?php echo esc_attr( self::OPTION ); ?>[membership_use_references]" value="1" <?php checked( ! empty( $options['membership_use_references'] ) ); ?> /> <?php esc_html_e( 'Give each member a payment reference', 'chess-army-knife' ); ?></label>
+							<p class="description"><?php esc_html_e( 'For bank transfers, so you can tell who has paid. Turn this off if you do not need them (for example, if everyone pays cash). You can also give a member their own reference on their record.', 'chess-army-knife' ); ?></p>
+							<p>
+								<label for="membership_reference_prefix"><?php esc_html_e( 'Start of each reference', 'chess-army-knife' ); ?></label>
+								<input type="text" id="membership_reference_prefix" name="<?php echo esc_attr( self::OPTION ); ?>[membership_reference_prefix]" value="<?php echo esc_attr( $options['membership_reference_prefix'] ); ?>" class="small-text" maxlength="12" />
+								<span class="description"><?php esc_html_e( 'A member\'s reference is this followed by their number, for example MEM-42.', 'chess-army-knife' ); ?></span>
+							</p>
 						</td>
 					</tr>
 					<tr>
@@ -555,6 +603,21 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<textarea id="renewal_reminder_message" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminder_message]" rows="6" class="large-text" placeholder="<?php echo esc_attr( Chess_Army_Knife_Renewal_Reminders::default_text()['body'] ); ?>"><?php echo esc_textarea( $options['renewal_reminder_message'] ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'Leave blank to use the wording shown. You can use {name}, {type}, {expiry}, {when} (for example "runs out on 31 March"), {reference} and {payment} (your payment instructions with the member\'s reference). Plain text only.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Names', 'chess-army-knife' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="name_format"><?php esc_html_e( 'How names are written', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<select id="name_format" name="<?php echo esc_attr( self::OPTION ); ?>[name_format]">
+								<?php foreach ( Chess_Army_Knife_Names::styles() as $key => $label ) : ?>
+									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $options['name_format'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="description"><?php esc_html_e( 'How people\'s names are shown on the website, for example "Ada Lovelace" or "Lovelace, Ada A". Each block can use the other way in its own settings. A member\'s nickname, if they have one, is used in place of their first name.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>

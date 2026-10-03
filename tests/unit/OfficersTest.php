@@ -207,4 +207,9 @@ class OfficersTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'Captain, Club A', Chess_Army_Knife_Officers::label_of_term( $captain ) );
 		$this->assertSame( 'Chairman', Chess_Army_Knife_Officers::label_of_term( $chairman ) );
 	}
+
+	public function test_the_clubs_order_is_cleaned() {
+		$this->assertSame( array( 'chair', 'team-7' ), Chess_Army_Knife_Officers::clean_order( array( 'chair', '', 'chair', 7, 'team-7' ) ) );
+		$this->assertSame( array(), Chess_Army_Knife_Officers::clean_order( 'not a list' ) );
+	}
 }

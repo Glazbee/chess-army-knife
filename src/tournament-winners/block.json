@@ -10,6 +10,7 @@
 	"version": "0.0.1",
 	"textdomain": "chess-army-knife",
 	"attributes": {
+		"nameFormat": { "type": "string", "default": "" },
 		"title": { "type": "string", "default": "" },
 		"limit": { "type": "number", "default": 10 },
 		"templateId": { "type": "string", "default": "" }

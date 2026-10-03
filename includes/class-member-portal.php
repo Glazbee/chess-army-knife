@@ -413,6 +413,7 @@ class Chess_Army_Knife_Member_Portal {
 		$update = array(
 			'id'       => $person['id'],
 			'name'     => $name,
+			'nickname' => isset( $input['nickname'] ) ? mb_substr( sanitize_text_field( $input['nickname'] ), 0, 60 ) : $person['nickname'],
 			'ecf_code' => isset( $input['ecf_code'] ) ? strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', $input['ecf_code'] ) ) : '',
 		);
 

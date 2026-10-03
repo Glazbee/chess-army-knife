@@ -276,6 +276,27 @@ class Chess_Army_Knife_ECF_Client {
 	}
 
 	/**
+	 * The address of a player's page on the ECF rating site, for a link to their profile.
+	 *
+	 * The page's address is not part of the documented API, so it can be changed with a filter.
+	 *
+	 * @param string $player_no ECF rating code.
+	 * @return string
+	 */
+	public static function profile_url( $player_no ) {
+		$player_no = self::normalise_code( $player_no );
+		$url       = 'https://rating.englishchess.org.uk/v2/new/player.php?ECF_code=' . rawurlencode( $player_no );
+
+		/**
+		 * Filter the link to a player's page on the ECF rating site.
+		 *
+		 * @param string $url       Address.
+		 * @param string $player_no Numeric ECF code.
+		 */
+		return (string) apply_filters( 'Chess_Army_Knife_ecf_profile_url', $url, $player_no );
+	}
+
+	/**
 	 * Normalise a rating code: keep digits, drop any trailing check letter.
 	 *
 	 * @param string $code Raw code as typed by an editor user (e.g. "120787J").

@@ -57,9 +57,10 @@ class Chess_Army_Knife_Team_Overview {
 		$teams = Chess_Army_Knife_Captains::teams_for_user();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Team Overview', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></h1>
 		<?php
 		if ( ! $teams ) {
+			Chess_Army_Knife_Team_Tabs::render( 0, 'overview' );
 			echo '<p>' . esc_html__( 'There are no teams for you to look after yet.', 'chess-army-knife' ) . '</p></div>';
 			return;
 		}
@@ -71,6 +72,8 @@ class Chess_Army_Knife_Team_Overview {
 				$team = $candidate;
 			}
 		}
+
+		Chess_Army_Knife_Team_Tabs::render( $team['id'], 'overview' );
 
 		if ( count( $teams ) > 1 ) :
 			?>
@@ -88,13 +91,11 @@ class Chess_Army_Knife_Team_Overview {
 		endif;
 
 		$captain = $team['captain_id'] ? Chess_Army_Knife_Membership_Store::get_member( $team['captain_id'] ) : null;
-		$edit    = get_edit_post_link( $team['id'] );
 		?>
 			<h2><?php echo esc_html( $team['name'] ); ?></h2>
 			<table class="widefat striped" style="max-width:700px">
 				<tbody>
-					<tr><th scope="row"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></th><td><?php echo $captain ? esc_html( $captain['name'] ) : '&mdash;'; ?></td></tr>
-					<tr><th scope="row"><?php esc_html_e( 'Home venue', 'chess-army-knife' ); ?></th><td><?php echo '' !== $team['venue'] ? esc_html( $team['venue'] ) : '&mdash;'; ?></td></tr>
+					<tr><th scope="row"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></th><td><?php echo $captain ? esc_html( $captain['name'] ) : ( '' !== $team['captain_name'] ? esc_html( $team['captain_name'] ) : '&mdash;' ); ?></td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Calendar tag', 'chess-army-knife' ); ?></th><td><?php echo '' !== $team['tag'] ? esc_html( $team['tag'] ) : '&mdash;'; ?></td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Boards', 'chess-army-knife' ); ?></th><td><?php echo (int) Chess_Army_Knife_Captains::boards( $team['id'] ); ?></td></tr>
 					<tr>
@@ -110,9 +111,6 @@ class Chess_Army_Knife_Team_Overview {
 					</tr>
 				</tbody>
 			</table>
-			<?php if ( $edit && current_user_can( 'edit_post', $team['id'] ) ) : ?>
-				<p><a href="<?php echo esc_url( $edit ); ?>"><?php esc_html_e( 'Edit the team', 'chess-army-knife' ); ?></a></p>
-			<?php endif; ?>
 
 			<?php
 			$pool     = Chess_Army_Knife_Selection::pool( $team['id'] );

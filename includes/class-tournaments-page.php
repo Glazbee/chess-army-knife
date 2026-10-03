@@ -1,7 +1,7 @@
 <?php
 /**
- * "Tournaments" admin page: create tournaments, enter players, start them,
- * record results and view standings.
+ * "Tournaments" admin page. The list and "Create new" are tabs; a tournament has Details, Players, Results,
+ * Standings and Export tabs. Everything is one admin page, told apart by the `tab` query argument.
  *
  * @package Chess_Army_Knife
  */
@@ -16,7 +16,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Boot the admin page and its form handlers.
 	 */
 	public static function init() {
-		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'end_early', 'request_bye', 'cancel_bye', 'create_page', 'create_event', 'anonymise_entry' ) as $action ) {
+		foreach ( array( 'create', 'save_players', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'end_early', 'request_bye', 'cancel_bye', 'create_page', 'create_event', 'anonymise_entry', 'export' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -43,8 +43,9 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * @param string            $success_text  Message on success.
 	 * @param int               $tournament_id Tournament to return to (0 for the list).
 	 * @param string            $success_type  Kind of notice on success: 'success' or 'warning'.
+	 * @param array             $args          Query arguments for the screen to return to, such as the tab and round.
 	 */
-	protected static function finish( $outcome, $success_text, $tournament_id = 0, $success_type = 'success' ) {
+	protected static function finish( $outcome, $success_text, $tournament_id = 0, $success_type = 'success', array $args = array() ) {
 		$is_error = is_wp_error( $outcome );
 		set_transient(
 			'chess_army_knife_notice_' . get_current_user_id(),
@@ -55,7 +56,7 @@ class Chess_Army_Knife_Tournaments_Page {
 			MINUTE_IN_SECONDS
 		);
 
-		$args = array( 'page' => self::SLUG );
+		$args['page'] = self::SLUG;
 		if ( $tournament_id ) {
 			$args['tournament'] = (int) $tournament_id;
 		}
@@ -96,40 +97,29 @@ class Chess_Army_Knife_Tournaments_Page {
 				/* translators: %d: number of players */
 				? sprintf( _n( 'Tournament created with %d player. Add more, then start it.', 'Tournament created with %d players. Add more, then start it.', $entered['added'], 'chess-army-knife' ), $entered['added'] )
 				: __( 'Tournament created. Add players, then start it.', 'chess-army-knife' ),
-			$result
+			$result,
+			'success',
+			array( 'tab' => 'players' )
 		);
 	}
 
 	/**
-	 * Add the players chosen in the selector to a tournament.
+	 * Save the entrants chosen in the picker: the list that was submitted is who plays.
 	 */
-	public static function handle_add_player() {
+	public static function handle_save_players() {
 		self::authorise();
-		check_admin_referer( 'chess_army_knife_tournament_add_player' );
+		check_admin_referer( 'chess_army_knife_tournament_save_players' );
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
-		$entered       = Chess_Army_Knife_Player_Selector::enter_players( $tournament_id, wp_unslash( $_POST ) );
-		$outcome       = Chess_Army_Knife_Player_Selector::outcome( $entered );
+		$tournament    = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+		if ( ! $tournament || Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'] ) {
+			self::finish( new WP_Error( 'tournament_started', __( 'Players can only be changed before the tournament starts.', 'chess-army-knife' ) ), '', $tournament_id, 'success', array( 'tab' => 'players' ) );
+		}
 
-		self::finish(
-			$outcome,
-			/* translators: %d: number of players */
-			sprintf( _n( '%d player added.', '%d players added.', $entered['added'], 'chess-army-knife' ), $entered['added'] ),
-			$tournament_id
-		);
-	}
+		$saved   = Chess_Army_Knife_Player_Selector::sync_players( $tournament_id, wp_unslash( $_POST ) );
+		$outcome = Chess_Army_Knife_Player_Selector::outcome( $saved );
 
-	/**
-	 * Remove a player from a draft tournament.
-	 */
-	public static function handle_remove_player() {
-		self::authorise();
-		check_admin_referer( 'chess_army_knife_tournament_remove_player' );
-
-		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
-		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
-
-		self::finish( Chess_Army_Knife_Tournaments::remove_player( $tournament_id, $entry_id ), __( 'Player removed.', 'chess-army-knife' ), $tournament_id );
+		self::finish( $outcome, __( 'Players saved.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'players' ) );
 	}
 
 	/**
@@ -144,7 +134,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$time          = isset( $_POST['event_time'] ) ? sanitize_text_field( wp_unslash( $_POST['event_time'] ) ) : '';
 		$result        = Chess_Army_Knife_Tournaments::create_event( $tournament_id, $date, $time );
 
-		self::finish( is_wp_error( $result ) ? $result : true, __( 'The tournament is on the calendar.', 'chess-army-knife' ), $tournament_id );
+		self::finish( is_wp_error( $result ) ? $result : true, __( 'The tournament is on the calendar.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'details' ) );
 	}
 
 	/**
@@ -157,7 +147,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
 
-		self::finish( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament_id, $entry_id ), __( 'The name has been replaced.', 'chess-army-knife' ), $tournament_id );
+		self::finish( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament_id, $entry_id ), __( 'The name has been replaced.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'players' ) );
 	}
 
 	/**
@@ -169,7 +159,7 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 
-		self::finish( Chess_Army_Knife_Tournaments::start( $tournament_id ), __( 'Tournament started. Ratings were recorded and pairings generated.', 'chess-army-knife' ), $tournament_id );
+		self::finish( Chess_Army_Knife_Tournaments::start( $tournament_id ), __( 'Tournament started. Ratings were recorded and pairings generated.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'results' ) );
 	}
 
 	/**
@@ -183,6 +173,11 @@ class Chess_Army_Knife_Tournaments_Page {
 		$results       = isset( $_POST['results'] ) && is_array( $_POST['results'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['results'] ) ) : array();
 		$outcome       = true;
 		$earlier       = false;
+		$view          = isset( $_POST['view'] ) ? sanitize_text_field( wp_unslash( $_POST['view'] ) ) : '';
+		$back          = array(
+			'tab'   => 'results',
+			'round' => $view,
+		);
 
 		foreach ( $results as $game_id => $result ) {
 			$game = Chess_Army_Knife_Tournament_Store::get_game( (int) $game_id );
@@ -198,9 +193,9 @@ class Chess_Army_Knife_Tournaments_Page {
 		}
 
 		if ( $earlier ) {
-			self::finish( $outcome, __( 'Results saved. A result from an earlier round was changed, but the later rounds were paired using the old one. Check their pairings; the latest round can be paired again while it has no results.', 'chess-army-knife' ), $tournament_id, 'warning' );
+			self::finish( $outcome, __( 'Results saved. A result from an earlier round was changed, but the later rounds were paired using the old one. Check their pairings; the latest round can be paired again while it has no results.', 'chess-army-knife' ), $tournament_id, 'warning', $back );
 		}
-		self::finish( $outcome, __( 'Results saved.', 'chess-army-knife' ), $tournament_id );
+		self::finish( $outcome, __( 'Results saved.', 'chess-army-knife' ), $tournament_id, 'success', $back );
 	}
 
 	/**
@@ -213,7 +208,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$tournament_id = isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0;
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
 
-		self::finish( Chess_Army_Knife_Tournaments::withdraw( $entry_id ), __( 'Player withdrawn.', 'chess-army-knife' ), $tournament_id );
+		self::finish( Chess_Army_Knife_Tournaments::withdraw( $entry_id ), __( 'Player withdrawn.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'players' ) );
 	}
 
 	/**
@@ -227,7 +222,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$round         = Chess_Army_Knife_Tournaments::next_round( $tournament_id );
 
 		/* translators: %d: round number */
-		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired.', 'chess-army-knife' ), $round ), $tournament_id );
+		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired.', 'chess-army-knife' ), $round ), $tournament_id, 'success', array( 'tab' => 'results' ) );
 	}
 
 	/**
@@ -241,7 +236,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$round         = Chess_Army_Knife_Tournaments::redo_round( $tournament_id );
 
 		/* translators: %d: round number */
-		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired again.', 'chess-army-knife' ), $round ), $tournament_id );
+		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired again.', 'chess-army-knife' ), $round ), $tournament_id, 'success', array( 'tab' => 'results' ) );
 	}
 
 	/**
@@ -253,7 +248,7 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 
-		self::finish( Chess_Army_Knife_Tournaments::end_early( $tournament_id ), __( 'The tournament has ended. The standings stay as they are.', 'chess-army-knife' ), $tournament_id );
+		self::finish( Chess_Army_Knife_Tournaments::end_early( $tournament_id ), __( 'The tournament has ended. The standings stay as they are.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'results' ) );
 	}
 
 	/**
@@ -268,7 +263,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$round         = isset( $_POST['round'] ) ? (int) $_POST['round'] : 0;
 		$kind          = isset( $_POST['kind'] ) ? sanitize_key( wp_unslash( $_POST['kind'] ) ) : '';
 
-		self::finish( Chess_Army_Knife_Tournaments::request_bye( $tournament_id, $entry_id, $round, $kind ), __( 'Bye requested.', 'chess-army-knife' ), $tournament_id );
+		self::finish( Chess_Army_Knife_Tournaments::request_bye( $tournament_id, $entry_id, $round, $kind ), __( 'Bye requested.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'results' ) );
 	}
 
 	/**
@@ -282,7 +277,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$entry_id      = isset( $_GET['entry_id'] ) ? (int) $_GET['entry_id'] : 0;
 		$round         = isset( $_GET['round'] ) ? (int) $_GET['round'] : 0;
 
-		self::finish( Chess_Army_Knife_Tournaments::cancel_bye( $tournament_id, $entry_id, $round ), __( 'Bye cancelled.', 'chess-army-knife' ), $tournament_id );
+		self::finish( Chess_Army_Knife_Tournaments::cancel_bye( $tournament_id, $entry_id, $round ), __( 'Bye cancelled.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'results' ) );
 	}
 
 	/**
@@ -294,7 +289,7 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 
-		self::finish( Chess_Army_Knife_Tournaments::create_page( $tournament_id ), __( 'Page created as a draft. Edit it to publish.', 'chess-army-knife' ), $tournament_id );
+		self::finish( Chess_Army_Knife_Tournaments::create_page( $tournament_id ), __( 'Page created as a draft. Edit it to publish.', 'chess-army-knife' ), $tournament_id, 'success', array( 'tab' => 'details' ) );
 	}
 
 	/**
@@ -307,6 +302,21 @@ class Chess_Army_Knife_Tournaments_Page {
 		Chess_Army_Knife_Tournament_Store::delete_tournament( isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0 );
 
 		self::finish( true, __( 'Tournament deleted.', 'chess-army-knife' ) );
+	}
+
+	/**
+	 * Download a tournament as a CSV file.
+	 */
+	public static function handle_export() {
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_export' );
+
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( isset( $_GET['tournament_id'] ) ? (int) $_GET['tournament_id'] : 0 );
+		if ( ! $tournament ) {
+			self::finish( new WP_Error( 'tournament_missing', __( 'That tournament does not exist.', 'chess-army-knife' ) ), '' );
+		}
+
+		Chess_Army_Knife_Tournament_Export::download( $tournament );
 	}
 
 	/* -------------------------------------------------------------
@@ -358,7 +368,64 @@ class Chess_Army_Knife_Tournaments_Page {
 	}
 
 	/**
-	 * Render the admin page (list or single tournament).
+	 * A screen of this page.
+	 *
+	 * @param array $args Extra query arguments.
+	 * @return string
+	 */
+	protected static function screen_url( array $args = array() ) {
+		$args['page'] = self::SLUG;
+		return add_query_arg( $args, admin_url( 'admin.php' ) );
+	}
+
+	/**
+	 * Draw a row of tabs.
+	 *
+	 * @param array[] $tabs   By key: { label, url }.
+	 * @param string  $active Key of the tab being shown.
+	 * @param string  $label  Accessible name of the tab bar.
+	 */
+	protected static function render_tabs( array $tabs, $active, $label ) {
+		?>
+		<nav class="nav-tab-wrapper" aria-label="<?php echo esc_attr( $label ); ?>">
+			<?php foreach ( $tabs as $key => $tab ) : ?>
+				<a class="nav-tab<?php echo $active === $key ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( $tab['url'] ); ?>"<?php echo $active === $key ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $tab['label'] ); ?></a>
+			<?php endforeach; ?>
+		</nav>
+		<?php
+	}
+
+	/**
+	 * The tabs of a tournament.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return array[] By key: { label, url }.
+	 */
+	protected static function tournament_tabs( $tournament_id ) {
+		$labels = array(
+			'details'   => __( 'Details', 'chess-army-knife' ),
+			'players'   => __( 'Players', 'chess-army-knife' ),
+			'results'   => __( 'Results', 'chess-army-knife' ),
+			'standings' => __( 'Standings', 'chess-army-knife' ),
+			'export'    => __( 'Export', 'chess-army-knife' ),
+		);
+		$tabs   = array();
+		foreach ( $labels as $key => $label ) {
+			$tabs[ $key ] = array(
+				'label' => $label,
+				'url'   => self::screen_url(
+					array(
+						'tournament' => $tournament_id,
+						'tab'        => $key,
+					)
+				),
+			);
+		}
+		return $tabs;
+	}
+
+	/**
+	 * Render the admin page: the list or "Create new", or one tournament and its tabs.
 	 */
 	public static function render_page() {
 		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Tournaments::user_can_manage(), __( 'Tournaments', 'chess-army-knife' ), 'tournaments' ) ) {
@@ -368,9 +435,15 @@ class Chess_Army_Knife_Tournaments_Page {
 		echo '<div class="wrap">';
 		self::render_notice();
 
-		$tournament = isset( $_GET['tournament'] ) ? Chess_Army_Knife_Tournament_Store::get_tournament( (int) $_GET['tournament'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
+		// Read-only screen state; nothing is changed.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$tab        = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+		$tournament = isset( $_GET['tournament'] ) ? Chess_Army_Knife_Tournament_Store::get_tournament( (int) $_GET['tournament'] ) : null;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		if ( $tournament ) {
-			self::render_tournament( $tournament );
+			self::render_tournament( $tournament, $tab );
+		} elseif ( 'create' === $tab ) {
+			self::render_create();
 		} else {
 			self::render_list();
 		}
@@ -379,12 +452,35 @@ class Chess_Army_Knife_Tournaments_Page {
 	}
 
 	/**
-	 * Render the tournament list and the "create" form.
+	 * The two tabs above the list.
+	 *
+	 * @param string $active 'list' or 'create'.
+	 */
+	protected static function render_list_tabs( $active ) {
+		self::render_tabs(
+			array(
+				'list'   => array(
+					'label' => __( 'Tournaments', 'chess-army-knife' ),
+					'url'   => self::screen_url(),
+				),
+				'create' => array(
+					'label' => __( 'Create new', 'chess-army-knife' ),
+					'url'   => self::screen_url( array( 'tab' => 'create' ) ),
+				),
+			),
+			$active,
+			__( 'Tournaments', 'chess-army-knife' )
+		);
+	}
+
+	/**
+	 * Render the tournament list.
 	 */
 	protected static function render_list() {
 		$tournaments = Chess_Army_Knife_Tournament_Store::get_tournaments();
 		?>
 		<h1><?php esc_html_e( 'Tournaments', 'chess-army-knife' ); ?></h1>
+		<?php self::render_list_tabs( 'list' ); ?>
 
 		<table class="wp-list-table widefat fixed striped">
 <caption class="screen-reader-text"><?php esc_html_e( 'Tournaments', 'chess-army-knife' ); ?></caption>
@@ -406,23 +502,22 @@ class Chess_Army_Knife_Tournaments_Page {
 						<td><?php echo esc_html( $tournament['name'] ); ?></td>
 						<td><?php echo esc_html( isset( $formats[ $tournament['format'] ] ) ? $formats[ $tournament['format'] ] : $tournament['format'] ); ?></td>
 						<td><?php echo esc_html( self::status_label( $tournament['status'] ) ); ?></td>
-						<td><a href="
-						<?php
-						echo esc_url(
-							add_query_arg(
-								array(
-									'page'       => self::SLUG,
-									'tournament' => $tournament['id'],
-								),
-								admin_url( 'admin.php' )
-							)
-						);
-						?>
-										"><?php esc_html_e( 'Manage', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tournament['name'] ); ?></span></a></td>
+						<td><a href="<?php echo esc_url( self::screen_url( array( 'tournament' => $tournament['id'] ) ) ); ?>"><?php esc_html_e( 'Manage', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tournament['name'] ); ?></span></a></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+
+		<?php
+	}
+
+	/**
+	 * Render the "Create new" tab.
+	 */
+	protected static function render_create() {
+		?>
+		<h1><?php esc_html_e( 'Tournaments', 'chess-army-knife' ); ?></h1>
+		<?php self::render_list_tabs( 'create' ); ?>
 
 		<h2><?php esc_html_e( 'Create a tournament', 'chess-army-knife' ); ?></h2>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-cak-create-form>
@@ -494,7 +589,7 @@ class Chess_Army_Knife_Tournaments_Page {
 				</tr>
 			</table>
 
-			<h3><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h3>
+				<h3><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h3>
 			<?php Chess_Army_Knife_Player_Selector::render( Chess_Army_Knife_Membership_Store::get_players() ); ?>
 
 			<?php submit_button( __( 'Create tournament', 'chess-army-knife' ) ); ?>
@@ -503,22 +598,26 @@ class Chess_Army_Knife_Tournaments_Page {
 	}
 
 	/**
-	 * Render a single tournament.
+	 * Render a single tournament: its heading, tabs and the tab chosen.
 	 *
-	 * @param array $tournament Tournament row.
+	 * @param array  $tournament Tournament row.
+	 * @param string $tab        Tab key, or '' for the default.
 	 */
-	protected static function render_tournament( array $tournament ) {
+	protected static function render_tournament( array $tournament, $tab ) {
 		$id      = $tournament['id'];
 		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $id );
-		$back    = add_query_arg( array( 'page' => self::SLUG ), admin_url( 'admin.php' ) );
 		$draft   = Chess_Army_Knife_Tournaments::STATUS_DRAFT === $tournament['status'];
 		$config  = Chess_Army_Knife_Tournaments::config( $tournament );
-		$grouped = $config['groups'] > 1 && ! $draft;
 		$formats = Chess_Army_Knife_Tournaments::formats();
+		$tabs    = self::tournament_tabs( $id );
+		if ( ! isset( $tabs[ $tab ] ) ) {
+			// Before it starts the job is choosing players; after, entering results.
+			$tab = $draft ? 'players' : 'results';
+		}
 		?>
 		<h1><?php echo esc_html( $tournament['name'] ); ?></h1>
 		<p>
-			<a href="<?php echo esc_url( $back ); ?>">&larr; <?php esc_html_e( 'All tournaments', 'chess-army-knife' ); ?></a>
+			<a href="<?php echo esc_url( self::screen_url() ); ?>">&larr; <?php esc_html_e( 'All tournaments', 'chess-army-knife' ); ?></a>
 			&middot; <?php echo esc_html( self::status_label( $tournament['status'] ) ); ?>
 			&middot; <?php echo esc_html( isset( $formats[ $tournament['format'] ] ) ? $formats[ $tournament['format'] ] : $tournament['format'] ); ?>
 			<?php if ( 'swiss' === $tournament['format'] && ! $draft ) : ?>
@@ -550,19 +649,70 @@ class Chess_Army_Knife_Tournaments_Page {
 				);
 				?>
 			<?php endif; ?>
-			&middot;
-			<a
-				href="<?php echo esc_url( self::action_url( 'delete', array( 'tournament_id' => $id ) ) ); ?>"
-				onclick="return confirm('<?php echo esc_js( __( 'Delete this tournament and all its games?', 'chess-army-knife' ) ); ?>');"
-			><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tournament['name'] ); ?></span></a>
 		</p>
+		<?php self::render_tabs( $tabs, $tab, __( 'Tournament sections', 'chess-army-knife' ) ); ?>
+		<?php
+		if ( 'details' === $tab ) {
+			self::render_details( $tournament );
+		} elseif ( 'players' === $tab ) {
+			self::render_players( $tournament, $entries );
+		} elseif ( 'results' === $tab ) {
+			self::render_results( $tournament, $entries );
+		} elseif ( 'standings' === $tab ) {
+			self::render_standings_tab( $tournament );
+		} else {
+			self::render_export( $tournament );
+		}
+	}
 
-		<?php self::render_page_section( $tournament ); ?>
-		<?php self::render_event_section( $tournament ); ?>
+	/**
+	 * The Details tab: the tournament's page and calendar event, and deleting it.
+	 *
+	 * @param array $tournament Tournament row.
+	 */
+	protected static function render_details( array $tournament ) {
+		self::render_page_section( $tournament );
+		self::render_event_section( $tournament );
+		?>
+		<p>
+			<a
+				href="<?php echo esc_url( self::action_url( 'delete', array( 'tournament_id' => $tournament['id'] ) ) ); ?>"
+				onclick="return confirm('<?php echo esc_js( __( 'Delete this tournament and all its games?', 'chess-army-knife' ) ); ?>');"
+			><?php esc_html_e( 'Delete this tournament', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $tournament['name'] ); ?></span></a>
+		</p>
+		<?php
+	}
 
-		<h2><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></h2>
+	/**
+	 * The Players tab: the picker while the tournament is a draft, a read-only list once it has started.
+	 *
+	 * @param array   $tournament Tournament row.
+	 * @param array[] $entries    Entrants.
+	 */
+	protected static function render_players( array $tournament, array $entries ) {
+		if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT === $tournament['status'] ) {
+			self::render_draft_controls( $tournament, $entries );
+			return;
+		}
+		?>
+		<p class="description"><?php esc_html_e( 'The players are fixed now the tournament has started. A player who cannot carry on can be withdrawn.', 'chess-army-knife' ); ?></p>
+		<?php
+		self::render_players_table( $tournament, $entries );
+	}
+
+	/**
+	 * The entrants as a table, with their seed, rating and the actions that fit the state of the tournament.
+	 *
+	 * @param array   $tournament Tournament row.
+	 * @param array[] $entries    Entrants.
+	 */
+	protected static function render_players_table( array $tournament, array $entries ) {
+		$id      = $tournament['id'];
+		$config  = Chess_Army_Knife_Tournaments::config( $tournament );
+		$grouped = $config['groups'] > 1;
+		?>
 		<table class="wp-list-table widefat fixed striped">
-<caption class="screen-reader-text"><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></caption>
+			<caption class="screen-reader-text"><?php esc_html_e( 'Players', 'chess-army-knife' ); ?></caption>
 			<thead>
 				<tr>
 					<th style="width:60px;"><?php esc_html_e( 'Seed', 'chess-army-knife' ); ?></th>
@@ -572,12 +722,12 @@ class Chess_Army_Knife_Tournaments_Page {
 					<th><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'ECF code', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Rating at start', 'chess-army-knife' ); ?></th>
-					<th style="width:120px;"></th>
+					<th style="width:160px;"><span class="screen-reader-text"><?php esc_html_e( 'Actions', 'chess-army-knife' ); ?></span></th>
 				</tr>
 			</thead>
 			<tbody>
 				<?php if ( empty( $entries ) ) : ?>
-					<tr><td colspan="5"><?php esc_html_e( 'No players entered yet.', 'chess-army-knife' ); ?></td></tr>
+					<tr><td colspan="<?php echo $grouped ? 6 : 5; ?>"><?php esc_html_e( 'No players entered.', 'chess-army-knife' ); ?></td></tr>
 				<?php endif; ?>
 				<?php foreach ( $entries as $entry ) : ?>
 					<tr>
@@ -591,34 +741,18 @@ class Chess_Army_Knife_Tournaments_Page {
 								<em>(<?php esc_html_e( 'withdrawn', 'chess-army-knife' ); ?>)</em>
 							<?php endif; ?>
 						</td>
-						<td><?php echo '' === $entry['ecf_code'] ? '&mdash;' : esc_html( $entry['ecf_code'] ); ?></td>
+						<td><?php echo '' === (string) $entry['ecf_code'] ? '&mdash;' : esc_html( $entry['ecf_code'] ); ?></td>
 						<td>
 							<?php
-							if ( $draft ) {
-								echo '&mdash;';
-							} elseif ( null === $entry['start_rating'] ) {
-								esc_html_e( 'Unrated', 'chess-army-knife' );
+							if ( null === $entry['start_rating'] ) {
+								esc_html_e( '(no rating)', 'chess-army-knife' );
 							} else {
 								echo esc_html( $entry['start_rating'] . ( 'manual' === $entry['rating_source'] ? ' ' . __( '(manual)', 'chess-army-knife' ) : '' ) );
 							}
 							?>
 						</td>
 						<td>
-							<?php if ( $draft ) : ?>
-								<a href="
-								<?php
-								echo esc_url(
-									self::action_url(
-										'remove_player',
-										array(
-											'tournament_id' => $id,
-											'entry_id' => $entry['id'],
-										)
-									)
-								);
-								?>
-											"><?php esc_html_e( 'Remove', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $entry['name'] ); ?></span></a>
-							<?php elseif ( Chess_Army_Knife_Tournaments::STATUS_ACTIVE === $tournament['status'] && 'active' === $entry['status'] ) : ?>
+							<?php if ( Chess_Army_Knife_Tournaments::STATUS_ACTIVE === $tournament['status'] && 'active' === $entry['status'] ) : ?>
 								<a
 									href="
 									<?php
@@ -659,13 +793,46 @@ class Chess_Army_Knife_Tournaments_Page {
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		<?php
+	}
 
-		<?php if ( $draft ) : ?>
-			<?php self::render_draft_controls( $tournament, $entries ); ?>
+	/**
+	 * The Standings tab.
+	 *
+	 * @param array $tournament Tournament row.
+	 */
+	protected static function render_standings_tab( array $tournament ) {
+		if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT === $tournament['status'] ) {
+			echo '<p class="description">' . esc_html__( 'There are no standings until the tournament has started.', 'chess-army-knife' ) . '</p>';
+			return;
+		}
+		if ( 'knockout' === $tournament['format'] ) {
+			echo '<p class="description">' . esc_html__( 'A knockout tournament has a bracket, not a standings table. The games are on the Results tab.', 'chess-army-knife' ) . '</p>';
+			return;
+		}
+		self::render_standings( $tournament );
+	}
+
+	/**
+	 * The Export tab.
+	 *
+	 * @param array $tournament Tournament row.
+	 */
+	protected static function render_export( array $tournament ) {
+		$has_results = false;
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament['id'] ) as $game ) {
+			$has_results = $has_results || ( null !== $game['result'] && '' !== (string) $game['result'] );
+		}
+		?>
+		<h2><?php esc_html_e( 'Export to CSV', 'chess-army-knife' ); ?></h2>
+		<p>
+			<?php esc_html_e( 'One file for this tournament, for a spreadsheet. There is a row for each player with their name, ECF code, starting rating and where it came from, seed and status, then for each round their colour (W or B, blank for a bye), their opponent and the result, and their total points. Only games with a result are included. Names are written surname first, as they are kept.', 'chess-army-knife' ); ?>
+		</p>
+		<p class="description"><?php esc_html_e( 'The file holds ECF codes, which are personal data, so keep it safe and delete it when you no longer need it. It holds nothing else about a person.', 'chess-army-knife' ); ?></p>
+		<?php if ( $has_results ) : ?>
+			<p><a class="button button-primary" href="<?php echo esc_url( self::action_url( 'export', array( 'tournament_id' => $tournament['id'] ) ) ); ?>"><?php esc_html_e( 'Download CSV', 'chess-army-knife' ); ?></a></p>
 		<?php else : ?>
-			<?php self::render_swiss_controls( $tournament ); ?>
-			<?php self::render_standings( $tournament ); ?>
-			<?php self::render_games( $tournament, $entries ); ?>
+			<p class="description"><?php esc_html_e( 'There are no results to export yet.', 'chess-army-knife' ); ?></p>
 		<?php endif; ?>
 		<?php
 	}
@@ -734,33 +901,55 @@ class Chess_Army_Knife_Tournaments_Page {
 	}
 
 	/**
-	 * Controls shown before a tournament starts: add players, start.
+	 * Controls shown before a tournament starts: choose the players, then start.
 	 *
 	 * @param array   $tournament Tournament row.
 	 * @param array[] $entries    Current entrants.
 	 */
 	protected static function render_draft_controls( array $tournament, array $entries ) {
-		$entered   = array_column( $entries, 'player_id' );
+		$entered_ids = array_filter( array_column( $entries, 'player_id' ) );
+		$people      = array();
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_ids( $entered_ids ) as $person ) {
+			$people[ $person['id'] ] = $person;
+		}
+
+		$entered = array();
+		foreach ( $entries as $entry ) {
+			if ( $entry['player_id'] && isset( $people[ $entry['player_id'] ] ) ) {
+				$entered[] = $people[ $entry['player_id'] ];
+			} else {
+				// Someone entered by name only, whose record is not kept.
+				$entered[] = array(
+					'id'            => 0,
+					'entry_id'      => $entry['id'],
+					'name'          => $entry['name'],
+					'ecf_code'      => '',
+					'ecf_rating'    => null,
+					'manual_rating' => $entry['start_rating'],
+				);
+			}
+		}
+
 		$available = array_values(
 			array_filter(
 				Chess_Army_Knife_Membership_Store::get_players(),
-				function ( $player ) use ( $entered ) {
-					return ! in_array( $player['id'], $entered, true );
+				function ( $player ) use ( $entered_ids ) {
+					return ! in_array( $player['id'], $entered_ids, true );
 				}
 			)
 		);
 		?>
-		<h2><?php esc_html_e( 'Add players', 'chess-army-knife' ); ?></h2>
+		<h2><?php esc_html_e( 'Choose the players', 'chess-army-knife' ); ?></h2>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="chess_army_knife_tournament_add_player" />
+			<input type="hidden" name="action" value="chess_army_knife_tournament_save_players" />
 			<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
-			<?php wp_nonce_field( 'chess_army_knife_tournament_add_player' ); ?>
-			<?php Chess_Army_Knife_Player_Selector::render( $available ); ?>
-			<?php submit_button( __( 'Add selected players', 'chess-army-knife' ), 'secondary', 'submit', false ); ?>
+			<?php wp_nonce_field( 'chess_army_knife_tournament_save_players' ); ?>
+			<?php Chess_Army_Knife_Player_Selector::render( $available, $entered ); ?>
+			<?php submit_button( __( 'Save players', 'chess-army-knife' ), 'secondary', 'submit', false ); ?>
 		</form>
 
 		<h2><?php esc_html_e( 'Start the tournament', 'chess-army-knife' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Starting fetches each player\'s current ECF rating (or uses their manual rating), seeds the players and generates the pairings. Later rating changes do not affect seeding. Players can no longer be added or removed afterwards.', 'chess-army-knife' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Save the players first. Starting fetches each player\'s current ECF rating (or uses their manual rating), seeds the players and generates the pairings. Later rating changes do not affect seeding. Players can no longer be added or removed afterwards.', 'chess-army-knife' ); ?></p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="chess_army_knife_tournament_start" />
 			<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
@@ -1056,6 +1245,148 @@ class Chess_Army_Knife_Tournaments_Page {
 	}
 
 	/**
+	 * Whether a game is waiting for someone to enter its result.
+	 *
+	 * @param array $game Game row.
+	 * @return bool
+	 */
+	protected static function awaits_result( array $game ) {
+		return ! $game['is_bye'] && null !== $game['white_entry_id'] && null !== $game['black_entry_id'] && ( null === $game['result'] || '' === (string) $game['result'] );
+	}
+
+	/**
+	 * The Results tab: one round at a time (the round in play to begin with), who has no result yet, one form to
+	 * save the round's results, and the controls for pairing the next round.
+	 *
+	 * @param array   $tournament Tournament row.
+	 * @param array[] $entries    Entrants.
+	 */
+	protected static function render_results( array $tournament, array $entries ) {
+		if ( Chess_Army_Knife_Tournaments::STATUS_DRAFT === $tournament['status'] ) {
+			echo '<p class="description">' . esc_html__( 'Results are entered once the tournament has started. Choose the players and start it on the Players tab.', 'chess-army-knife' ) . '</p>';
+			return;
+		}
+
+		$names = array();
+		foreach ( $entries as $entry ) {
+			$names[ $entry['id'] ] = $entry['name'];
+		}
+
+		// The rounds, in order: main stage rounds hold every group's games, then the knockout.
+		$rounds = array();
+		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament['id'] ) as $game ) {
+			$key = ( 'knockout' === $game['stage'] ? 'ko-' : 'main-' ) . $game['round'];
+			if ( ! isset( $rounds[ $key ] ) ) {
+				$rounds[ $key ] = array(
+					'knockout' => 'knockout' === $game['stage'],
+					'round'    => $game['round'],
+					'games'    => array(),
+				);
+			}
+			$rounds[ $key ]['games'][] = $game;
+		}
+		$knockout_total = 0;
+		foreach ( $rounds as $round ) {
+			if ( $round['knockout'] ) {
+				$knockout_total = max( $knockout_total, $round['round'] );
+			}
+		}
+
+		$chosen = '';
+		$first  = '';
+		$last   = '';
+		foreach ( $rounds as $key => $round ) {
+			$last = $key;
+			if ( '' === $first && array_filter( $round['games'], array( __CLASS__, 'awaits_result' ) ) ) {
+				$first = $key;
+			}
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
+		$asked = isset( $_GET['round'] ) ? sanitize_text_field( wp_unslash( $_GET['round'] ) ) : '';
+		if ( 'all' === $asked || isset( $rounds[ $asked ] ) ) {
+			$chosen = $asked;
+		} else {
+			$chosen = '' !== $first ? $first : $last;
+		}
+		?>
+		<h2><?php esc_html_e( 'Results', 'chess-army-knife' ); ?></h2>
+		<?php if ( empty( $rounds ) ) : ?>
+			<p class="description"><?php esc_html_e( 'There are no games yet.', 'chess-army-knife' ); ?></p>
+		<?php else : ?>
+			<p class="cak-results__round-links">
+				<?php foreach ( $rounds as $key => $round ) : ?>
+					<?php
+					$label   = $round['knockout'] ? Chess_Army_Knife_Bracket::round_name( $round['round'], $knockout_total ) : sprintf( /* translators: %d: round number */ __( 'Round %d', 'chess-army-knife' ), $round['round'] );
+					$waiting = count( array_filter( $round['games'], array( __CLASS__, 'awaits_result' ) ) );
+					?>
+					<a href="
+					<?php
+					echo esc_url(
+						self::screen_url(
+							array(
+								'tournament' => $tournament['id'],
+								'tab'        => 'results',
+								'round'      => $key,
+							)
+						)
+					);
+					?>
+								"<?php echo $chosen === $key ? ' aria-current="true"' : ''; ?>>
+						<?php echo $chosen === $key ? '<strong>' . esc_html( $label ) . '</strong>' : esc_html( $label ); ?>
+						<?php if ( $waiting ) : ?>
+							<?php
+							/* translators: %d: number of games without a result */
+							echo esc_html( sprintf( __( '(%d to enter)', 'chess-army-knife' ), $waiting ) );
+							?>
+						<?php endif; ?>
+					</a>
+				<?php endforeach; ?>
+				<a href="
+				<?php
+				echo esc_url(
+					self::screen_url(
+						array(
+							'tournament' => $tournament['id'],
+							'tab'        => 'results',
+							'round'      => 'all',
+						)
+					)
+				);
+				?>
+							"<?php echo 'all' === $chosen ? ' aria-current="true"' : ''; ?>><?php echo 'all' === $chosen ? '<strong>' . esc_html__( 'All rounds', 'chess-army-knife' ) . '</strong>' : esc_html__( 'All rounds', 'chess-army-knife' ); ?></a>
+			</p>
+			<?php
+			if ( 'all' === $chosen ) {
+				self::render_games( $tournament, $entries );
+			} else {
+				$round   = $rounds[ $chosen ];
+				$heading = $round['knockout'] ? Chess_Army_Knife_Bracket::round_name( $round['round'], $knockout_total ) : sprintf( /* translators: %d: round number */ __( 'Round %d', 'chess-army-knife' ), $round['round'] );
+				$missing = array();
+				foreach ( $round['games'] as $game ) {
+					if ( self::awaits_result( $game ) ) {
+						/* translators: 1: white player, 2: black player */
+						$missing[] = sprintf( __( '%1$s v %2$s', 'chess-army-knife' ), $names[ $game['white_entry_id'] ], $names[ $game['black_entry_id'] ] );
+					}
+				}
+				if ( $missing ) {
+					?>
+					<p>
+						<strong><?php esc_html_e( 'No result yet:', 'chess-army-knife' ); ?></strong>
+						<?php echo esc_html( implode( '; ', $missing ) ); ?>
+					</p>
+				<?php } else { ?>
+					<p class="description"><?php esc_html_e( 'Every game in this round has a result.', 'chess-army-knife' ); ?></p>
+					<?php
+				}
+				self::render_round_form( $tournament, $round['games'], $heading, $names, $round['knockout'], $chosen );
+			}
+			?>
+		<?php endif; ?>
+		<?php
+		self::render_swiss_controls( $tournament );
+	}
+
+	/**
 	 * Games grouped by stage and round, each with a result selector.
 	 *
 	 * @param array   $tournament Tournament row.
@@ -1089,7 +1420,7 @@ class Chess_Army_Knife_Tournaments_Page {
 			<?php
 			foreach ( $rounds as $round => $games ) {
 				/* translators: %d: round number */
-				self::render_round_form( $tournament, $games, sprintf( __( 'Round %d', 'chess-army-knife' ), $round ), $names, false );
+				self::render_round_form( $tournament, $games, sprintf( __( 'Round %d', 'chess-army-knife' ), $round ), $names, false, 'all' );
 			}
 		}
 
@@ -1099,7 +1430,7 @@ class Chess_Army_Knife_Tournaments_Page {
 			<h2><?php esc_html_e( 'Knockout', 'chess-army-knife' ); ?></h2>
 			<?php
 			foreach ( $knockout as $round => $games ) {
-				self::render_round_form( $tournament, $games, Chess_Army_Knife_Bracket::round_name( $round, $total ), $names, true );
+				self::render_round_form( $tournament, $games, Chess_Army_Knife_Bracket::round_name( $round, $total ), $names, true, 'all' );
 			}
 		} elseif ( $config['advance'] > 0 ) {
 			?>
@@ -1117,8 +1448,9 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * @param string   $heading    Round heading.
 	 * @param string[] $names      Entry id => name.
 	 * @param bool     $knockout   Whether this is a knockout round.
+	 * @param string   $view       The round shown, which the page returns to after saving ('all' for every round).
 	 */
-	protected static function render_round_form( array $tournament, array $games, $heading, array $names, $knockout ) {
+	protected static function render_round_form( array $tournament, array $games, $heading, array $names, $knockout, $view = 'all' ) {
 		$options = self::result_options( $knockout );
 
 		// A tie's later games are tie-break games.
@@ -1127,6 +1459,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="chess_army_knife_tournament_save_results" />
 			<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
+			<input type="hidden" name="view" value="<?php echo esc_attr( $view ); ?>" />
 			<?php wp_nonce_field( 'chess_army_knife_tournament_save_results' ); ?>
 			<h3><?php echo esc_html( $heading ); ?></h3>
 			<table class="wp-list-table widefat fixed striped">
@@ -1141,6 +1474,9 @@ class Chess_Army_Knife_Tournaments_Page {
 						?>
 						<tr>
 							<td>
+								<?php if ( 'all' !== $view && ! $knockout && $game['group_no'] && Chess_Army_Knife_Tournaments::config( $tournament )['groups'] > 1 ) : ?>
+									<strong><?php echo esc_html( Chess_Army_Knife_Tournaments::group_label( $game['group_no'] ) ); ?>:</strong>
+								<?php endif; ?>
 								<?php echo esc_html( isset( $names[ $game['white_entry_id'] ] ) ? $names[ $game['white_entry_id'] ] : ( $knockout && ! $game['is_bye'] ? __( 'To be decided', 'chess-army-knife' ) : '—' ) ); ?>
 								<span class="description"><?php esc_html_e( '(White)', 'chess-army-knife' ); ?></span>
 							</td>

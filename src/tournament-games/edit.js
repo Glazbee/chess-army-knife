@@ -9,6 +9,7 @@ import {
 import ServerSideRender from '@wordpress/server-side-render';
 import useTournaments from '../shared/use-tournaments';
 import TemplatePicker from '../shared/template-picker';
+import NameFormatControl from '../shared/name-format-control';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { tournamentId, roundsPerPage } = attributes;
@@ -55,6 +56,12 @@ export default function Edit( { attributes, setAttributes } ) {
 									Math.min( 100, parseInt( value, 10 ) || 0 )
 								),
 							} )
+						}
+					/>
+					<NameFormatControl
+						value={ attributes.nameFormat }
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
 						}
 					/>
 				</PanelBody>

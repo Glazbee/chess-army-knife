@@ -190,7 +190,7 @@ class TeamsTest extends WP_UnitTestCase {
 
 	public function test_the_block_shows_team_details_but_never_the_captain_or_squad() {
 		$ada  = $this->person( 'Ada Lovelace' );
-		$team = $this->team( 'Club A', array( Chess_Army_Knife_Teams::META_VENUE => 'Village Hall' ) );
+		$team = $this->team( 'Club A' );
 		update_post_meta( $team, Chess_Army_Knife_Teams::META_CAPTAIN, $ada );
 		update_post_meta(
 			$team,
@@ -209,7 +209,6 @@ class TeamsTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Club A', $html );
 		$this->assertStringContainsString( 'Our first team.', $html );
-		$this->assertStringContainsString( 'Village Hall', $html );
 		$this->assertStringContainsString( 'Division 1', $html );
 		$this->assertStringNotContainsString( 'Ada', $html );
 	}
@@ -224,6 +223,109 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Club B', $html );
 	}
 
+	private function group( $name = 'NGCA', $excerpt = 'The league.' ) {
+		return self::factory()->post->create(
+			array(
+				'post_type'    => Chess_Army_Knife_Team_Groups::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_title'   => $name,
+				'post_excerpt' => $excerpt,
+			)
+		);
+	}
+
+	public function test_a_group_chooses_its_teams_and_their_order() {
+		$a     = $this->team( 'Club A' );
+		$b     = $this->team( 'Club B' );
+		$c     = $this->team( 'Club C' );
+		$group = $this->group();
+		$other = $this->group( 'Internal' );
+
+		Chess_Army_Knife_Team_Groups::set_teams( $other, array( $c ) );
+		Chess_Army_Knife_Team_Groups::set_teams( $group, array( $b, $c, 99999 ) );
+
+		$this->assertSame( array( $b, $c ), wp_list_pluck( Chess_Army_Knife_Team_Groups::teams_of( $group ), 'id' ) );
+		$this->assertSame( array(), Chess_Army_Knife_Team_Groups::teams_of( $other ), 'A team is in one group only.' );
+		$this->assertSame( 'NGCA', Chess_Army_Knife_Teams::get( $c )['group'] );
+		$this->assertSame( 0, Chess_Army_Knife_Teams::get( $a )['group_id'] );
+
+		// Leaving the list takes a team out of the group.
+		Chess_Army_Knife_Team_Groups::set_teams( $group, array( $c ) );
+		$this->assertSame( 0, Chess_Army_Knife_Teams::get( $b )['group_id'] );
+	}
+
+	public function test_saving_a_group_needs_its_nonce_and_keeps_the_order_posted() {
+		$a     = $this->team( 'Club A' );
+		$b     = $this->team( 'Club B' );
+		$group = $this->group();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_get_current_user()->add_cap( Chess_Army_Knife_Teams::CAPABILITY );
+
+		$_POST = array( 'chess_army_group_teams' => array( (string) $a ) );
+		Chess_Army_Knife_Team_Groups_Admin::save( $group );
+		$this->assertSame( array(), Chess_Army_Knife_Team_Groups::teams_of( $group ), 'Without the nonce nothing is saved.' );
+
+		$_POST = array(
+			Chess_Army_Knife_Team_Groups_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Team_Groups_Admin::NONCE_ACTION ),
+			'chess_army_group_teams' => array( (string) $b, (string) $a ),
+		);
+		Chess_Army_Knife_Team_Groups_Admin::save( $group );
+		$_POST = array();
+
+		$this->assertSame( array( $b, $a ), wp_list_pluck( Chess_Army_Knife_Team_Groups::teams_of( $group ), 'id' ) );
+	}
+
+	public function test_the_block_groups_teams_gives_hero_teams_a_row_and_can_drop_its_title() {
+		$a     = $this->team( 'Club A' );
+		$b     = $this->team( 'Club B' );
+		$group = $this->group( 'North Gloucestershire Chess Association', 'About the league.' );
+		Chess_Army_Knife_Team_Groups::set_teams( $group, array( $b, $a ) );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"groupBy":"group","showTitle":false,"heroTeams":[' . $b . ']} /-->' );
+
+		$this->assertStringContainsString( 'North Gloucestershire Chess Association', $html );
+		$this->assertStringContainsString( 'About the league.', $html );
+		$this->assertSame( 1, substr_count( $html, 'cak-team--hero' ), 'Only the chosen team is a hero.' );
+		$this->assertStringNotContainsString( 'cak-team-profiles__heading', $html, 'The block title is off.' );
+		$this->assertLessThan( strpos( $html, 'Club A' ), strpos( $html, 'Club B' ), 'The group puts Club B first.' );
+	}
+
+	public function test_the_block_writes_names_the_way_the_site_or_block_chooses_and_uses_nicknames() {
+		$team  = $this->team( 'Club A' );
+		$maddy = $this->person( 'Madeline Rose Dupree', array( 'nickname' => 'Maddy' ) );
+		$ada   = $this->person( 'Ada Lovelace' );
+		Chess_Army_Knife_Teams::set_squad( $team, array( $maddy, $ada ) );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true} /-->' );
+		$this->assertStringContainsString( 'Maddy Dupree', $html, 'The default is Firstname Surname, with the nickname.' );
+		$this->assertStringNotContainsString( 'Madeline', $html );
+		$this->assertLessThan( strpos( $html, 'Ada Lovelace' ), strpos( $html, 'Maddy Dupree' ), 'Listed by surname: Dupree comes before Lovelace.' );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true,"nameFormat":"surname_first"} /-->' );
+		$this->assertStringContainsString( 'Dupree, Maddy R', $html );
+		$this->assertStringContainsString( 'Lovelace, Ada', $html );
+
+		// The site setting applies to a block that does not choose.
+		update_option(
+			'Chess_Army_Knife_settings',
+			array(
+				'use_local_cache' => 0,
+				'name_format'     => 'surname_first',
+			)
+		);
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true} /-->' );
+		$this->assertStringContainsString( 'Lovelace, Ada', $html );
+	}
+
+	public function test_the_block_can_hide_team_descriptions() {
+		$this->team( 'Club A' );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showDescription":false} /-->' );
+
+		$this->assertStringContainsString( 'Club A', $html );
+		$this->assertStringNotContainsString( 'Our first team.', $html );
+	}
+
 	public function test_saving_a_team_keeps_only_valid_choices_and_needs_permission() {
 		$team = $this->team();
 		$ada  = $this->person();
@@ -233,43 +335,79 @@ class TeamsTest extends WP_UnitTestCase {
 
 		$_POST = array(
 			Chess_Army_Knife_Teams_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
-			'chess_army_team_venue'                   => 'Hall',
-			'chess_army_team_captain'                 => (string) $ada,
-			'chess_army_team_leagues'                 => array(
-				array(
-					'org'   => '613',
-					'event' => 'Division 1',
-					'name'  => '',
-				),
-				array(
-					'org'   => '',
-					'event' => 'No organisation',
-					'name'  => '',
-				),
-			),
+			'chess_army_team_tag'                     => 'Lions',
+			'chess_army_team_captain_member'          => (string) $ada,
 			'chess_army_team_squad'                   => array( (string) $ada, '99999' ),
 		);
 		Chess_Army_Knife_Teams_Admin::save( $team );
 		$_POST = array();
 
 		$data = Chess_Army_Knife_Teams::get( $team );
-		$this->assertSame( 'Hall', $data['venue'] );
+		$this->assertSame( 'Lions', $data['tag'] );
 		$this->assertSame( $ada, $data['captain_id'] );
-		$this->assertSame( array( '613|Division 1|Club A' ), $data['seasons'] );
 		$this->assertSame( array( $ada ), Chess_Army_Knife_Teams::squad( $team ) );
 
 		// Without the membership permission nothing changes.
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$_POST = array(
 			Chess_Army_Knife_Teams_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
-			'chess_army_team_venue'                   => 'Elsewhere',
+			'chess_army_team_tag'                     => 'Elsewhere',
 		);
 		Chess_Army_Knife_Teams_Admin::save( $team );
 		$_POST = array();
-		$this->assertSame( 'Hall', Chess_Army_Knife_Teams::get( $team )['venue'] );
+		$this->assertSame( 'Lions', Chess_Army_Knife_Teams::get( $team )['tag'] );
 	}
 
-	public function test_a_team_manager_edits_leagues_but_cannot_choose_the_captain_or_squad() {
+	public function test_the_captain_is_ticked_in_the_squad_or_chosen_apart_from_it() {
+		$ada  = $this->person( 'Ada Lovelace' );
+		$bea  = $this->person( 'Bea Babbage' );
+		$team = $this->team();
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+		wp_set_current_user( $user );
+		$nonce = Chess_Army_Knife_Teams_Admin::NONCE_FIELD;
+
+		// Ticked in the squad: a captain who plays. Someone outside the squad cannot be ticked.
+		$_POST = array(
+			$nonce                           => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
+			'chess_army_team_squad'          => array( (string) $ada ),
+			'chess_army_team_captain_member' => (string) $bea,
+		);
+		Chess_Army_Knife_Teams_Admin::save( $team );
+		$this->assertSame( 0, Chess_Army_Knife_Teams::get( $team )['captain_id'] );
+
+		$_POST['chess_army_team_captain_member'] = (string) $ada;
+		Chess_Army_Knife_Teams_Admin::save( $team );
+		$this->assertSame( $ada, Chess_Army_Knife_Teams::get( $team )['captain_id'] );
+
+		// A captain who does not play: any member, chosen apart from the squad.
+		$_POST = array(
+			$nonce                                => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
+			'chess_army_team_squad'               => array( (string) $ada ),
+			'chess_army_team_captain_non_playing' => '1',
+			'chess_army_team_captain_other'       => (string) $bea,
+			'chess_army_team_captain_member'      => (string) $ada,
+		);
+		Chess_Army_Knife_Teams_Admin::save( $team );
+		$data = Chess_Army_Knife_Teams::get( $team );
+		$this->assertSame( $bea, $data['captain_id'], 'The ticked member is ignored while the captain does not play.' );
+		$this->assertSame( '', $data['captain_name'] );
+
+		// Or someone who is not a member, by name.
+		$_POST['chess_army_team_captain_other'] = '-1';
+		$_POST['chess_army_team_captain_name']  = 'Pat Parent';
+		Chess_Army_Knife_Teams_Admin::save( $team );
+		$_POST = array();
+		$data  = Chess_Army_Knife_Teams::get( $team );
+		$this->assertSame( 0, $data['captain_id'] );
+		$this->assertSame( 'Pat Parent', $data['captain_name'] );
+
+		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true} /-->' );
+		$this->assertStringContainsString( 'Non-playing captain', $html );
+		$this->assertStringContainsString( 'Pat Parent', $html );
+	}
+
+	public function test_a_team_manager_edits_the_team_but_cannot_choose_the_captain_or_squad() {
 		$team = $this->team();
 		$ada  = $this->person();
 		$user = self::factory()->user->create( array( 'role' => 'subscriber' ) );
@@ -278,25 +416,65 @@ class TeamsTest extends WP_UnitTestCase {
 
 		$_POST = array(
 			Chess_Army_Knife_Teams_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
-			'chess_army_team_venue'                   => 'Hall',
-			'chess_army_team_leagues'                 => array(
-				array(
-					'org'   => '270',
-					'event' => 'Division 3',
-					'name'  => '',
-				),
-			),
-			'chess_army_team_captain'                 => (string) $ada,
+			'chess_army_team_tag'                     => 'Lions',
+			'chess_army_team_captain_member'          => (string) $ada,
 			'chess_army_team_squad'                   => array( (string) $ada ),
 		);
 		Chess_Army_Knife_Teams_Admin::save( $team );
 		$_POST = array();
 
 		$data = Chess_Army_Knife_Teams::get( $team );
-		$this->assertSame( 'Hall', $data['venue'] );
-		$this->assertSame( array( '270|Division 3|Club A' ), $data['seasons'] );
+		$this->assertSame( 'Lions', $data['tag'] );
 		$this->assertSame( 0, $data['captain_id'], 'Choosing people needs the membership permission.' );
 		$this->assertSame( array(), Chess_Army_Knife_Teams::squad( $team ) );
+	}
+
+	public function test_the_leagues_page_sets_each_teams_entries_by_organisation() {
+		$a = $this->team( 'Club A' );
+		$b = $this->team( 'Club B' );
+		update_post_meta(
+			$a,
+			Chess_Army_Knife_Teams::META_LEAGUES,
+			array(
+				array(
+					'org'   => '999',
+					'event' => 'Cup',
+					'name'  => '',
+				),
+			)
+		);
+
+		$done = Chess_Army_Knife_Leagues_Page::save_from(
+			array(
+				'orgs'      => array( '270' ),
+				'leagues'   => array(
+					'270' => array(
+						$a => array(
+							'event' => 'Division 1',
+							'name'  => '',
+						),
+						$b => array(
+							'event' => 'Division 2',
+							'name'  => 'Club B Juniors',
+						),
+						// Not in a division: no entry.
+						77 => array( 'event' => '' ),
+					),
+				),
+				'org_names' => array( '270' => 'North Gloucestershire Chess League' ),
+			)
+		);
+
+		$this->assertSame( 2, $done['changed'] );
+		$this->assertSame( array( '999|Cup|Club A', '270|Division 1|Club A' ), Chess_Army_Knife_Teams::get( $a )['seasons'], 'An organisation that was not shown is left alone.' );
+		$this->assertSame( array( '270|Division 2|Club B Juniors' ), Chess_Army_Knife_Teams::get( $b )['seasons'] );
+
+		$this->assertSame( 'North Gloucestershire Chess League', Chess_Army_Knife_Leagues_Page::saved_org_names()['270'] );
+
+		// A team left out of every division is taken out of the organisation.
+		Chess_Army_Knife_Leagues_Page::save_from( array( 'orgs' => array( '270' ) ) );
+		$this->assertSame( array( '999|Cup|Club A' ), Chess_Army_Knife_Teams::get( $a )['seasons'] );
+		$this->assertSame( array(), Chess_Army_Knife_Teams::get( $b )['seasons'] );
 	}
 
 	public function test_officers_manage_teams_but_team_managers_cannot_manage_members() {

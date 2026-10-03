@@ -125,7 +125,8 @@ class Chess_Army_Knife_LMS_Players {
 		$date_format = get_option( 'date_format' );
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Players from the LMS', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Member_Tabs::render( 'players' ); ?>
 			<p><?php esc_html_e( 'These people played for your teams in the results Import Events has kept, and are not on your membership records. Add the ones who are your members: each is added as a pending member with just the name and ECF code the LMS holds, and their consent to the club holding those details is recorded as given. You then confirm their membership and add their contact details from the Members screen. Newsletter and WhatsApp choices are not assumed: they stay off until the person agrees. Nobody is added until you tick them.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( null !== $added ) : ?>

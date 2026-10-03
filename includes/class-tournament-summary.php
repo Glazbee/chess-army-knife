@@ -49,42 +49,38 @@ class Chess_Army_Knife_Tournament_Summary {
 	}
 
 	/**
-	 * The players in a tournament with their ratings, for the public players list.
+	 * The players in a tournament with their current ECF rating, for the public players list.
 	 *
-	 * Once started the rating is the one recorded at the start. Before that a
-	 * player's rating is not known (it is fetched when the tournament starts),
-	 * so only a manual rating is shown and no ECF request is made for the page.
+	 * The rating is the ECF's, in the tournament's rating list, as it stands now: the one the hourly refresh keeps
+	 * on the member's record when it is for that list, otherwise the ECF's (kept in the cache). It is not the
+	 * rating the seeding used, and a manual rating, which is the club's own estimate, is never shown. A player
+	 * with no ECF code has no ECF rating.
 	 *
 	 * @param array $tournament Tournament row.
-	 * @return array[] Each: seed, name, ecf_code, rating, source ('ecf'|'manual'|'none'|'pending'), withdrawn.
+	 * @return array[] Each: seed, name, nickname, ecf_code, rating (int or null), withdrawn.
 	 */
 	public static function players( array $tournament ) {
-		$started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
-		$rows    = array();
+		$domain = Chess_Army_Knife_ECF_Client::normalise_domain( $tournament['rating_domain'] );
+		$rows   = array();
 		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament['id'] ) as $entry ) {
-			$rating = $entry['start_rating'];
-			$source = $entry['rating_source'];
+			$rating = null;
+			$code   = Chess_Army_Knife_ECF_Client::normalise_code( (string) $entry['ecf_code'] );
 
-			if ( ! $started ) {
+			if ( '' !== $code ) {
 				$person = Chess_Army_Knife_Membership_Store::get_member( $entry['player_id'] );
-				$manual = $person ? $person['manual_rating'] : null;
-				if ( '' !== $entry['ecf_code'] ) {
-					$rating = null;
-					$source = 'pending';
-				} elseif ( null !== $manual ) {
-					$rating = $manual;
-					$source = 'manual';
+				if ( $person && ! empty( $person['ecf_rating'] ) && $person['ecf_rating_domain'] === $domain ) {
+					$rating = (int) $person['ecf_rating'];
 				} else {
-					$source = 'none';
+					$rating = Chess_Army_Knife_Tournaments::rating_from_data( Chess_Army_Knife_ECF_Client::get_rating( $code, $domain ) );
 				}
 			}
 
 			$rows[] = array(
 				'seed'      => $entry['seed'],
 				'name'      => $entry['name'],
+				'nickname'  => $entry['nickname'],
 				'ecf_code'  => $entry['ecf_code'],
 				'rating'    => $rating,
-				'source'    => $source,
 				'withdrawn' => 'withdrawn' === $entry['status'],
 			);
 		}
@@ -94,13 +90,14 @@ class Chess_Army_Knife_Tournament_Summary {
 	/**
 	 * Games still to be played, grouped under a round label.
 	 *
-	 * @param int $tournament_id Tournament id.
+	 * @param int         $tournament_id Tournament id.
+	 * @param string|null $name_style    Names::FIRST_SURNAME or SURNAME_FIRST for the names, or null to leave them as they are kept.
 	 * @return array[] Label => list of { id, white, black } (game id and player names).
 	 */
-	public static function games_to_play( $tournament_id ) {
+	public static function games_to_play( $tournament_id, $name_style = null ) {
 		$names = array();
 		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament_id ) as $entry ) {
-			$names[ $entry['id'] ] = $entry['name'];
+			$names[ $entry['id'] ] = null === $name_style ? $entry['name'] : Chess_Army_Knife_Names::person( $entry, $name_style );
 		}
 
 		$knockout_max = 0;
@@ -200,6 +197,7 @@ class Chess_Army_Knife_Tournament_Summary {
 			$rows[] = array(
 				'rank'      => $standing['rank'],
 				'name'      => $standing['name'],
+				'nickname'  => $standing['nickname'],
 				'withdrawn' => $standing['withdrawn'],
 				'total'     => $standing['points'],
 				'scores'    => $cells,
@@ -216,7 +214,7 @@ class Chess_Army_Knife_Tournament_Summary {
 	 * Winners of completed tournaments, most recently finished first.
 	 *
 	 * @param int $limit Maximum number of tournaments (0 for all).
-	 * @return array[] Each: { tournament, winner, completed_at }.
+	 * @return array[] Each: { tournament, winner, nickname, completed_at }.
 	 */
 	public static function winners( $limit = 0 ) {
 		$rows = array();
@@ -231,6 +229,7 @@ class Chess_Army_Knife_Tournament_Summary {
 			$rows[] = array(
 				'tournament'   => $tournament['name'],
 				'winner'       => $champion['name'],
+				'nickname'     => $champion['nickname'],
 				'completed_at' => (string) $tournament['completed_at'],
 			);
 		}

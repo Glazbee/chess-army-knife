@@ -239,7 +239,7 @@ class MembershipsTest extends WP_UnitTestCase {
 
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
 
-		$this->assertSame( 'Grace Hopper', $member['name'] );
+		$this->assertSame( 'Hopper, Grace', $member['name'] );
 		$this->assertSame( $type, $member['membership_type_id'] );
 		$this->assertSame( '2027-08-31', $member['expiry_date'] );
 		$this->assertSame( '', $member['start_date'], 'A missing date reads back as an empty string.' );
@@ -252,7 +252,7 @@ class MembershipsTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertSame( '01234', Chess_Army_Knife_Membership_Store::get_member( $id )['phone'] );
-		$this->assertSame( 'Grace Hopper', Chess_Army_Knife_Membership_Store::get_member( $id )['name'], 'An update changes only the given fields.' );
+		$this->assertSame( 'Hopper, Grace', Chess_Army_Knife_Membership_Store::get_member( $id )['name'], 'An update changes only the given fields.' );
 
 		Chess_Army_Knife_Membership_Store::delete_member( $id );
 		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id ) );
@@ -307,7 +307,7 @@ class MembershipsTest extends WP_UnitTestCase {
 			return $names;
 		};
 
-		$this->assertSame( array( 'Current no expiry', 'Current until today' ), $view( 'active' ) );
+		$this->assertSame( array( 'expiry, Current no', 'today, Current until' ), $view( 'active' ) );
 		$this->assertSame( array( 'Applicant' ), $view( 'pending' ) );
 		$this->assertSame( array( 'Lapsed' ), $view( 'expired' ) );
 		$this->assertSame( array( 'Declined', 'Left' ), $view( 'closed' ) );
@@ -336,9 +336,9 @@ class MembershipsTest extends WP_UnitTestCase {
 			return $this->names( Chess_Army_Knife_Membership_Store::get_members( array( 'search' => $text ) ) );
 		};
 
-		$this->assertSame( array( 'Ada Lovelace' ), $search( 'lovel' ) );
-		$this->assertSame( array( "Conan O'Brien" ), $search( 'club.test' ) );
-		$this->assertSame( array( "Conan O'Brien" ), $search( "O'Brien" ) );
+		$this->assertSame( array( 'Lovelace, Ada' ), $search( 'lovel' ) );
+		$this->assertSame( array( "O'Brien, Conan" ), $search( 'club.test' ) );
+		$this->assertSame( array( "O'Brien, Conan" ), $search( "O'Brien" ) );
 		$this->assertSame( array(), $search( "' OR 1=1 --" ) );
 		$this->assertSame( array(), $search( '%' ), 'A percent sign is not a wildcard.' );
 	}
@@ -418,17 +418,17 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Decline', $html );
 		$this->assertStringContainsString( '&lt;script&gt;alert(1)&lt;/script&gt;', $html );
 		$this->assertStringNotContainsString( '<script>alert(1)', $html );
-		$this->assertStringNotContainsString( 'Current Member', $html );
+		$this->assertStringNotContainsString( 'Member, Current', $html );
 
 		$_GET = array( 'view' => 'active' );
-		$this->assertStringContainsString( 'Current Member', $this->page_html() );
+		$this->assertStringContainsString( 'Member, Current', $this->page_html() );
 	}
 
 	public function test_the_members_page_opens_on_current_members_when_nothing_is_pending() {
 		$this->manager();
 		$this->member( array( 'name' => 'Current Member' ) );
 
-		$this->assertStringContainsString( 'Current Member', $this->page_html() );
+		$this->assertStringContainsString( 'Member, Current', $this->page_html() );
 	}
 
 	public function test_the_members_page_shows_the_add_and_edit_forms() {
@@ -452,7 +452,7 @@ class MembershipsTest extends WP_UnitTestCase {
 
 		$_GET = array( 'edit' => (string) $id );
 		$edit = $this->page_html();
-		$this->assertStringContainsString( 'value="Grace Hopper"', $edit );
+		$this->assertStringContainsString( 'value="Hopper, Grace"', $edit );
 		$this->assertStringContainsString( 'MEM-' . $id, $edit );
 	}
 
@@ -471,13 +471,8 @@ class MembershipsTest extends WP_UnitTestCase {
 		$expected = array(
 			Chess_Army_Knife_Memberships::MENU_SLUG,
 			Chess_Army_Knife_Dashboard_Page::SLUG,
-			Chess_Army_Knife_Member_Checks_Page::SLUG,
-			Chess_Army_Knife_Renewals_Page::SLUG,
 			'edit.php?post_type=' . Chess_Army_Knife_Announcements::POST_TYPE,
-			'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE,
 			'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
-			Chess_Army_Knife_Selection_Page::SLUG,
-			Chess_Army_Knife_Events_Import::PAGE,
 			Chess_Army_Knife_Tournaments_Page::SLUG,
 			'edit.php?post_type=' . Chess_Army_Knife_Events::POST_TYPE,
 			Chess_Army_Knife_Templates::PAGE,
@@ -495,6 +490,12 @@ class MembershipsTest extends WP_UnitTestCase {
 		}
 		$this->assertArrayNotHasKey( Chess_Army_Knife_Memberships::MENU_SLUG, $submenu, 'There is no separate Memberships menu.' );
 		$this->assertArrayNotHasKey( 'chess-army-teams', $submenu, 'There is no separate Teams menu.' );
+		foreach ( array( Chess_Army_Knife_Member_Checks_Page::SLUG, Chess_Army_Knife_Renewals_Page::SLUG, Chess_Army_Knife_LMS_Players::PAGE, Chess_Army_Knife_Do_Not_Record::PAGE, 'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE, Chess_Army_Knife_Clubs::PAGE, Chess_Army_Knife_Squad_Review::PAGE, Chess_Army_Knife_Events_Import::PAGE, Chess_Army_Knife_Policies::PAGE ) as $tab ) {
+			$this->assertNotContains( $tab, $slugs, 'This is a tab of another screen, not a menu item.' );
+		}
+		$this->assertNotContains( 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE, $slugs, 'Groups is a tab of Teams, not a menu item.' );
+		$this->assertNotContains( Chess_Army_Knife_Selection_Page::SLUG, $slugs, 'Selection is a tab of Teams, not a menu item.' );
+		$this->assertNotContains( Chess_Army_Knife_Team_Overview::PAGE, $slugs, 'Overview is a tab of Teams, not a menu item.' );
 	}
 
 	public function test_screens_a_user_may_not_use_explain_what_they_need_instead_of_failing() {
@@ -650,7 +651,7 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertSame( 'Adult', $member['type_name'] );
 		$this->assertSame( '12345J', $member['ecf_code'] );
 		$this->assertSame( '', $member['date_of_birth'], 'An adult\'s date of birth is not kept.' );
-		$this->assertSame( array( 'Ada Lovelace' ), $this->names( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'pending' ) ) ) );
+		$this->assertSame( array( 'Lovelace, Ada' ), $this->names( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'pending' ) ) ) );
 	}
 
 	public function test_a_junior_application_is_saved_with_the_parents_details_instead_of_their_own() {

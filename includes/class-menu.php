@@ -46,6 +46,7 @@ class Chess_Army_Knife_Menu {
 			(string) $screen->post_type,
 			array(
 				Chess_Army_Knife_Teams::POST_TYPE,
+				Chess_Army_Knife_Team_Groups::POST_TYPE,
 				Chess_Army_Knife_Events::POST_TYPE,
 				Chess_Army_Knife_Clubs::POST_TYPE,
 				Chess_Army_Knife_Memberships::POST_TYPE,
@@ -103,6 +104,7 @@ class Chess_Army_Knife_Menu {
 	 *     @type string        $kind        What it needs, a key of Chess_Army_Knife_Access::requirements().
 	 *     @type callable      $can         Whether the current user may use it.
 	 *     @type string        $post_type   For a post type list, the post type.
+	 *     @type bool          $unlisted    True for a screen opened from another's tabs, so it has no menu item.
 	 * }
 	 */
 	public static function areas() {
@@ -118,11 +120,13 @@ class Chess_Army_Knife_Menu {
 			return Chess_Army_Knife_Teams::user_can_manage();
 		};
 
+		$captain_only = ! $can_teams() && Chess_Army_Knife_Captains::user_can_select();
+
 		return array(
 			array(
 				'group'       => $members_group,
 				'title'       => __( 'Members', 'chess-army-knife' ),
-				'description' => __( 'Members and applications: approve, edit, bulk actions and CSV export.', 'chess-army-knife' ),
+				'description' => __( 'Members and applications: approve, edit, bulk actions and CSV export, with Checks, Membership types and Renewals tabs.', 'chess-army-knife' ),
 				'key'         => 'members',
 				'slug'        => Chess_Army_Knife_Memberships::MENU_SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Members_Page', 'render_page' ),
@@ -148,6 +152,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Member_Checks_Page', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of Members.
 			),
 			array(
 				'group'       => $members_group,
@@ -158,6 +163,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Renewals_Page', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of Members.
 			),
 			array(
 				'group'       => $members_group,
@@ -168,6 +174,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_LMS_Players', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $members_group,
@@ -178,6 +185,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Do_Not_Record', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $members_group,
@@ -199,23 +207,50 @@ class Chess_Army_Knife_Menu {
 				'callback'    => null,
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of Members.
 				'post_type'   => Chess_Army_Knife_Memberships::POST_TYPE,
 			),
 			array(
 				'group'       => $teams_group,
 				'title'       => __( 'Teams', 'chess-army-knife' ),
-				'description' => __( 'The club\'s teams, their league entries and squads.', 'chess-army-knife' ),
+				'description' => __( 'Each team\'s details and squad, its overview, and asking who can play and picking the line-up, with Groups and Leagues tabs.', 'chess-army-knife' ),
 				'key'         => 'teams',
-				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
-				'callback'    => null,
+				// A captain without the team permission opens on the Overview tab; everyone else on the list of teams.
+				'slug'        => $captain_only ? Chess_Army_Knife_Team_Overview::PAGE : 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
+				'callback'    => $captain_only ? array( 'Chess_Army_Knife_Team_Overview', 'render_page' ) : null,
 				'kind'        => 'teams',
-				'can'         => $can_teams,
+				'can'         => function () use ( $can_teams ) {
+					return $can_teams() || Chess_Army_Knife_Captains::user_can_select();
+				},
 				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
 			),
 			array(
 				'group'       => $teams_group,
-				'title'       => __( 'Clubs', 'chess-army-knife' ),
-				'description' => __( 'Other clubs and where they play, so away fixtures get a venue.', 'chess-army-knife' ),
+				'title'       => __( 'Groups', 'chess-army-knife' ),
+				'description' => __( 'Headings such as an association or "Internal teams" that teams are listed under: choose each group\'s teams and their order. A tab of Teams.', 'chess-army-knife' ),
+				'key'         => 'team_groups',
+				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE,
+				'callback'    => null,
+				'kind'        => 'teams',
+				'can'         => $can_teams,
+				'post_type'   => Chess_Army_Knife_Team_Groups::POST_TYPE,
+				'unlisted'    => true, // A tab of Teams.
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Leagues', 'chess-army-knife' ),
+				'description' => __( 'Which of the club\'s teams play in which division of each LMS organisation, checked against the LMS. A tab of Teams.', 'chess-army-knife' ),
+				'key'         => 'team_leagues',
+				'slug'        => Chess_Army_Knife_Leagues_Page::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Leagues_Page', 'render_page' ),
+				'kind'        => 'teams',
+				'can'         => $can_teams,
+				'unlisted'    => true, // A tab of Teams.
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Other clubs', 'chess-army-knife' ),
+				'description' => __( 'Other clubs and where they play, so away fixtures get a venue, with a Sort clubs tab to say which team names in the LMS belong to one club.', 'chess-army-knife' ),
 				'key'         => 'clubs',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Clubs::POST_TYPE,
 				'callback'    => null,
@@ -232,6 +267,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Clubs', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $teams_group,
@@ -242,26 +278,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Squad_Review', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
-			),
-			array(
-				'group'       => $teams_group,
-				'title'       => __( 'Team Overview', 'chess-army-knife' ),
-				'description' => __( 'A team\'s details, leagues, squad, next fixtures and who has not replied, all in one place.', 'chess-army-knife' ),
-				'key'         => 'team_overview',
-				'slug'        => Chess_Army_Knife_Team_Overview::PAGE,
-				'callback'    => array( 'Chess_Army_Knife_Team_Overview', 'render_page' ),
-				'kind'        => 'selection',
-				'can'         => array( 'Chess_Army_Knife_Captains', 'user_can_select' ),
-			),
-			array(
-				'group'       => $teams_group,
-				'title'       => __( 'Team Selection', 'chess-army-knife' ),
-				'description' => __( 'Ask the squad who can play and publish the line-up.', 'chess-army-knife' ),
-				'key'         => 'team_selection',
-				'slug'        => Chess_Army_Knife_Selection_Page::SLUG,
-				'callback'    => array( 'Chess_Army_Knife_Selection_Page', 'render_page' ),
-				'kind'        => 'selection',
-				'can'         => array( 'Chess_Army_Knife_Captains', 'user_can_select' ),
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $teams_group,
@@ -272,6 +289,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Events_Import', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $club_group,
@@ -317,6 +335,7 @@ class Chess_Army_Knife_Menu {
 				'can'         => function () {
 					return current_user_can( Chess_Army_Knife_Policies::REQUIRED_CAP );
 				},
+				'unlisted'    => true, // A tab of another screen.
 			),
 			array(
 				'group'       => $setup_group,
@@ -402,8 +421,30 @@ class Chess_Army_Knife_Menu {
 		add_submenu_page( self::SLUG, __( 'Overview', 'chess-army-knife' ), __( 'Overview', 'chess-army-knife' ), $capability, self::SLUG, array( __CLASS__, 'render_overview' ) );
 
 		foreach ( self::areas() as $area ) {
+			if ( ! empty( $area['unlisted'] ) ) {
+				// A tab with a screen of its own can still be opened, just not listed.
+				if ( null !== $area['callback'] ) {
+					add_submenu_page( null, $area['title'], $area['title'], $capability, $area['slug'], $area['callback'] );
+				}
+				continue;
+			}
 			$label = $area['title'] . ( Chess_Army_Knife_Memberships::MENU_SLUG === $area['slug'] ? $bubble : '' );
 			add_submenu_page( self::SLUG, $area['title'], $label, $capability, $area['slug'], null === $area['callback'] ? '' : $area['callback'] );
+		}
+
+		// The Overview and Selection tabs of Teams have no menu item of their own.
+		$tabs       = array(
+			array( Chess_Army_Knife_Team_Overview::PAGE, __( 'Team Overview', 'chess-army-knife' ), array( 'Chess_Army_Knife_Team_Overview', 'render_page' ) ),
+			array( Chess_Army_Knife_Selection_Page::SLUG, __( 'Team Selection', 'chess-army-knife' ), array( 'Chess_Army_Knife_Selection_Page', 'render_page' ) ),
+		);
+		$teams_area = self::area( 'teams' );
+		foreach ( $tabs as $tab ) {
+			// A captain's Teams item already is the Overview tab.
+			if ( $teams_area && $tab[0] === $teams_area['slug'] ) {
+				continue;
+			}
+			// No parent menu: the page can be opened but is not listed. (Removing a listed page makes WordPress refuse it.)
+			add_submenu_page( null, $tab[1], $tab[1], $capability, $tab[0], $tab[2] );
 		}
 	}
 

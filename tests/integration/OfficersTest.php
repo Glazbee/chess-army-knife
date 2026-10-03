@@ -13,6 +13,7 @@ class OfficersTest extends WP_UnitTestCase {
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
 		delete_option( Chess_Army_Knife_Officers::OPTION );
+		delete_option( Chess_Army_Knife_Officers::OPTION_ORDER );
 		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Officers::table(), Chess_Army_Knife_Teams::squad_table() ) as $table ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
@@ -282,7 +283,7 @@ class OfficersTest extends WP_UnitTestCase {
 		$html = ob_get_clean();
 
 		$this->assertStringContainsString( 'Chairman', $html );
-		$this->assertStringContainsString( 'Ada Lovelace', $html );
+		$this->assertStringContainsString( 'Lovelace, Ada', $html );
 		$this->assertStringContainsString( 'History', $html );
 	}
 
@@ -295,5 +296,89 @@ class OfficersTest extends WP_UnitTestCase {
 
 		$this->assertSame( array( 'position', 'captain' ), wp_list_pluck( $items, 'kind' ) );
 		$this->assertStringNotContainsString( 'Ada', wp_json_encode( $items ) );
+	}
+
+	public function test_the_clubs_order_is_the_default_for_a_block_without_its_own_order() {
+		$ids = $this->positions( array( 'Chairman', 'Secretary' ) );
+		Chess_Army_Knife_Officers::assign( $ids['Chairman'], $this->person( 'Ada Lovelace' ) );
+		Chess_Army_Knife_Officers::assign( $ids['Secretary'], $this->person( 'Grace Hopper' ) );
+
+		Chess_Army_Knife_Officers::save_layout(
+			array(
+				array(
+					'id'   => $ids['Secretary'],
+					'name' => 'Secretary',
+				),
+				array(
+					'id'   => $ids['Chairman'],
+					'name' => 'Chairman',
+				),
+			)
+		);
+
+		$this->assertSame( array( 'Secretary', 'Chairman' ), wp_list_pluck( Chess_Army_Knife_Officers::listing(), 'label' ), 'A block with no order follows the club.' );
+		$this->assertSame( array( 'Chairman', 'Secretary' ), wp_list_pluck( Chess_Army_Knife_Officers::listing( array( 'order' => array( $ids['Chairman'], $ids['Secretary'] ) ) ), 'label' ), 'A block with its own order keeps it.' );
+		$this->assertSame( array( 'Secretary', 'Chairman' ), wp_list_pluck( Chess_Army_Knife_Officers::listing( array( 'order' => array() ) ), 'label' ), 'Clearing the block\'s order goes back to the club\'s.' );
+	}
+
+	public function test_a_captain_can_be_placed_among_the_positions() {
+		$ids  = $this->positions( array( 'Chairman', 'Secretary' ) );
+		$team = $this->team( 'Club A' );
+
+		Chess_Army_Knife_Officers::save_layout(
+			array(
+				array(
+					'id'   => $ids['Chairman'],
+					'name' => 'Chairman',
+				),
+				array( 'captain' => 'team-' . $team ),
+				array(
+					'id'   => $ids['Secretary'],
+					'name' => 'Secretary',
+				),
+			)
+		);
+
+		$this->assertSame( array( 'position', 'captain', 'position' ), wp_list_pluck( Chess_Army_Knife_Officers::items(), 'kind' ) );
+	}
+
+	public function test_a_new_position_and_a_new_team_come_after_the_saved_order() {
+		$ids = $this->positions( array( 'Chairman', 'Secretary' ) );
+		Chess_Army_Knife_Officers::save_layout(
+			array(
+				array(
+					'id'   => $ids['Secretary'],
+					'name' => 'Secretary',
+				),
+				array(
+					'id'   => $ids['Chairman'],
+					'name' => 'Chairman',
+				),
+			)
+		);
+
+		$this->team( 'Club A' );
+		$names = wp_list_pluck( Chess_Army_Knife_Officers::items(), 'kind' );
+
+		$this->assertSame( array( 'position', 'position', 'captain' ), $names );
+	}
+
+	public function test_saving_the_layout_gives_blank_rows_no_position_and_new_rows_an_id() {
+		Chess_Army_Knife_Officers::save_layout(
+			array(
+				array(
+					'id'   => '',
+					'name' => 'Treasurer',
+				),
+				array(
+					'id'   => '',
+					'name' => '',
+				),
+			)
+		);
+
+		$positions = Chess_Army_Knife_Officers::positions();
+		$this->assertSame( array( 'Treasurer' ), wp_list_pluck( $positions, 'name' ) );
+		$this->assertSame( array( $positions[0]['id'] ), Chess_Army_Knife_Officers::order() );
 	}
 }

@@ -29,6 +29,7 @@ if ( '' === $team_name ) {
 }
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'team-page', $attributes );
+$name_style         = Chess_Army_Knife_Names::style_for( $attributes );
 
 if ( '' === $team_name || '' === $org_id || '' === $event_name ) {
 	printf(
@@ -87,10 +88,11 @@ $words = array(
  * @param int|null $rating Rating, or null if unrated.
  * @return string
  */
-$player_text = function ( $name, $rating ) {
+$player_text = function ( $name, $rating ) use ( $name_style ) {
 	if ( '' === $name ) {
 		return __( 'Default', 'chess-army-knife' );
 	}
+	$name = Chess_Army_Knife_Names::format( $name, $name_style );
 
 	/* translators: 1: player name, 2: rating */
 	return null === $rating ? sprintf( __( '%1$s (unrated)', 'chess-army-knife' ), $name ) : sprintf( __( '%1$s (%2$d)', 'chess-army-knife' ), $name, $rating );
