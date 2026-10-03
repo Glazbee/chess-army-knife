@@ -23,6 +23,20 @@ class Chess_Army_Knife_Teams_Admin {
 	public static function init() {
 		add_action( 'add_meta_boxes_' . Chess_Army_Knife_Teams::POST_TYPE, array( __CLASS__, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . Chess_Army_Knife_Teams::POST_TYPE, array( __CLASS__, 'save' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+	}
+
+	/**
+	 * Load the script that moves people between the lists, on the team screen only.
+	 *
+	 * @param string $hook Admin page hook.
+	 */
+	public static function enqueue( $hook ) {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) || ! $screen || Chess_Army_Knife_Teams::POST_TYPE !== $screen->post_type ) {
+			return;
+		}
+		wp_enqueue_script( 'chess-army-knife-squad-picker', Chess_Army_Knife_URL . 'assets/squad-picker.js', array( 'jquery-ui-sortable', 'jquery-touch-punch' ), Chess_Army_Knife_VERSION, true );
 	}
 
 	/**
@@ -203,16 +217,92 @@ class Chess_Army_Knife_Teams_Admin {
 			<?php
 			return;
 		}
+		$squad_ids = $squad;
+		$people    = self::candidates( $squad_ids );
+		$also      = Chess_Army_Knife_Teams::squad_names_by_person();
+		$own       = Chess_Army_Knife_Teams::get( $post->ID );
+		$in_squad  = array_values(
+			array_filter(
+				$people,
+				function ( $person ) use ( $squad_ids ) {
+					return in_array( $person['id'], $squad_ids, true );
+				}
+			)
+		);
+		$others    = array_values(
+			array_filter(
+				$people,
+				function ( $person ) use ( $squad_ids ) {
+					return ! in_array( $person['id'], $squad_ids, true );
+				}
+			)
+		);
 		?>
-		<p class="description"><?php esc_html_e( 'Current members in this team. The squad is private: it is used for team lists and, later, fixture availability.', 'chess-army-knife' ); ?></p>
-		<div style="max-height:260px;overflow:auto;border:1px solid #dcdcde;padding:8px">
-			<?php foreach ( self::candidates( $squad ) as $person ) : ?>
-				<label style="display:block">
-					<input type="checkbox" name="chess_army_team_squad[]" value="<?php echo esc_attr( $person['id'] ); ?>" <?php checked( in_array( $person['id'], $squad, true ) ); ?> />
-					<?php echo esc_html( $person['name'] ); ?>
-				</label>
-			<?php endforeach; ?>
+		<p class="description"><?php esc_html_e( 'Current members. The squad is private: it is used for team lists and fixture availability. Someone can be in more than one team\'s squad. Drag people from the left into this squad on the right, or use the arrow buttons.', 'chess-army-knife' ); ?></p>
+		<div class="cak-squad-columns" data-added="<?php /* translators: %s: member name */ esc_attr_e( '%s added to the squad', 'chess-army-knife' ); ?>" data-removed="<?php /* translators: %s: member name */ esc_attr_e( '%s removed from the squad', 'chess-army-knife' ); ?>" style="display:flex;gap:16px;flex-wrap:wrap">
+			<div style="flex:1;min-width:240px">
+				<h3 id="cak-squad-available-title"><?php esc_html_e( 'Members not in this squad', 'chess-army-knife' ); ?></h3>
+				<p>
+					<label for="cak-squad-filter" class="screen-reader-text"><?php esc_html_e( 'Find a member', 'chess-army-knife' ); ?></label>
+					<input type="search" id="cak-squad-filter" class="regular-text" placeholder="<?php esc_attr_e( 'Find a member', 'chess-army-knife' ); ?>" />
+				</p>
+				<ul class="cak-squad-available" aria-labelledby="cak-squad-available-title" style="list-style:none;margin:0;padding:8px;min-height:48px;max-height:420px;overflow:auto;border:1px dashed #c3c4c7">
+					<?php foreach ( $others as $person ) : ?>
+						<?php self::render_person( $person, false, $also ); ?>
+					<?php endforeach; ?>
+				</ul>
+			</div>
+			<div style="flex:1;min-width:240px">
+				<h3 id="cak-squad-members-title">
+					<?php
+					/* translators: %s: team name */
+					echo esc_html( sprintf( __( 'In the %s squad', 'chess-army-knife' ), $own ? $own['name'] : $post->post_title ) );
+					?>
+				</h3>
+				<ul class="cak-squad-members" aria-labelledby="cak-squad-members-title" style="list-style:none;margin:0;padding:8px;min-height:48px;max-height:420px;overflow:auto;border:1px solid #8c8f94">
+					<?php foreach ( $in_squad as $person ) : ?>
+						<?php self::render_person( $person, true, $also ); ?>
+					<?php endforeach; ?>
+				</ul>
+			</div>
 		</div>
+		<p class="screen-reader-text" role="status" aria-live="polite" id="cak-squad-status"></p>
+		<?php
+	}
+
+	/**
+	 * One member in either squad list. The script shows the button that fits the list the member is in, and
+	 * a member not in the squad has their field switched off so they are not saved.
+	 *
+	 * @param array $person   Member row.
+	 * @param bool  $in_squad Whether they are in the squad being edited.
+	 * @param array $also     Names of the teams each member is in, by member id (see Chess_Army_Knife_Teams::squad_names_by_person()).
+	 */
+	protected static function render_person( array $person, $in_squad, array $also ) {
+		$name  = $person['name'];
+		$teams = isset( $also[ $person['id'] ] ) ? $also[ $person['id'] ] : array();
+		?>
+		<li class="cak-squad-person" data-name="<?php echo esc_attr( $name ); ?>" style="border:1px solid #dcdcde;background:#fff;padding:6px 8px;margin:0 0 6px;display:flex;align-items:center;gap:6px">
+			<span class="cak-drag-handle dashicons dashicons-menu" aria-hidden="true" style="cursor:move"></span>
+			<input type="hidden" name="chess_army_team_squad[]" value="<?php echo esc_attr( $person['id'] ); ?>" <?php disabled( ! $in_squad ); ?> />
+			<span style="flex:1">
+				<?php echo esc_html( $name ); ?>
+				<?php if ( $teams ) : ?>
+					<span class="description">
+						<?php
+						/* translators: %s: names of teams */
+						echo esc_html( sprintf( __( '(also in %s)', 'chess-army-knife' ), implode( ', ', $teams ) ) );
+						?>
+					</span>
+				<?php endif; ?>
+			</span>
+			<button type="button" class="button cak-remove" <?php echo $in_squad ? '' : 'style="display:none"'; ?>>
+				<span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: member name */ echo esc_html( sprintf( __( 'Remove %s from the squad', 'chess-army-knife' ), $name ) ); ?></span>
+			</button>
+			<button type="button" class="button cak-add" <?php echo $in_squad ? 'style="display:none"' : ''; ?>>
+				<span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: member name */ echo esc_html( sprintf( __( 'Add %s to the squad', 'chess-army-knife' ), $name ) ); ?></span>
+			</button>
+		</li>
 		<?php
 	}
 
