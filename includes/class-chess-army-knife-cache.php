@@ -17,7 +17,15 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Cache {
 
-	const PREFIX = 'ecflms_';
+	const PREFIX = 'chess_army_knife_cache_';
+
+	/** How long a refresh lock lasts, and how long a visitor waits for another's refresh, in ms. */
+	const LOCK_SECONDS = 30;
+	const LOCK_WAIT_MS = 2000;
+
+	/** How long a failure is cached, in seconds: usually, and when the service says it is being asked too often. */
+	const ERROR_SECONDS        = 120;
+	const RATE_LIMITED_SECONDS = 900;
 
 	/**
 	 * Get the custom table name.
@@ -67,15 +75,68 @@ class Chess_Army_Knife_Cache {
 			return $cached;
 		}
 
+		// When many visitors arrive just as an entry expires, one fetches and the rest wait for it,
+		// so the remote API is asked once rather than once per visitor.
+		$lock = 'refresh_' . $cache_key;
+		if ( ! self::acquire_lock( $lock, self::LOCK_SECONDS ) ) {
+			for ( $waited = 0; $waited < self::LOCK_WAIT_MS; $waited += 250 ) {
+				usleep( 250000 );
+				$cached = self::get( $cache_key );
+				if ( null !== $cached ) {
+					return $cached;
+				}
+			}
+		}
+
 		$value = call_user_func( $generator );
 
-		// Don't cache hard failures for long - allow a quick retry,
-		// but still avoid hammering the remote API on every request.
-		$store_ttl = is_wp_error( $value ) ? min( $ttl, MINUTE_IN_SECONDS * 2 ) : $ttl;
-
-		self::set( $cache_key, $value, $store_ttl );
+		self::set( $cache_key, $value, is_wp_error( $value ) ? self::error_ttl( $value, $ttl ) : $ttl );
+		self::release_lock( $lock );
 
 		return $value;
+	}
+
+	/**
+	 * How long to keep a failure. It is short, so a retry is soon, but still stops every
+	 * request hammering the remote API. A service that says it is being asked too often
+	 * is left alone for longer.
+	 *
+	 * @param WP_Error $error Failure.
+	 * @param int      $ttl   The TTL for a success.
+	 * @return int Seconds.
+	 */
+	protected static function error_ttl( $error, $ttl ) {
+		$data   = $error->get_error_data();
+		$status = is_array( $data ) && isset( $data['status'] ) ? (int) $data['status'] : 0;
+		return min( $ttl, 429 === $status ? self::RATE_LIMITED_SECONDS : self::ERROR_SECONDS );
+	}
+
+	/**
+	 * Take a short-lived lock. It is a flag with an expiry, so a request that dies
+	 * while holding it does not block anyone for long. It is not strictly exclusive
+	 * (two requests in the same instant could both get it), which is enough to
+	 * stop a crowd.
+	 *
+	 * @param string $name Lock name.
+	 * @param int    $ttl  Seconds until the lock lapses.
+	 * @return bool Whether the lock was taken.
+	 */
+	public static function acquire_lock( $name, $ttl ) {
+		$key = self::PREFIX . 'lock_' . md5( $name );
+		if ( false !== get_transient( $key ) ) {
+			return false;
+		}
+		set_transient( $key, 1, $ttl );
+		return true;
+	}
+
+	/**
+	 * Let go of a lock.
+	 *
+	 * @param string $name Lock name.
+	 */
+	public static function release_lock( $name ) {
+		delete_transient( self::PREFIX . 'lock_' . md5( $name ) );
 	}
 
 	/**

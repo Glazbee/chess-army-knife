@@ -117,8 +117,8 @@ class Chess_Army_Knife_Officers_Page {
 			'saved'       => array( 'success', __( 'The positions are saved.', 'chess-army-knife' ) ),
 			'assigned'    => array( 'success', __( 'The officer is added.', 'chess-army-knife' ) ),
 			'ended'       => array( 'success', __( 'The term is ended. It stays in the history.', 'chess-army-knife' ) ),
-			'notassigned' => array( 'error', __( 'Nobody was added. Choose a position and a member, and check that they do not already hold it.', 'chess-army-knife' ) ),
-			'notended'    => array( 'error', __( 'That term could not be ended. A captain is changed on the team.', 'chess-army-knife' ) ),
+			'notassigned' => array( 'error', __( 'Nobody was added. Choose a position and a member, check that they do not already hold it, and use a date that is not in the future.', 'chess-army-knife' ) ),
+			'notended'    => array( 'error', __( 'That term could not be ended. Use a date that is not in the future. A captain is changed on the team.', 'chess-army-knife' ) ),
 		);
 		if ( isset( $messages[ $done ] ) ) {
 			printf(
@@ -159,13 +159,15 @@ class Chess_Army_Knife_Officers_Page {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Officers', 'chess-army-knife' ); ?></h1>
-			<p><?php esc_html_e( 'The people who run the club. Name the positions, put them in order, and say who holds each. The Club Officers block shows the current officers on a page; only their positions and names are shown (and, if you choose, since when). Every change is kept in the history below.', 'chess-army-knife' ); ?></p>
+			<p><?php esc_html_e( 'The people who run the club. Name the positions, put them in order, and say who holds each. The Club Officers block shows the current officers on a page; only their positions and names are shown (and, if you choose, since when), so check that each person is happy to be named on the website. Every change is kept in the history below.', 'chess-army-knife' ); ?></p>
 			<?php self::render_notice( $done ); ?>
 
 			<h2><?php esc_html_e( 'Positions', 'chess-army-knife' ); ?></h2>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_SAVE ); ?>" />
 				<?php wp_nonce_field( self::ACTION_SAVE ); ?>
+				<?php // The first submit button is what the Enter key presses, so it must be the one that saves, not a move button. ?>
+				<button type="submit" class="screen-reader-text" tabindex="-1" aria-hidden="true"><?php esc_html_e( 'Save positions', 'chess-army-knife' ); ?></button>
 				<table class="widefat striped" style="max-width:720px">
 					<caption class="screen-reader-text"><?php esc_html_e( 'Positions, in the order the block lists them by default', 'chess-army-knife' ); ?></caption>
 					<thead>
@@ -245,7 +247,7 @@ class Chess_Army_Knife_Officers_Page {
 											<?php wp_nonce_field( self::ACTION_END ); ?>
 											<label>
 												<span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: 1: person's name, 2: position */ __( 'Date %1$s stood down as %2$s', 'chess-army-knife' ), $name, $term['position_name'] ) ); ?></span>
-												<input type="date" name="end_date" value="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>" />
+												<input type="date" name="end_date" value="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>" max="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>" />
 											</label>
 											<button type="submit" class="button"><?php esc_html_e( 'Stand down', 'chess-army-knife' ); ?></button>
 										</form>
@@ -324,7 +326,7 @@ class Chess_Army_Knife_Officers_Page {
 					<?php endforeach; ?>
 				</select>
 				<label for="cak-officer-start"><?php esc_html_e( 'Since', 'chess-army-knife' ); ?></label>
-				<input type="date" id="cak-officer-start" name="start_date" value="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>" />
+				<input type="date" id="cak-officer-start" name="start_date" value="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>" max="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>" />
 				<button type="submit" class="button button-primary"><?php esc_html_e( 'Add officer', 'chess-army-knife' ); ?></button>
 			</p>
 			<p class="description"><?php esc_html_e( 'A position can have more than one holder, for example committee members. To replace someone, stand them down below and add the new officer.', 'chess-army-knife' ); ?></p>

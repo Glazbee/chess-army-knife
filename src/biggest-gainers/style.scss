@@ -4,19 +4,19 @@
 .wp-block-chess-army-knife-biggest-gainers {
 	margin-bottom: 1.5em;
 
-	.ecf-gainers__title {
+	.cak-gainers__title {
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 600;
 	}
 
-	.ecf-gainers__list {
+	.cak-gainers__list {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 	}
 
-	.ecf-gainers__item {
+	.cak-gainers__item {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: baseline;
@@ -29,23 +29,23 @@
 		}
 	}
 
-	.ecf-gainers__rank {
+	.cak-gainers__rank {
 		flex: 0 0 auto;
 		font-weight: 700;
 		min-width: 2em;
 	}
 
-	.ecf-gainers__name {
+	.cak-gainers__name {
 		flex: 1 1 auto;
 		font-weight: 600;
 	}
 
-	.ecf-gainers__detail {
+	.cak-gainers__detail {
 		flex: 0 0 auto;
 		font-size: 0.9em;
 	}
 
-	.ecf-gainers__change {
+	.cak-gainers__change {
 		flex: 0 0 auto;
 		font-weight: 700;
 		min-width: 3.5em;

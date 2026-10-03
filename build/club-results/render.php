@@ -80,9 +80,9 @@ foreach ( $players as $player ) {
 			'player_name'  => $player['name'],
 			'result_label' => $result_labels[ $score ],
 			'result_class' => array(
-				'1' => 'ecf-result-win',
-				'5' => 'ecf-result-draw',
-				'0' => 'ecf-result-loss',
+				'1' => 'cak-result-win',
+				'5' => 'cak-result-draw',
+				'0' => 'cak-result-loss',
 			)[ $score ],
 			'colour'       => isset( $game['colour'] ) ? strtoupper( $game['colour'] ) : '',
 			'event_name'   => isset( $game['event_name'] ) ? $game['event_name'] : '',
@@ -103,7 +103,7 @@ $heading = $block_title ? $block_title : __( 'Recent club results', 'chess-army-
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-club-results__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-club-results__title', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_cache_keys, __( 'Club results data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
@@ -113,7 +113,7 @@ $heading = $block_title ? $block_title : __( 'Recent club results', 'chess-army-
 		</div>
 	<?php else : ?>
 		<div class="cak-scroll" tabindex="0" role="region" aria-label="<?php echo esc_attr( $heading ); ?>">
-		<table class="ecf-club-results__table">
+		<table class="cak-club-results__table">
 			<caption class="cak-visually-hidden"><?php echo esc_html( $heading ); ?></caption>
 			<thead>
 				<tr>

@@ -33,7 +33,7 @@ add_action( 'init', 'Chess_Army_Knife_register' );
  */
 function Chess_Army_Knife_register_rest_routes() {
 	register_rest_route(
-		'ecf-lms/v1',
+		'chess-army-knife/v1',
 		'/players',
 		array(
 			'methods'             => 'GET',
@@ -49,7 +49,7 @@ function Chess_Army_Knife_register_rest_routes() {
 	);
 
 	register_rest_route(
-		'ecf-lms/v1',
+		'chess-army-knife/v1',
 		'/teams',
 		array(
 			'methods'             => 'GET',
@@ -59,7 +59,7 @@ function Chess_Army_Knife_register_rest_routes() {
 	);
 
 	register_rest_route(
-		'ecf-lms/v1',
+		'chess-army-knife/v1',
 		'/officer-items',
 		array(
 			'methods'             => 'GET',
@@ -69,7 +69,7 @@ function Chess_Army_Knife_register_rest_routes() {
 	);
 
 	register_rest_route(
-		'ecf-lms/v1',
+		'chess-army-knife/v1',
 		'/templates',
 		array(
 			'methods'             => 'GET',
@@ -86,7 +86,7 @@ function Chess_Army_Knife_register_rest_routes() {
 	);
 
 	register_rest_route(
-		'ecf-lms/v1',
+		'chess-army-knife/v1',
 		'/defaults',
 		array(
 			'methods'             => 'GET',

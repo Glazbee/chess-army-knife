@@ -4,13 +4,13 @@
 .wp-block-chess-army-knife-team-carousel {
 	margin-bottom: 1.5em;
 
-	.ecf-carousel__title {
+	.cak-carousel__title {
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 600;
 	}
 
-	.ecf-carousel__list {
+	.cak-carousel__list {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(min(100%, 18em), 1fr));
 		gap: 1em;
@@ -19,7 +19,7 @@
 		list-style: none;
 	}
 
-	.ecf-carousel__slide {
+	.cak-carousel__slide {
 		padding: 1em;
 		border: 1px solid currentcolor;
 		border-radius: 6px;
@@ -29,19 +29,19 @@
 		}
 	}
 
-	.ecf-carousel__team-name {
+	.cak-carousel__team-name {
 		margin: 0 0 0.5em;
 		font-size: 1.1em;
 		font-weight: 700;
 	}
 
-	.ecf-carousel__event-name {
+	.cak-carousel__event-name {
 		display: block;
 		font-size: 0.85em;
 		font-weight: 400;
 	}
 
-	.ecf-carousel__details {
+	.cak-carousel__details {
 		margin: 0;
 
 		dt {
@@ -53,23 +53,23 @@
 		}
 	}
 
-	.ecf-carousel__location {
+	.cak-carousel__location {
 		display: block;
 		font-size: 0.9em;
 	}
 
 	// The carousel layout: one team at a time, with controls.
-	.ecf-carousel.is-carousel {
-		.ecf-carousel__list {
+	.cak-carousel.is-carousel {
+		.cak-carousel__list {
 			display: block;
 		}
 
-		.ecf-carousel__slide[hidden] {
+		.cak-carousel__slide[hidden] {
 			display: none;
 		}
 	}
 
-	.ecf-carousel__controls {
+	.cak-carousel__controls {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -77,7 +77,7 @@
 		margin: 0 0 0.75em;
 	}
 
-	.ecf-carousel__button {
+	.cak-carousel__button {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -97,7 +97,7 @@
 		}
 	}
 
-	.ecf-carousel__dots {
+	.cak-carousel__dots {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
@@ -106,7 +106,7 @@
 	}
 
 	// Each dot is a 44px target with a smaller mark inside it.
-	.ecf-carousel__dot {
+	.cak-carousel__dot {
 		position: relative;
 		width: 44px;
 		height: 44px;

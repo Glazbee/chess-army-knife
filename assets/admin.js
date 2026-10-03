@@ -17,7 +17,7 @@
 	 */
 	function searchMembers( term ) {
 		return window.wp.apiFetch( {
-			path: '/ecf-lms/v1/players?search=' + encodeURIComponent( term ),
+			path: '/chess-army-knife/v1/players?search=' + encodeURIComponent( term ),
 		} );
 	}
 

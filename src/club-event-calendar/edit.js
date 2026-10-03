@@ -35,7 +35,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps();
 
 	useEffect( () => {
-		apiFetch( { path: '/ecf-lms/v1/teams' } )
+		apiFetch( { path: '/chess-army-knife/v1/teams' } )
 			.then( setTeams )
 			.catch( () => setTeams( [] ) );
 	}, [] );

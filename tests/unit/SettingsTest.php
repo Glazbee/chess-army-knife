@@ -123,14 +123,15 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 	public function test_sanitize_cleans_and_bounds_input() {
 		$clean = Chess_Army_Knife_Settings::sanitize(
 			array(
-				'default_org_id'      => '12ab3',
-				'default_domain'      => 'zz',
-				'default_days_back'   => '-4',
-				'default_max_players' => '0',
-				'match_time'          => '25:99',
-				'cache_ecf_minutes'   => '1',
-				'cache_lms_minutes'   => '90',
-				'use_local_cache'     => '1',
+				Chess_Army_Knife_Settings::FORM_MARKER => '1',
+				'default_org_id'                       => '12ab3',
+				'default_domain'                       => 'zz',
+				'default_days_back'                    => '-4',
+				'default_max_players'                  => '0',
+				'match_time'                           => '25:99',
+				'cache_ecf_minutes'                    => '1',
+				'cache_lms_minutes'                    => '90',
+				'use_local_cache'                      => '1',
 			)
 		);
 
@@ -139,16 +140,50 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 1, $clean['default_days_back'] );
 		$this->assertSame( 1, $clean['default_max_players'] );
 		$this->assertSame( '19:30', $clean['match_time'] );
-		$this->assertSame( 5, $clean['cache_ecf_minutes'] );
+		$this->assertSame( Chess_Army_Knife_Settings::MIN_ECF_CACHE_MINUTES, $clean['cache_ecf_minutes'] );
 		$this->assertSame( 90, $clean['cache_lms_minutes'] );
 		$this->assertSame( 1, $clean['use_local_cache'] );
 		$this->assertSame( 0, $clean['fast_cache_enabled'] );
 		$this->assertSame( 0, $clean['delete_data_on_uninstall'] );
 	}
 
+	public function test_a_save_that_is_not_from_the_form_changes_only_what_it_sends() {
+		$this->set_settings(
+			array(
+				'club_name'                 => 'Test Club',
+				'use_local_cache'           => 0,
+				'renewal_reminders_enabled' => 1,
+				'delete_data_on_uninstall'  => 1,
+			)
+		);
+
+		$clean = Chess_Army_Knife_Settings::sanitize( array( 'member_retention_months' => '24' ) );
+
+		$this->assertSame( 'Test Club', $clean['club_name'] );
+		$this->assertSame( 0, $clean['use_local_cache'] );
+		$this->assertSame( 1, $clean['renewal_reminders_enabled'] );
+		$this->assertSame( 1, $clean['delete_data_on_uninstall'] );
+	}
+
+	public function test_an_unticked_box_on_the_form_turns_the_setting_off() {
+		$this->set_settings( array( 'renewal_reminders_enabled' => 1 ) );
+
+		$clean = Chess_Army_Knife_Settings::sanitize( array( Chess_Army_Knife_Settings::FORM_MARKER => '1' ) );
+
+		$this->assertSame( 0, $clean['renewal_reminders_enabled'] );
+	}
+
 	public function test_uninstall_data_deletion_is_opt_in() {
 		$this->assertSame( 0, Chess_Army_Knife_Settings::defaults()['delete_data_on_uninstall'] );
-		$this->assertSame( 1, Chess_Army_Knife_Settings::sanitize( array( 'delete_data_on_uninstall' => '1' ) )['delete_data_on_uninstall'] );
+		$this->assertSame(
+			1,
+			Chess_Army_Knife_Settings::sanitize(
+				array(
+					Chess_Army_Knife_Settings::FORM_MARKER => '1',
+					'delete_data_on_uninstall'             => '1',
+				)
+			)['delete_data_on_uninstall']
+		);
 	}
 
 	public function test_sanitize_keeps_legacy_club_teams_text() {

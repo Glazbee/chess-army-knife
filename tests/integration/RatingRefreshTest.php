@@ -73,6 +73,12 @@ class RatingRefreshTest extends WP_UnitTestCase {
 						'message' => 'No such player.',
 					);
 					$status = 404;
+				} elseif ( 'down' === $answer ) {
+					$body   = array(
+						'success' => false,
+						'message' => 'Try later.',
+					);
+					$status = 503;
 				} elseif ( 'none' === $answer ) {
 					$body   = array(
 						'success' => true,
@@ -254,6 +260,23 @@ class RatingRefreshTest extends WP_UnitTestCase {
 		$this->requested = array();
 		Chess_Army_Knife_Rating_Refresh::run();
 		$this->assertSame( array(), $this->requested, 'Not retried until the next cache period.' );
+	}
+
+	public function test_a_service_that_is_down_does_not_use_up_the_members_check() {
+		$id                      = $this->member( 'One', '100001A', array( 'ecf_rating' => 1600 ) );
+		$this->ratings['100001'] = 'down';
+
+		$result = Chess_Army_Knife_Rating_Refresh::run();
+
+		$this->assertSame( 1, $result['failed'] );
+		$this->assertSame( 1600, $this->row( $id )['ecf_rating'] );
+
+		$this->requested         = array();
+		$this->ratings['100001'] = 1650;
+		Chess_Army_Knife_Cache::flush_all(); // The failure is remembered for a couple of minutes.
+		Chess_Army_Knife_Rating_Refresh::run();
+		$this->assertNotSame( array(), $this->requested, 'Tried again on the next run.' );
+		$this->assertSame( 1650, $this->row( $id )['ecf_rating'] );
 	}
 
 	public function test_the_run_stops_early_when_the_ecf_keeps_failing() {

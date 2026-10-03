@@ -12,7 +12,7 @@ export default function useEcfLmsDefaults() {
 
 	useEffect( () => {
 		let cancelled = false;
-		apiFetch( { path: '/ecf-lms/v1/defaults' } )
+		apiFetch( { path: '/chess-army-knife/v1/defaults' } )
 			.then( ( data ) => {
 				if ( ! cancelled ) {
 					setDefaults( data );

@@ -39,6 +39,9 @@ class Chess_Army_Knife_Member_Portal {
 	const SESSION_KEY          = 'chess_army_knife_portal_';
 	const EMAIL_CHANGE_KEY     = 'chess_army_knife_emailchg_';
 
+	/** The longest a session can be kept going, in seconds, however often it is extended. */
+	const MAX_SESSION_SECONDS = 8 * HOUR_IN_SECONDS;
+
 	/** The fields of a record whose value is an email address that can be changed. */
 	const EMAIL_FIELDS = array( 'email', 'guardian_email' );
 
@@ -58,6 +61,18 @@ class Chess_Army_Knife_Member_Portal {
 		) as $action => $method ) {
 			add_action( 'admin_post_nopriv_' . $action, array( __CLASS__, $method ) );
 			add_action( 'admin_post_' . $action, array( __CLASS__, $method ) );
+		}
+		add_action( 'template_redirect', array( __CLASS__, 'keep_link_private' ) );
+	}
+
+	/**
+	 * The session token is in the address of the portal page, so the page must not tell
+	 * other sites what its address is (in the Referer header) when a link on it is followed.
+	 */
+	public static function keep_link_private() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only sends a header; nothing is changed.
+		if ( isset( $_GET['cak_portal'] ) && ! headers_sent() ) {
+			header( 'Referrer-Policy: no-referrer' );
 		}
 	}
 
@@ -129,10 +144,7 @@ class Chess_Army_Knife_Member_Portal {
 		}
 		if ( is_wp_error( $result ) ) {
 			self::back(
-				array(
-					'cak_portal_error'                 => $result->get_error_code(),
-					Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
-				),
+				array( 'cak_portal_error' => $result->get_error_code() ) + Chess_Army_Knife_Form_State::redirect_args( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
 				self::session( $token ) ? $token : null
 			);
 		}
@@ -145,12 +157,7 @@ class Chess_Army_Knife_Member_Portal {
 	public static function handle_link() {
 		$result = self::request_link( wp_unslash( $_POST ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked in request_link().
 		if ( is_wp_error( $result ) ) {
-			self::back(
-				array(
-					'cak_portal_error'                 => $result->get_error_code(),
-					Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
-				)
-			);
+			self::back( array( 'cak_portal_error' => $result->get_error_code() ) + Chess_Army_Knife_Form_State::redirect_args( wp_unslash( $_POST ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
 		}
 		self::back( array( 'cak_portal_sent' => '1' ) );
 	}
@@ -276,6 +283,7 @@ class Chess_Army_Knife_Member_Portal {
 		// A session made before sessions had an end time is just the address.
 		$email   = is_array( $stored ) && isset( $stored['email'] ) ? $stored['email'] : $stored;
 		$expires = is_array( $stored ) && isset( $stored['expires'] ) ? (int) $stored['expires'] : 0;
+		$started = is_array( $stored ) && isset( $stored['started'] ) ? (int) $stored['started'] : 0;
 		if ( ! is_string( $email ) || '' === $email ) {
 			return null;
 		}
@@ -284,6 +292,7 @@ class Chess_Army_Knife_Member_Portal {
 		return $people ? array(
 			'email'   => $email,
 			'expires' => $expires,
+			'started' => $started,
 			'people'  => $people,
 		) : null;
 	}
@@ -292,18 +301,22 @@ class Chess_Army_Knife_Member_Portal {
 	 * Start (or restart) a session.
 	 *
 	 * @param string $token Session token.
-	 * @param string $email The address the session is for.
-	 * @return int When it ends, as a Unix time.
+	 * @param string $email   The address the session is for.
+	 * @param int    $started When the session first began, as a Unix time; now for a new session.
+	 * @return int When it ends, as a Unix time. Never later than the longest a session may last.
 	 */
-	protected static function store_session( $token, $email ) {
-		$expires = time() + self::session_length();
+	protected static function store_session( $token, $email, $started = 0 ) {
+		$now     = time();
+		$started = $started ? (int) $started : $now;
+		$expires = min( $now + self::session_length(), $started + self::MAX_SESSION_SECONDS );
 		set_transient(
 			self::SESSION_KEY . $token,
 			array(
 				'email'   => $email,
 				'expires' => $expires,
+				'started' => $started,
 			),
-			self::session_length()
+			max( 1, $expires - $now )
 		);
 		return $expires;
 	}
@@ -316,7 +329,7 @@ class Chess_Army_Knife_Member_Portal {
 	 */
 	public static function extend_session( $token ) {
 		$session = self::session( $token );
-		return $session ? self::store_session( preg_replace( '/[^A-Za-z0-9]/', '', (string) $token ), $session['email'] ) : 0;
+		return $session ? self::store_session( preg_replace( '/[^A-Za-z0-9]/', '', (string) $token ), $session['email'], $session['started'] ) : 0;
 	}
 
 	/**

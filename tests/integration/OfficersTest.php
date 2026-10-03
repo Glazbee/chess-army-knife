@@ -160,10 +160,10 @@ class OfficersTest extends WP_UnitTestCase {
 		$alan = $this->person( 'Alan Turing' );
 		$team = $this->team( 'Club A', array( Chess_Army_Knife_Teams::META_CAPTAIN => $ada ) );
 
-		$html = do_blocks( '<!-- wp:chess-army-knife/officers /-->' );
+		$html = do_blocks( '<!-- wp:chess-army-knife/officers {"includeCaptains":true} /-->' );
 		$this->assertStringContainsString( 'Captain, Club A', $html );
 		$this->assertStringContainsString( 'Ada Lovelace', $html );
-		$this->assertStringNotContainsString( 'Ada Lovelace', do_blocks( '<!-- wp:chess-army-knife/officers {"includeCaptains":false} /-->' ) );
+		$this->assertStringNotContainsString( 'Ada Lovelace', do_blocks( '<!-- wp:chess-army-knife/officers /-->' ), 'Captains are not named unless the block is told to.' );
 
 		// A new captain: the old captaincy ends and a new one begins.
 		update_post_meta( $team, Chess_Army_Knife_Teams::META_CAPTAIN, $alan );
@@ -174,6 +174,58 @@ class OfficersTest extends WP_UnitTestCase {
 		$this->assertCount( 2, $terms, 'Syncing twice adds nothing.' );
 		$this->assertCount( 1, Chess_Army_Knife_Officers::terms( true ) );
 		$this->assertSame( $alan, Chess_Army_Knife_Officers::terms( true )[0]['person_id'] );
+	}
+
+	public function test_a_captaincy_ends_when_the_team_is_trashed_and_the_captain_is_renamed_with_the_team() {
+		$team = $this->team( 'Club A', array( Chess_Army_Knife_Teams::META_CAPTAIN => $this->person( 'Ada Lovelace' ) ) );
+		Chess_Army_Knife_Officers::sync_captains();
+
+		wp_update_post(
+			array(
+				'ID'         => $team,
+				'post_title' => 'Club B',
+			)
+		);
+		Chess_Army_Knife_Officers::sync_captains();
+		$this->assertSame( 'Club B', Chess_Army_Knife_Officers::terms()[0]['position_name'] );
+
+		wp_trash_post( $team );
+		Chess_Army_Knife_Officers::sync_captains();
+		$this->assertCount( 0, Chess_Army_Knife_Officers::terms( true ) );
+		$this->assertCount( 1, Chess_Army_Knife_Officers::terms() );
+	}
+
+	public function test_a_team_without_a_captain_still_has_its_history_renamed() {
+		$ada  = $this->person( 'Ada Lovelace' );
+		$team = $this->team( 'Club A', array( Chess_Army_Knife_Teams::META_CAPTAIN => $ada ) );
+		Chess_Army_Knife_Officers::sync_captains();
+		update_post_meta( $team, Chess_Army_Knife_Teams::META_CAPTAIN, 0 );
+		Chess_Army_Knife_Officers::sync_captains();
+		wp_update_post(
+			array(
+				'ID'         => $team,
+				'post_title' => 'Club B',
+			)
+		);
+		Chess_Army_Knife_Officers::sync_captains();
+
+		$this->assertSame( 'Club B', Chess_Army_Knife_Officers::terms()[0]['position_name'] );
+	}
+
+	public function test_dates_in_the_future_or_not_real_are_refused() {
+		$ids    = $this->positions( array( 'Chairman' ) );
+		$ada    = $this->person( 'Ada Lovelace' );
+		$future = gmdate( 'Y-m-d', time() + 3 * DAY_IN_SECONDS );
+
+		$this->assertSame( 0, Chess_Army_Knife_Officers::assign( $ids['Chairman'], $ada, $future ) );
+		$this->assertSame( 0, Chess_Army_Knife_Officers::assign( $ids['Chairman'], $ada, '2025-02-30' ) );
+
+		$term = Chess_Army_Knife_Officers::assign( $ids['Chairman'], $ada, '2020-01-01' );
+		$this->assertGreaterThan( 0, $term );
+		$this->assertFalse( Chess_Army_Knife_Officers::end_term( $term, $future ) );
+		$this->assertFalse( Chess_Army_Knife_Officers::end_term( $term, 'next week' ) );
+		$this->assertCount( 1, Chess_Army_Knife_Officers::terms( true ) );
+		$this->assertTrue( Chess_Army_Knife_Officers::end_term( $term, '' ), 'No date means today.' );
 	}
 
 	public function test_a_captaincy_cannot_be_ended_as_an_officer_term() {

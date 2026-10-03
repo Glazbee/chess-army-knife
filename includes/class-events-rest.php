@@ -17,6 +17,9 @@ class Chess_Army_Knife_Events_REST {
 	/** How many months either side of this one can be viewed. */
 	const MAX_MONTHS_AWAY = 60;
 
+	/** The most tags, and the most teams, a request may name. */
+	const MAX_LIST = 50;
+
 	/**
 	 * Hook up the route.
 	 */
@@ -97,8 +100,9 @@ class Chess_Army_Knife_Events_REST {
 
 		list( $year, $month ) = $parsed;
 
-		$tags     = Chess_Army_Knife_Events_Display::tag_slugs( explode( ',', (string) $request['tags'] ) );
-		$team_ids = array_values( array_filter( array_map( 'absint', explode( ',', (string) $request['teams'] ) ) ) );
+		// The route is public, so the lists a visitor can ask for are kept short.
+		$tags     = Chess_Army_Knife_Events_Display::tag_slugs( array_slice( explode( ',', (string) $request['tags'] ), 0, self::MAX_LIST ) );
+		$team_ids = array_slice( array_values( array_filter( array_map( 'absint', explode( ',', (string) $request['teams'] ) ) ) ), 0, self::MAX_LIST );
 		$options  = array(
 			'show_location' => '0' !== (string) $request['location'],
 			'show_teams'    => '0' !== (string) $request['showteams'],

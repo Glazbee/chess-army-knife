@@ -75,7 +75,7 @@ class Chess_Army_Knife_Rating_Refresh {
 	public static function run( $limit = null ) {
 		$options = Chess_Army_Knife_Settings::get_options();
 		$domain  = Chess_Army_Knife_ECF_Client::normalise_domain( $options['default_domain'] );
-		$minutes = max( 5, (int) $options['cache_ecf_minutes'] );
+		$minutes = max( Chess_Army_Knife_Settings::MIN_ECF_CACHE_MINUTES, (int) $options['cache_ecf_minutes'] );
 		$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $minutes * MINUTE_IN_SECONDS );
 		$batch   = null === $limit ? self::batch_size() : (int) $limit;
 
@@ -108,8 +108,11 @@ class Chess_Army_Knife_Rating_Refresh {
 			++$result['checked'];
 
 			if ( is_wp_error( $data ) ) {
-				// Noted as checked so a code the ECF rejects is not retried every hour.
-				Chess_Army_Knife_Membership_Store::record_rating_check( $member['id'], null, $domain );
+				// Noted as checked so a code the ECF rejects is not retried every hour. A service that
+				// could not be reached or is limiting us says nothing about the code, so it is tried again next run.
+				if ( self::is_rejection( $data ) ) {
+					Chess_Army_Knife_Membership_Store::record_rating_check( $member['id'], null, $domain );
+				}
 				++$result['failed'];
 				++$in_a_row;
 				if ( $in_a_row >= self::MAX_FAILURES_IN_A_ROW ) {
@@ -127,6 +130,19 @@ class Chess_Army_Knife_Rating_Refresh {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Whether the ECF answered that it has no rating for the code, as opposed to not answering at all
+	 * (a network error, a server error, or a request to slow down).
+	 *
+	 * @param WP_Error $error Error from the ECF client.
+	 * @return bool
+	 */
+	protected static function is_rejection( $error ) {
+		$data   = $error->get_error_data();
+		$status = is_array( $data ) && isset( $data['status'] ) ? (int) $data['status'] : 0;
+		return 'ecf_api_error' === $error->get_error_code() && $status >= 400 && $status < 500 && 429 !== $status;
 	}
 
 	/**

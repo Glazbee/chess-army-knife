@@ -4,7 +4,7 @@
 .wp-block-chess-army-knife-featured-player {
 	margin-bottom: 1.5em;
 
-	.ecf-featured__heading {
+	.cak-featured__heading {
 		margin: 0 0 0.5em;
 		font-size: 0.85em;
 		font-weight: 700;
@@ -12,14 +12,14 @@
 		text-transform: uppercase;
 	}
 
-	.ecf-featured {
+	.cak-featured {
 		display: flex;
 		gap: 1.25em;
 		align-items: flex-start;
 		flex-wrap: wrap;
 	}
 
-	.ecf-featured__photo {
+	.cak-featured__photo {
 		flex: 0 0 auto;
 		width: 140px;
 		max-width: 100%;
@@ -32,38 +32,38 @@
 		}
 	}
 
-	.ecf-featured__body {
+	.cak-featured__body {
 		flex: 1 1 260px;
 		min-width: 0;
 	}
 
-	.ecf-featured__name {
+	.cak-featured__name {
 		margin: 0;
 		font-size: 1.4em;
 		font-weight: 700;
 	}
 
-	.ecf-featured__meta {
+	.cak-featured__meta {
 		margin: 0.2em 0 0.6em;
 		font-size: 0.95em;
 	}
 
-	.ecf-featured__rating {
+	.cak-featured__rating {
 		font-weight: 700;
 	}
 
-	.ecf-featured__blurb p {
+	.cak-featured__blurb p {
 		margin: 0 0 0.6em;
 	}
 
-	.ecf-featured__links {
+	.cak-featured__links {
 		display: flex;
 		gap: 0.5em;
 		flex-wrap: wrap;
 		margin-top: 0.75em;
 	}
 
-	.ecf-featured__link {
+	.cak-featured__link {
 		display: inline-flex;
 		align-items: center;
 		min-height: 44px;

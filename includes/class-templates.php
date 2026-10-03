@@ -24,8 +24,8 @@ class Chess_Army_Knife_Templates {
 	 * Boot admin page + handlers.
 	 */
 	public static function init() {
-		add_action( 'admin_post_ecf_lms_save_template', array( __CLASS__, 'handle_save' ) );
-		add_action( 'admin_post_ecf_lms_delete_template', array( __CLASS__, 'handle_delete' ) );
+		add_action( 'admin_post_chess_army_knife_save_template', array( __CLASS__, 'handle_save' ) );
+		add_action( 'admin_post_chess_army_knife_delete_template', array( __CLASS__, 'handle_delete' ) );
 	}
 
 	/**
@@ -464,8 +464,8 @@ class Chess_Army_Knife_Templates {
 		$style = array();
 
 		if ( ! empty( $v['accent'] ) && sanitize_hex_color( $v['accent'] ) ) {
-			$style[] = '--ecf-accent:' . $v['accent'];
-			$style[] = '--ecf-accent-soft:' . $v['accent'] . ( 7 === strlen( $v['accent'] ) ? '22' : '' );
+			$style[] = '--cak-accent:' . $v['accent'];
+			$style[] = '--cak-accent-soft:' . $v['accent'] . ( 7 === strlen( $v['accent'] ) ? '22' : '' );
 		}
 		if ( ! empty( $v['bg'] ) && sanitize_hex_color( $v['bg'] ) ) {
 			$style[] = 'background-color:' . $v['bg'];
@@ -483,7 +483,7 @@ class Chess_Army_Knife_Templates {
 
 		return get_block_wrapper_attributes(
 			$extra + array(
-				'class' => 'ecf-tpl-' . sanitize_html_class( $tpl['id'] ),
+				'class' => 'cak-tpl-' . sanitize_html_class( $tpl['id'] ),
 				'style' => implode( ';', $style ),
 			)
 		);
@@ -505,16 +505,16 @@ class Chess_Army_Knife_Templates {
 		}
 		$printed[ $tpl['id'] ] = true;
 
-		$css = str_replace( '{block}', '.ecf-tpl-' . sanitize_html_class( $tpl['id'] ), $tpl['values']['custom_css'] );
+		$css = str_replace( '{block}', '.cak-tpl-' . sanitize_html_class( $tpl['id'] ), $tpl['values']['custom_css'] );
 
-		return '<style id="ecf-tpl-css-' . esc_attr( sanitize_html_class( $tpl['id'] ) ) . '">' . wp_strip_all_tags( $css ) . '</style>';
+		return '<style id="cak-tpl-css-' . esc_attr( sanitize_html_class( $tpl['id'] ) ) . '">' . wp_strip_all_tags( $css ) . '</style>';
 	}
 
 	/**
 	 * Save (create or update) a template.
 	 */
 	public static function handle_save() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'ecf_lms_save_template' ) ) {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'chess_army_knife_save_template' ) ) {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 
@@ -527,8 +527,8 @@ class Chess_Army_Knife_Templates {
 			wp_safe_redirect(
 				add_query_arg(
 					array(
-						'page'              => 'chess-army-knife-templates',
-						'ecf_lms_tpl_error' => '1',
+						'page'                       => 'chess-army-knife-templates',
+						'chess_army_knife_tpl_error' => '1',
 					),
 					admin_url( 'admin.php' )
 				)
@@ -607,8 +607,8 @@ class Chess_Army_Knife_Templates {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'              => 'chess-army-knife-templates',
-					'ecf_lms_tpl_saved' => '1',
+					'page'                       => 'chess-army-knife-templates',
+					'chess_army_knife_tpl_saved' => '1',
 				),
 				admin_url( 'admin.php' )
 			)
@@ -667,7 +667,7 @@ class Chess_Army_Knife_Templates {
 	 * Delete a template.
 	 */
 	public static function handle_delete() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'ecf_lms_delete_template' ) ) {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'chess_army_knife_delete_template' ) ) {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 
@@ -679,8 +679,8 @@ class Chess_Army_Knife_Templates {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'                => 'chess-army-knife-templates',
-					'ecf_lms_tpl_deleted' => '1',
+					'page'                         => 'chess-army-knife-templates',
+					'chess_army_knife_tpl_deleted' => '1',
 				),
 				admin_url( 'admin.php' )
 			)
@@ -711,11 +711,11 @@ class Chess_Army_Knife_Templates {
 				<?php esc_html_e( 'A template is a reusable preset for a block type: its settings plus its look (colours, corner radius, custom CSS, whether match locations show). Pick a template in any block\'s sidebar; anything the template sets overrides that block, so editing a template updates every block using it.', 'chess-army-knife' ); ?>
 			</p>
 
-			<?php if ( isset( $_GET['ecf_lms_tpl_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
+			<?php if ( isset( $_GET['chess_army_knife_tpl_saved'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Template saved.', 'chess-army-knife' ); ?></p></div>
-			<?php elseif ( isset( $_GET['ecf_lms_tpl_deleted'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
+			<?php elseif ( isset( $_GET['chess_army_knife_tpl_deleted'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Template deleted.', 'chess-army-knife' ); ?></p></div>
-			<?php elseif ( isset( $_GET['ecf_lms_tpl_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
+			<?php elseif ( isset( $_GET['chess_army_knife_tpl_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed. ?>
 				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'A template needs a name and a block type.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
 
@@ -770,12 +770,12 @@ class Chess_Army_Knife_Templates {
 											wp_nonce_url(
 												add_query_arg(
 													array(
-														'action' => 'ecf_lms_delete_template',
+														'action' => 'chess_army_knife_delete_template',
 														'id' => $tpl['id'],
 													),
 													admin_url( 'admin-post.php' )
 												),
-												'ecf_lms_delete_template'
+												'chess_army_knife_delete_template'
 											)
 										);
 										?>
@@ -851,10 +851,10 @@ class Chess_Army_Knife_Templates {
 			<p class="description"><?php esc_html_e( 'Leave any field blank to let the block keep its own setting.', 'chess-army-knife' ); ?></p>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="ecf_lms_save_template" />
+				<input type="hidden" name="action" value="chess_army_knife_save_template" />
 				<input type="hidden" name="block" value="<?php echo esc_attr( $slug ); ?>" />
 				<input type="hidden" name="id" value="<?php echo esc_attr( $tpl ? $tpl['id'] : '' ); ?>" />
-				<?php wp_nonce_field( 'ecf_lms_save_template' ); ?>
+				<?php wp_nonce_field( 'chess_army_knife_save_template' ); ?>
 
 				<table class="form-table" role="presentation">
 					<tr>

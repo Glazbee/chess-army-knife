@@ -16,14 +16,20 @@ defined( 'ABSPATH' ) || exit;
 class Chess_Army_Knife_Settings {
 
 	const OPTION = 'Chess_Army_Knife_settings';
-	const PAGE   = 'chess-army-knife-settings';
+
+	/** Posted by the settings form, so that unticked checkboxes can be told from a save that did not come from the form. */
+	const FORM_MARKER = 'cak_settings_form';
+
+	/** The shortest time ECF data is cached, in minutes: the ECF limits how much processing time a site may use each day. */
+	const MIN_ECF_CACHE_MINUTES = 60;
+	const PAGE                  = 'chess-army-knife-settings';
 
 	/**
 	 * Boot the settings screen.
 	 */
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
-		add_action( 'admin_post_ecf_lms_clear_cache', array( __CLASS__, 'handle_clear_cache' ) );
+		add_action( 'admin_post_chess_army_knife_clear_cache', array( __CLASS__, 'handle_clear_cache' ) );
 	}
 
 	/**
@@ -267,7 +273,12 @@ class Chess_Army_Knife_Settings {
 	 * @return array
 	 */
 	public static function sanitize( $input ) {
-		$clean = self::defaults();
+		// Whatever is not submitted keeps its saved value, so a save of part of the settings changes only that part.
+		$clean = self::get_options();
+		if ( ! is_array( $input ) ) {
+			return $clean;
+		}
+		$from_form = isset( $input[ self::FORM_MARKER ] );
 
 		if ( isset( $input['club_name'] ) ) {
 			$clean['club_name'] = sanitize_text_field( $input['club_name'] );
@@ -300,8 +311,10 @@ class Chess_Army_Knife_Settings {
 			$clean['membership_payment_info'] = sanitize_textarea_field( $input['membership_payment_info'] );
 		}
 		// Set on the Policies screen, so it is kept unless submitted here.
-		$clean['member_retention_months']   = isset( $input['member_retention_months'] ) ? self::clean_retention_months( $input['member_retention_months'] ) : (int) self::get_options()['member_retention_months'];
-		$clean['renewal_reminders_enabled'] = ! empty( $input['renewal_reminders_enabled'] ) ? 1 : 0;
+		$clean['member_retention_months'] = isset( $input['member_retention_months'] ) ? self::clean_retention_months( $input['member_retention_months'] ) : (int) self::get_options()['member_retention_months'];
+		if ( $from_form ) {
+			$clean['renewal_reminders_enabled'] = ! empty( $input['renewal_reminders_enabled'] ) ? 1 : 0;
+		}
 		if ( isset( $input['renewal_reminder_days'] ) ) {
 			$clean['renewal_reminder_days'] = implode( ',', Chess_Army_Knife_Renewal_Reminders::parse_schedule( sanitize_text_field( $input['renewal_reminder_days'] ) ) );
 		}
@@ -321,14 +334,14 @@ class Chess_Army_Knife_Settings {
 		// The old free-text team list no longer has a field on this page;
 		// keep whatever was stored so the one-off migration into the Club
 		// Teams page still works if settings are saved first.
-		$existing                    = self::get_options();
-		$clean['club_teams']         = $existing['club_teams'];
-		$clean['fast_cache_enabled'] = ! empty( $input['fast_cache_enabled'] ) ? 1 : 0;
+		if ( $from_form ) {
+			$clean['fast_cache_enabled'] = ! empty( $input['fast_cache_enabled'] ) ? 1 : 0;
+		}
 		if ( isset( $input['match_time'] ) && preg_match( '/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $input['match_time'] ) ) {
 			$clean['match_time'] = $input['match_time'];
 		}
 		if ( isset( $input['cache_ecf_minutes'] ) ) {
-			$clean['cache_ecf_minutes'] = max( 5, (int) $input['cache_ecf_minutes'] );
+			$clean['cache_ecf_minutes'] = max( self::MIN_ECF_CACHE_MINUTES, (int) $input['cache_ecf_minutes'] );
 		}
 		if ( isset( $input['cache_lms_minutes'] ) ) {
 			$clean['cache_lms_minutes'] = max( 5, (int) $input['cache_lms_minutes'] );
@@ -339,8 +352,10 @@ class Chess_Army_Knife_Settings {
 		if ( isset( $input['contrast_mode'] ) && in_array( $input['contrast_mode'], array( 'off', 'device', 'always' ), true ) ) {
 			$clean['contrast_mode'] = $input['contrast_mode'];
 		}
-		$clean['use_local_cache']          = ! empty( $input['use_local_cache'] ) ? 1 : 0;
-		$clean['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
+		if ( $from_form ) {
+			$clean['use_local_cache']          = ! empty( $input['use_local_cache'] ) ? 1 : 0;
+			$clean['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
+		}
 
 		return $clean;
 	}
@@ -349,7 +364,7 @@ class Chess_Army_Knife_Settings {
 	 * Handle the "Clear cached data" button.
 	 */
 	public static function handle_clear_cache() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'ecf_lms_clear_cache' ) ) {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'chess_army_knife_clear_cache' ) ) {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ) );
 		}
 
@@ -390,6 +405,7 @@ class Chess_Army_Knife_Settings {
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'Chess_Army_Knife' ); ?>
+				<input type="hidden" name="<?php echo esc_attr( self::OPTION ); ?>[<?php echo esc_attr( self::FORM_MARKER ); ?>]" value="1" />
 
 				<h2><?php esc_html_e( 'Your club', 'chess-army-knife' ); ?></h2>
 				<table class="form-table" role="presentation">
@@ -575,8 +591,8 @@ class Chess_Army_Knife_Settings {
 					<tr>
 						<th scope="row"><label for="cache_ecf_minutes"><?php esc_html_e( 'ECF ratings cache duration (minutes)', 'chess-army-knife' ); ?></label></th>
 						<td>
-							<input type="number" min="5" id="cache_ecf_minutes" name="<?php echo esc_attr( self::OPTION ); ?>[cache_ecf_minutes]" value="<?php echo esc_attr( $options['cache_ecf_minutes'] ); ?>" class="small-text" />
-							<p class="description"><?php esc_html_e( 'Player info, games and club rosters change slowly (ratings update monthly, games nightly). 360 minutes (6 hours) is a sensible default; the ECF API has a daily processing-time budget per site, so avoid setting this very low.', 'chess-army-knife' ); ?></p>
+							<input type="number" min="<?php echo esc_attr( self::MIN_ECF_CACHE_MINUTES ); ?>" id="cache_ecf_minutes" name="<?php echo esc_attr( self::OPTION ); ?>[cache_ecf_minutes]" value="<?php echo esc_attr( $options['cache_ecf_minutes'] ); ?>" class="small-text" />
+							<p class="description"><?php esc_html_e( 'Player info, games and club rosters change slowly (ratings update monthly, games nightly). 360 minutes (6 hours) is a sensible default; the ECF API has a daily processing-time budget per site, so it cannot be set below 60 minutes.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -639,8 +655,8 @@ class Chess_Army_Knife_Settings {
 			</p>
 			<p><?php esc_html_e( 'If you\'ve just corrected a code, or data looks stale, clear the cache to force fresh lookups.', 'chess-army-knife' ); ?></p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="ecf_lms_clear_cache" />
-				<?php wp_nonce_field( 'ecf_lms_clear_cache' ); ?>
+				<input type="hidden" name="action" value="chess_army_knife_clear_cache" />
+				<?php wp_nonce_field( 'chess_army_knife_clear_cache' ); ?>
 				<?php submit_button( __( 'Clear cached data', 'chess-army-knife' ), 'secondary' ); ?>
 			</form>
 

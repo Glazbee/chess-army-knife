@@ -109,14 +109,14 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
 	<?php if ( '' !== $heading ) : ?>
-		<?php echo Chess_Army_Knife_A11y::heading( 0, 'ecf-featured__heading', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+		<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-featured__heading', $heading ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<?php endif; ?>
 
 	<?php echo Chess_Army_Knife_Admin_Refresh::bar( $admin_keys, __( 'Player data', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Admin_Refresh::bar(). ?>
 
-	<div class="ecf-featured">
+	<div class="cak-featured">
 		<?php if ( $image_id || '' !== $image_url ) : ?>
-			<div class="ecf-featured__photo">
+			<div class="cak-featured__photo">
 				<?php
 				if ( $image_id && wp_attachment_is_image( $image_id ) ) {
 					// The photo is decorative next to the name, so it only has an alt if the media library has one.
@@ -128,13 +128,13 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 			</div>
 		<?php endif; ?>
 
-		<div class="ecf-featured__body">
-			<?php echo Chess_Army_Knife_A11y::heading( '' !== $heading ? 1 : 0, 'ecf-featured__name', trim( $player_title . ' ' . $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+		<div class="cak-featured__body">
+			<?php echo Chess_Army_Knife_A11y::heading( '' !== $heading ? 1 : 0, 'cak-featured__name', trim( $player_title . ' ' . $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 			<?php if ( '' !== $rating || ( $show_club && '' !== $club ) ) : ?>
-				<p class="ecf-featured__meta">
+				<p class="cak-featured__meta">
 					<?php if ( '' !== $rating ) : ?>
-						<span class="ecf-featured__rating"><?php echo esc_html( $rating ); ?></span>
+						<span class="cak-featured__rating"><?php echo esc_html( $rating ); ?></span>
 						<?php echo esc_html( isset( $domain_labels[ $rating_domain ] ) ? $domain_labels[ $rating_domain ] : '' ); ?>
 					<?php endif; ?>
 					<?php
@@ -148,16 +148,16 @@ $has_links = $show_links && ( '' !== $chess_com || '' !== $lichess );
 			<?php endif; ?>
 
 			<?php if ( '' !== $blurb ) : ?>
-				<div class="ecf-featured__blurb"><?php echo wp_kses_post( wpautop( esc_html( $blurb ) ) ); ?></div>
+				<div class="cak-featured__blurb"><?php echo wp_kses_post( wpautop( esc_html( $blurb ) ) ); ?></div>
 			<?php endif; ?>
 
 			<?php if ( $has_links ) : ?>
-				<div class="ecf-featured__links">
+				<div class="cak-featured__links">
 					<?php if ( '' !== $chess_com ) : ?>
-						<a class="ecf-featured__link" href="<?php echo esc_url( 'https://www.chess.com/member/' . $chess_com ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'chess.com profile', 'chess-army-knife' ); ?> <?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: player name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
+						<a class="cak-featured__link" href="<?php echo esc_url( 'https://www.chess.com/member/' . $chess_com ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'chess.com profile', 'chess-army-knife' ); ?> <?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: player name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
 					<?php endif; ?>
 					<?php if ( '' !== $lichess ) : ?>
-						<a class="ecf-featured__link" href="<?php echo esc_url( 'https://lichess.org/@/' . $lichess ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Lichess profile', 'chess-army-knife' ); ?> <?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: player name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
+						<a class="cak-featured__link" href="<?php echo esc_url( 'https://lichess.org/@/' . $lichess ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Lichess profile', 'chess-army-knife' ); ?> <?php echo Chess_Army_Knife_A11y::hidden( sprintf( /* translators: %s: player name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $name ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in hidden(). ?></a>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>

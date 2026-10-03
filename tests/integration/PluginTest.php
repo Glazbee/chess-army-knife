@@ -64,12 +64,12 @@ class PluginTest extends WP_UnitTestCase {
 		$routes = rest_get_server()->get_routes();
 
 		foreach ( array( 'players', 'templates', 'defaults' ) as $route ) {
-			$this->assertArrayHasKey( "/ecf-lms/v1/{$route}", $routes, $route );
+			$this->assertArrayHasKey( "/chess-army-knife/v1/{$route}", $routes, $route );
 		}
 	}
 
 	public function test_rest_endpoints_reject_logged_out_visitors() {
-		$response = rest_do_request( new WP_REST_Request( 'GET', '/ecf-lms/v1/defaults' ) );
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/chess-army-knife/v1/defaults' ) );
 
 		$this->assertContains( $response->get_status(), array( 401, 403 ) );
 	}
@@ -84,7 +84,7 @@ class PluginTest extends WP_UnitTestCase {
 			)
 		);
 
-		$response = rest_do_request( new WP_REST_Request( 'GET', '/ecf-lms/v1/defaults' ) );
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/chess-army-knife/v1/defaults' ) );
 
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame( '613', $response->get_data()['orgId'] );
@@ -114,7 +114,7 @@ class PluginTest extends WP_UnitTestCase {
 		$save( 'Test Declined', array( 'status' => 'rejected' ) );
 		$save( 'Someone Else', array( 'ecf_code' => '999999A' ) );
 
-		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request = new WP_REST_Request( 'GET', '/chess-army-knife/v1/players' );
 		$request->set_param( 'search', 'Test' );
 		$response = rest_do_request( $request );
 
@@ -144,7 +144,7 @@ class PluginTest extends WP_UnitTestCase {
 			3
 		);
 
-		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request = new WP_REST_Request( 'GET', '/chess-army-knife/v1/players' );
 		$request->set_param( 'search', 'Smith' );
 		$response = rest_do_request( $request );
 
@@ -154,7 +154,7 @@ class PluginTest extends WP_UnitTestCase {
 	}
 
 	public function test_rest_player_search_needs_a_logged_in_editor_and_a_reasonable_term() {
-		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request = new WP_REST_Request( 'GET', '/chess-army-knife/v1/players' );
 		$request->set_param( 'search', 'Test' );
 
 		wp_set_current_user( 0 );
@@ -164,13 +164,13 @@ class PluginTest extends WP_UnitTestCase {
 		$this->assertSame( 403, rest_do_request( $request )->get_status() );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
-		$one_letter = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$one_letter = new WP_REST_Request( 'GET', '/chess-army-knife/v1/players' );
 		$one_letter->set_param( 'search', 'T' );
 		$this->assertSame( array(), rest_do_request( $one_letter )->get_data() );
 	}
 
 	public function test_the_member_search_is_for_editors_not_contributors_or_authors() {
-		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request = new WP_REST_Request( 'GET', '/chess-army-knife/v1/players' );
 		$request->set_param( 'search', 'Test' );
 
 		foreach ( array( 'contributor', 'author' ) as $role ) {
@@ -189,7 +189,7 @@ class PluginTest extends WP_UnitTestCase {
 				return Chess_Army_Knife_Memberships::CAPABILITY;
 			}
 		);
-		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request = new WP_REST_Request( 'GET', '/chess-army-knife/v1/players' );
 		$request->set_param( 'search', 'Test' );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );

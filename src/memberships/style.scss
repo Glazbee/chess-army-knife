@@ -21,7 +21,7 @@
 	.cak-membership {
 		padding: 0.75em 1em;
 		border: 1px solid a11y.$cak-rule;
-		border-top: 4px solid var(--ecf-accent, currentcolor);
+		border-top: 4px solid var(--cak-accent, currentcolor);
 		border-radius: 4px;
 	}
 
@@ -42,9 +42,9 @@
 	.cak-memberships__payment {
 		margin-top: 1em;
 		padding: 0.75em 1em;
-		border-left: 4px solid var(--ecf-accent, currentcolor);
+		border-left: 4px solid var(--cak-accent, currentcolor);
 		background: var(
-			--ecf-accent-soft,
+			--cak-accent-soft,
 			color-mix(in srgb, currentcolor 8%, transparent)
 		);
 	}

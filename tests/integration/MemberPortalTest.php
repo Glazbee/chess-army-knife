@@ -707,6 +707,25 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertEqualsWithDelta( $expires, Chess_Army_Knife_Member_Portal::session( $token )['expires'], 1 );
 	}
 
+	public function test_a_session_cannot_be_kept_going_for_ever() {
+		$this->person();
+		$token   = $this->sign_in();
+		$started = time() - Chess_Army_Knife_Member_Portal::MAX_SESSION_SECONDS + 10 * MINUTE_IN_SECONDS;
+		set_transient(
+			Chess_Army_Knife_Member_Portal::SESSION_KEY . $token,
+			array(
+				'email'   => 'ada@example.test',
+				'expires' => time() + MINUTE_IN_SECONDS,
+				'started' => $started,
+			),
+			MINUTE_IN_SECONDS
+		);
+
+		$expires = Chess_Army_Knife_Member_Portal::extend_session( $token );
+
+		$this->assertSame( $started + Chess_Army_Knife_Member_Portal::MAX_SESSION_SECONDS, $expires, 'Extending stops at the longest a session may last.' );
+	}
+
 	public function test_a_session_that_is_not_there_cannot_be_extended() {
 		$this->assertSame( 0, Chess_Army_Knife_Member_Portal::extend_session( 'nope' ) );
 	}

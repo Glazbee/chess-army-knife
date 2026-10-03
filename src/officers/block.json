@@ -13,7 +13,7 @@
 		"templateId": { "type": "string", "default": "" },
 		"title": { "type": "string", "default": "" },
 		"showTenure": { "type": "boolean", "default": false },
-		"includeCaptains": { "type": "boolean", "default": true },
+		"includeCaptains": { "type": "boolean", "default": false },
 		"order": { "type": "array", "items": { "type": "string" }, "default": [] }
 	},
 	"supports": {

@@ -95,4 +95,31 @@ class FormStateTest extends Chess_Army_Knife_TestCase {
 		$_GET[ Chess_Army_Knife_Form_State::PARAM ] = 'abc123';
 		$this->assertFalse( Chess_Army_Knife_Form_State::checked( 'consent', '1', true ) );
 	}
+
+	public function test_one_visitor_cannot_keep_values_more_than_the_limit_in_an_hour() {
+		$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
+		for ( $i = 0; $i < Chess_Army_Knife_Form_State::MAX_SAVES_PER_HOUR; $i++ ) {
+			$this->assertSame( 'abc123', Chess_Army_Knife_Form_State::save( array( 'name' => 'Ann' ) ) );
+		}
+
+		$this->assertSame( '', Chess_Army_Knife_Form_State::save( array( 'name' => 'Ann' ) ) );
+		$this->assertSame( array(), Chess_Army_Knife_Form_State::redirect_args( array( 'name' => 'Ann' ) ) );
+	}
+
+	public function test_redirect_args_carry_the_key() {
+		$this->assertSame( array( Chess_Army_Knife_Form_State::PARAM => 'abc123' ), Chess_Army_Knife_Form_State::redirect_args( array( 'name' => 'Ann' ) ) );
+	}
+
+	public function test_long_values_and_floods_of_fields_are_cut_down() {
+		$input = array( 'bio' => str_repeat( 'x', Chess_Army_Knife_Form_State::MAX_LENGTH + 500 ) );
+		for ( $i = 0; $i < Chess_Army_Knife_Form_State::MAX_FIELDS + 20; $i++ ) {
+			$input[ 'field' . $i ] = 'y';
+		}
+
+		Chess_Army_Knife_Form_State::save( $input );
+		$kept = $this->transients['Chess_Army_Knife_form_abc123']['value'];
+
+		$this->assertCount( Chess_Army_Knife_Form_State::MAX_FIELDS, $kept );
+		$this->assertSame( Chess_Army_Knife_Form_State::MAX_LENGTH, strlen( $kept['bio'] ) );
+	}
 }

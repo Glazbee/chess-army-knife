@@ -10,7 +10,7 @@
  * - A screen reader is told about a change only when a visitor causes it.
  */
 function initCarousel( root ) {
-	const list = root.querySelector( '.ecf-carousel__list' );
+	const list = root.querySelector( '.cak-carousel__list' );
 	const slides = Array.from( list ? list.children : [] );
 	if ( slides.length < 2 ) {
 		return;
@@ -48,7 +48,7 @@ function initCarousel( root ) {
 
 	// Controls.
 	const controls = document.createElement( 'div' );
-	controls.className = 'ecf-carousel__controls';
+	controls.className = 'cak-carousel__controls';
 	controls.setAttribute( 'role', 'group' );
 	controls.setAttribute( 'aria-label', text.msgControls );
 
@@ -68,21 +68,21 @@ function initCarousel( root ) {
 
 	const previous = button(
 		text.msgPrevious,
-		'ecf-carousel__button ecf-carousel__previous',
+		'cak-carousel__button cak-carousel__previous',
 		'‹'
 	);
 	const next = button(
 		text.msgNext,
-		'ecf-carousel__button ecf-carousel__next',
+		'cak-carousel__button cak-carousel__next',
 		'›'
 	);
-	const toggle = button( '', 'ecf-carousel__button ecf-carousel__toggle' );
+	const toggle = button( '', 'cak-carousel__button cak-carousel__toggle' );
 	const dots = document.createElement( 'div' );
-	dots.className = 'ecf-carousel__dots';
+	dots.className = 'cak-carousel__dots';
 	const dotButtons = slides.map( ( slide, i ) => {
 		const dot = button(
 			text.msgShow.replace( '%s', name( slide ) ),
-			'ecf-carousel__dot'
+			'cak-carousel__dot'
 		);
 		dot.addEventListener( 'click', () => {
 			stop();

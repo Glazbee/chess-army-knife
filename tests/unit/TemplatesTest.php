@@ -147,8 +147,8 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'wrapped', Chess_Army_Knife_Templates::wrapper_attributes( 'rating-chart', array( 'templateId' => 't1' ) ) );
 		$this->assertSame(
 			array(
-				'class' => 'ecf-tpl-t1',
-				'style' => '--ecf-accent:#ff0000;--ecf-accent-soft:#ff000022;border-radius:8px;overflow:hidden',
+				'class' => 'cak-tpl-t1',
+				'style' => '--cak-accent:#ff0000;--cak-accent-soft:#ff000022;border-radius:8px;overflow:hidden',
 			),
 			$captured
 		);
@@ -161,7 +161,7 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 
 		$first = Chess_Army_Knife_Templates::custom_css( array( 'templateId' => 't1' ) );
 
-		$this->assertStringContainsString( '.ecf-tpl-t1 a{color:red}', $first );
+		$this->assertStringContainsString( '.cak-tpl-t1 a{color:red}', $first );
 		$this->assertStringNotContainsString( '<script>', $first );
 		$this->assertSame( '', Chess_Army_Knife_Templates::custom_css( array( 'templateId' => 't1' ) ) );
 	}

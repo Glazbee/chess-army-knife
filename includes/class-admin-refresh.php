@@ -13,10 +13,10 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Admin_Refresh {
 
-	const QUERY_VAR       = 'ecf_lms_refresh';
-	const QUERY_VAR_KEYS  = 'ecf_lms_keys';
-	const QUERY_VAR_NONCE = 'ecf_lms_refresh_nonce';
-	const NONCE_ACTION    = 'ecf_lms_refresh';
+	const QUERY_VAR       = 'chess_army_knife_refresh';
+	const QUERY_VAR_KEYS  = 'chess_army_knife_keys';
+	const QUERY_VAR_NONCE = 'chess_army_knife_refresh_nonce';
+	const NONCE_ACTION    = 'chess_army_knife_refresh';
 
 	/**
 	 * Boot the early request-time handler.
