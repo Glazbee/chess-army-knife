@@ -216,7 +216,7 @@ class Chess_Army_Knife_Member_Portal {
 	public static function handle_signout() {
 		$nonce = isset( $_POST[ self::NONCE_FIELD ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::NONCE_FIELD ] ) ) : '';
 		if ( wp_verify_nonce( $nonce, self::ACTION_SIGNOUT ) ) {
-			delete_transient( self::SESSION_KEY . self::posted_token() );
+			delete_transient( Chess_Army_Knife_Member_Requests::token_key( self::SESSION_KEY, self::posted_token() ) );
 		}
 		self::back( array( 'cak_portal_msg' => 'signed_out' ) );
 	}
@@ -266,7 +266,7 @@ class Chess_Army_Knife_Member_Portal {
 			$subject = sprintf( __( '[%s] Your membership details', 'chess-army-knife' ), $site );
 			/* translators: 1: site name, 2: link, 3: minutes the link works for */
 			$body = sprintf( __( "Someone asked to see and change the details %1\$s holds for this email address.\n\nIf that was you, open this link within %3\$d minutes:\n\n%2\$s\n\nIf it was not you, ignore this email and nothing will change.", 'chess-army-knife' ), $site, $link, max( 1, (int) round( self::session_length() / MINUTE_IN_SECONDS ) ) );
-			wp_mail( $email, $subject, $body );
+			Chess_Army_Knife_Member_Requests::send_after_response( $email, $subject, $body );
 		}
 		return true;
 	}
@@ -279,7 +279,7 @@ class Chess_Army_Knife_Member_Portal {
 	 */
 	public static function session( $token ) {
 		$token  = preg_replace( '/[^A-Za-z0-9]/', '', (string) $token );
-		$stored = '' === $token ? false : get_transient( self::SESSION_KEY . $token );
+		$stored = '' === $token ? false : get_transient( Chess_Army_Knife_Member_Requests::token_key( self::SESSION_KEY, $token ) );
 		// A session made before sessions had an end time is just the address.
 		$email   = is_array( $stored ) && isset( $stored['email'] ) ? $stored['email'] : $stored;
 		$expires = is_array( $stored ) && isset( $stored['expires'] ) ? (int) $stored['expires'] : 0;
@@ -310,7 +310,7 @@ class Chess_Army_Knife_Member_Portal {
 		$started = $started ? (int) $started : $now;
 		$expires = min( $now + self::session_length(), $started + self::MAX_SESSION_SECONDS );
 		set_transient(
-			self::SESSION_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( self::SESSION_KEY, $token ),
 			array(
 				'email'   => $email,
 				'expires' => $expires,
@@ -514,7 +514,7 @@ class Chess_Army_Knife_Member_Portal {
 
 		$token = wp_generate_password( 32, false );
 		set_transient(
-			self::EMAIL_CHANGE_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( self::EMAIL_CHANGE_KEY, $token ),
 			array(
 				'person' => $person['id'],
 				'field'  => $field,
@@ -543,7 +543,7 @@ class Chess_Army_Knife_Member_Portal {
 	 */
 	public static function pending_email_change( $token ) {
 		$token = preg_replace( '/[^A-Za-z0-9]/', '', (string) $token );
-		$data  = '' === $token ? false : get_transient( self::EMAIL_CHANGE_KEY . $token );
+		$data  = '' === $token ? false : get_transient( Chess_Army_Knife_Member_Requests::token_key( self::EMAIL_CHANGE_KEY, $token ) );
 		if ( ! is_array( $data ) ) {
 			return null;
 		}
@@ -574,7 +574,7 @@ class Chess_Army_Knife_Member_Portal {
 				$pending['field'] => $pending['new'],
 			)
 		);
-		delete_transient( self::EMAIL_CHANGE_KEY . preg_replace( '/[^A-Za-z0-9]/', '', (string) $input['token'] ) );
+		delete_transient( Chess_Army_Knife_Member_Requests::token_key( self::EMAIL_CHANGE_KEY, $input['token'] ) );
 
 		$site = Chess_Army_Knife_Settings::club_name();
 		/* translators: %s: site name */

@@ -23,9 +23,12 @@ class MemberPortalTest extends WP_UnitTestCase {
 		reset_phpmailer_instance();
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.99';
 		$this->clear_counters();
+		// Mail is sent at once here so the tests can read it; a request sends it after the reply.
+		add_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 	}
 
 	public function tear_down() {
+		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 		$this->clear_counters();
 		$_GET = array();
 		reset_phpmailer_instance();
@@ -607,7 +610,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 			'token'                                     => $token,
 		);
 
-		delete_transient( Chess_Army_Knife_Member_Portal::SESSION_KEY . $token ); // What handle_signout() does once the nonce is right; it then redirects and exits.
+		delete_transient( Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, $token ) ); // What handle_signout() does once the nonce is right; it then redirects and exits.
 		$_POST = array();
 
 		$this->assertNull( Chess_Army_Knife_Member_Portal::session( $token ) );
@@ -693,7 +696,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 
 		// Pretend most of the hour has gone.
 		set_transient(
-			Chess_Army_Knife_Member_Portal::SESSION_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, $token ),
 			array(
 				'email'   => 'ada@example.test',
 				'expires' => time() + 5 * MINUTE_IN_SECONDS,
@@ -712,7 +715,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$token   = $this->sign_in();
 		$started = time() - Chess_Army_Knife_Member_Portal::MAX_SESSION_SECONDS + 10 * MINUTE_IN_SECONDS;
 		set_transient(
-			Chess_Army_Knife_Member_Portal::SESSION_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, $token ),
 			array(
 				'email'   => 'ada@example.test',
 				'expires' => time() + MINUTE_IN_SECONDS,
@@ -732,12 +735,37 @@ class MemberPortalTest extends WP_UnitTestCase {
 
 	public function test_a_session_made_before_sessions_had_an_end_time_still_works() {
 		$this->person();
-		set_transient( Chess_Army_Knife_Member_Portal::SESSION_KEY . 'oldtoken', 'ada@example.test', HOUR_IN_SECONDS );
+		set_transient( Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, 'oldtoken' ), 'ada@example.test', HOUR_IN_SECONDS );
 
 		$session = Chess_Army_Knife_Member_Portal::session( 'oldtoken' );
 
 		$this->assertSame( 'ada@example.test', $session['email'] );
 		$this->assertSame( 0, $session['expires'] );
+	}
+
+	public function test_a_token_is_not_stored_as_it_was_emailed() {
+		$this->person();
+		$token = $this->sign_in();
+
+		$this->assertFalse( get_transient( Chess_Army_Knife_Member_Portal::SESSION_KEY . $token ), 'The raw token is not a key.' );
+		$this->assertSame( 'ada@example.test', Chess_Army_Knife_Member_Portal::session( $token )['email'] );
+	}
+
+	public function test_the_link_email_waits_until_the_reply_is_sent() {
+		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
+		$this->person();
+		$request = array(
+			Chess_Army_Knife_Member_Portal::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Member_Portal::ACTION_LINK ),
+			'email'                                     => 'ada@example.test',
+		);
+
+		$this->assertTrue( Chess_Army_Knife_Member_Portal::request_link( $request ) );
+		$this->assertCount( 0, $this->sent(), 'Nothing is sent while the visitor is being answered.' );
+
+		Chess_Army_Knife_Member_Requests::send_outbox();
+
+		$this->assertCount( 1, $this->sent() );
+		$this->assertSame( 'ada@example.test', $this->sent()[0]['to'][0][0] );
 	}
 
 	public function test_the_block_warns_about_the_session_and_offers_to_extend_it() {

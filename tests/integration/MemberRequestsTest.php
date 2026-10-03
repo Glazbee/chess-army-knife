@@ -22,9 +22,12 @@ class MemberRequestsTest extends WP_UnitTestCase {
 		reset_phpmailer_instance();
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.77';
 		$this->clear_counters();
+		// Mail is sent at once here so the tests can read it; a request sends it after the reply.
+		add_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 	}
 
 	public function tear_down() {
+		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 		$this->clear_counters();
 		$_GET = array();
 		reset_phpmailer_instance();
@@ -233,7 +236,7 @@ class MemberRequestsTest extends WP_UnitTestCase {
 		$this->assertSame( 'ada@example.test', $emails[0]['to'][0][0] );
 		$this->assertStringContainsString( 'http://example.org/my-data/?cak_withdraw=', $emails[0]['body'] );
 		$this->assertStringContainsString( '#' . Chess_Army_Knife_Member_Requests::ANCHOR, $emails[0]['body'] );
-		$this->assertSame( 'ada@example.test', get_transient( Chess_Army_Knife_Member_Requests::TOKEN_KEY . $this->token_from_email() ) );
+		$this->assertSame( 'ada@example.test', get_transient( Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Requests::TOKEN_KEY, $this->token_from_email() ) ) );
 	}
 
 	public function test_an_unknown_address_gets_the_same_answer_and_no_email() {

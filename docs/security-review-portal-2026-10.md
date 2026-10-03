@@ -25,8 +25,8 @@ the public forms fine. Nothing here is an unauthenticated way in. These are hard
 
 | # | Finding | Risk | Suggested change |
 |---|---|---|---|
-| 1 | **Whether an address is on file can be guessed from how long the reply takes.** `request_link` and the withdraw request call `wp_mail` straight away only when the address is on file, so a slow SMTP send makes that reply slower. The code says the answer cannot be probed; the content cannot, the timing can | Low to medium | Send the mail on `shutdown`, or queue it with `wp_schedule_single_event`, so both paths return at the same speed |
-| 2 | **Tokens are stored as the transient name, and the session holds the member's email address.** Anyone who can read the options table (a backup, a database dump, a SQL injection elsewhere) can read live tokens and the addresses they belong to | Low (tokens live for about an hour) | Key the transient by `hash( 'sha256', $token )` and compare after hashing, so the stored key is useless without the link. The same applies to the email-change and withdraw tokens |
+| 1 | **Fixed.** **Whether an address is on file can be guessed from how long the reply takes.** `request_link` and the withdraw request call `wp_mail` straight away only when the address is on file, so a slow SMTP send makes that reply slower. The code says the answer cannot be probed; the content cannot, the timing can | Low to medium | Done: the mail is sent on `shutdown`, after the reply is finished (`Chess_Army_Knife_Member_Requests::send_after_response`). This only helps on PHP-FPM or LiteSpeed, where the reply can be finished early; on other hosts (such as Apache with mod_php) the reply still waits for the send. The `Chess_Army_Knife_send_mail_after_response` filter turns it off |
+| 2 | **Fixed.** **Tokens are stored as the transient name, and the session holds the member's email address.** Anyone who can read the options table (a backup, a database dump, a SQL injection elsewhere) can read live tokens and the addresses they belong to | Low (tokens live for about an hour) | Done: the session, email-change and withdraw tokens are stored under a SHA-256 hash (`Chess_Army_Knife_Member_Requests::token_key`), so the stored key is useless without the link. The session still holds the member's address. Links issued before this change stop working |
 | 3 | **The token is in the page address**, so it is in server access logs and browser history for as long as they are kept. The Referer leak is already handled | Low | Accept it, or have the link open a page that swaps the token for a cookie and redirects. Not worth it unless logs are shared |
 | 4 | **Anyone with the link can delete the record at once**, with only a tick box. A forwarded email or a compromised mailbox is enough. This is by design (it matches the privacy tools) | Low | Optional: a confirmation email before deletion, or a short wait during which the deletion can be cancelled |
 | 5 | **The email-change request is limited by visitor address only, not by the address it writes to.** A person with a valid session could send repeated "someone asked..." messages to one target, up to the hourly limit per address | Low | Count requests per target address as `request_link` does |
@@ -38,8 +38,7 @@ the public forms fine. Nothing here is an unauthenticated way in. These are hard
 
 ## Suggested order
 
-1. Findings 1 and 2: both are small changes in one file each, and they make the "cannot be
-   probed" and "tokens are not stored" claims true.
+1. Findings 1 and 2: done.
 2. Finding 8, then 5.
 3. Findings 9 and 10 whenever the file is next touched.
 4. Findings 3, 4 and 7 only if the club wants the extra protection.
