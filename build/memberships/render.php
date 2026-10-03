@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
 
 $block_title      = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $empty_message    = isset( $attributes['emptyMessage'] ) ? trim( (string) $attributes['emptyMessage'] ) : '';
-$empty_message = Chess_Army_Knife_Settings::with_club( $empty_message );
+$empty_message    = Chess_Army_Knife_Settings::with_club( $empty_message );
 $show_description = ! isset( $attributes['showDescription'] ) || ! empty( $attributes['showDescription'] );
 $show_price       = ! isset( $attributes['showPrice'] ) || ! empty( $attributes['showPrice'] );
 $show_payment     = ! isset( $attributes['showPaymentInfo'] ) || ! empty( $attributes['showPaymentInfo'] );
