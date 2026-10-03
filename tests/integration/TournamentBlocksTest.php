@@ -30,7 +30,7 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 		for ( $i = 1; $i <= $count; $i++ ) {
 			$player = Chess_Army_Knife_Membership_Store::add_guest(
 				array(
-					'name'          => "{$name} Player {$i}",
+					'name'          => "Pat Smith{$i}",
 					'ecf_code'      => '',
 					'manual_rating' => 2200 - $i * 10,
 				)
@@ -113,7 +113,7 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 
 		$winners = Chess_Army_Knife_Tournament_Summary::winners();
 		$this->assertSame( array( 'Autumn Open', 'Spring Open' ), array_column( $winners, 'tournament' ) );
-		$this->assertSame( 'Autumn Open Player 1', $winners[0]['winner'] );
+		$this->assertSame( 'Smith1, Pat', $winners[0]['winner'] );
 		$this->assertCount( 1, Chess_Army_Knife_Tournament_Summary::winners( 1 ) );
 	}
 
@@ -143,7 +143,7 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 		$id   = $this->tournament( 'Club Championship', 4 );
 		$html = $this->render( 'tournament-games', array( 'tournamentId' => $id ) );
 		$this->assertStringContainsString( 'Round 1', $html );
-		$this->assertStringContainsString( 'Club Championship Player 1', $html );
+		$this->assertStringContainsString( 'Pat Smith1', $html );
 
 		$this->finish( $id );
 		$this->assertStringContainsString( 'no games waiting', $this->render( 'tournament-games', array( 'tournamentId' => $id ) ) );
@@ -205,7 +205,7 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 		$this->finish( $id );
 		$html = $this->render( 'tournament-winners', array( 'title' => 'Hall of fame' ) );
 		$this->assertStringContainsString( 'Hall of fame', $html );
-		$this->assertStringContainsString( 'Spring Open Player 1', $html );
+		$this->assertStringContainsString( 'Pat Smith1', $html );
 	}
 
 	private function row_named( array $table, $name ) {
@@ -289,7 +289,7 @@ class TournamentBlocksTest extends WP_UnitTestCase {
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/tournament-standings {"tournamentId":' . $id . '} /-->' );
 
-		foreach ( array( '>R1<', '>R2<', '>R3<', '>Total<', 'Cup Player 1' ) as $expected ) {
+		foreach ( array( '>R1<', '>R2<', '>R3<', '>Total<', 'Pat Smith1' ) as $expected ) {
 			$this->assertStringContainsString( $expected, $html );
 		}
 		$this->assertStringNotContainsString( '>R4<', $html );

@@ -283,7 +283,7 @@ class OfficersTest extends WP_UnitTestCase {
 		$html = ob_get_clean();
 
 		$this->assertStringContainsString( 'Chairman', $html );
-		$this->assertStringContainsString( 'Ada Lovelace', $html );
+		$this->assertStringContainsString( 'Lovelace, Ada', $html );
 		$this->assertStringContainsString( 'History', $html );
 	}
 

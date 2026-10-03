@@ -286,7 +286,7 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'North Gloucestershire Chess Association', $html );
 		$this->assertStringContainsString( 'About the league.', $html );
 		$this->assertSame( 1, substr_count( $html, 'cak-team--hero' ), 'Only the chosen team is a hero.' );
-		$this->assertStringNotContainsString( 'cak-block-title', $html, 'The block title is off.' );
+		$this->assertStringNotContainsString( 'cak-team-profiles__heading', $html, 'The block title is off.' );
 		$this->assertLessThan( strpos( $html, 'Club A' ), strpos( $html, 'Club B' ), 'The group puts Club B first.' );
 	}
 

@@ -307,7 +307,7 @@ class MembershipsTest extends WP_UnitTestCase {
 			return $names;
 		};
 
-		$this->assertSame( array( 'Current no expiry', 'Current until today' ), $view( 'active' ) );
+		$this->assertSame( array( 'expiry, Current no', 'today, Current until' ), $view( 'active' ) );
 		$this->assertSame( array( 'Applicant' ), $view( 'pending' ) );
 		$this->assertSame( array( 'Lapsed' ), $view( 'expired' ) );
 		$this->assertSame( array( 'Declined', 'Left' ), $view( 'closed' ) );
@@ -338,7 +338,7 @@ class MembershipsTest extends WP_UnitTestCase {
 
 		$this->assertSame( array( 'Lovelace, Ada' ), $search( 'lovel' ) );
 		$this->assertSame( array( "O'Brien, Conan" ), $search( 'club.test' ) );
-		$this->assertSame( array( "Conan O'Brien" ), $search( "O'Brien" ) );
+		$this->assertSame( array( "O'Brien, Conan" ), $search( "O'Brien" ) );
 		$this->assertSame( array(), $search( "' OR 1=1 --" ) );
 		$this->assertSame( array(), $search( '%' ), 'A percent sign is not a wildcard.' );
 	}
@@ -452,7 +452,7 @@ class MembershipsTest extends WP_UnitTestCase {
 
 		$_GET = array( 'edit' => (string) $id );
 		$edit = $this->page_html();
-		$this->assertStringContainsString( 'value="Grace Hopper"', $edit );
+		$this->assertStringContainsString( 'value="Hopper, Grace"', $edit );
 		$this->assertStringContainsString( 'MEM-' . $id, $edit );
 	}
 

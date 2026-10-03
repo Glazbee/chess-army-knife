@@ -451,7 +451,8 @@ class SwissTest extends WP_UnitTestCase {
 
 	private function entry_named( $tournament_id, $name ) {
 		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament_id ) as $entry ) {
-			if ( $name === $entry['name'] ) {
+			// Names are kept surname first, so a name written the usual way is matched in its stored form.
+			if ( Chess_Army_Knife_Names::canonical( $name ) === $entry['name'] ) {
 				return $entry;
 			}
 		}

@@ -154,7 +154,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		);
 		$token = $this->sign_in( 'parent@example.test' );
 
-		$this->assertSame( array( 'Pat Parent', 'Junior Parent' ), wp_list_pluck( Chess_Army_Knife_Member_Portal::session( $token )['people'], 'name' ) );
+		$this->assertSame( array( 'Parent, Pat', 'Parent, Junior' ), wp_list_pluck( Chess_Army_Knife_Member_Portal::session( $token )['people'], 'name' ) );
 	}
 
 	public function test_a_bad_or_expired_session_is_refused_everywhere() {

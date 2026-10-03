@@ -53,9 +53,9 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 		$this->assertSame( 2, $outcome['added'] );
 		$guests = Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'nonmember' ) );
-		$this->assertSame( array( 'Guest Player', 'Nocode Guest' ), wp_list_pluck( $guests, 'name' ) );
-		$this->assertSame( '555555K', $guests[0]['ecf_code'] );
-		$this->assertSame( 'manual', $guests[0]['source'] );
+		$this->assertSame( array( 'Guest, Nocode', 'Player, Guest' ), wp_list_pluck( $guests, 'name' ) );
+		$this->assertSame( '555555K', $guests[1]['ecf_code'] );
+		$this->assertSame( 'manual', $guests[1]['source'] );
 		$this->assertSame( array(), Chess_Army_Knife_Membership_Store::get_members(), 'Guests are not in the member list.' );
 	}
 
@@ -286,7 +286,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 	public function test_a_name_left_on_a_result_can_be_replaced_but_only_if_no_record_is_behind_it() {
 		$tournament = $this->tournament();
-		$person     = $this->saved_player( 'Linked Person', '111111A', 1500 );
+		$person     = $this->saved_player( 'Person, Linked', '111111A', 1500 );
 		Chess_Army_Knife_Tournaments::add_player( $tournament, $person );
 		Chess_Army_Knife_Tournaments::add_unlinked_player( $tournament, 'Gone Person', 1400 );
 
@@ -297,7 +297,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'Gone Person', $by_name );
 		$this->assertSame( 0, $by_name['Gone Person']['player_id'] );
 
-		$linked = Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, $by_name['Linked Person']['id'] );
+		$linked = Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, $by_name['Person, Linked']['id'] );
 		$this->assertWPError( $linked );
 		$this->assertSame( 'entry_linked', $linked->get_error_code() );
 
@@ -305,7 +305,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 
 		$names = wp_list_pluck( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), 'name' );
 		$this->assertNotContains( 'Gone Person', $names );
-		$this->assertContains( 'Linked Person', $names );
+		$this->assertContains( 'Person, Linked', $names );
 		$this->assertContains( 'Anonymous player ' . $by_name['Gone Person']['id'], $names );
 
 		$this->assertWPError( Chess_Army_Knife_Tournaments::anonymise_entry( $tournament, 999999 ) );
