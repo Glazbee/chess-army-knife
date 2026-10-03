@@ -15,6 +15,13 @@ The cases are regression tests: if a change to `Chess_Army_Knife_Swiss_Dutch` al
 either the change is wrong or the fixture needs to be re-checked against the FIDE text
 (C.04.3).
 
+## `swiss-dutch-forfeits.json`
+
+45 Swiss pairing rounds in fields of 5 to 16 players that follow forfeited games (including both players
+forfeiting) and half-point or zero-point byes, which the other fixtures do not cover. Each case was
+paired identically by this engine and by `@echecs/swiss` 5.0.0, as for the golden file. Rounds where the
+two chose a different pairing-allocated bye are not included.
+
 ## `swiss-dutch-large.json`
 
 12 Swiss pairing rounds in fields of 44 to 64 players (same layout as the golden file), each with a score

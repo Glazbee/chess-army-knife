@@ -283,6 +283,130 @@ class SwissTest extends WP_UnitTestCase {
 		$this->assertCount( 5, $in_round_two ); // Five players left: two games and a bye.
 	}
 
+	public function test_a_round_can_be_paired_again_after_a_withdrawal_if_nothing_was_played() {
+		$id      = $this->started( 6, 3 );
+		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $id );
+		$last    = $entries[5];
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::withdraw( $last['id'] ) );
+		$this->assertSame( 1, Chess_Army_Knife_Tournaments::redo_round( $id ) );
+
+		$players = array();
+		foreach ( $this->round_games( $id, 1 ) as $game ) {
+			$this->assertNull( $game['result'], 'The opponent of the withdrawn player is paired again, not given a free point.' );
+			$players[] = $game['white_entry_id'];
+			if ( $game['black_entry_id'] ) {
+				$players[] = $game['black_entry_id'];
+			}
+		}
+		$this->assertNotContains( $last['id'], $players );
+		$this->assertCount( 5, $players, 'Two games and a bye for the five who are left.' );
+	}
+
+	public function test_a_round_with_a_played_game_cannot_be_paired_again_even_after_a_withdrawal() {
+		$id      = $this->started( 6, 3 );
+		$entries = Chess_Army_Knife_Tournament_Store::get_entries( $id );
+		$games   = $this->round_games( $id, 1 );
+		Chess_Army_Knife_Tournaments::record_result( $games[0]['id'], '1-0' );
+
+		$other = $games[1]['white_entry_id'];
+		$this->assertTrue( Chess_Army_Knife_Tournaments::withdraw( $other ) );
+
+		$this->assertSame( 'swiss_round_started', Chess_Army_Knife_Tournaments::redo_round( $id )->get_error_code() );
+		$this->assertNotEmpty( $entries );
+	}
+
+	public function test_a_swiss_can_be_ended_early_once_the_round_is_finished() {
+		$id = $this->started( 6, 4 );
+
+		$this->assertSame( 'swiss_round_unfinished', Chess_Army_Knife_Tournaments::end_early( $id )->get_error_code() );
+
+		$this->play_round( $id, 1 );
+		$this->assertTrue( Chess_Army_Knife_Tournaments::end_early( $id ) );
+
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $id );
+		$this->assertSame( 'complete', $tournament['status'] );
+		$this->assertNotNull( Chess_Army_Knife_Tournaments::champion( $id ) );
+		$this->assertWPError( Chess_Army_Knife_Tournaments::next_round( $id ) );
+		$this->assertWPError( Chess_Army_Knife_Tournaments::end_early( $id ) );
+	}
+
+	public function test_a_result_from_an_earlier_round_is_recognised() {
+		$id = $this->started( 6, 3 );
+		$this->play_round( $id, 1 );
+		Chess_Army_Knife_Tournaments::next_round( $id );
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::is_in_an_earlier_swiss_round( $this->round_games( $id, 1 )[0] ) );
+		$this->assertFalse( Chess_Army_Knife_Tournaments::is_in_an_earlier_swiss_round( $this->round_games( $id, 2 )[0] ) );
+	}
+
+	public function test_a_tournament_that_is_being_changed_refuses_a_second_pairing() {
+		$id = $this->started( 6, 3 );
+		$this->play_round( $id, 1 );
+
+		$this->assertTrue( Chess_Army_Knife_Cache::acquire_lock( 'tournament_' . $id, 60 ) );
+		$this->assertSame( 'tournament_busy', Chess_Army_Knife_Tournaments::next_round( $id )->get_error_code() );
+		$this->assertCount( 0, $this->round_games( $id, 2 ) );
+
+		Chess_Army_Knife_Cache::release_lock( 'tournament_' . $id );
+		$this->assertSame( 2, Chess_Army_Knife_Tournaments::next_round( $id ) );
+		$this->assertCount( 3, $this->round_games( $id, 2 ) );
+	}
+
+	public function test_a_round_is_not_paired_when_nobody_is_left() {
+		$id = $this->started( 4, 3 );
+		$this->play_round( $id, 1 );
+		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $id ) as $entry ) {
+			Chess_Army_Knife_Tournaments::withdraw( $entry['id'] );
+		}
+
+		$this->assertSame( 'swiss_nobody', Chess_Army_Knife_Tournaments::next_round( $id )->get_error_code() );
+		$this->assertSame( 1, Chess_Army_Knife_Tournaments::current_round( $id ) );
+	}
+
+	public function test_starting_uses_the_rating_the_hourly_refresh_kept_instead_of_asking_the_ecf() {
+		$requests = 0;
+		add_filter(
+			'pre_http_request',
+			function () use ( &$requests ) {
+				++$requests;
+				return new WP_Error( 'blocked', 'No network in tests.' );
+			}
+		);
+
+		$id    = Chess_Army_Knife_Tournaments::create(
+			array(
+				'name'   => 'Open',
+				'format' => 'swiss',
+				'rounds' => 1,
+			)
+		);
+		$rated = Chess_Army_Knife_Membership_Store::add_guest(
+			array(
+				'name'          => 'Rated',
+				'ecf_code'      => '100001A',
+				'manual_rating' => 1000,
+			)
+		);
+		$other = Chess_Army_Knife_Membership_Store::add_guest(
+			array(
+				'name'          => 'Other',
+				'ecf_code'      => '',
+				'manual_rating' => 1100,
+			)
+		);
+		Chess_Army_Knife_Membership_Store::record_rating_check( $rated, 1900, 'S' );
+		Chess_Army_Knife_Tournaments::add_player( $id, $rated );
+		Chess_Army_Knife_Tournaments::add_player( $id, $other );
+
+		$this->assertTrue( Chess_Army_Knife_Tournaments::start( $id ) );
+		$this->assertSame( 0, $requests );
+
+		$entries = array_column( Chess_Army_Knife_Tournament_Store::get_entries( $id ), null, 'player_id' );
+		$this->assertSame( 1900, $entries[ $rated ]['start_rating'] );
+		$this->assertSame( 'ecf', $entries[ $rated ]['rating_source'] );
+	}
+
 	public function test_forfeit_results_are_valid_in_a_swiss_but_not_in_a_knockout() {
 		$id   = $this->started( 4, 2 );
 		$game = $this->round_games( $id, 1 )[0];

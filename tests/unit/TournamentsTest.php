@@ -184,6 +184,67 @@ class TournamentsTest extends Chess_Army_Knife_TestCase {
 		);
 	}
 
+	public function test_a_recently_checked_rating_on_the_record_is_used_without_asking_the_ecf() {
+		$this->set_settings( array( 'use_local_cache' => 0 ) );
+		Brain\Monkey\Functions\expect( 'wp_remote_get' )->never();
+
+		$result = Chess_Army_Knife_Tournaments::lookup_rating(
+			array(
+				'ecf_code'          => '100001A',
+				'manual_rating'     => 1000,
+				'ecf_rating'        => 1700,
+				'ecf_rating_domain' => 'S',
+				'ecf_checked_at'    => gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ),
+			),
+			'S'
+		);
+
+		$this->assertSame(
+			array(
+				'rating' => 1700,
+				'source' => 'ecf',
+			),
+			$result
+		);
+	}
+
+	public function test_an_old_or_other_list_rating_on_the_record_is_not_used() {
+		$this->set_settings( array( 'use_local_cache' => 0 ) );
+		Brain\Monkey\Functions\when( 'wp_remote_get' )->justReturn(
+			$this->response(
+				200,
+				array(
+					'success' => true,
+					'data'    => array( 'revised_rating' => 1800 ),
+				)
+			)
+		);
+
+		$old = Chess_Army_Knife_Tournaments::lookup_rating(
+			array(
+				'ecf_code'          => '100001A',
+				'manual_rating'     => null,
+				'ecf_rating'        => 1700,
+				'ecf_rating_domain' => 'S',
+				'ecf_checked_at'    => gmdate( 'Y-m-d H:i:s', time() - 3 * DAY_IN_SECONDS ),
+			),
+			'S'
+		);
+		$this->assertSame( 1800, $old['rating'] );
+
+		$other_list = Chess_Army_Knife_Tournaments::lookup_rating(
+			array(
+				'ecf_code'          => '100001A',
+				'manual_rating'     => null,
+				'ecf_rating'        => 1700,
+				'ecf_rating_domain' => 'R',
+				'ecf_checked_at'    => gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ),
+			),
+			'S'
+		);
+		$this->assertSame( 1800, $other_list['rating'] );
+	}
+
 	public function test_lookup_rating_reports_none_when_nothing_is_known() {
 		$result = Chess_Army_Knife_Tournaments::lookup_rating(
 			array(

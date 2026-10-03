@@ -240,10 +240,14 @@ class Chess_Army_Knife_Swiss_Dutch {
 				$white = $index[ $game['white'] ];
 				$black = $index[ $game['black'] ];
 
-				$present[ $white ]             = true;
-				$present[ $black ]             = true;
-				$this->met[ $white ][ $black ] = true;
-				$this->met[ $black ][ $white ] = true;
+				$present[ $white ] = true;
+				$present[ $black ] = true;
+
+				// A forfeited game was not played, so it does not stop the two meeting again.
+				if ( empty( $game['forfeit'] ) ) {
+					$this->met[ $white ][ $black ] = true;
+					$this->met[ $black ][ $white ] = true;
+				}
 
 				$result = isset( $game['result'] ) ? $game['result'] : null;
 				$points = array( 0, 0 );
