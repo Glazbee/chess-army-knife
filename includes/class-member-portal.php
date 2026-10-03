@@ -39,6 +39,9 @@ class Chess_Army_Knife_Member_Portal {
 	const SESSION_KEY          = 'chess_army_knife_portal_';
 	const EMAIL_CHANGE_KEY     = 'chess_army_knife_emailchg_';
 
+	/** Counts the change requests that name an address, so one address cannot be sent a flood of emails. */
+	const EMAIL_CHANGE_TARGET_KEY = 'chess_army_knife_emailchg_to_';
+
 	/** The longest a session can be kept going, in seconds, however often it is extended. */
 	const MAX_SESSION_SECONDS = 8 * HOUR_IN_SECONDS;
 
@@ -216,7 +219,7 @@ class Chess_Army_Knife_Member_Portal {
 	public static function handle_signout() {
 		$nonce = isset( $_POST[ self::NONCE_FIELD ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::NONCE_FIELD ] ) ) : '';
 		if ( wp_verify_nonce( $nonce, self::ACTION_SIGNOUT ) ) {
-			delete_transient( self::SESSION_KEY . self::posted_token() );
+			delete_transient( Chess_Army_Knife_Member_Requests::token_key( self::SESSION_KEY, self::posted_token() ) );
 		}
 		self::back( array( 'cak_portal_msg' => 'signed_out' ) );
 	}
@@ -266,7 +269,7 @@ class Chess_Army_Knife_Member_Portal {
 			$subject = sprintf( __( '[%s] Your membership details', 'chess-army-knife' ), $site );
 			/* translators: 1: site name, 2: link, 3: minutes the link works for */
 			$body = sprintf( __( "Someone asked to see and change the details %1\$s holds for this email address.\n\nIf that was you, open this link within %3\$d minutes:\n\n%2\$s\n\nIf it was not you, ignore this email and nothing will change.", 'chess-army-knife' ), $site, $link, max( 1, (int) round( self::session_length() / MINUTE_IN_SECONDS ) ) );
-			wp_mail( $email, $subject, $body );
+			Chess_Army_Knife_Member_Requests::send_after_response( $email, $subject, $body );
 		}
 		return true;
 	}
@@ -279,7 +282,7 @@ class Chess_Army_Knife_Member_Portal {
 	 */
 	public static function session( $token ) {
 		$token  = preg_replace( '/[^A-Za-z0-9]/', '', (string) $token );
-		$stored = '' === $token ? false : get_transient( self::SESSION_KEY . $token );
+		$stored = '' === $token ? false : get_transient( Chess_Army_Knife_Member_Requests::token_key( self::SESSION_KEY, $token ) );
 		// A session made before sessions had an end time is just the address.
 		$email   = is_array( $stored ) && isset( $stored['email'] ) ? $stored['email'] : $stored;
 		$expires = is_array( $stored ) && isset( $stored['expires'] ) ? (int) $stored['expires'] : 0;
@@ -310,7 +313,7 @@ class Chess_Army_Knife_Member_Portal {
 		$started = $started ? (int) $started : $now;
 		$expires = min( $now + self::session_length(), $started + self::MAX_SESSION_SECONDS );
 		set_transient(
-			self::SESSION_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( self::SESSION_KEY, $token ),
 			array(
 				'email'   => $email,
 				'expires' => $expires,
@@ -436,7 +439,9 @@ class Chess_Army_Knife_Member_Portal {
 		// A different rating code means a different player, so the stored rating is fetched again.
 		$code_changed = strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', $person['ecf_code'] ) ) !== $update['ecf_code'];
 
-		Chess_Army_Knife_Membership_Store::save_member( $update );
+		if ( ! Chess_Army_Knife_Membership_Store::save_member( $update ) ) {
+			return new WP_Error( 'save', __( 'Your details could not be saved. Please try again.', 'chess-army-knife' ) );
+		}
 		if ( $code_changed ) {
 			Chess_Army_Knife_Membership_Store::clear_rating( $person['id'] );
 		}
@@ -469,13 +474,13 @@ class Chess_Army_Knife_Member_Portal {
 		if ( $whatsapp && '' === $person['phone'] . $person['guardian_phone'] ) {
 			return new WP_Error( 'whatsapp_phone', __( 'Please add a phone number to your details to be added to a WhatsApp group.', 'chess-army-knife' ) );
 		}
-		Chess_Army_Knife_Membership_Store::save_member(
+		$saved = Chess_Army_Knife_Membership_Store::save_member(
 			array(
 				'id'                  => $person['id'],
 				'whatsapp_consent_at' => $whatsapp ? ( '' !== $person['whatsapp_consent_at'] ? $person['whatsapp_consent_at'] : current_time( 'mysql', true ) ) : null, // An existing agreement keeps its original time.
 			)
 		);
-		return true;
+		return $saved ? true : new WP_Error( 'save', __( 'Your choices could not be saved. Please try again.', 'chess-army-knife' ) );
 	}
 
 	/* -------------------------------------------------------------
@@ -499,22 +504,28 @@ class Chess_Army_Knife_Member_Portal {
 		if ( ! in_array( $field, self::EMAIL_FIELDS, true ) || '' === $person[ $field ] ) {
 			return new WP_Error( 'person', __( 'That record could not be found.', 'chess-army-knife' ) );
 		}
-		if ( ! is_email( $new ) ) {
+		if ( ! is_email( $new ) || strlen( $new ) > Chess_Army_Knife_Membership_Store::MAX_EMAIL_LENGTH ) {
 			return new WP_Error( 'email', __( 'Please enter a valid email address.', 'chess-army-knife' ) );
 		}
 		if ( 0 === strcasecmp( $new, $person[ $field ] ) ) {
 			return new WP_Error( 'same_email', __( 'That is the address already held.', 'chess-army-knife' ) );
 		}
 
-		$ip_key = Chess_Army_Knife_Member_Requests::visitor_key();
+		$ip_key     = Chess_Army_Knife_Member_Requests::visitor_key();
+		$target_key = self::EMAIL_CHANGE_TARGET_KEY . md5( strtolower( $new ) );
 		if ( Chess_Army_Knife_Member_Requests::over_limit( $ip_key ) ) {
 			return new WP_Error( 'throttled', __( 'Too many requests from your connection. Please try again later.', 'chess-army-knife' ) );
 		}
+		// One address cannot be used to send a flood of emails; the visitor is told nothing different.
+		if ( Chess_Army_Knife_Member_Requests::over_limit( $target_key ) ) {
+			return 'email_sent';
+		}
 		Chess_Army_Knife_Member_Requests::count( $ip_key );
+		Chess_Army_Knife_Member_Requests::count( $target_key );
 
 		$token = wp_generate_password( 32, false );
 		set_transient(
-			self::EMAIL_CHANGE_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( self::EMAIL_CHANGE_KEY, $token ),
 			array(
 				'person' => $person['id'],
 				'field'  => $field,
@@ -543,7 +554,7 @@ class Chess_Army_Knife_Member_Portal {
 	 */
 	public static function pending_email_change( $token ) {
 		$token = preg_replace( '/[^A-Za-z0-9]/', '', (string) $token );
-		$data  = '' === $token ? false : get_transient( self::EMAIL_CHANGE_KEY . $token );
+		$data  = '' === $token ? false : get_transient( Chess_Army_Knife_Member_Requests::token_key( self::EMAIL_CHANGE_KEY, $token ) );
 		if ( ! is_array( $data ) ) {
 			return null;
 		}
@@ -574,7 +585,7 @@ class Chess_Army_Knife_Member_Portal {
 				$pending['field'] => $pending['new'],
 			)
 		);
-		delete_transient( self::EMAIL_CHANGE_KEY . preg_replace( '/[^A-Za-z0-9]/', '', (string) $input['token'] ) );
+		delete_transient( Chess_Army_Knife_Member_Requests::token_key( self::EMAIL_CHANGE_KEY, $input['token'] ) );
 
 		$site = Chess_Army_Knife_Settings::club_name();
 		/* translators: %s: site name */
@@ -651,6 +662,7 @@ class Chess_Army_Knife_Member_Portal {
 			'name'           => __( 'Please enter a name.', 'chess-army-knife' ),
 			'guardian'       => __( 'Please give a parent or guardian\'s name.', 'chess-army-knife' ),
 			'whatsapp_phone' => __( 'WhatsApp groups need a phone number on your details.', 'chess-army-knife' ),
+			'save'           => __( 'That could not be saved. Please try again.', 'chess-army-knife' ),
 			'confirm'        => __( 'Please tick the box to confirm you want your details deleted.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : __( 'Something went wrong. Please try again.', 'chess-army-knife' );

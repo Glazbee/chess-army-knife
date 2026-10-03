@@ -172,7 +172,7 @@ class Chess_Army_Knife_Member_Requests {
 	 */
 	protected static function send_withdrawal_link( $email, $page_url ) {
 		$token = wp_generate_password( 32, false );
-		set_transient( self::TOKEN_KEY . $token, $email, DAY_IN_SECONDS );
+		set_transient( self::token_key( self::TOKEN_KEY, $token ), $email, DAY_IN_SECONDS );
 
 		$link = add_query_arg( 'cak_withdraw', $token, $page_url ) . '#' . self::ANCHOR;
 		$site = Chess_Army_Knife_Settings::club_name();
@@ -182,7 +182,7 @@ class Chess_Army_Knife_Member_Requests {
 		/* translators: 1: site name, 2: link, 3: hours the link works for */
 		$body = sprintf( __( "Someone asked to change the data choices held by %1\$s for this email address (for example to stop the newsletter or WhatsApp groups).\n\nIf that was you, open this link within %3\$d hours:\n\n%2\$s\n\nIf it was not you, ignore this email and nothing will change.", 'chess-army-knife' ), $site, $link, 24 );
 
-		wp_mail( $email, $subject, $body );
+		self::send_after_response( $email, $subject, $body );
 	}
 
 	/**
@@ -193,7 +193,7 @@ class Chess_Army_Knife_Member_Requests {
 	 */
 	public static function people_for_token( $token ) {
 		$token = preg_replace( '/[^A-Za-z0-9]/', '', (string) $token );
-		$email = '' === $token ? false : get_transient( self::TOKEN_KEY . $token );
+		$email = '' === $token ? false : get_transient( self::token_key( self::TOKEN_KEY, $token ) );
 
 		if ( ! is_string( $email ) || '' === $email ) {
 			return null;
@@ -240,7 +240,7 @@ class Chess_Army_Knife_Member_Requests {
 			Chess_Army_Knife_Membership_Store::save_member( $update );
 		}
 
-		delete_transient( self::TOKEN_KEY . preg_replace( '/[^A-Za-z0-9]/', '', (string) $input['token'] ) );
+		delete_transient( self::token_key( self::TOKEN_KEY, $input['token'] ) );
 		return true;
 	}
 
@@ -259,6 +259,62 @@ class Chess_Army_Knife_Member_Requests {
 			'link'      => __( 'That link has expired. Please ask for a new one.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : __( 'Something went wrong. Please try again.', 'chess-army-knife' );
+	}
+
+	/**
+	 * Transient key for an emailed token. Only a hash of the token is used, so a copy of the options table
+	 * (a backup, a dump) does not hold anything that opens a link.
+	 *
+	 * @param string $prefix Key prefix for the kind of token.
+	 * @param string $token  Token from the link or form.
+	 * @return string
+	 */
+	public static function token_key( $prefix, $token ) {
+		return $prefix . hash( 'sha256', preg_replace( '/[^A-Za-z0-9]/', '', (string) $token ) );
+	}
+
+	/** Mail waiting to be sent once the visitor has had their reply. */
+	protected static $outbox = array();
+
+	/**
+	 * Send an email once the visitor has been answered. Mail is sent only for an address the club holds, and a
+	 * slow send would otherwise make the reply slower for those addresses, which shows which are on file.
+	 *
+	 * @param string $to      Recipient.
+	 * @param string $subject Subject.
+	 * @param string $body    Body.
+	 */
+	public static function send_after_response( $to, $subject, $body ) {
+		/**
+		 * Filter whether emails that answer a visitor's request are sent after the reply is sent.
+		 *
+		 * @param bool $defer Default true. False sends the email straight away.
+		 */
+		if ( ! apply_filters( 'Chess_Army_Knife_send_mail_after_response', true ) ) {
+			wp_mail( $to, $subject, $body );
+			return;
+		}
+
+		if ( empty( self::$outbox ) ) {
+			add_action( 'shutdown', array( __CLASS__, 'send_outbox' ) );
+		}
+		self::$outbox[] = array( $to, $subject, $body );
+	}
+
+	/**
+	 * Send the waiting mail. The reply is finished first where the server allows it (PHP-FPM or LiteSpeed).
+	 */
+	public static function send_outbox() {
+		if ( function_exists( 'fastcgi_finish_request' ) ) {
+			fastcgi_finish_request();
+		} elseif ( function_exists( 'litespeed_finish_request' ) ) {
+			litespeed_finish_request();
+		}
+
+		while ( self::$outbox ) {
+			list( $to, $subject, $body ) = array_shift( self::$outbox );
+			wp_mail( $to, $subject, $body );
+		}
 	}
 
 	/**

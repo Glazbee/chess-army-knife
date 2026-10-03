@@ -28,12 +28,15 @@ class SelectionTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Teams::install_table();
 		Chess_Army_Knife_Selection::install_tables();
 		reset_phpmailer_instance();
+		// Mail is sent at once here so the test can read it; a request sends it after the reply.
+		add_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 
 		$this->team  = $this->team( 'Club A' );
 		$this->event = $this->fixture( 'Club A v Rivals', '2099-10-05 19:30:00', $this->team );
 	}
 
 	public function tear_down() {
+		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 		$_GET  = array();
 		$_POST = array();
 		reset_phpmailer_instance();

@@ -23,9 +23,12 @@ class MemberPortalTest extends WP_UnitTestCase {
 		reset_phpmailer_instance();
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.99';
 		$this->clear_counters();
+		// Mail is sent at once here so the tests can read it; a request sends it after the reply.
+		add_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 	}
 
 	public function tear_down() {
+		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 		$this->clear_counters();
 		$_GET = array();
 		reset_phpmailer_instance();
@@ -37,6 +40,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		foreach ( array( 'ada@example.test', 'nobody@example.test' ) as $email ) {
 			delete_transient( 'chess_army_knife_portal_email_' . md5( $email ) );
 		}
+		delete_transient( Chess_Army_Knife_Member_Portal::EMAIL_CHANGE_TARGET_KEY . md5( 'ada.new@example.test' ) );
 	}
 
 	private function person( $name = 'Ada Lovelace', array $extra = array() ) {
@@ -238,6 +242,57 @@ class MemberPortalTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 1500, Chess_Army_Knife_Membership_Store::get_member( $ada )['ecf_rating'] );
+	}
+
+	public function test_details_too_long_for_their_columns_are_cut_to_fit() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+
+		$this->assertTrue(
+			Chess_Army_Knife_Member_Portal::save_details(
+				$this->post(
+					Chess_Army_Knife_Member_Portal::ACTION_DETAILS,
+					$token,
+					array(
+						'person'   => $ada,
+						'name'     => str_repeat( 'Lovelace ', 40 ),
+						'nickname' => str_repeat( 'n', 100 ),
+						'phone'    => str_repeat( '1', 100 ),
+					)
+				)
+			)
+		);
+
+		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
+		$this->assertLessThanOrEqual( 191, mb_strlen( $member['name'] ) );
+		$this->assertSame( 60, mb_strlen( $member['nickname'] ) );
+		$this->assertSame( 40, mb_strlen( $member['phone'] ), 'The phone number is cut by this plugin, not left to the database.' );
+	}
+
+	public function test_a_save_the_database_refuses_is_reported_not_called_saved() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+		$fail  = static function ( $query ) {
+			return 0 === strpos( ltrim( $query ), 'UPDATE' ) && false !== strpos( $query, Chess_Army_Knife_Membership_Store::table() ) ? 'UPDATE nonexistent_table SET x = 1' : $query;
+		};
+
+		add_filter( 'query', $fail );
+		$suppress = $GLOBALS['wpdb']->suppress_errors( true );
+		$result   = Chess_Army_Knife_Member_Portal::save_details(
+			$this->post(
+				Chess_Army_Knife_Member_Portal::ACTION_DETAILS,
+				$token,
+				array(
+					'person' => $ada,
+					'name'   => 'Ada King',
+				)
+			)
+		);
+		$GLOBALS['wpdb']->suppress_errors( $suppress );
+		remove_filter( 'query', $fail );
+
+		$this->assertSame( 'save', $result->get_error_code() );
+		$this->assertSame( 'Lovelace, Ada', Chess_Army_Knife_Membership_Store::get_member( $ada )['name'] );
 	}
 
 	public function test_details_need_a_name_and_only_the_members_own_records_can_be_changed() {
@@ -503,6 +558,27 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$this->assertSame( array(), $this->sent() );
 	}
 
+	public function test_an_address_too_long_for_its_column_is_refused_not_cut() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+		$long  = str_repeat( 'a', Chess_Army_Knife_Membership_Store::MAX_EMAIL_LENGTH ) . '@example.test';
+
+		$this->assertSame( 'email', $this->request_change( $token, $ada, array( 'new_email' => $long ) )->get_error_code() );
+		$this->assertSame( array(), $this->sent() );
+	}
+
+	public function test_one_address_cannot_be_sent_a_flood_of_change_requests() {
+		$ada   = $this->person();
+		$token = $this->sign_in();
+
+		for ( $request = 1; $request <= Chess_Army_Knife_Member_Requests::MAX_PER_HOUR + 2; $request++ ) {
+			delete_transient( 'chess_army_knife_data_ip_' . md5( '203.0.113.99' ) ); // Only the target address's count is being tested.
+			$this->assertSame( 'email_sent', $this->request_change( $token, $ada ), 'The visitor is told the same each time.' );
+		}
+
+		$this->assertCount( Chess_Army_Knife_Member_Requests::MAX_PER_HOUR, $this->sent(), 'No more than the hourly limit reach the address.' );
+	}
+
 	public function test_a_confirmation_link_is_no_good_once_the_address_has_changed_another_way() {
 		$ada   = $this->person();
 		$token = $this->sign_in();
@@ -607,7 +683,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 			'token'                                     => $token,
 		);
 
-		delete_transient( Chess_Army_Knife_Member_Portal::SESSION_KEY . $token ); // What handle_signout() does once the nonce is right; it then redirects and exits.
+		delete_transient( Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, $token ) ); // What handle_signout() does once the nonce is right; it then redirects and exits.
 		$_POST = array();
 
 		$this->assertNull( Chess_Army_Knife_Member_Portal::session( $token ) );
@@ -693,7 +769,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 
 		// Pretend most of the hour has gone.
 		set_transient(
-			Chess_Army_Knife_Member_Portal::SESSION_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, $token ),
 			array(
 				'email'   => 'ada@example.test',
 				'expires' => time() + 5 * MINUTE_IN_SECONDS,
@@ -712,7 +788,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$token   = $this->sign_in();
 		$started = time() - Chess_Army_Knife_Member_Portal::MAX_SESSION_SECONDS + 10 * MINUTE_IN_SECONDS;
 		set_transient(
-			Chess_Army_Knife_Member_Portal::SESSION_KEY . $token,
+			Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, $token ),
 			array(
 				'email'   => 'ada@example.test',
 				'expires' => time() + MINUTE_IN_SECONDS,
@@ -732,12 +808,40 @@ class MemberPortalTest extends WP_UnitTestCase {
 
 	public function test_a_session_made_before_sessions_had_an_end_time_still_works() {
 		$this->person();
-		set_transient( Chess_Army_Knife_Member_Portal::SESSION_KEY . 'oldtoken', 'ada@example.test', HOUR_IN_SECONDS );
+		set_transient( Chess_Army_Knife_Member_Requests::token_key( Chess_Army_Knife_Member_Portal::SESSION_KEY, 'oldtoken' ), 'ada@example.test', HOUR_IN_SECONDS );
 
 		$session = Chess_Army_Knife_Member_Portal::session( 'oldtoken' );
 
 		$this->assertSame( 'ada@example.test', $session['email'] );
 		$this->assertSame( 0, $session['expires'] );
+	}
+
+	public function test_a_token_is_not_stored_as_it_was_emailed() {
+		$this->person();
+		$token = $this->sign_in();
+
+		$this->assertFalse( get_transient( Chess_Army_Knife_Member_Portal::SESSION_KEY . $token ), 'The raw token is not a key.' );
+		$this->assertSame( 'ada@example.test', Chess_Army_Knife_Member_Portal::session( $token )['email'] );
+	}
+
+	public function test_the_link_email_waits_until_the_reply_is_sent() {
+		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
+		// Mail queued by an earlier test is not this test's to count.
+		Chess_Army_Knife_Member_Requests::send_outbox();
+		reset_phpmailer_instance();
+		$this->person();
+		$request = array(
+			Chess_Army_Knife_Member_Portal::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Member_Portal::ACTION_LINK ),
+			'email'                                     => 'ada@example.test',
+		);
+
+		$this->assertTrue( Chess_Army_Knife_Member_Portal::request_link( $request ) );
+		$this->assertCount( 0, $this->sent(), 'Nothing is sent while the visitor is being answered.' );
+
+		Chess_Army_Knife_Member_Requests::send_outbox();
+
+		$this->assertCount( 1, $this->sent() );
+		$this->assertSame( 'ada@example.test', $this->sent()[0]['to'][0][0] );
 	}
 
 	public function test_the_block_warns_about_the_session_and_offers_to_extend_it() {

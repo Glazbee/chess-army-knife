@@ -22,9 +22,12 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Teams::install_table();
 		Chess_Army_Knife_Selection::install_tables();
 		reset_phpmailer_instance();
+		// Mail is sent at once here so the test can read it; a request sends it after the reply.
+		add_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 	}
 
 	public function tear_down() {
+		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
 		$_POST = array();
 		$_GET  = array();
 		reset_phpmailer_instance();

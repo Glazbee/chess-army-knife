@@ -9,6 +9,38 @@ use Brain\Monkey\Functions;
 
 class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
+	/**
+	 * A well-formed address that is longer than the column that holds it.
+	 *
+	 * @return string
+	 */
+	private static function long_email() {
+		return str_repeat( 'a', 64 ) . '@' . str_repeat( 'b', 63 ) . '.' . str_repeat( 'c', 63 ) . '.example';
+	}
+
+	public function test_an_email_address_that_just_fits_its_column_is_kept() {
+		$email  = str_repeat( 'a', 64 ) . '@' . str_repeat( 'b', 63 ) . '.' . str_repeat( 'c', 62 );
+		$result = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'email' => $email ) ), false );
+
+		$this->assertSame( Chess_Army_Knife_Membership_Store::MAX_EMAIL_LENGTH, strlen( $email ) );
+		$this->assertIsArray( $result );
+		$this->assertSame( $email, $result['email'] );
+	}
+
+	public function test_the_clip_lengths_match_the_columns_in_the_table() {
+		$source = file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-membership-store.php' );
+		preg_match_all( '/^\s+(\w+) VARCHAR\((\d+)\)/m', $source, $found );
+		$columns = array_combine( $found[1], array_map( 'intval', $found[2] ) );
+
+		foreach ( Chess_Army_Knife_Membership_Store::COLUMN_LENGTHS as $column => $length ) {
+			$this->assertArrayHasKey( $column, $columns, "{$column} is a column." );
+			$this->assertSame( $columns[ $column ], $length, "{$column} is cut to the size of its column." );
+		}
+		foreach ( array( 'email', 'guardian_email' ) as $column ) {
+			$this->assertSame( $columns[ $column ], Chess_Army_Knife_Membership_Store::MAX_EMAIL_LENGTH );
+		}
+	}
+
 	protected function setUp(): void {
 		parent::setUp();
 		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
@@ -219,10 +251,11 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
 	public function invalid_junior_input() {
 		return array(
-			'no date of birth'   => array( array( 'date_of_birth' => '' ), 'member_dob' ),
-			'no guardian name'   => array( array( 'guardian_name' => '' ), 'member_guardian' ),
-			'no guardian email'  => array( array( 'guardian_email' => '' ), 'member_guardian' ),
-			'bad guardian email' => array( array( 'guardian_email' => 'nope' ), 'member_email' ),
+			'no date of birth'                       => array( array( 'date_of_birth' => '' ), 'member_dob' ),
+			'no guardian name'                       => array( array( 'guardian_name' => '' ), 'member_guardian' ),
+			'no guardian email'                      => array( array( 'guardian_email' => '' ), 'member_guardian' ),
+			'bad guardian email'                     => array( array( 'guardian_email' => 'nope' ), 'member_email' ),
+			'guardian email too long for its column' => array( array( 'guardian_email' => self::long_email() ), 'member_email' ),
 		);
 	}
 
@@ -336,14 +369,15 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
 	public function invalid_public_input() {
 		return array(
-			'no name'                 => array( array( 'name' => '  ' ), 'member_name' ),
-			'no email'                => array( array( 'email' => '' ), 'member_email' ),
-			'bad email'               => array( array( 'email' => 'not-an-email' ), 'member_email' ),
-			'bad date of birth'       => array( array( 'date_of_birth' => '01/05/2015' ), 'member_dob' ),
-			'date of birth is future' => array( array( 'date_of_birth' => '2027-01-01' ), 'member_dob' ),
-			'no type'                 => array( array( 'membership_type_id' => '' ), 'member_type' ),
-			'unknown type'            => array( array( 'membership_type_id' => '99' ), 'member_type' ),
-			'type not on offer'       => array( array( 'membership_type_id' => '8' ), 'member_type' ),
+			'no name'                       => array( array( 'name' => '  ' ), 'member_name' ),
+			'no email'                      => array( array( 'email' => '' ), 'member_email' ),
+			'bad email'                     => array( array( 'email' => 'not-an-email' ), 'member_email' ),
+			'email too long for its column' => array( array( 'email' => self::long_email() ), 'member_email' ),
+			'bad date of birth'             => array( array( 'date_of_birth' => '01/05/2015' ), 'member_dob' ),
+			'date of birth is future'       => array( array( 'date_of_birth' => '2027-01-01' ), 'member_dob' ),
+			'no type'                       => array( array( 'membership_type_id' => '' ), 'member_type' ),
+			'unknown type'                  => array( array( 'membership_type_id' => '99' ), 'member_type' ),
+			'type not on offer'             => array( array( 'membership_type_id' => '8' ), 'member_type' ),
 		);
 	}
 
