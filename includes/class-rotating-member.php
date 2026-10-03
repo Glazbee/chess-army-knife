@@ -86,21 +86,42 @@ class Chess_Army_Knife_Rotating_Member {
 	}
 
 	/**
-	 * Pick whose turn it is. The members take turns in order, so nobody comes round again until everyone has had one.
+	 * A block's shuffle seed: the text given with the site's secret, so nobody can work out who is next.
 	 *
-	 * @param array[] $members  Candidates, in a steady order.
-	 * @param string  $rotation One of the rotations other than none.
-	 * @param string  $salt     Text that moves a block's starting point, so different blocks need not agree.
+	 * @param string $text Text that sets the block apart, such as the block and rating list.
+	 * @return string
+	 */
+	public static function salt( $text ) {
+		return hash( 'sha256', wp_salt( 'auth' ) . $text );
+	}
+
+	/**
+	 * Pick whose turn it is. The members are put in a random order, and take turns in it, so nobody
+	 * comes round again until everyone has had one. Each time the turns run out they are shuffled again.
+	 * The shuffle depends only on the seed, so every visitor sees the same member in the same period.
+	 *
+	 * @param array[] $members   Candidates, each with a code.
+	 * @param string  $rotation  One of the rotations other than none.
+	 * @param string  $salt      The shuffle seed (see salt()).
 	 * @param int     $timestamp Site-local time as a Unix timestamp.
 	 * @return array|null The member, or null if there are none.
 	 */
 	public static function pick( array $members, $rotation, $salt, $timestamp ) {
 		$members = array_values( $members );
-		if ( ! $members ) {
+		$count   = count( $members );
+		if ( ! $count ) {
 			return null;
 		}
-		$start = (int) sprintf( '%u', crc32( (string) $salt ) );
-		return $members[ ( $start + self::slot( $rotation, $timestamp ) ) % count( $members ) ];
+
+		$slot  = self::slot( $rotation, $timestamp );
+		$round = intdiv( $slot, $count );
+		usort(
+			$members,
+			function ( $a, $b ) use ( $salt, $round ) {
+				return strcmp( hash( 'sha256', $salt . '|' . $round . '|' . $a['code'] ), hash( 'sha256', $salt . '|' . $round . '|' . $b['code'] ) );
+			}
+		);
+		return $members[ $slot % $count ];
 	}
 
 	/**

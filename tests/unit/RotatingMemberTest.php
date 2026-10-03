@@ -15,6 +15,13 @@ class RotatingMemberTest extends Chess_Army_Knife_TestCase {
 		return $members;
 	}
 
+	/**
+	 * The first day of a round of turns, so that a run of days does not straddle two shuffles.
+	 */
+	private function round_start( $count ) {
+		return (int) ceil( strtotime( '2026-10-05 00:00:00 UTC' ) / 86400 / $count ) * $count * 86400;
+	}
+
 	public function test_an_unknown_rotation_means_none() {
 		$this->assertSame( 'none', Chess_Army_Knife_Rotating_Member::clean_rotation( 'fortnight' ) );
 		$this->assertSame( 'none', Chess_Army_Knife_Rotating_Member::clean_rotation( null ) );
@@ -41,7 +48,7 @@ class RotatingMemberTest extends Chess_Army_Knife_TestCase {
 
 	public function test_the_same_member_is_picked_within_a_period_and_everyone_gets_a_turn() {
 		$members = $this->members( 4 );
-		$start   = strtotime( '2026-10-05 09:00:00 UTC' );
+		$start   = $this->round_start( 4 ) + 9 * 3600;
 
 		$this->assertSame(
 			Chess_Army_Knife_Rotating_Member::pick( $members, 'day', 'x', $start ),
@@ -53,6 +60,23 @@ class RotatingMemberTest extends Chess_Army_Knife_TestCase {
 			$seen[] = Chess_Army_Knife_Rotating_Member::pick( $members, 'day', 'x', $start + $day * 86400 )['code'];
 		}
 		$this->assertCount( 4, array_unique( $seen ), 'Nobody comes round twice before everyone has had a turn.' );
+	}
+
+	public function test_the_order_is_shuffled_not_alphabetical_and_changes_with_the_seed() {
+		$members = $this->members( 12 );
+		$start   = $this->round_start( 12 );
+		$order   = function ( $seed ) use ( $members, $start ) {
+			$codes = array();
+			for ( $day = 0; $day < 12; $day++ ) {
+				$codes[] = Chess_Army_Knife_Rotating_Member::pick( $members, 'day', $seed, $start + $day * 86400 )['code'];
+			}
+			return $codes;
+		};
+
+		$this->assertNotSame( array_column( $members, 'code' ), $order( 'a' ), 'Not in list order.' );
+		$this->assertNotSame( $order( 'a' ), $order( 'b' ) );
+		$this->assertSame( $order( 'a' ), $order( 'a' ), 'The same seed gives the same turns.' );
+		$this->assertCount( 12, array_unique( $order( 'a' ) ) );
 	}
 
 	public function test_nobody_to_pick_gives_null() {

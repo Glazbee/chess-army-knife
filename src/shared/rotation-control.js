@@ -27,7 +27,7 @@ export default function RotationControl( { attributes, setAttributes } ) {
 			<SelectControl
 				label={ __( 'Rotate to another member', 'chess-army-knife' ) }
 				help={ __(
-					'Rotating picks, in turn, a current member whose rating has risen over the period below.',
+					'Rotating picks, in a random order, a current member whose rating has risen over the period below.',
 					'chess-army-knife'
 				) }
 				value={ attributes.rotation || 'none' }

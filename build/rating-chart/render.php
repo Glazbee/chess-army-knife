@@ -36,7 +36,7 @@ if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
 	$chosen = Chess_Army_Knife_Rotating_Member::pick(
 		Chess_Army_Knife_Rotating_Member::growing_members( $rating_domain, $days_back, 2 ),
 		$rotation,
-		'chart|' . $rating_domain,
+		Chess_Army_Knife_Rotating_Member::salt( 'chart|' . $rating_domain ),
 		Chess_Army_Knife_Rotating_Member::local_time()
 	);
 	if ( ! $chosen ) {
