@@ -16,6 +16,7 @@
 		"columns": { "type": "number", "default": 1 },
 		"nameFormat": { "type": "string", "default": "" },
 		"groupBy": { "type": "string", "default": "none" },
+		"groupBlurbs": { "type": "object", "default": {} },
 		"showPlayers": { "type": "boolean", "default": false },
 		"showLeagues": { "type": "boolean", "default": true }
 	},

@@ -6,6 +6,7 @@ import {
 	PanelBody,
 	SelectControl,
 	TextControl,
+	TextareaControl,
 	RangeControl,
 	ToggleControl,
 } from '@wordpress/components';
@@ -20,10 +21,15 @@ export default function Edit( { attributes, setAttributes } ) {
 		columns,
 		nameFormat,
 		groupBy,
+		groupBlurbs,
 		showPlayers,
 		showLeagues,
 	} = attributes;
 	const [ teams, setTeams ] = useState( [] );
+
+	const groupNames = [
+		...new Set( teams.map( ( team ) => team.group ).filter( Boolean ) ),
+	];
 
 	const blockProps = useBlockProps();
 	const clubName = useClubName();
@@ -121,6 +127,26 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { groupBy: value } )
 						}
 					/>
+					{ 'group' === groupBy &&
+						groupNames.map( ( name ) => (
+							<TextareaControl
+								key={ name }
+								label={ sprintf(
+									/* translators: %s: a group's name */
+									__( 'Blurb for %s', 'chess-army-knife' ),
+									name
+								) }
+								value={ groupBlurbs[ name ] || '' }
+								onChange={ ( value ) =>
+									setAttributes( {
+										groupBlurbs: {
+											...groupBlurbs,
+											[ name ]: value,
+										},
+									} )
+								}
+							/>
+						) ) }
 					<TextControl
 						label={ __(
 							'Team heading format',

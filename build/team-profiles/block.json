@@ -41,6 +41,10 @@
       "type": "string",
       "default": "none"
     },
+    "groupBlurbs": {
+      "type": "object",
+      "default": {}
+    },
     "showPlayers": {
       "type": "boolean",
       "default": false

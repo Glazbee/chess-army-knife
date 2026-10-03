@@ -21,6 +21,7 @@ $teams        = array_filter(
 $columns      = isset( $attributes['columns'] ) ? max( 1, min( 4, absint( $attributes['columns'] ) ) ) : 1;
 $name_format  = isset( $attributes['nameFormat'] ) ? sanitize_text_field( (string) $attributes['nameFormat'] ) : '';
 $group_by     = isset( $attributes['groupBy'] ) && in_array( $attributes['groupBy'], array( 'group', 'division' ), true ) ? $attributes['groupBy'] : '';
+$blurbs       = isset( $attributes['groupBlurbs'] ) && is_array( $attributes['groupBlurbs'] ) ? $attributes['groupBlurbs'] : array();
 $show_players = ! empty( $attributes['showPlayers'] );
 $show_leagues = ! isset( $attributes['showLeagues'] ) || $attributes['showLeagues'];
 $groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, $group_by ) : array(
@@ -41,6 +42,9 @@ $groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, 
 	<?php foreach ( $groups as $group ) : ?>
 		<?php if ( '' !== $group['label'] ) : ?>
 			<?php echo Chess_Army_Knife_A11y::heading( 1, 'cak-team-profiles__group', $group['label'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+			<?php if ( 'group' === $group_by && ! empty( $blurbs[ $group['label'] ] ) ) : ?>
+				<div class="cak-team-profiles__blurb"><?php echo wp_kses_post( wpautop( esc_html( sanitize_textarea_field( (string) $blurbs[ $group['label'] ] ) ) ) ); ?></div>
+			<?php endif; ?>
 		<?php endif; ?>
 		<div class="cak-team-profiles__grid" style="--cak-team-columns:<?php echo esc_attr( $columns ); ?>">
 			<?php foreach ( $group['teams'] as $team ) : ?>
