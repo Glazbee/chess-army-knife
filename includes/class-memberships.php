@@ -344,14 +344,80 @@ class Chess_Army_Knife_Memberships {
 	}
 
 	/**
-	 * The reference a member should quote when paying, so the treasurer can
-	 * match a bank transfer to a member.
+	 * Whether the club gives members a payment reference at all. A club that takes cash may not.
 	 *
-	 * @param int $member_id Member id.
+	 * @return bool
+	 */
+	public static function use_references() {
+		return ! empty( Chess_Army_Knife_Settings::get_options()['membership_use_references'] );
+	}
+
+	/**
+	 * The start of a reference the club's number makes for a member, from Settings.
+	 *
 	 * @return string
 	 */
-	public static function payment_reference( $member_id ) {
-		return 'MEM-' . (int) $member_id;
+	public static function reference_prefix() {
+		return (string) Chess_Army_Knife_Settings::get_options()['membership_reference_prefix'];
+	}
+
+	/**
+	 * The reference a member should quote when paying by bank transfer, so the treasurer can match a payment to
+	 * a member: one chosen for them, else the club's prefix and their number. Empty if the club does not use
+	 * references.
+	 *
+	 * @param int        $member_id Member id.
+	 * @param array|null $member    The member's row, if there is one to hand (it may hold a chosen reference).
+	 * @return string
+	 */
+	public static function payment_reference( $member_id, $member = null ) {
+		if ( ! self::use_references() ) {
+			return '';
+		}
+		if ( is_array( $member ) && ! empty( $member['payment_reference'] ) ) {
+			return (string) $member['payment_reference'];
+		}
+		return self::reference_prefix() . (int) $member_id;
+	}
+
+	/**
+	 * The member a generated reference belongs to: "MEM-42" is member 42. A reference that is not of the
+	 * club's prefix and a number gives 0.
+	 *
+	 * @param string $reference Text that may be a reference.
+	 * @return int
+	 */
+	public static function member_id_of_reference( $reference ) {
+		$reference = trim( (string) $reference );
+		$prefix    = self::reference_prefix();
+		if ( '' !== $prefix && 0 !== stripos( $reference, $prefix ) ) {
+			return 0;
+		}
+		$rest = substr( $reference, strlen( $prefix ) );
+		return ctype_digit( $rest ) ? (int) $rest : 0;
+	}
+
+	/**
+	 * What a person is told after applying for membership: the club's own wording from Settings, or else a plain
+	 * thank-you (with the payment reference, if the club uses them). {reference} is filled in.
+	 *
+	 * @param int $member_id The application's id, or 0 if there is none to give a reference for.
+	 * @return string Plain text.
+	 */
+	public static function thanks_text( $member_id ) {
+		$text = trim( (string) Chess_Army_Knife_Settings::get_options()['membership_thanks_message'] );
+		if ( '' === $text ) {
+			$text = __( 'Thank you! Your application has been received and the club will be in touch once it has been reviewed.', 'chess-army-knife' );
+			if ( $member_id > 0 && self::use_references() ) {
+				$text .= "\n\n" . __( 'If you pay by bank transfer, please use this payment reference: {reference}', 'chess-army-knife' );
+			}
+		}
+		return strtr(
+			$text,
+			array(
+				'{reference}' => $member_id > 0 ? self::payment_reference( $member_id ) : '',
+			)
+		);
 	}
 }
 

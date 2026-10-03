@@ -257,7 +257,8 @@ class Chess_Army_Knife_Member_Checks_Page {
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Member Checks', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Member_Tabs::render( 'checks' ); ?>
 			<?php
 			if ( $notice ) {
 				printf( '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>', esc_attr( $notice[0] ), esc_html( $notice[1] ) );

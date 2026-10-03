@@ -30,6 +30,7 @@ delete_option( 'Chess_Army_Knife_club_teams_migrated' );
 delete_option( 'Chess_Army_Knife_templates' );
 delete_option( 'Chess_Army_Knife_officer_positions' );
 delete_option( 'Chess_Army_Knife_lms_org_names' );
+delete_option( 'Chess_Army_Knife_members_columns' );
 // The policy pages are the club's own text, so they stay; only the plugin's note of which pages they are goes.
 delete_option( 'Chess_Army_Knife_policy_pages' );
 delete_option( 'Chess_Army_Knife_db_version' );

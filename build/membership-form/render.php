@@ -51,15 +51,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 
 	<?php if ( null !== $applied_id ) : ?>
 		<div id="cak-membership-done" class="cak-form-notice cak-form-notice--success" role="status" tabindex="-1">
-			<p><?php esc_html_e( 'Thank you! Your application has been received and the club will be in touch once it has been reviewed.', 'chess-army-knife' ); ?></p>
-			<?php if ( $applied_id > 0 ) : ?>
-				<p>
-					<?php
-					/* translators: %s: payment reference, for example MEM-12 */
-					echo esc_html( sprintf( __( 'Your payment reference is %s.', 'chess-army-knife' ), Chess_Army_Knife_Memberships::payment_reference( $applied_id ) ) );
-					?>
-				</p>
-			<?php endif; ?>
+			<?php echo wp_kses_post( wpautop( esc_html( Chess_Army_Knife_Memberships::thanks_text( (int) $applied_id ) ) ) ); ?>
 			<?php if ( '' !== $payment_text ) : ?>
 				<p><strong><?php esc_html_e( 'How to pay', 'chess-army-knife' ); ?></strong></p>
 				<?php echo wp_kses_post( wpautop( esc_html( $payment_text ) ) ); ?>

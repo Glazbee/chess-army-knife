@@ -228,14 +228,19 @@ class Chess_Army_Knife_Renewal_Reminders {
 			$when = sprintf( __( 'ran out on %s', 'chess-army-knife' ), $date );
 		}
 
-		$reference    = Chess_Army_Knife_Memberships::payment_reference( $member['id'] );
+		$reference    = Chess_Army_Knife_Memberships::payment_reference( $member['id'], $member );
 		$instructions = Chess_Army_Knife_Memberships::payment_instructions();
-		if ( '' !== $instructions ) {
+		if ( '' !== $instructions && '' !== $reference ) {
 			/* translators: 1: the club's payment instructions, 2: the member's payment reference */
-			$payment = sprintf( __( "To renew, please pay as follows:\n\n%1\$s\n\nPlease quote this reference: %2\$s", 'chess-army-knife' ), $instructions, $reference );
-		} else {
+			$payment = sprintf( __( "To renew, please pay as follows:\n\n%1\$s\n\nIf you pay by bank transfer, please quote this reference: %2\$s", 'chess-army-knife' ), $instructions, $reference );
+		} elseif ( '' !== $instructions ) {
+			/* translators: %s: the club's payment instructions */
+			$payment = sprintf( __( "To renew, please pay as follows:\n\n%s", 'chess-army-knife' ), $instructions );
+		} elseif ( '' !== $reference ) {
 			/* translators: %s: the member's payment reference */
-			$payment = sprintf( __( 'To renew, please speak to a club officer and quote this reference: %s', 'chess-army-knife' ), $reference );
+			$payment = sprintf( __( 'To renew, please speak to a club officer. If you pay by bank transfer, please quote this reference: %s', 'chess-army-knife' ), $reference );
+		} else {
+			$payment = __( 'To renew, please speak to a club officer.', 'chess-army-knife' );
 		}
 
 		$replace = array(

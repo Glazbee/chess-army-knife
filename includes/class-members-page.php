@@ -17,6 +17,7 @@ class Chess_Army_Knife_Members_Page {
 	 * Boot the form handlers.
 	 */
 	public static function init() {
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 		add_action( 'admin_post_chess_army_knife_save_member', array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_chess_army_knife_member_status', array( __CLASS__, 'handle_status' ) );
 		add_action( 'admin_post_chess_army_knife_delete_member', array( __CLASS__, 'handle_delete' ) );
@@ -61,6 +62,11 @@ class Chess_Army_Knife_Members_Page {
 
 		if ( is_wp_error( $clean ) ) {
 			wp_safe_redirect( self::url( $form + array( 'error' => $clean->get_error_code() ) ) );
+			exit;
+		}
+
+		if ( ! empty( $clean['payment_reference'] ) && Chess_Army_Knife_Membership_Store::reference_taken( $clean['payment_reference'], $id ) ) {
+			wp_safe_redirect( self::url( $form + array( 'error' => 'member_reference' ) ) );
 			exit;
 		}
 
@@ -379,6 +385,19 @@ class Chess_Army_Knife_Members_Page {
 	 * ------------------------------------------------------------- */
 
 	/**
+	 * Load the script that shows a non-member parent's details only when they are needed, on the member form.
+	 *
+	 * @param string $hook Admin page hook.
+	 */
+	public static function enqueue( $hook ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only decides whether to load a script.
+		if ( false === strpos( (string) $hook, Chess_Army_Knife_Memberships::MENU_SLUG ) || ! isset( $_GET['edit'] ) ) {
+			return;
+		}
+		wp_enqueue_script( 'chess-army-knife-member-form', Chess_Army_Knife_URL . 'assets/member-form.js', array(), Chess_Army_Knife_VERSION, true );
+	}
+
+	/**
 	 * A message for an error code passed back in the address.
 	 *
 	 * @param string $code Error code.
@@ -392,6 +411,7 @@ class Chess_Army_Knife_Members_Page {
 			'member_date_order' => __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ),
 			'renew'             => __( 'That membership could not be renewed: it must be a current or lapsed member whose type has a length.', 'chess-army-knife' ),
 			'member_rating'     => __( 'That manual rating is out of range.', 'chess-army-knife' ),
+			'member_reference'  => __( 'Another member already has that payment reference. Please choose a different one.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : Chess_Army_Knife_Membership_Form::error_message( $code );
 	}
@@ -503,6 +523,7 @@ class Chess_Army_Knife_Members_Page {
 			<a href="<?php echo esc_url( self::action_url( 'refresh_ratings', 0 ) ); ?>" class="page-title-action"><?php esc_html_e( 'Refresh ECF ratings', 'chess-army-knife' ); ?></a>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_LMS_Players::PAGE ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add players from the LMS', 'chess-army-knife' ); ?></a>
 			<hr class="wp-header-end" />
+			<?php Chess_Army_Knife_Member_Tabs::render( 'members' ); ?>
 
 			<?php self::render_notices(); ?>
 
@@ -608,6 +629,10 @@ class Chess_Army_Knife_Members_Page {
 									$method = isset( $methods[ $member['payment_method'] ] ) ? $methods[ $member['payment_method'] ] : '';
 									/* translators: 1: date the payment was received, 2: payment method */
 									echo esc_html( trim( sprintf( __( 'Paid %1$s %2$s', 'chess-army-knife' ), mysql2date( get_option( 'date_format' ), $member['paid_on'] ), $method ) ) );
+								}
+								$member_reference = Chess_Army_Knife_Memberships::payment_reference( $member['id'], $member );
+								if ( '' !== $member_reference ) {
+									echo '<br /><span class="description">' . esc_html( sprintf( /* translators: %s: the member's payment reference */ __( 'Reference %s', 'chess-army-knife' ), $member_reference ) ) . '</span>';
 								}
 								?>
 							</td>
@@ -726,7 +751,8 @@ class Chess_Army_Knife_Members_Page {
 		$editing = null !== $member;
 		$member  = $editing ? $member : array(
 			'manual_rating' => null,
-		) + array_fill_keys( array( 'name', 'nickname', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at' ), '' ) + array(
+		) + array_fill_keys( array( 'name', 'nickname', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
+			'guardian_id'        => 0,
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
 			'start_date'         => current_time( 'Y-m-d' ),
@@ -734,10 +760,11 @@ class Chess_Army_Knife_Members_Page {
 		$types   = Chess_Army_Knife_Memberships::types( false );
 
 		// The details a treasurer needs to match a payment.
-		$reference = $editing ? Chess_Army_Knife_Memberships::payment_reference( $member['id'] ) : '';
+		$reference = $editing ? Chess_Army_Knife_Memberships::payment_reference( $member['id'], $member ) : '';
 		?>
 		<div class="wrap">
 			<h1><?php echo $editing ? esc_html__( 'Edit member', 'chess-army-knife' ) : esc_html__( 'Add a member', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Member_Tabs::render( 'members' ); ?>
 			<?php if ( ! $editing ) : ?>
 				<p class="description"><?php esc_html_e( 'Use this to add someone who cannot fill in the online form, for example if they joined in person.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
@@ -773,18 +800,38 @@ class Chess_Army_Knife_Members_Page {
 						<td><input type="date" id="date_of_birth" name="date_of_birth" value="<?php echo esc_attr( $member['date_of_birth'] ); ?>" /></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="guardian_name"><?php esc_html_e( 'Parent or guardian', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="guardian_choice"><?php esc_html_e( 'Parent or guardian', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<?php
+							$has_typed = '' !== $member['guardian_name'] . $member['guardian_email'] . $member['guardian_phone'];
+							$choice    = $member['guardian_id'] ? (string) $member['guardian_id'] : ( $has_typed ? 'nonmember' : '' );
+							?>
+							<select id="guardian_choice" name="guardian_choice">
+								<option value=""><?php esc_html_e( 'None', 'chess-army-knife' ); ?></option>
+								<option value="nonmember" <?php selected( $choice, 'nonmember' ); ?>><?php esc_html_e( 'Non-member (type their details)', 'chess-army-knife' ); ?></option>
+								<?php foreach ( Chess_Army_Knife_Membership_Store::get_members() as $parent ) : ?>
+									<?php if ( $editing && $parent['id'] === $member['id'] ) : ?>
+										<?php continue; ?>
+									<?php endif; ?>
+									<option value="<?php echo esc_attr( $parent['id'] ); ?>" <?php selected( $choice, (string) $parent['id'] ); ?>><?php echo esc_html( $parent['name'] ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="description"><?php esc_html_e( 'For juniors: choose a parent or guardian who is a member, and their name, email address and phone number are used (refreshed whenever this record is saved). Choose "Non-member" if they are not a member and type their details below.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr class="cak-guardian-typed" <?php echo 'nonmember' === $choice ? '' : 'style="display:none"'; ?>>
+						<th scope="row"><label for="guardian_name"><?php esc_html_e( 'Their name', 'chess-army-knife' ); ?></label></th>
 						<td><input type="text" id="guardian_name" name="guardian_name" class="regular-text" value="<?php echo esc_attr( $member['guardian_name'] ); ?>" /></td>
 					</tr>
-					<tr>
-						<th scope="row"><label for="guardian_email"><?php esc_html_e( 'Parent or guardian email', 'chess-army-knife' ); ?></label></th>
+					<tr class="cak-guardian-typed" <?php echo 'nonmember' === $choice ? '' : 'style="display:none"'; ?>>
+						<th scope="row"><label for="guardian_email"><?php esc_html_e( 'Their email', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="email" id="guardian_email" name="guardian_email" class="regular-text" value="<?php echo esc_attr( $member['guardian_email'] ); ?>" />
 							<p class="description"><?php esc_html_e( 'For juniors: write to the parent or guardian rather than the junior, unless they have said otherwise.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
-					<tr>
-						<th scope="row"><label for="guardian_phone"><?php esc_html_e( 'Parent or guardian phone', 'chess-army-knife' ); ?></label></th>
+					<tr class="cak-guardian-typed" <?php echo 'nonmember' === $choice ? '' : 'style="display:none"'; ?>>
+						<th scope="row"><label for="guardian_phone"><?php esc_html_e( 'Their phone', 'chess-army-knife' ); ?></label></th>
 						<td><input type="text" id="guardian_phone" name="guardian_phone" class="regular-text" value="<?php echo esc_attr( $member['guardian_phone'] ); ?>" /></td>
 					</tr>
 					<tr>
@@ -848,16 +895,18 @@ class Chess_Army_Knife_Members_Page {
 									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $member['payment_method'], $key ); ?>><?php echo esc_html( $label ); ?></option>
 								<?php endforeach; ?>
 							</select>
-							<?php if ( $editing ) : ?>
-								<p class="description">
-									<?php
-									/* translators: %s: the payment reference for this member */
-									echo esc_html( sprintf( __( 'Payments are made outside the website. Their bank transfer reference is %s.', 'chess-army-knife' ), $reference ) );
-									?>
-								</p>
-							<?php endif; ?>
+							<p class="description"><?php esc_html_e( 'Payments are made outside the website.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
+					<?php if ( Chess_Army_Knife_Memberships::use_references() ) : ?>
+						<tr>
+							<th scope="row"><label for="payment_reference"><?php esc_html_e( 'Payment reference', 'chess-army-knife' ); ?></label></th>
+							<td>
+								<input type="text" id="payment_reference" name="payment_reference" class="regular-text" maxlength="40" value="<?php echo esc_attr( $member['payment_reference'] ); ?>" placeholder="<?php echo esc_attr( $editing ? $reference : Chess_Army_Knife_Memberships::reference_prefix() . '…' ); ?>" />
+								<p class="description"><?php esc_html_e( 'For bank transfers, so you can match a payment to this member. Leave blank to use the standard reference shown (the club\'s prefix and their number). Each member\'s reference must be different.', 'chess-army-knife' ); ?></p>
+							</td>
+						</tr>
+					<?php endif; ?>
 					<?php if ( $editing ) : ?>
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Consent', 'chess-army-knife' ); ?></th>

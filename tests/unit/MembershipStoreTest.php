@@ -124,6 +124,7 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 				'guardian_name'         => '',
 				'guardian_email'        => '',
 				'guardian_phone'        => '',
+				'guardian_id'           => 0,
 				'ecf_code'              => '12345J',
 				'membership_type_id'    => 7,
 				'type_name'             => 'Junior',

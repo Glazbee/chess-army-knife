@@ -115,7 +115,8 @@ class Chess_Army_Knife_Renewals_Page {
 		$days    = implode( ', ', Chess_Army_Knife_Renewal_Reminders::schedule_days() );
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Renewal reminders', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Member_Tabs::render( 'renewals' ); ?>
 			<?php
 			if ( $notice ) {
 				printf( '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>', esc_attr( $notice[0] ), esc_html( $notice[1] ) );

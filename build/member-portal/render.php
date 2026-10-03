@@ -149,9 +149,9 @@ $heading      = function ( $depth, $text ) {
 						<dt><?php esc_html_e( 'Last day', 'chess-army-knife' ); ?></dt>
 						<dd><?php echo esc_html( mysql2date( $date_format, $person['expiry_date'] ) ); ?></dd>
 					<?php endif; ?>
-					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER !== $person['status'] ) : ?>
+					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER !== $person['status'] && '' !== Chess_Army_Knife_Memberships::payment_reference( $person['id'], $person ) ) : ?>
 						<dt><?php esc_html_e( 'Payment reference', 'chess-army-knife' ); ?></dt>
-						<dd><?php echo esc_html( Chess_Army_Knife_Memberships::payment_reference( $person['id'] ) ); ?></dd>
+						<dd><?php echo esc_html( Chess_Army_Knife_Memberships::payment_reference( $person['id'], $person ) ); ?></dd>
 					<?php endif; ?>
 					<?php if ( $teams ) : ?>
 						<dt><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></dt>

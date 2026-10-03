@@ -126,7 +126,7 @@ class Chess_Army_Knife_Menu {
 			array(
 				'group'       => $members_group,
 				'title'       => __( 'Members', 'chess-army-knife' ),
-				'description' => __( 'Members and applications: approve, edit, bulk actions and CSV export.', 'chess-army-knife' ),
+				'description' => __( 'Members and applications: approve, edit, bulk actions and CSV export, with Checks, Membership types and Renewals tabs.', 'chess-army-knife' ),
 				'key'         => 'members',
 				'slug'        => Chess_Army_Knife_Memberships::MENU_SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Members_Page', 'render_page' ),
@@ -152,6 +152,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Member_Checks_Page', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of Members.
 			),
 			array(
 				'group'       => $members_group,
@@ -162,6 +163,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Renewals_Page', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of Members.
 			),
 			array(
 				'group'       => $members_group,
@@ -203,6 +205,7 @@ class Chess_Army_Knife_Menu {
 				'callback'    => null,
 				'kind'        => 'members',
 				'can'         => $can_members,
+				'unlisted'    => true, // A tab of Members.
 				'post_type'   => Chess_Army_Knife_Memberships::POST_TYPE,
 			),
 			array(

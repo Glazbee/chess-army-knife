@@ -129,4 +129,35 @@ class MembershipsTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( "Sort code 00-00-00\nAccount 1234", Chess_Army_Knife_Memberships::payment_instructions() );
 	}
+
+	public function test_a_member_can_have_their_own_payment_reference() {
+		$this->assertSame( 'MEM-42', Chess_Army_Knife_Memberships::payment_reference( 42, array( 'payment_reference' => '' ) ) );
+		$this->assertSame( 'TREASURER-7', Chess_Army_Knife_Memberships::payment_reference( 42, array( 'payment_reference' => 'TREASURER-7' ) ) );
+	}
+
+	public function test_the_prefix_is_the_clubs_to_choose() {
+		$this->set_settings( array( 'membership_reference_prefix' => 'WHCC' ) );
+
+		$this->assertSame( 'WHCC42', Chess_Army_Knife_Memberships::payment_reference( 42 ) );
+		$this->assertSame( 42, Chess_Army_Knife_Memberships::member_id_of_reference( 'whcc42' ) );
+		$this->assertSame( 0, Chess_Army_Knife_Memberships::member_id_of_reference( 'MEM-42' ) );
+		$this->assertSame( 0, Chess_Army_Knife_Memberships::member_id_of_reference( 'WHCC' ) );
+	}
+
+	public function test_a_club_can_do_without_payment_references() {
+		$this->set_settings( array( 'membership_use_references' => 0 ) );
+
+		$this->assertSame( '', Chess_Army_Knife_Memberships::payment_reference( 42, array( 'payment_reference' => 'TREASURER-7' ) ) );
+		$this->assertStringNotContainsString( 'reference', strtolower( Chess_Army_Knife_Memberships::thanks_text( 42 ) ) );
+	}
+
+	public function test_the_thank_you_is_the_clubs_own_wording_or_a_standard_one() {
+		$standard = Chess_Army_Knife_Memberships::thanks_text( 42 );
+		$this->assertStringContainsString( 'Your application has been received', $standard );
+		$this->assertStringContainsString( 'MEM-42', $standard, 'The standard wording gives the reference for a bank transfer.' );
+		$this->assertStringNotContainsString( 'MEM-', Chess_Army_Knife_Memberships::thanks_text( 0 ), 'A silent result has no reference to give.' );
+
+		$this->set_settings( array( 'membership_thanks_message' => 'Welcome! Bank transfer? Quote {reference}. Cash is fine too.' ) );
+		$this->assertSame( 'Welcome! Bank transfer? Quote MEM-42. Cash is fine too.', Chess_Army_Knife_Memberships::thanks_text( 42 ) );
+	}
 }

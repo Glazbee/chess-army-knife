@@ -65,6 +65,7 @@ class Chess_Army_Knife_Membership_Store {
 			guardian_name VARCHAR(191) NOT NULL DEFAULT '',
 			guardian_email VARCHAR(191) NOT NULL DEFAULT '',
 			guardian_phone VARCHAR(40) NOT NULL DEFAULT '',
+			guardian_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
 			ecf_code VARCHAR(20) NOT NULL DEFAULT '',
 			manual_rating INT(11) NULL,
 			ecf_rating INT(11) NULL,
@@ -77,6 +78,7 @@ class Chess_Army_Knife_Membership_Store {
 			start_date DATE NULL,
 			expiry_date DATE NULL,
 			payment_method VARCHAR(20) NOT NULL DEFAULT '',
+			payment_reference VARCHAR(40) NOT NULL DEFAULT '',
 			paid_on DATE NULL,
 			notes TEXT NULL,
 			consent_at DATETIME NULL,
@@ -95,28 +97,48 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
-	 * Add the nickname column to a members table made before it existed, once. The schema version is not bumped
-	 * while the plugin is in development, so installs made earlier would otherwise fail to save members.
+	 * Columns added since the table was first made, with their definitions.
+	 *
+	 * @return string[] Definition by column name.
 	 */
-	public static function maybe_add_nickname_column() {
+	protected static function added_columns() {
+		return array(
+			'nickname'          => "VARCHAR(60) NOT NULL DEFAULT '' AFTER name",
+			'guardian_id'       => 'BIGINT(20) UNSIGNED NOT NULL DEFAULT 0 AFTER guardian_phone',
+			'payment_reference' => "VARCHAR(40) NOT NULL DEFAULT '' AFTER payment_method",
+		);
+	}
+
+	/**
+	 * Add any later columns to a members table made before they existed, once for each set of columns. The
+	 * schema version is not bumped while the plugin is in development, so installs made earlier would otherwise
+	 * fail to save members.
+	 */
+	public static function maybe_add_columns() {
 		global $wpdb;
 
-		if ( '1' === get_option( 'Chess_Army_Knife_members_nickname' ) ) {
+		$columns = self::added_columns();
+		$flag    = md5( implode( ',', array_keys( $columns ) ) );
+		if ( get_option( 'Chess_Army_Knife_members_columns' ) === $flag ) {
 			return;
 		}
 
 		$table = self::table();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal.
-		$exists = $wpdb->get_var( "SHOW TABLES LIKE '" . esc_sql( $table ) . "'" );
-		if ( $exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal.
-			$has = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE 'nickname'" );
-			if ( ! $has ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal.
-				$wpdb->query( "ALTER TABLE {$table} ADD COLUMN nickname VARCHAR(60) NOT NULL DEFAULT '' AFTER name" );
-			}
-			update_option( 'Chess_Army_Knife_members_nickname', '1', true );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal.
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		if ( ! $exists ) {
+			return;
 		}
+
+		foreach ( $columns as $column => $definition ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table and column names are internal.
+			$has = $wpdb->get_var( "SHOW COLUMNS FROM {$table} LIKE '{$column}'" );
+			if ( ! $has ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table, column and definition are internal.
+				$wpdb->query( "ALTER TABLE {$table} ADD COLUMN {$column} {$definition}" );
+			}
+		}
+		update_option( 'Chess_Army_Knife_members_columns', $flag, true );
 	}
 
 	/**
@@ -198,6 +220,26 @@ class Chess_Army_Knife_Membership_Store {
 		$guardian_name  = isset( $input['guardian_name'] ) ? sanitize_text_field( $input['guardian_name'] ) : '';
 		$guardian_phone = isset( $input['guardian_phone'] ) ? sanitize_text_field( $input['guardian_phone'] ) : '';
 
+		// An admin chooses the parent or guardian from the members, or says they are not a member and types their details. A member's
+		// details are copied across (and refreshed each time this member is saved).
+		$guardian_id = 0;
+		if ( $is_admin && isset( $input['guardian_choice'] ) ) {
+			$choice = (string) $input['guardian_choice'];
+			if ( ctype_digit( $choice ) && (int) $choice > 0 ) {
+				$parent = self::get_member( (int) $choice );
+				if ( $parent ) {
+					$guardian_id    = $parent['id'];
+					$guardian_name  = $parent['name'];
+					$guardian_email = self::contact_email( $parent );
+					$guardian_phone = $parent['phone'];
+				}
+			} elseif ( '' === $choice ) {
+				$guardian_name  = '';
+				$guardian_email = '';
+				$guardian_phone = '';
+			}
+		}
+
 		if ( ! $is_admin ) {
 			// A junior type, or a date of birth under 18, makes a junior even if the box was not ticked.
 			$junior = ( $type && ! empty( $type['is_junior'] ) ) || ! empty( $input['is_junior'] ) || Chess_Army_Knife_Memberships::is_under_18( $date_of_birth, $today );
@@ -241,6 +283,7 @@ class Chess_Army_Knife_Membership_Store {
 			'guardian_name'         => $guardian_name,
 			'guardian_email'        => $guardian_email,
 			'guardian_phone'        => $guardian_phone,
+			'guardian_id'           => $guardian_id,
 			'ecf_code'              => isset( $input['ecf_code'] ) ? strtoupper( preg_replace( '/[^0-9A-Za-z]/', '', $input['ecf_code'] ) ) : '',
 			'membership_type_id'    => $type_id,
 			'type_name'             => $type ? $type['name'] : '',
@@ -283,13 +326,15 @@ class Chess_Army_Knife_Membership_Store {
 		}
 
 		return $member + array(
-			'status'         => $status,
-			'start_date'     => '' === $start ? null : $start,
-			'expiry_date'    => '' === $expiry ? null : $expiry,
-			'payment_method' => $method,
-			'paid_on'        => '' === $paid_on ? null : $paid_on,
-			'notes'          => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
-			'manual_rating'  => $rating,
+			'status'            => $status,
+			'start_date'        => '' === $start ? null : $start,
+			'expiry_date'       => '' === $expiry ? null : $expiry,
+			'payment_method'    => $method,
+			// A reference chosen for them, to match a bank transfer; blank uses the one the club's prefix and their number make.
+			'payment_reference' => isset( $input['payment_reference'] ) ? mb_substr( preg_replace( '/[^A-Za-z0-9\-_\/ ]/', '', trim( sanitize_text_field( $input['payment_reference'] ) ) ), 0, 40 ) : '',
+			'paid_on'           => '' === $paid_on ? null : $paid_on,
+			'notes'             => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
+			'manual_rating'     => $rating,
 		);
 	}
 
@@ -392,10 +437,18 @@ class Chess_Army_Knife_Membership_Store {
 
 		if ( '' !== $args['search'] ) {
 			$like       = '%' . $wpdb->esc_like( $args['search'] ) . '%';
-			$condition .= ' AND ( name LIKE %s OR email LIKE %s OR guardian_email LIKE %s )';
+			$condition .= ' AND ( name LIKE %s OR email LIKE %s OR guardian_email LIKE %s OR payment_reference LIKE %s';
 			$values[]   = $like;
 			$values[]   = $like;
 			$values[]   = $like;
+			$values[]   = $like;
+			// A reference the club's prefix and a member's number make is not stored, so is matched by the number.
+			$number = Chess_Army_Knife_Memberships::member_id_of_reference( $args['search'] );
+			if ( $number ) {
+				$condition .= ' OR id = %d';
+				$values[]   = $number;
+			}
+			$condition .= ' )';
 		}
 
 		$order = 'pending' === $args['view'] ? 'created_at ASC' : 'name ASC'; // Oldest application first.
@@ -441,6 +494,32 @@ class Chess_Army_Knife_Membership_Store {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A );
 		return $row ? self::cast_member( $row ) : null;
+	}
+
+	/**
+	 * Whether a payment reference already belongs to another member, either one chosen for them or the one the
+	 * club's prefix and their number make.
+	 *
+	 * @param string $reference  The reference.
+	 * @param int    $except_id  The member it is for, who does not count (0 for a new member).
+	 * @return bool
+	 */
+	public static function reference_taken( $reference, $except_id = 0 ) {
+		global $wpdb;
+
+		$reference = trim( (string) $reference );
+		if ( '' === $reference ) {
+			return false;
+		}
+
+		$number = Chess_Army_Knife_Memberships::member_id_of_reference( $reference );
+		if ( $number && $number !== (int) $except_id && self::get_member( $number ) ) {
+			return true;
+		}
+
+		$table = self::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE payment_reference = %s AND id <> %d LIMIT 1", $reference, (int) $except_id ) );
 	}
 
 	/**
@@ -999,6 +1078,7 @@ class Chess_Army_Knife_Membership_Store {
 		// A record is kept, without personal details, while it has a payment on it or is tagged
 		// in photos: the photos may show other people, so someone has to review them by hand.
 		// What they were emailed, and their email choices, are never kept.
+		self::forget_as_guardian( $id );
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		Chess_Army_Knife_Teams::remove_person( $id );
@@ -1038,12 +1118,37 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
+	 * Take a person's details off the juniors who had them as a parent or guardian, when the person is erased or
+	 * deleted.
+	 *
+	 * @param int $id The parent's member id.
+	 */
+	protected static function forget_as_guardian( $id ) {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$wpdb->update(
+			self::table(),
+			array(
+				'guardian_id'    => 0,
+				'guardian_name'  => '',
+				'guardian_email' => '',
+				'guardian_phone' => '',
+			),
+			array( 'guardian_id' => (int) $id ),
+			array( '%d', '%s', '%s', '%s' ),
+			array( '%d' )
+		);
+	}
+
+	/**
 	 * Delete a member or application.
 	 *
 	 * @param int $id Member id.
 	 */
 	public static function delete_member( $id ) {
 		global $wpdb;
+		self::forget_as_guardian( $id );
 		Chess_Army_Knife_Member_Photos::remove_member( $id );
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
@@ -1065,6 +1170,8 @@ class Chess_Army_Knife_Membership_Store {
 	protected static function cast_member( array $row ) {
 		$row['id']                 = (int) $row['id'];
 		$row['nickname']           = isset( $row['nickname'] ) ? (string) $row['nickname'] : '';
+		$row['guardian_id']        = isset( $row['guardian_id'] ) ? (int) $row['guardian_id'] : 0;
+		$row['payment_reference']  = isset( $row['payment_reference'] ) ? (string) $row['payment_reference'] : '';
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
 		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
@@ -1078,5 +1185,5 @@ class Chess_Army_Knife_Membership_Store {
 	}
 }
 
-add_action( 'init', array( 'Chess_Army_Knife_Membership_Store', 'maybe_add_nickname_column' ), 1 );
+add_action( 'init', array( 'Chess_Army_Knife_Membership_Store', 'maybe_add_columns' ), 1 );
 add_filter( 'Chess_Army_Knife_before_ecf_player_lookup', array( 'Chess_Army_Knife_Membership_Store', 'allow_ecf_lookup' ), 10, 2 );
