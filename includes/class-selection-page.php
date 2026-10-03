@@ -132,11 +132,26 @@ class Chess_Army_Knife_Selection_Page {
 	 * The upcoming fixtures of the teams the user may pick.
 	 */
 	protected static function render_list() {
-		$teams    = Chess_Army_Knife_Captains::teams_for_user();
+		$teams   = Chess_Army_Knife_Captains::teams_for_user();
+		$team_id = isset( $_GET['team'] ) ? absint( $_GET['team'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only choice of what to show.
+		if ( $team_id ) {
+			// Only one of the user's own teams can be chosen; anything else shows them all.
+			$chosen  = array_values(
+				array_filter(
+					$teams,
+					function ( $team ) use ( $team_id ) {
+						return $team['id'] === $team_id;
+					}
+				)
+			);
+			$teams   = $chosen ? $chosen : $teams;
+			$team_id = $chosen ? $team_id : 0;
+		}
 		$fixtures = Chess_Army_Knife_Selection::fixtures( wp_list_pluck( $teams, 'id' ) );
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Team Selection', 'chess-army-knife' ); ?></h1>
+			<h1><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></h1>
+			<?php Chess_Army_Knife_Team_Tabs::render( $team_id, 'selection' ); ?>
 			<?php if ( ! $teams ) : ?>
 				<p><?php esc_html_e( 'You do not captain any team yet. Ask a club officer to set you as a team\'s captain.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
@@ -240,8 +255,9 @@ class Chess_Army_Knife_Selection_Page {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( $event['title'] ); ?></h1>
+			<?php Chess_Army_Knife_Team_Tabs::render( $team['id'], 'selection' ); ?>
 			<p>
-				<a href="<?php echo esc_url( self::url() ); ?>">&larr; <?php esc_html_e( 'All fixtures', 'chess-army-knife' ); ?></a>
+				<a href="<?php echo esc_url( self::url( array( 'team' => $team['id'] ) ) ); ?>">&larr; <?php esc_html_e( 'All fixtures', 'chess-army-knife' ); ?></a>
 				&middot; <?php echo esc_html( $team['name'] . ' — ' . Chess_Army_Knife_Events_Display::date_label( $event ) . ' ' . Chess_Army_Knife_Events_Display::time_label( $event ) ); ?>
 				<?php echo '' !== $event['location'] ? '&middot; ' . esc_html( $event['location'] ) : ''; ?>
 			</p>

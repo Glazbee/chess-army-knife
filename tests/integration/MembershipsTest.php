@@ -476,7 +476,7 @@ class MembershipsTest extends WP_UnitTestCase {
 			'edit.php?post_type=' . Chess_Army_Knife_Announcements::POST_TYPE,
 			'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE,
 			'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
-			Chess_Army_Knife_Selection_Page::SLUG,
+			'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE,
 			Chess_Army_Knife_Events_Import::PAGE,
 			Chess_Army_Knife_Tournaments_Page::SLUG,
 			'edit.php?post_type=' . Chess_Army_Knife_Events::POST_TYPE,
@@ -495,6 +495,8 @@ class MembershipsTest extends WP_UnitTestCase {
 		}
 		$this->assertArrayNotHasKey( Chess_Army_Knife_Memberships::MENU_SLUG, $submenu, 'There is no separate Memberships menu.' );
 		$this->assertArrayNotHasKey( 'chess-army-teams', $submenu, 'There is no separate Teams menu.' );
+		$this->assertNotContains( Chess_Army_Knife_Selection_Page::SLUG, $slugs, 'Selection is a tab of Teams, not a menu item.' );
+		$this->assertNotContains( Chess_Army_Knife_Team_Overview::PAGE, $slugs, 'Overview is a tab of Teams, not a menu item.' );
 	}
 
 	public function test_screens_a_user_may_not_use_explain_what_they_need_instead_of_failing() {

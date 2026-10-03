@@ -46,6 +46,7 @@ class Chess_Army_Knife_Menu {
 			(string) $screen->post_type,
 			array(
 				Chess_Army_Knife_Teams::POST_TYPE,
+				Chess_Army_Knife_Team_Groups::POST_TYPE,
 				Chess_Army_Knife_Events::POST_TYPE,
 				Chess_Army_Knife_Clubs::POST_TYPE,
 				Chess_Army_Knife_Memberships::POST_TYPE,
@@ -117,6 +118,8 @@ class Chess_Army_Knife_Menu {
 		$can_teams   = function () {
 			return Chess_Army_Knife_Teams::user_can_manage();
 		};
+
+		$captain_only = ! $can_teams() && Chess_Army_Knife_Captains::user_can_select();
 
 		return array(
 			array(
@@ -204,13 +207,27 @@ class Chess_Army_Knife_Menu {
 			array(
 				'group'       => $teams_group,
 				'title'       => __( 'Teams', 'chess-army-knife' ),
-				'description' => __( 'The club\'s teams, their league entries and squads.', 'chess-army-knife' ),
+				'description' => __( 'Each team\'s details, league entries and squad, its overview, and asking who can play and picking the line-up.', 'chess-army-knife' ),
 				'key'         => 'teams',
-				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
+				// A captain without the team permission opens on the Overview tab; everyone else on the list of teams.
+				'slug'        => $captain_only ? Chess_Army_Knife_Team_Overview::PAGE : 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
+				'callback'    => $captain_only ? array( 'Chess_Army_Knife_Team_Overview', 'render_page' ) : null,
+				'kind'        => 'teams',
+				'can'         => function () use ( $can_teams ) {
+					return $can_teams() || Chess_Army_Knife_Captains::user_can_select();
+				},
+				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Groups', 'chess-army-knife' ),
+				'description' => __( 'Headings such as an association or "Internal teams" that teams can be listed under, each with a short blurb.', 'chess-army-knife' ),
+				'key'         => 'team_groups',
+				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE,
 				'callback'    => null,
 				'kind'        => 'teams',
 				'can'         => $can_teams,
-				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
+				'post_type'   => Chess_Army_Knife_Team_Groups::POST_TYPE,
 			),
 			array(
 				'group'       => $teams_group,
@@ -242,26 +259,6 @@ class Chess_Army_Knife_Menu {
 				'callback'    => array( 'Chess_Army_Knife_Squad_Review', 'render_page' ),
 				'kind'        => 'teams',
 				'can'         => $can_teams,
-			),
-			array(
-				'group'       => $teams_group,
-				'title'       => __( 'Team Overview', 'chess-army-knife' ),
-				'description' => __( 'A team\'s details, leagues, squad, next fixtures and who has not replied, all in one place.', 'chess-army-knife' ),
-				'key'         => 'team_overview',
-				'slug'        => Chess_Army_Knife_Team_Overview::PAGE,
-				'callback'    => array( 'Chess_Army_Knife_Team_Overview', 'render_page' ),
-				'kind'        => 'selection',
-				'can'         => array( 'Chess_Army_Knife_Captains', 'user_can_select' ),
-			),
-			array(
-				'group'       => $teams_group,
-				'title'       => __( 'Team Selection', 'chess-army-knife' ),
-				'description' => __( 'Ask the squad who can play and publish the line-up.', 'chess-army-knife' ),
-				'key'         => 'team_selection',
-				'slug'        => Chess_Army_Knife_Selection_Page::SLUG,
-				'callback'    => array( 'Chess_Army_Knife_Selection_Page', 'render_page' ),
-				'kind'        => 'selection',
-				'can'         => array( 'Chess_Army_Knife_Captains', 'user_can_select' ),
 			),
 			array(
 				'group'       => $teams_group,
@@ -404,6 +401,21 @@ class Chess_Army_Knife_Menu {
 		foreach ( self::areas() as $area ) {
 			$label = $area['title'] . ( Chess_Army_Knife_Memberships::MENU_SLUG === $area['slug'] ? $bubble : '' );
 			add_submenu_page( self::SLUG, $area['title'], $label, $capability, $area['slug'], null === $area['callback'] ? '' : $area['callback'] );
+		}
+
+		// The Overview and Selection tabs of Teams have no menu item of their own, but can be opened.
+		$tabs       = array(
+			array( Chess_Army_Knife_Team_Overview::PAGE, __( 'Team Overview', 'chess-army-knife' ), array( 'Chess_Army_Knife_Team_Overview', 'render_page' ) ),
+			array( Chess_Army_Knife_Selection_Page::SLUG, __( 'Team Selection', 'chess-army-knife' ), array( 'Chess_Army_Knife_Selection_Page', 'render_page' ) ),
+		);
+		$teams_area = self::area( 'teams' );
+		foreach ( $tabs as $tab ) {
+			// A captain's Teams item already is the Overview tab.
+			if ( $teams_area && $tab[0] === $teams_area['slug'] ) {
+				continue;
+			}
+			add_submenu_page( self::SLUG, $tab[1], $tab[1], $capability, $tab[0], $tab[2] );
+			remove_submenu_page( self::SLUG, $tab[0] );
 		}
 	}
 

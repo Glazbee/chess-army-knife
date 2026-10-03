@@ -28,10 +28,11 @@ class Chess_Army_Knife_A11y {
 	 * @param int    $depth 0 for a block's main title, 1 for a heading within it.
 	 * @param string $class CSS class.
 	 * @param string $text  Plain text.
+	 * @param int    $level 1 to 6 to use that heading level, or 0 to follow the site's heading level.
 	 * @return string
 	 */
-	public static function heading( $depth, $class, $text ) {
-		$tag = Chess_Army_Knife_Headings::tag( $depth );
+	public static function heading( $depth, $class, $text, $level = 0 ) {
+		$tag = (int) $level >= 1 && (int) $level <= 6 ? 'h' . (int) $level : Chess_Army_Knife_Headings::tag( $depth );
 		// A block's main title gets the accent underline.
 		$class .= 0 === (int) $depth ? ' cak-block-title' : '';
 		return '<' . $tag . ' class="' . esc_attr( $class ) . '">' . esc_html( Chess_Army_Knife_Settings::with_club( $text ) ) . '</' . $tag . '>';

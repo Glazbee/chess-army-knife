@@ -18,6 +18,15 @@
 		margin: 0 0 1.5em;
 	}
 
+	.cak-team-profiles__group,
+	.cak-team-profiles__blurb {
+		grid-column: 1 / -1;
+	}
+
+	.cak-team-profiles__blurb {
+		margin: 0 0 1em;
+	}
+
 	.cak-team__description {
 		font-size: 0.9em;
 	}

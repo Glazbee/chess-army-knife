@@ -36,7 +36,7 @@ class Chess_Army_Knife_Teams {
 	const META_SEASONS  = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
 	const META_LEAGUES  = '_chess_army_team_leagues';
 	const META_COLOUR   = '_chess_army_team_colour';
-	const META_GROUP    = '_chess_army_team_group'; // Free-text wider group the team is listed under, e.g. a league association.
+	const META_GROUP    = '_chess_army_team_group'; // Id of the Group (see Chess_Army_Knife_Team_Groups) the team is listed under.
 	const META_TAG      = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
 	const META_WHATSAPP = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
@@ -154,7 +154,7 @@ class Chess_Army_Knife_Teams {
 	 * @param int $post_id Post id.
 	 */
 	public static function flush_memo_for_post( $post_id ) {
-		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+		if ( in_array( get_post_type( $post_id ), array( self::POST_TYPE, Chess_Army_Knife_Team_Groups::POST_TYPE ), true ) ) {
 			wp_cache_delete( 'teams', self::MEMO_GROUP );
 		}
 	}
@@ -172,7 +172,7 @@ class Chess_Army_Knife_Teams {
 	/**
 	 * The teams on offer, in their page order.
 	 *
-	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
+	 * @return array[] Each { id, name, description, venue, captain_id, colour, tag, group_id, group, group_blurb, group_order, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
 		$kept = wp_cache_get( 'teams', self::MEMO_GROUP );
@@ -217,6 +217,7 @@ class Chess_Army_Knife_Teams {
 	protected static function team_data( $post ) {
 		$name    = get_the_title( $post );
 		$leagues = self::clean_leagues( get_post_meta( $post->ID, self::META_LEAGUES, true ) );
+		$group   = Chess_Army_Knife_Team_Groups::get( (int) get_post_meta( $post->ID, self::META_GROUP, true ) );
 		return array(
 			'id'          => (int) $post->ID,
 			'name'        => $name,
@@ -226,7 +227,10 @@ class Chess_Army_Knife_Teams {
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
 			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
 			'whatsapp'    => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
-			'group'       => trim( (string) get_post_meta( $post->ID, self::META_GROUP, true ) ),
+			'group_id'    => $group ? $group['id'] : 0,
+			'group'       => $group ? $group['name'] : '',
+			'group_blurb' => $group ? $group['blurb'] : '',
+			'group_order' => $group ? $group['order'] : 0,
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -268,13 +272,13 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * Teams grouped by their division or by their free-text group, in the order
-	 * each label first appears. Teams with none form a group of their own with an
-	 * empty label.
+	 * Teams grouped by division or by their Group. Divisions are in the order each first appears.
+	 * Groups follow the Groups page order, after the teams that have no group. Teams with
+	 * neither form a group of their own with an empty label.
 	 *
 	 * @param array[] $teams Teams from all().
 	 * @param string  $by    'division' or 'group'.
-	 * @return array[] Each { label, teams }.
+	 * @return array[] Each { label, blurb, teams }.
 	 */
 	public static function group_teams( array $teams, $by ) {
 		$groups = array();
@@ -283,35 +287,56 @@ class Chess_Army_Knife_Teams {
 			if ( ! isset( $groups[ $label ] ) ) {
 				$groups[ $label ] = array(
 					'label' => $label,
+					'blurb' => 'group' === $by ? (string) $team['group_blurb'] : '',
+					'order' => 'group' === $by && '' !== $label ? (int) $team['group_order'] : -1,
+					'seen'  => count( $groups ),
 					'teams' => array(),
 				);
 			}
 			$groups[ $label ]['teams'][] = $team;
 		}
-		return array_values( $groups );
+
+		if ( 'group' === $by ) {
+			usort(
+				$groups,
+				function ( $a, $b ) {
+					return array( $a['order'], $a['seen'] ) <=> array( $b['order'], $b['seen'] );
+				}
+			);
+		}
+
+		return array_map(
+			function ( $group ) {
+				unset( $group['order'], $group['seen'] );
+				return $group;
+			},
+			array_values( $groups )
+		);
 	}
 
 	/**
 	 * The players to show publicly for a team: its squad, with the captain marked.
 	 *
-	 * @param array $team Team from all().
-	 * @return array { players: array[] of { name, captain }, non_playing_captain: string }
+	 * @param array  $team Team from all().
+	 * @param string $sort 'surname' (default) or 'rating'.
+	 * @return array { players: array[] of { name, captain, rating }, non_playing_captain: string }
 	 */
-	public static function public_roster( array $team ) {
+	public static function public_roster( array $team, $sort = 'surname' ) {
 		$squad = self::squad( $team['id'] );
 		$ids   = $team['captain_id'] ? array_merge( $squad, array( $team['captain_id'] ) ) : $squad;
-		return self::build_roster( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ), $squad, $team['captain_id'] );
+		return self::build_roster( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ), $squad, $team['captain_id'], $sort );
 	}
 
 	/**
 	 * Sort members into the squad's players and a captain outside the squad.
 	 *
-	 * @param array[] $members    Member rows (id, name).
+	 * @param array[] $members    Member rows (id, name, and ecf_rating and manual_rating if known).
 	 * @param int[]   $squad      Member ids in the squad.
 	 * @param int     $captain_id Captain's member id, or 0.
+	 * @param string  $sort       'surname' (default) or 'rating' (highest first).
 	 * @return array See public_roster().
 	 */
-	public static function build_roster( array $members, array $squad, $captain_id ) {
+	public static function build_roster( array $members, array $squad, $captain_id, $sort = 'surname' ) {
 		$roster = array(
 			'players'             => array(),
 			'non_playing_captain' => '',
@@ -322,12 +347,59 @@ class Chess_Army_Knife_Teams {
 				$roster['players'][] = array(
 					'name'    => $member['name'],
 					'captain' => $is_captain,
+					'rating'  => self::rating_of( $member ),
 				);
 			} elseif ( $is_captain ) {
 				$roster['non_playing_captain'] = $member['name'];
 			}
 		}
+		$roster['players'] = self::sort_players( $roster['players'], $sort );
 		return $roster;
+	}
+
+	/**
+	 * A member's rating: the ECF one, else the manual one, else 0.
+	 *
+	 * @param array $member Member row.
+	 * @return int
+	 */
+	protected static function rating_of( array $member ) {
+		if ( isset( $member['ecf_rating'] ) ) {
+			return (int) $member['ecf_rating'];
+		}
+		return isset( $member['manual_rating'] ) ? (int) $member['manual_rating'] : 0;
+	}
+
+	/**
+	 * Players by surname (the last word of the name), or by rating with the highest first. Ties go to the surname, then the full name.
+	 *
+	 * @param array[] $players Each { name, rating, ... }.
+	 * @param string  $sort    'surname' or 'rating'.
+	 * @return array[]
+	 */
+	public static function sort_players( array $players, $sort ) {
+		usort(
+			$players,
+			function ( $a, $b ) use ( $sort ) {
+				if ( 'rating' === $sort && $a['rating'] !== $b['rating'] ) {
+					return $b['rating'] <=> $a['rating'];
+				}
+				$by_surname = strcasecmp( self::surname( $a['name'] ), self::surname( $b['name'] ) );
+				return 0 !== $by_surname ? $by_surname : strcasecmp( $a['name'], $b['name'] );
+			}
+		);
+		return $players;
+	}
+
+	/**
+	 * The surname of a name: its last word.
+	 *
+	 * @param string $name Full name.
+	 * @return string
+	 */
+	protected static function surname( $name ) {
+		$words = preg_split( '/\s+/', trim( (string) $name ) );
+		return (string) end( $words );
 	}
 
 	/**

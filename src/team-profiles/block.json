@@ -16,8 +16,16 @@
 		"columns": { "type": "number", "default": 1 },
 		"nameFormat": { "type": "string", "default": "" },
 		"groupBy": { "type": "string", "default": "none" },
-		"groupBlurbs": { "type": "object", "default": {} },
+		"showSeparators": { "type": "boolean", "default": false },
+		"groupHeadingLevel": { "type": "number", "default": 0 },
+		"teamHeadingLevel": { "type": "number", "default": 0 },
 		"showPlayers": { "type": "boolean", "default": false },
+		"playerSort": { "type": "string", "default": "surname" },
+		"showRatings": { "type": "boolean", "default": false },
+		"ratingColor": { "type": "string", "default": "" },
+		"ratingBold": { "type": "boolean", "default": false },
+		"ratingItalic": { "type": "boolean", "default": false },
+		"ratingSize": { "type": "string", "default": "" },
 		"showLeagues": { "type": "boolean", "default": true }
 	},
 	"supports": {

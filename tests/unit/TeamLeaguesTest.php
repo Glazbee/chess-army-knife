@@ -190,10 +190,11 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 	 *
 	 * @param string $name  Team name.
 	 * @param string $event Division of its league, or '' for none.
-	 * @param string $group Free-text group.
+	 * @param string $group Name of its group.
+	 * @param int    $order Page order of its group.
 	 * @return array
 	 */
-	protected function team( $name, $event = '', $group = '' ) {
+	protected function team( $name, $event = '', $group = '', $order = 0 ) {
 		$leagues = array();
 		if ( '' !== $event ) {
 			$leagues[] = array(
@@ -203,9 +204,11 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 			);
 		}
 		return array(
-			'name'    => $name,
-			'group'   => $group,
-			'leagues' => $leagues,
+			'name'        => $name,
+			'group'       => $group,
+			'group_blurb' => '',
+			'group_order' => $order,
+			'leagues'     => $leagues,
 		);
 	}
 
@@ -244,15 +247,16 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( $lions, $leopard ), $groups[0]['teams'] );
 	}
 
-	public function test_group_teams_by_group_uses_the_free_text_group() {
-		$a = $this->team( 'A', '', 'NGCA' );
-		$b = $this->team( 'B', '', 'Internal' );
-		$c = $this->team( 'C', '', 'NGCA' );
+	public function test_group_teams_by_group_puts_ungrouped_first_then_follows_the_group_order() {
+		$a = $this->team( 'A', '', 'NGCA', 2 );
+		$b = $this->team( 'B', '', 'Internal', 1 );
+		$c = $this->team( 'C', '', 'NGCA', 2 );
+		$d = $this->team( 'D' );
 
-		$groups = Chess_Army_Knife_Teams::group_teams( array( $a, $b, $c ), 'group' );
+		$groups = Chess_Army_Knife_Teams::group_teams( array( $a, $b, $c, $d ), 'group' );
 
-		$this->assertSame( array( 'NGCA', 'Internal' ), array_column( $groups, 'label' ) );
-		$this->assertSame( array( $a, $c ), $groups[0]['teams'] );
+		$this->assertSame( array( '', 'Internal', 'NGCA' ), array_column( $groups, 'label' ) );
+		$this->assertSame( array( $a, $c ), $groups[2]['teams'] );
 	}
 
 	public function test_build_roster_marks_the_captain_and_separates_a_non_playing_one() {
@@ -265,5 +269,44 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$outside = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2 ), 3 );
 		$this->assertCount( 2, $outside['players'] );
 		$this->assertSame( 'Cat', $outside['non_playing_captain'] );
+	}
+
+	public function test_build_roster_sorts_by_surname_by_default() {
+		$members = array( $this->member( 1, 'Zack Norris' ), $this->member( 2, 'Ian Robson' ), $this->member( 3, 'Mike Ashworth' ) );
+
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2, 3 ), 0 );
+
+		$this->assertSame( array( 'Mike Ashworth', 'Zack Norris', 'Ian Robson' ), array_column( $roster['players'], 'name' ) );
+	}
+
+	public function test_build_roster_can_sort_by_rating_with_unrated_players_last() {
+		$members = array(
+			array(
+				'id'            => 1,
+				'name'          => 'Ann Able',
+				'ecf_rating'    => 1500,
+				'manual_rating' => null,
+			),
+			array(
+				'id'            => 2,
+				'name'          => 'Bob Baker',
+				'ecf_rating'    => null,
+				'manual_rating' => 1800,
+			),
+			array(
+				'id'   => 3,
+				'name' => 'Cat Cole',
+			),
+			array(
+				'id'         => 4,
+				'name'       => 'Dan Dyer',
+				'ecf_rating' => 1500,
+			),
+		);
+
+		$roster = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2, 3, 4 ), 0, 'rating' );
+
+		$this->assertSame( array( 'Bob Baker', 'Ann Able', 'Dan Dyer', 'Cat Cole' ), array_column( $roster['players'], 'name' ) );
+		$this->assertSame( array( 1800, 1500, 1500, 0 ), array_column( $roster['players'], 'rating' ) );
 	}
 }

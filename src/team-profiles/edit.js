@@ -1,18 +1,29 @@
 import { __, sprintf } from '@wordpress/i18n';
 import useClubName from '../shared/use-club-name';
 import TemplatePicker from '../shared/template-picker';
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	InspectorControls,
+	PanelColorSettings,
+} from '@wordpress/block-editor';
 import {
 	PanelBody,
 	SelectControl,
 	TextControl,
-	TextareaControl,
 	RangeControl,
 	ToggleControl,
 } from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
+
+const HEADING_LEVELS = [
+	{ label: __( 'Automatic', 'chess-army-knife' ), value: 0 },
+	...[ 1, 2, 3, 4, 5, 6 ].map( ( level ) => ( {
+		label: 'H' + level,
+		value: level,
+	} ) ),
+];
 
 export default function Edit( { attributes, setAttributes } ) {
 	const {
@@ -21,15 +32,19 @@ export default function Edit( { attributes, setAttributes } ) {
 		columns,
 		nameFormat,
 		groupBy,
-		groupBlurbs,
+		showSeparators,
+		groupHeadingLevel,
+		teamHeadingLevel,
 		showPlayers,
+		playerSort,
+		showRatings,
+		ratingColor,
+		ratingBold,
+		ratingItalic,
+		ratingSize,
 		showLeagues,
 	} = attributes;
 	const [ teams, setTeams ] = useState( [] );
-
-	const groupNames = [
-		...new Set( teams.map( ( team ) => team.group ).filter( Boolean ) ),
-	];
 
 	const blockProps = useBlockProps();
 	const clubName = useClubName();
@@ -102,10 +117,37 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { columns: value } )
 						}
 					/>
+					<TextControl
+						label={ __(
+							'Team heading format',
+							'chess-army-knife'
+						) }
+						help={ __(
+							'Use {league} for the first league and {team} for the name, e.g. "{league} - {team}".',
+							'chess-army-knife'
+						) }
+						value={ nameFormat }
+						placeholder="{team}"
+						onChange={ ( value ) =>
+							setAttributes( { nameFormat: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Show leagues list', 'chess-army-knife' ) }
+						checked={ showLeagues }
+						onChange={ ( value ) =>
+							setAttributes( { showLeagues: value } )
+						}
+					/>
+				</PanelBody>
+				<PanelBody
+					title={ __( 'Groups and headings', 'chess-army-knife' ) }
+					initialOpen={ false }
+				>
 					<SelectControl
 						label={ __( 'Group teams by', 'chess-army-knife' ) }
 						help={ __(
-							"A team's group is set under Teams.",
+							"A team's group, and the blurb under each group's heading, are set under Groups.",
 							'chess-army-knife'
 						) }
 						value={ groupBy }
@@ -127,41 +169,45 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { groupBy: value } )
 						}
 					/>
-					{ 'group' === groupBy &&
-						groupNames.map( ( name ) => (
-							<TextareaControl
-								key={ name }
-								label={ sprintf(
-									/* translators: %s: a group's name */
-									__( 'Blurb for %s', 'chess-army-knife' ),
-									name
-								) }
-								value={ groupBlurbs[ name ] || '' }
-								onChange={ ( value ) =>
-									setAttributes( {
-										groupBlurbs: {
-											...groupBlurbs,
-											[ name ]: value,
-										},
-									} )
-								}
-							/>
-						) ) }
-					<TextControl
+					<ToggleControl
 						label={ __(
-							'Team heading format',
+							'Separator between groups',
 							'chess-army-knife'
 						) }
-						help={ __(
-							'Use {league} for the first league and {team} for the name, e.g. "{league} - {team}".',
-							'chess-army-knife'
-						) }
-						value={ nameFormat }
-						placeholder="{team}"
+						checked={ showSeparators }
 						onChange={ ( value ) =>
-							setAttributes( { nameFormat: value } )
+							setAttributes( { showSeparators: value } )
 						}
 					/>
+					<SelectControl
+						label={ __( 'Group heading', 'chess-army-knife' ) }
+						value={ groupHeadingLevel }
+						options={ HEADING_LEVELS }
+						onChange={ ( value ) =>
+							setAttributes( {
+								groupHeadingLevel: parseInt( value, 10 ),
+							} )
+						}
+					/>
+					<SelectControl
+						label={ __( 'Team heading', 'chess-army-knife' ) }
+						help={ __(
+							'Automatic follows the heading level set for the whole site.',
+							'chess-army-knife'
+						) }
+						value={ teamHeadingLevel }
+						options={ HEADING_LEVELS }
+						onChange={ ( value ) =>
+							setAttributes( {
+								teamHeadingLevel: parseInt( value, 10 ),
+							} )
+						}
+					/>
+				</PanelBody>
+				<PanelBody
+					title={ __( 'Players', 'chess-army-knife' ) }
+					initialOpen={ false }
+				>
 					<ToggleControl
 						label={ __( 'Show players', 'chess-army-knife' ) }
 						help={ __(
@@ -173,14 +219,126 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { showPlayers: value } )
 						}
 					/>
-					<ToggleControl
-						label={ __( 'Show leagues list', 'chess-army-knife' ) }
-						checked={ showLeagues }
-						onChange={ ( value ) =>
-							setAttributes( { showLeagues: value } )
-						}
-					/>
+					{ showPlayers && (
+						<>
+							<SelectControl
+								label={ __(
+									'Sort players',
+									'chess-army-knife'
+								) }
+								value={ playerSort }
+								options={ [
+									{
+										label: __(
+											'By surname',
+											'chess-army-knife'
+										),
+										value: 'surname',
+									},
+									{
+										label: __(
+											'By rating, highest first',
+											'chess-army-knife'
+										),
+										value: 'rating',
+									},
+								] }
+								onChange={ ( value ) =>
+									setAttributes( { playerSort: value } )
+								}
+							/>
+							<ToggleControl
+								label={ __(
+									'Show ratings',
+									'chess-army-knife'
+								) }
+								checked={ showRatings }
+								onChange={ ( value ) =>
+									setAttributes( { showRatings: value } )
+								}
+							/>
+							{ showRatings && (
+								<>
+									<ToggleControl
+										label={ __(
+											'Bold',
+											'chess-army-knife'
+										) }
+										checked={ ratingBold }
+										onChange={ ( value ) =>
+											setAttributes( {
+												ratingBold: value,
+											} )
+										}
+									/>
+									<ToggleControl
+										label={ __(
+											'Italic',
+											'chess-army-knife'
+										) }
+										checked={ ratingItalic }
+										onChange={ ( value ) =>
+											setAttributes( {
+												ratingItalic: value,
+											} )
+										}
+									/>
+									<SelectControl
+										label={ __(
+											'Rating size',
+											'chess-army-knife'
+										) }
+										value={ ratingSize }
+										options={ [
+											{
+												label: __(
+													'Same as the name',
+													'chess-army-knife'
+												),
+												value: '',
+											},
+											{
+												label: __(
+													'Smaller',
+													'chess-army-knife'
+												),
+												value: '0.85em',
+											},
+											{
+												label: __(
+													'Larger',
+													'chess-army-knife'
+												),
+												value: '1.15em',
+											},
+										] }
+										onChange={ ( value ) =>
+											setAttributes( {
+												ratingSize: value,
+											} )
+										}
+									/>
+								</>
+							) }
+						</>
+					) }
 				</PanelBody>
+				{ showPlayers && showRatings && (
+					<PanelColorSettings
+						title={ __( 'Rating colour', 'chess-army-knife' ) }
+						initialOpen={ false }
+						colorSettings={ [
+							{
+								value: ratingColor,
+								onChange: ( value ) =>
+									setAttributes( {
+										ratingColor: value || '',
+									} ),
+								label: __( 'Rating', 'chess-army-knife' ),
+							},
+						] }
+					/>
+				) }
 			</InspectorControls>
 
 			<ServerSideRender
