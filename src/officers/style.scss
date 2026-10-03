@@ -6,15 +6,29 @@
 	}
 
 	.cak-officers__list {
+		display: grid;
+		grid-template-columns: repeat(
+			var(--cak-officer-columns, 1),
+			minmax(0, 1fr)
+		);
+		gap: 0 2em;
 		margin: 0;
 		padding: 0;
+
+		@media (max-width: 600px) {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.cak-officer {
 		display: flex;
 		flex-wrap: wrap;
+		align-content: flex-start;
 		gap: 0.25em 1em;
 		padding: 0.5em 0;
+	}
+
+	.cak-officers__list.has-separators .cak-officer {
 		border-bottom: 1px solid a11y.$cak-rule;
 	}
 
@@ -27,6 +41,19 @@
 	.cak-officer__name {
 		flex: 1 1 12em;
 		margin: 0;
+	}
+
+	// The position on a line of its own, with the officer beneath it.
+	.cak-officers__list.is-stacked .cak-officer {
+		display: block;
+	}
+
+	.cak-officers__list.is-stacked .cak-officer__position {
+		margin: 0 0 0.15em;
+	}
+
+	.cak-officers__list.is-stacked .cak-officer__tenure {
+		margin-left: 0.25em;
 	}
 
 	.cak-officer__tenure {

@@ -153,8 +153,9 @@ class Chess_Army_Knife_Block_Help {
 			'officers'             => array(
 				'use'      => __( 'The club\'s officers: each position with the name of whoever holds it, and team captains. Only positions and names are shown, and optionally since when.', 'chess-army-knife' ),
 				'settings' => array(
-					__( 'Drag the positions into the order you want, or use the up and down buttons.', 'chess-army-knife' ),
+					__( 'The block follows the club\'s order set on the Officers screen. Drag the positions in the block only to give it an order of its own.', 'chess-army-knife' ),
 					__( 'Show or hide since when, and team captains.', 'chess-army-knife' ),
+					__( 'Choose the columns, whether the position sits beside or above the name, whether a position is plain text or a heading (and its level), and whether the block title and the lines between officers show.', 'chess-army-knife' ),
 				),
 				'needs'    => array(
 					__( 'Positions with officers, set up on the Officers screen. Team captains come from the Teams.', 'chess-army-knife' ),
