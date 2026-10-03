@@ -20,9 +20,10 @@ $teams        = array_filter(
 );
 $columns      = isset( $attributes['columns'] ) ? max( 1, min( 4, absint( $attributes['columns'] ) ) ) : 1;
 $name_format  = isset( $attributes['nameFormat'] ) ? sanitize_text_field( (string) $attributes['nameFormat'] ) : '';
-$group_by     = ! empty( $attributes['groupByDivision'] );
+$group_by     = isset( $attributes['groupBy'] ) && in_array( $attributes['groupBy'], array( 'group', 'division' ), true ) ? $attributes['groupBy'] : '';
+$show_players = ! empty( $attributes['showPlayers'] );
 $show_leagues = ! isset( $attributes['showLeagues'] ) || $attributes['showLeagues'];
-$groups       = $group_by ? Chess_Army_Knife_Teams::group_by_division( $teams ) : array(
+$groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, $group_by ) : array(
 	array(
 		'label' => '',
 		'teams' => $teams,
@@ -44,12 +45,24 @@ $groups       = $group_by ? Chess_Army_Knife_Teams::group_by_division( $teams ) 
 		<div class="cak-team-profiles__grid" style="--cak-team-columns:<?php echo esc_attr( $columns ); ?>">
 			<?php foreach ( $group['teams'] as $team ) : ?>
 				<div class="cak-team">
-					<?php echo Chess_Army_Knife_A11y::heading( $group_by ? 2 : 1, 'cak-team__name', Chess_Army_Knife_Teams::display_name( $team, $name_format ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+					<?php echo Chess_Army_Knife_A11y::heading( '' !== $group_by ? 2 : 1, 'cak-team__name', Chess_Army_Knife_Teams::display_name( $team, $name_format ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 					<?php if ( '' !== $team['description'] ) : ?>
 						<p class="cak-team__description"><?php echo esc_html( $team['description'] ); ?></p>
 					<?php endif; ?>
 					<?php if ( '' !== $team['venue'] ) : ?>
 						<p><strong><?php esc_html_e( 'Home venue:', 'chess-army-knife' ); ?></strong> <?php echo esc_html( $team['venue'] ); ?></p>
+					<?php endif; ?>
+					<?php $roster = $show_players ? Chess_Army_Knife_Teams::public_roster( $team ) : array(); ?>
+					<?php if ( ! empty( $roster['players'] ) ) : ?>
+						<p class="cak-team__players-label"><strong><?php esc_html_e( 'Player list', 'chess-army-knife' ); ?></strong></p>
+						<ul class="cak-team__players">
+							<?php foreach ( $roster['players'] as $player ) : ?>
+								<li><?php echo esc_html( $player['name'] ); ?><?php echo $player['captain'] ? ' <strong>' . esc_html__( '(Captain)', 'chess-army-knife' ) . '</strong>' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above. ?></li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+					<?php if ( ! empty( $roster['non_playing_captain'] ) ) : ?>
+						<p><strong><?php esc_html_e( 'Non-playing captain', 'chess-army-knife' ); ?></strong> - <?php echo esc_html( $roster['non_playing_captain'] ); ?></p>
 					<?php endif; ?>
 					<?php $seasons = $show_leagues ? Chess_Army_Knife_Teams::seasons_of( $team ) : array(); ?>
 					<?php if ( $seasons ) : ?>

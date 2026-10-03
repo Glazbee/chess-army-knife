@@ -200,15 +200,49 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'Wotton Hall Lions', Chess_Army_Knife_Teams::display_name( $with, '' ) );
 	}
 
-	public function test_group_by_division_keeps_first_seen_order() {
+	public function test_group_teams_by_division_keeps_first_seen_order() {
 		$lions   = array( 'name' => 'Lions', 'leagues' => array( array( 'event' => 'Division 1' ) ) );
 		$rhinos  = array( 'name' => 'Rhinos', 'leagues' => array( array( 'event' => 'Division 2' ) ) );
 		$leopard = array( 'name' => 'Leopards', 'leagues' => array( array( 'event' => 'Division 1' ) ) );
 		$none    = array( 'name' => 'Club', 'leagues' => array() );
 
-		$groups = Chess_Army_Knife_Teams::group_by_division( array( $lions, $rhinos, $leopard, $none ) );
+		$groups = Chess_Army_Knife_Teams::group_teams( array( $lions, $rhinos, $leopard, $none ), 'division' );
 
 		$this->assertSame( array( 'Division 1', 'Division 2', '' ), array_column( $groups, 'label' ) );
 		$this->assertSame( array( $lions, $leopard ), $groups[0]['teams'] );
+	}
+
+	public function test_group_teams_by_group_uses_the_free_text_group() {
+		$a = array( 'name' => 'A', 'group' => 'NGCA', 'leagues' => array() );
+		$b = array( 'name' => 'B', 'group' => 'Internal', 'leagues' => array() );
+		$c = array( 'name' => 'C', 'group' => 'NGCA', 'leagues' => array() );
+
+		$groups = Chess_Army_Knife_Teams::group_teams( array( $a, $b, $c ), 'group' );
+
+		$this->assertSame( array( 'NGCA', 'Internal' ), array_column( $groups, 'label' ) );
+		$this->assertSame( array( $a, $c ), $groups[0]['teams'] );
+	}
+
+	public function test_build_roster_marks_the_captain_and_separates_a_non_playing_one() {
+		$members = array(
+			array( 'id' => 1, 'name' => 'Ann' ),
+			array( 'id' => 2, 'name' => 'Bob' ),
+			array( 'id' => 3, 'name' => 'Cat' ),
+		);
+
+		$playing = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2 ), 2 );
+		$this->assertSame( array( false, true ), array_column( $playing['players'], 'captain' ) );
+		$this->assertSame( '', $playing['non_playing_captain'] );
+
+		$outside = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2 ), 3 );
+		$this->assertCount( 2, $outside['players'] );
+		$this->assertSame( 'Cat', $outside['non_playing_captain'] );
+	}
+
+	public function test_public_roster_is_empty_for_a_historic_team() {
+		$roster = Chess_Army_Knife_Teams::public_roster( array( 'id' => 5, 'historic' => true, 'captain_id' => 2 ) );
+
+		$this->assertSame( array(), $roster['players'] );
+		$this->assertSame( '', $roster['non_playing_captain'] );
 	}
 }

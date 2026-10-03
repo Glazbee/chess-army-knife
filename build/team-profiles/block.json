@@ -5,7 +5,7 @@
   "title": "Club Teams",
   "category": "chess-army-knife-leagues",
   "icon": "groups",
-  "description": "Shows the club's teams: name, description, home venue and, optionally, the leagues they play in, in one or more columns. Squads and captains are never shown.",
+  "description": "Shows the club's teams: name, description, home venue and, optionally, the leagues they play in, in one or more columns. The squad is shown only if you turn it on, and never for a historic team.",
   "keywords": [
     "chess",
     "club",
@@ -37,7 +37,11 @@
       "type": "string",
       "default": ""
     },
-    "groupByDivision": {
+    "groupBy": {
+      "type": "string",
+      "default": "none"
+    },
+    "showPlayers": {
       "type": "boolean",
       "default": false
     },

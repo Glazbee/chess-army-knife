@@ -36,6 +36,8 @@ class Chess_Army_Knife_Teams {
 	const META_SEASONS  = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
 	const META_LEAGUES  = '_chess_army_team_leagues';
 	const META_COLOUR   = '_chess_army_team_colour';
+	const META_GROUP    = '_chess_army_team_group'; // Free-text wider group the team is listed under, e.g. a league association.
+	const META_HISTORIC = '_chess_army_team_historic'; // Set for a team that no longer plays: its squad is not shown publicly.
 	const META_TAG      = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
 	const META_WHATSAPP = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
@@ -225,6 +227,8 @@ class Chess_Army_Knife_Teams {
 			'colour'      => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
 			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
 			'whatsapp'    => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
+			'group'       => trim( (string) get_post_meta( $post->ID, self::META_GROUP, true ) ),
+			'historic'    => (bool) get_post_meta( $post->ID, self::META_HISTORIC, true ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -266,16 +270,18 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * Teams grouped by division, in the order each division first appears.
-	 * Teams with no league form a group of their own with an empty label.
+	 * Teams grouped by their division or by their free-text group, in the order
+	 * each label first appears. Teams with none form a group of their own with an
+	 * empty label.
 	 *
 	 * @param array[] $teams Teams from all().
+	 * @param string  $by    'division' or 'group'.
 	 * @return array[] Each { label, teams }.
 	 */
-	public static function group_by_division( array $teams ) {
+	public static function group_teams( array $teams, $by ) {
 		$groups = array();
 		foreach ( $teams as $team ) {
-			$label = self::division_of( $team );
+			$label = 'group' === $by ? (string) $team['group'] : self::division_of( $team );
 			if ( ! isset( $groups[ $label ] ) ) {
 				$groups[ $label ] = array(
 					'label' => $label,
@@ -285,6 +291,49 @@ class Chess_Army_Knife_Teams {
 			$groups[ $label ]['teams'][] = $team;
 		}
 		return array_values( $groups );
+	}
+
+	/**
+	 * The players to show publicly for a team: its squad, with the captain marked.
+	 * A historic team shows nobody.
+	 *
+	 * @param array $team Team from all().
+	 * @return array { players: array[] of { name, captain }, non_playing_captain: string }
+	 */
+	public static function public_roster( array $team ) {
+		if ( $team['historic'] ) {
+			return self::build_roster( array(), array(), 0 );
+		}
+		$squad = self::squad( $team['id'] );
+		$ids   = $team['captain_id'] ? array_merge( $squad, array( $team['captain_id'] ) ) : $squad;
+		return self::build_roster( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ), $squad, $team['captain_id'] );
+	}
+
+	/**
+	 * Sort members into the squad's players and a captain outside the squad.
+	 *
+	 * @param array[] $members    Member rows (id, name).
+	 * @param int[]   $squad      Member ids in the squad.
+	 * @param int     $captain_id Captain's member id, or 0.
+	 * @return array See public_roster().
+	 */
+	public static function build_roster( array $members, array $squad, $captain_id ) {
+		$roster = array(
+			'players'             => array(),
+			'non_playing_captain' => '',
+		);
+		foreach ( $members as $member ) {
+			$is_captain = (int) $member['id'] === (int) $captain_id;
+			if ( in_array( (int) $member['id'], $squad, true ) ) {
+				$roster['players'][] = array(
+					'name'    => $member['name'],
+					'captain' => $is_captain,
+				);
+			} elseif ( $is_captain ) {
+				$roster['non_playing_captain'] = $member['name'];
+			}
+		}
+		return $roster;
 	}
 
 	/**

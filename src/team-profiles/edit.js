@@ -14,8 +14,15 @@ import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, teamId, columns, nameFormat, groupByDivision, showLeagues } =
-		attributes;
+	const {
+		title,
+		teamId,
+		columns,
+		nameFormat,
+		groupBy,
+		showPlayers,
+		showLeagues,
+	} = attributes;
 	const [ teams, setTeams ] = useState( [] );
 
 	const blockProps = useBlockProps();
@@ -89,11 +96,29 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { columns: value } )
 						}
 					/>
-					<ToggleControl
-						label={ __( 'Group by division', 'chess-army-knife' ) }
-						checked={ groupByDivision }
+					<SelectControl
+						label={ __( 'Group teams by', 'chess-army-knife' ) }
+						help={ __(
+							"A team's group is set under Teams.",
+							'chess-army-knife'
+						) }
+						value={ groupBy }
+						options={ [
+							{
+								label: __( 'No grouping', 'chess-army-knife' ),
+								value: 'none',
+							},
+							{
+								label: __( 'Group', 'chess-army-knife' ),
+								value: 'group',
+							},
+							{
+								label: __( 'Division', 'chess-army-knife' ),
+								value: 'division',
+							},
+						] }
 						onChange={ ( value ) =>
-							setAttributes( { groupByDivision: value } )
+							setAttributes( { groupBy: value } )
 						}
 					/>
 					<TextControl
@@ -109,6 +134,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						placeholder="{team}"
 						onChange={ ( value ) =>
 							setAttributes( { nameFormat: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Show players', 'chess-army-knife' ) }
+						help={ __(
+							'Lists the squad and captain of current teams. Never shown for historic teams.',
+							'chess-army-knife'
+						) }
+						checked={ showPlayers }
+						onChange={ ( value ) =>
+							setAttributes( { showPlayers: value } )
 						}
 					/>
 					<ToggleControl
