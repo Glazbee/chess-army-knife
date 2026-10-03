@@ -385,4 +385,10 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( 'Division 1' ), array_column( $merged[12], 'event' ) );
 		$this->assertArrayNotHasKey( 77, $merged );
 	}
+
+	public function test_divisions_are_listed_in_natural_alphabetical_order() {
+		$sorted = Chess_Army_Knife_Leagues_Page::sort_divisions( array( 'Division 10', 'Division 2', 'cup', 'Division 1', 'Division 2' ) );
+
+		$this->assertSame( array( 'cup', 'Division 1', 'Division 2', 'Division 10' ), $sorted );
+	}
 }

@@ -1,8 +1,8 @@
 <?php
 /**
  * The Leagues tab of Teams: the club's league entries by LMS organisation. For each organisation the divisions
- * are listed as the LMS has them, and the club's teams are dragged into the division they play in (or chosen
- * from a drop-down). A team plays in one division of an organisation.
+ * are listed as the LMS has them, and the club's teams are dragged into the division they play in (or moved
+ * up and down with buttons). A team plays in one division of an organisation.
  *
  * The entries are stored on the teams (see Chess_Army_Knife_Teams::META_LEAGUES); this page is another way to
  * edit them, so a whole league can be set up in one place. Where a team's name is not one the LMS has, the page
@@ -99,6 +99,18 @@ class Chess_Army_Knife_Leagues_Page {
 		}
 		ksort( $by_org, SORT_NUMERIC );
 		return $by_org;
+	}
+
+	/**
+	 * Division names in natural, alphabetical order, so Division 2 comes before Division 10.
+	 *
+	 * @param string[] $divisions Division names.
+	 * @return string[]
+	 */
+	public static function sort_divisions( array $divisions ) {
+		$divisions = array_values( array_unique( $divisions ) );
+		usort( $divisions, 'strnatcasecmp' );
+		return $divisions;
 	}
 
 	/**
@@ -216,17 +228,16 @@ class Chess_Army_Knife_Leagues_Page {
 	}
 
 	/**
-	 * One team in a list: its name, a drop-down to choose its division (the keyboard way to do what dragging
-	 * does), and, once it is in a division, a prompt to say which LMS team it is if the LMS has no team of its name.
+	 * One team in a list: its name, buttons to move it to the division above or below (the keyboard way to do what
+	 * dragging does), and, once it is in a division, a prompt to say which LMS team it is if the LMS has no team of its name.
 	 *
 	 * @param string $org       Organisation id.
 	 * @param array  $team      Team (see Chess_Army_Knife_Teams::all()).
 	 * @param string $division  The division it is in, or '' if none.
 	 * @param string $lms_name  The LMS name saved for it, or ''.
-	 * @param array  $divisions Division names to choose from.
 	 * @param array  $match     {names: string[] the LMS teams in its division, matched: bool, note: string}, or empty.
 	 */
-	protected static function render_team( $org, array $team, $division, $lms_name, array $divisions, array $match ) {
+	protected static function render_team( $org, array $team, $division, $lms_name, array $match ) {
 		$field = 'leagues[' . $org . '][' . $team['id'] . ']';
 		$id    = 'cak-league-' . $org . '-' . $team['id'];
 		?>
@@ -234,18 +245,13 @@ class Chess_Army_Knife_Leagues_Page {
 			<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
 				<span class="cak-drag-handle dashicons dashicons-menu" aria-hidden="true" style="cursor:move"></span>
 				<strong style="flex:1"><?php echo esc_html( $team['name'] ); ?></strong>
-				<label class="screen-reader-text" for="<?php echo esc_attr( $id ); ?>">
-					<?php
-					/* translators: %s: team name */
-					echo esc_html( sprintf( __( 'Division for %s', 'chess-army-knife' ), $team['name'] ) );
-					?>
-				</label>
-				<select id="<?php echo esc_attr( $id ); ?>" class="cak-division-pick" name="<?php echo esc_attr( $field ); ?>[event]">
-					<option value=""><?php esc_html_e( 'Not in this organisation', 'chess-army-knife' ); ?></option>
-					<?php foreach ( $divisions as $option ) : ?>
-						<option value="<?php echo esc_attr( $option ); ?>" <?php selected( $division, $option ); ?>><?php echo esc_html( $option ); ?></option>
-					<?php endforeach; ?>
-				</select>
+				<input type="hidden" class="cak-division-value" name="<?php echo esc_attr( $field ); ?>[event]" value="<?php echo esc_attr( $division ); ?>" />
+				<button type="button" class="button cak-move-up">
+					<span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: team name */ echo esc_html( sprintf( __( 'Move %s up', 'chess-army-knife' ), $team['name'] ) ); ?></span>
+				</button>
+				<button type="button" class="button cak-move-down">
+					<span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: team name */ echo esc_html( sprintf( __( 'Move %s down', 'chess-army-knife' ), $team['name'] ) ); ?></span>
+				</button>
 			</div>
 			<div class="cak-match">
 				<?php if ( $match && $match['note'] ) : ?>
@@ -325,7 +331,7 @@ class Chess_Army_Knife_Leagues_Page {
 			<?php if ( null !== $saved ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Leagues saved.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
-			<p class="description"><?php esc_html_e( 'For each LMS organisation, put the club\'s teams in the division they play in: drag a team into a division, or choose the division from the team\'s drop-down. A team plays in one division of an organisation. Import Events, the fixtures carousel and league table highlighting all read these entries.', 'chess-army-knife' ); ?></p>
+			<p class="description"><?php esc_html_e( 'For each LMS organisation, put the club\'s teams in the division they play in: drag a team into a division, or use the arrow buttons to move it up or down. A team plays in one division of an organisation. Import Events, the fixtures carousel and league table highlighting all read these entries.', 'chess-army-knife' ); ?></p>
 			<?php if ( ! $teams ) : ?>
 				<p><?php esc_html_e( 'There are no teams yet. Add teams on the Teams tab first.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
@@ -346,7 +352,7 @@ class Chess_Army_Knife_Leagues_Page {
 							$missing[] = $entry['event'];
 						}
 					}
-					$divisions = array_merge( $divisions, $missing );
+					$divisions = self::sort_divisions( array_merge( $divisions, $missing ) );
 					$name      = self::org_name( $org );
 					$by_div    = array_fill_keys( $divisions, array() );
 					$free      = array();
@@ -359,12 +365,18 @@ class Chess_Army_Knife_Leagues_Page {
 					}
 					?>
 					<input type="hidden" name="orgs[]" value="<?php echo esc_attr( $org ); ?>" />
+					<?php $lms_named = '' !== Chess_Army_Knife_LMS_Client::get_org_name( $org ); ?>
 					<h2 class="cak-org-title">
 						<?php echo esc_html( '' !== $name ? $name : __( 'LMS organisation', 'chess-army-knife' ) ); ?>
 						<span class="cak-org-id" style="color:#0a4b78">(<?php echo esc_html( $org ); ?>)</span>
+						<?php if ( ! $lms_named && '' !== $name ) : ?>
+							<button type="button" class="button cak-edit-org-name" aria-expanded="false" aria-controls="cak-org-name-row-<?php echo esc_attr( $org ); ?>">
+								<span class="dashicons dashicons-edit" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( 'Edit the organisation name', 'chess-army-knife' ); ?></span>
+							</button>
+						<?php endif; ?>
 					</h2>
-					<?php if ( '' === Chess_Army_Knife_LMS_Client::get_org_name( $org ) ) : ?>
-						<p>
+					<?php if ( ! $lms_named ) : ?>
+						<p id="cak-org-name-row-<?php echo esc_attr( $org ); ?>" <?php echo '' !== $name ? 'style="display:none"' : ''; ?>>
 							<label for="cak-org-name-<?php echo esc_attr( $org ); ?>"><?php esc_html_e( 'Organisation name', 'chess-army-knife' ); ?></label>
 							<input type="text" id="cak-org-name-<?php echo esc_attr( $org ); ?>" name="org_names[<?php echo esc_attr( $org ); ?>]" value="<?php echo esc_attr( $name ); ?>" class="regular-text" />
 							<span class="description"><?php esc_html_e( 'The LMS did not give a name, so you can type one for your own reference.', 'chess-army-knife' ); ?></span>
@@ -381,7 +393,7 @@ class Chess_Army_Knife_Leagues_Page {
 							<h3 id="cak-free-<?php echo esc_attr( $org ); ?>"><?php esc_html_e( 'Teams not in a division', 'chess-army-knife' ); ?></h3>
 							<ul class="cak-division-list" data-division="" aria-labelledby="cak-free-<?php echo esc_attr( $org ); ?>" style="list-style:none;margin:0;padding:8px;min-height:48px;border:1px dashed #c3c4c7">
 								<?php foreach ( $free as $team ) : ?>
-									<?php self::render_team( $org, $team, '', '', $divisions, array() ); ?>
+									<?php self::render_team( $org, $team, '', '', array() ); ?>
 								<?php endforeach; ?>
 							</ul>
 						</div>
@@ -393,7 +405,7 @@ class Chess_Army_Knife_Leagues_Page {
 										<?php
 										$lms_name = $assigned[ $team['id'] ]['name'];
 										$match    = self::match_in_division( $org, $division, '' !== $lms_name ? $lms_name : $team['name'], $memo );
-										self::render_team( $org, $team, $division, $lms_name, $divisions, $match );
+										self::render_team( $org, $team, $division, $lms_name, $match );
 										?>
 									<?php endforeach; ?>
 								</ul>
