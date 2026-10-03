@@ -287,7 +287,7 @@ class Chess_Army_Knife_Selection {
 			$body = sprintf(
 				/* translators: 1: person's name, 2: team name, 3: fixture, 4: date and time, 5: place, 6: link */
 				__( "Hello %1\$s,\n\nThe %2\$s captain would like to know if you can play in:\n\n%3\$s\n%4\$s%5\$s\n\nPlease let them know here (yes, maybe or no):\n%6\$s", 'chess-army-knife' ),
-				$person['name'],
+				Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ),
 				$fixture['team']['name'],
 				$fixture['event']['title'],
 				trim( Chess_Army_Knife_Events_Display::date_label( $fixture['event'] ) . ' ' . Chess_Army_Knife_Events_Display::time_label( $fixture['event'] ) ),
@@ -475,7 +475,7 @@ class Chess_Army_Knife_Selection {
 			$body = sprintf(
 				/* translators: 1: person's name, 2: team name, 3: board number, 4: fixture, 5: date and time, 6: place */
 				__( "Hello %1\$s,\n\nYou have been picked for the %2\$s team on board %3\$d:\n\n%4\$s\n%5\$s%6\$s\n\nIf you cannot play, please tell your captain as soon as you can.", 'chess-army-knife' ),
-				$person['name'],
+				Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ),
 				$fixture['team']['name'],
 				$board,
 				$fixture['event']['title'],
@@ -498,7 +498,7 @@ class Chess_Army_Knife_Selection {
 			$body = sprintf(
 				/* translators: 1: person's name, 2: team name, 3: fixture */
 				__( "Hello %1\$s,\n\nThe %2\$s line-up for %3\$s has changed and you are no longer picked. Please check with your captain if you have any questions.", 'chess-army-knife' ),
-				$person['name'],
+				Chess_Army_Knife_Names::person( $person, Chess_Army_Knife_Names::site_style() ),
 				$fixture['team']['name'],
 				$fixture['event']['title']
 			);

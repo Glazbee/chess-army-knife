@@ -233,7 +233,7 @@ class PluginTest extends WP_UnitTestCase {
 
 		$this->assertSame( array( array( 'id' => 7 ) ), $games );
 		$person = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '120787J' );
-		$this->assertSame( 'Newly Seen', $person['name'] );
+		$this->assertSame( 'Seen, Newly', $person['name'] );
 		$this->assertSame( 'nonmember', $person['status'], 'Recorded, but not as a member.' );
 		$this->assertSame( array(), Chess_Army_Knife_Membership_Store::get_members(), 'And left out of the member lists.' );
 		$this->assertCount( 2, $this->http_requests, 'One request to learn who they are, one for their games.' );

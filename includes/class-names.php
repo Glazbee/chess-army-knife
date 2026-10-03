@@ -107,6 +107,22 @@ class Chess_Army_Knife_Names {
 	}
 
 	/**
+	 * A name as the club stores it: "Surname, Firstname Middle names", as the ECF writes names, so lists sort by
+	 * surname. A single word, or a name that cannot be split, is kept as it is. Shown names are written again
+	 * with format().
+	 *
+	 * @param string $name Full name, in either order.
+	 * @return string
+	 */
+	public static function canonical( $name ) {
+		$parts = self::parse( $name );
+		if ( '' === $parts['surname'] ) {
+			return trim( (string) $name );
+		}
+		return $parts['surname'] . ', ' . trim( $parts['first'] . ' ' . implode( ' ', $parts['middle'] ) );
+	}
+
+	/**
 	 * A surname, for sorting.
 	 *
 	 * @param string $name Full name.

@@ -239,7 +239,7 @@ class MembershipsTest extends WP_UnitTestCase {
 
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
 
-		$this->assertSame( 'Grace Hopper', $member['name'] );
+		$this->assertSame( 'Hopper, Grace', $member['name'] );
 		$this->assertSame( $type, $member['membership_type_id'] );
 		$this->assertSame( '2027-08-31', $member['expiry_date'] );
 		$this->assertSame( '', $member['start_date'], 'A missing date reads back as an empty string.' );
@@ -252,7 +252,7 @@ class MembershipsTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertSame( '01234', Chess_Army_Knife_Membership_Store::get_member( $id )['phone'] );
-		$this->assertSame( 'Grace Hopper', Chess_Army_Knife_Membership_Store::get_member( $id )['name'], 'An update changes only the given fields.' );
+		$this->assertSame( 'Hopper, Grace', Chess_Army_Knife_Membership_Store::get_member( $id )['name'], 'An update changes only the given fields.' );
 
 		Chess_Army_Knife_Membership_Store::delete_member( $id );
 		$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id ) );
@@ -336,8 +336,8 @@ class MembershipsTest extends WP_UnitTestCase {
 			return $this->names( Chess_Army_Knife_Membership_Store::get_members( array( 'search' => $text ) ) );
 		};
 
-		$this->assertSame( array( 'Ada Lovelace' ), $search( 'lovel' ) );
-		$this->assertSame( array( "Conan O'Brien" ), $search( 'club.test' ) );
+		$this->assertSame( array( 'Lovelace, Ada' ), $search( 'lovel' ) );
+		$this->assertSame( array( "O'Brien, Conan" ), $search( 'club.test' ) );
 		$this->assertSame( array( "Conan O'Brien" ), $search( "O'Brien" ) );
 		$this->assertSame( array(), $search( "' OR 1=1 --" ) );
 		$this->assertSame( array(), $search( '%' ), 'A percent sign is not a wildcard.' );
@@ -418,17 +418,17 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Decline', $html );
 		$this->assertStringContainsString( '&lt;script&gt;alert(1)&lt;/script&gt;', $html );
 		$this->assertStringNotContainsString( '<script>alert(1)', $html );
-		$this->assertStringNotContainsString( 'Current Member', $html );
+		$this->assertStringNotContainsString( 'Member, Current', $html );
 
 		$_GET = array( 'view' => 'active' );
-		$this->assertStringContainsString( 'Current Member', $this->page_html() );
+		$this->assertStringContainsString( 'Member, Current', $this->page_html() );
 	}
 
 	public function test_the_members_page_opens_on_current_members_when_nothing_is_pending() {
 		$this->manager();
 		$this->member( array( 'name' => 'Current Member' ) );
 
-		$this->assertStringContainsString( 'Current Member', $this->page_html() );
+		$this->assertStringContainsString( 'Member, Current', $this->page_html() );
 	}
 
 	public function test_the_members_page_shows_the_add_and_edit_forms() {
@@ -652,7 +652,7 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertSame( 'Adult', $member['type_name'] );
 		$this->assertSame( '12345J', $member['ecf_code'] );
 		$this->assertSame( '', $member['date_of_birth'], 'An adult\'s date of birth is not kept.' );
-		$this->assertSame( array( 'Ada Lovelace' ), $this->names( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'pending' ) ) ) );
+		$this->assertSame( array( 'Lovelace, Ada' ), $this->names( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'pending' ) ) ) );
 	}
 
 	public function test_a_junior_application_is_saved_with_the_parents_details_instead_of_their_own() {

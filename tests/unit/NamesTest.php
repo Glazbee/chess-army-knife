@@ -42,6 +42,14 @@ class NamesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'Madeline Dupree', Chess_Army_Knife_Names::person( array( 'name' => 'Madeline Rose Dupree' ), Chess_Army_Knife_Names::FIRST_SURNAME ) );
 	}
 
+	public function test_names_are_stored_surname_first_as_the_ecf_writes_them() {
+		$this->assertSame( 'Cave, Nathan', Chess_Army_Knife_Names::canonical( 'Nathan Cave' ) );
+		$this->assertSame( 'Cave, Nathan', Chess_Army_Knife_Names::canonical( 'Cave, Nathan' ) );
+		$this->assertSame( 'Lovelace, Ada Augusta', Chess_Army_Knife_Names::canonical( '  Ada   Augusta Lovelace ' ) );
+		$this->assertSame( 'De Mello, Simon', Chess_Army_Knife_Names::canonical( 'Simon De Mello' ) );
+		$this->assertSame( 'Madonna', Chess_Army_Knife_Names::canonical( 'Madonna' ) );
+	}
+
 	public function test_a_single_word_is_left_alone() {
 		$this->assertSame( 'Madonna', Chess_Army_Knife_Names::format( 'Madonna', Chess_Army_Knife_Names::SURNAME_FIRST ) );
 		$this->assertSame( '', Chess_Army_Knife_Names::format( '', Chess_Army_Knife_Names::FIRST_SURNAME ) );

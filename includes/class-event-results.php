@@ -140,7 +140,7 @@ class Chess_Army_Knife_Event_Results {
 				// A code settles it; with no code the name is all there is to go on, and only the club's own players have codes.
 				$same = isset( $player['code'] ) && '' !== $player['code'] && '' !== preg_replace( '/\D/', '', (string) $code )
 					? self::same_code( $player['code'], $code )
-					: ( '' === preg_replace( '/\D/', '', (string) $code ) && '' !== $name && 0 === strcasecmp( $player['name'], $name ) );
+					: ( '' === preg_replace( '/\D/', '', (string) $code ) && '' !== $name && 0 === strcasecmp( Chess_Army_Knife_Names::canonical( $player['name'] ), Chess_Army_Knife_Names::canonical( $name ) ) );
 				if ( $same ) {
 					$result['games'][ $index ][ $side ] = array( 'name' => '' );
 				}

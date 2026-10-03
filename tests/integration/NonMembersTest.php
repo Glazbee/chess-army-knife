@@ -145,7 +145,7 @@ class NonMembersTest extends WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $first );
 		$this->assertSame( $first, $second, 'The ECF code identifies the person.' );
 		$guest = Chess_Army_Knife_Membership_Store::get_member( $first );
-		$this->assertSame( 'Guest One', $guest['name'] );
+		$this->assertSame( 'One, Guest', $guest['name'] );
 		$this->assertSame( '12345X', $guest['ecf_code'] );
 		$this->assertSame( 'nonmember', $guest['status'] );
 		$this->assertSame( 'manual', $guest['source'] );

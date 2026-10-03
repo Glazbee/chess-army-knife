@@ -174,7 +174,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 				)
 			)->get_error_code()
 		);
-		$this->assertSame( 'Ada Lovelace', Chess_Army_Knife_Membership_Store::get_member( $ada )['name'] );
+		$this->assertSame( 'Lovelace, Ada', Chess_Army_Knife_Membership_Store::get_member( $ada )['name'] );
 	}
 
 	/* -------------------------------------------------------------
@@ -209,7 +209,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 		);
 
 		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
-		$this->assertSame( 'Ada King', $member['name'] );
+		$this->assertSame( 'King, Ada', $member['name'] );
 		$this->assertSame( '0999', $member['phone'] );
 		$this->assertSame( '222222B', $member['ecf_code'] );
 		$this->assertNull( $member['ecf_rating'] );
@@ -281,7 +281,7 @@ class MemberPortalTest extends WP_UnitTestCase {
 				)
 			)->get_error_code()
 		);
-		$this->assertSame( 'Bob Smith', Chess_Army_Knife_Membership_Store::get_member( $bob )['name'] );
+		$this->assertSame( 'Smith, Bob', Chess_Army_Knife_Membership_Store::get_member( $bob )['name'] );
 	}
 
 	public function test_a_junior_keeps_a_parent_as_contact_and_a_parent_name_is_required() {

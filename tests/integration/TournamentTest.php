@@ -125,8 +125,8 @@ class TournamentTest extends WP_UnitTestCase {
 				'name' => 'Alice Smith',
 			)
 		);
-		$this->assertSame( 'Alice Smith', Chess_Army_Knife_Tournament_Store::get_entries( $tournament )[0]['name'] );
-		$this->assertSame( 'Alice Smith', Chess_Army_Knife_Tournament_Store::get_entry( $entry['id'] )['name'] );
+		$this->assertSame( 'Smith, Alice', Chess_Army_Knife_Tournament_Store::get_entries( $tournament )[0]['name'] );
+		$this->assertSame( 'Smith, Alice', Chess_Army_Knife_Tournament_Store::get_entry( $entry['id'] )['name'] );
 	}
 
 	public function test_a_tournament_holds_no_personal_details_of_its_own() {

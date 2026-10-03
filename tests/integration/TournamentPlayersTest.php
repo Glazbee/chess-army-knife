@@ -127,7 +127,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertCount( 4, Chess_Army_Knife_Tournament_Store::get_entries( $tournament ) );
 
 		$cy = Chess_Army_Knife_Membership_Store::find_by_ecf_code( '555555K' );
-		$this->assertSame( 'Cy From ECF', $cy['name'] );
+		$this->assertSame( 'ECF, Cy From', $cy['name'] );
 		$this->assertCount( 4, Chess_Army_Knife_Membership_Store::get_players() ); // Alice, Bob, Cy and Di: the duplicate Alice reuses her profile.
 	}
 

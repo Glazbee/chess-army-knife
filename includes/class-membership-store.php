@@ -691,8 +691,9 @@ class Chess_Army_Knife_Membership_Store {
 			$row = self::find_by_ecf_code( $ecf_code );
 		} else {
 			$table = self::table();
+			// Found as it is stored now, or as it was typed before names were kept surname first.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-			$found = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE name = %s ORDER BY id ASC LIMIT 1", $name ), ARRAY_A );
+			$found = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE name = %s OR name = %s ORDER BY id ASC LIMIT 1", Chess_Army_Knife_Names::canonical( $name ), $name ), ARRAY_A );
 			$row   = $found ? self::cast_member( $found ) : null;
 		}
 
@@ -961,6 +962,11 @@ class Chess_Army_Knife_Membership_Store {
 		global $wpdb;
 
 		$data['updated_at'] = current_time( 'mysql', true );
+
+		// Names are kept the way the ECF writes them, "Surname, Firstname", so they sort by surname.
+		if ( isset( $data['name'] ) && self::erased_name() !== $data['name'] ) {
+			$data['name'] = Chess_Army_Knife_Names::canonical( $data['name'] );
+		}
 
 		if ( ! empty( $data['id'] ) ) {
 			$id = (int) $data['id'];

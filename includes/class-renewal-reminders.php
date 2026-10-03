@@ -244,7 +244,7 @@ class Chess_Army_Knife_Renewal_Reminders {
 		}
 
 		$replace = array(
-			'{name}'      => $member['name'],
+			'{name}'      => Chess_Army_Knife_Names::person( $member, Chess_Army_Knife_Names::site_style() ),
 			'{type}'      => '' !== $member['type_name'] ? $member['type_name'] : __( 'club', 'chess-army-knife' ),
 			'{expiry}'    => $date,
 			'{when}'      => $when,

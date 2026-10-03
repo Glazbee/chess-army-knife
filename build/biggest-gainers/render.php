@@ -38,8 +38,9 @@ $name_style         = Chess_Army_Knife_Names::style_for( $attributes );
 $players = array();
 foreach ( Chess_Army_Knife_Membership_Store::get_players( '', true, $max_players, true ) as $member ) {
 	$players[] = array(
-		'code' => $member['ecf_code'],
-		'name' => $member['name'],
+		'code'     => $member['ecf_code'],
+		'name'     => $member['name'],
+		'nickname' => $member['nickname'],
 	);
 }
 
@@ -100,11 +101,12 @@ foreach ( $players as $player ) {
 	}
 
 	$movers[] = array(
-		'name'  => $player['name'],
-		'from'  => $from,
-		'to'    => $to,
-		'gain'  => $gain,
-		'games' => count( $points ),
+		'name'     => $player['name'],
+		'nickname' => $player['nickname'],
+		'from'     => $from,
+		'to'       => $to,
+		'gain'     => $gain,
+		'games'    => count( $points ),
 	);
 }
 
@@ -134,7 +136,7 @@ $heading = $block_title ? $block_title : __( 'Biggest improvers', 'chess-army-kn
 			<?php foreach ( $movers as $i => $mover ) : ?>
 				<li class="cak-gainers__item">
 					<span class="cak-gainers__rank" aria-hidden="true">#<?php echo (int) ( $i + 1 ); ?></span>
-					<span class="cak-gainers__name"><?php echo esc_html( Chess_Army_Knife_Names::format( $mover['name'], $name_style ) ); ?></span>
+					<span class="cak-gainers__name"><?php echo esc_html( Chess_Army_Knife_Names::format( $mover['name'], $name_style, $mover['nickname'] ) ); ?></span>
 					<?php
 					if ( $show_detail ) :
 						?>

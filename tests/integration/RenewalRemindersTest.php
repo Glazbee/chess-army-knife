@@ -214,7 +214,7 @@ class RenewalRemindersTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Renewals_Page::render_page();
 		$html = ob_get_clean();
 
-		$this->assertStringContainsString( 'Ada Lovelace', $html );
+		$this->assertStringContainsString( 'Lovelace, Ada', $html );
 		$this->assertStringContainsString( 'ada@example.test', $html );
 		$this->assertStringContainsString( 'No: no email address', $html );
 		$this->assertStringContainsString( 'Send these now', $html );
