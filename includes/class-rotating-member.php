@@ -24,8 +24,8 @@ class Chess_Army_Knife_Rotating_Member {
 	/** Most members checked, so the ECF's daily allowance is not used up by a big club. */
 	const DEFAULT_POOL_LIMIT = 50;
 
-	/** How long the list of members with growth is kept. */
-	const CACHE_SECONDS = 6 * HOUR_IN_SECONDS;
+	/** How long the list of members with growth is kept: a day, as a rise that shows late hardly matters when a block moves on at most weekly. */
+	const CACHE_SECONDS = DAY_IN_SECONDS;
 
 	/**
 	 * How often a block can move on to another member.
