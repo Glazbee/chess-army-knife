@@ -18,6 +18,7 @@ import ServerSideRender from '@wordpress/server-side-render';
 import PlayerPicker from '../shared/player-picker';
 import TemplatePicker from '../shared/template-picker';
 import NameFormatControl from '../shared/name-format-control';
+import RotationControl from '../shared/rotation-control';
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -43,7 +44,9 @@ export default function Edit( { attributes, setAttributes } ) {
 		showRating,
 		showClub,
 		showLinks,
+		rotation,
 	} = attributes;
+	const rotating = rotation && 'none' !== rotation;
 
 	const blockProps = useBlockProps();
 	const pick = ( player ) =>
@@ -63,32 +66,16 @@ export default function Edit( { attributes, setAttributes } ) {
 					title={ __( 'Player', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
-					<PlayerPicker
-						value={ { code: playerCode, name: playerName } }
-						onSelect={ pick }
+					<RotationControl
+						attributes={ attributes }
+						setAttributes={ setAttributes }
 					/>
-					<TextControl
-						label={ __( 'ECF rating code', 'chess-army-knife' ) }
-						help={ __(
-							'Optional. Enables rating and club details from the ECF.',
-							'chess-army-knife'
-						) }
-						value={ playerCode }
-						onChange={ ( value ) =>
-							setAttributes( { playerCode: value } )
-						}
-					/>
-					<TextControl
-						label={ __( 'Display name', 'chess-army-knife' ) }
-						help={ __(
-							'Overrides the name from the ECF. Required if there is no ECF code.',
-							'chess-army-knife'
-						) }
-						value={ playerName }
-						onChange={ ( value ) =>
-							setAttributes( { playerName: value } )
-						}
-					/>
+					{ ! rotating && (
+						<PlayerPicker
+							value={ { code: playerCode, name: playerName } }
+							onSelect={ pick }
+						/>
+					) }
 					<NameFormatControl
 						value={ attributes.nameFormat }
 						onChange={ ( value ) =>
@@ -236,12 +223,12 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 			</InspectorControls>
 
-			{ ! playerCode && ! playerName ? (
+			{ ! rotating && ! playerCode ? (
 				<Placeholder
 					icon="star-filled"
-					label={ __( 'ECF Featured Player', 'chess-army-knife' ) }
+					label={ __( 'Featured Player', 'chess-army-knife' ) }
 					instructions={ __(
-						'Choose a club member, or type a display name in the sidebar.',
+						'Choose a current club member in the sidebar, or turn on rotation.',
 						'chess-army-knife'
 					) }
 				>

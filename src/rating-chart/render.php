@@ -1,6 +1,8 @@
 <?php
 /**
- * Server-side render for the ECF Rating Chart block.
+ * Server-side render for the ECF Rating Chart block. Only a current club member can be charted. The block can
+ * rotate: every hour, day, week or month it moves on to another current member whose rating has risen over
+ * the period, and then charts only the games in that period.
  *
  * @package Chess_Army_Knife
  *
@@ -25,13 +27,41 @@ $line_color    = isset( $attributes['lineColor'] ) ? (string) $attributes['lineC
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'rating-chart', $attributes );
 
-if ( '' === $player_code ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'ECF Rating Chart: no player selected yet. Edit this block and search for a player.', 'chess-army-knife' )
+$name_style = Chess_Army_Knife_Names::style_for( $attributes );
+$rotation   = Chess_Army_Knife_Rotating_Member::clean_rotation( $attributes['rotation'] ?? '' );
+$days_back  = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
+$since      = '';
+
+if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
+	$chosen = Chess_Army_Knife_Rotating_Member::pick(
+		Chess_Army_Knife_Rotating_Member::growing_members( $rating_domain, $days_back, 2 ),
+		$rotation,
+		'chart|' . $rating_domain,
+		Chess_Army_Knife_Rotating_Member::local_time()
 	);
-	return;
+	if ( ! $chosen ) {
+		printf(
+			'<div %1$s><div class="chess-army-knife-empty">%2$s</div></div>',
+			wp_kses_post( $wrapper_attributes ),
+			esc_html__( 'No current member has a rising rating in this period yet.', 'chess-army-knife' )
+		);
+		return;
+	}
+	$player_code = Chess_Army_Knife_ECF_Client::normalise_code( $chosen['code'] );
+	$player_name = Chess_Army_Knife_Names::format( $chosen['name'], $name_style, $chosen['nickname'] );
+	$since       = gmdate( 'Y-m-d', strtotime( '-' . $days_back . ' days' ) );
+} else {
+	// Only a current member can be charted; the name comes from their record.
+	$member = '' === $player_code ? null : Chess_Army_Knife_Rotating_Member::current_member_by_code( $player_code );
+	if ( ! $member ) {
+		printf(
+			'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
+			wp_kses_post( $wrapper_attributes ),
+			esc_html__( 'ECF Rating Chart: choose a current club member in the block settings, or turn on rotation.', 'chess-army-knife' )
+		);
+		return;
+	}
+	$player_name = Chess_Army_Knife_Names::format( $member['name'], $name_style, $member['nickname'] );
 }
 
 $games = Chess_Army_Knife_ECF_Client::get_games( $player_code, $rating_domain, $games_limit );
@@ -49,7 +79,7 @@ if ( is_wp_error( $games ) ) {
 // Only games with a recorded player_rating snapshot are usable data points.
 $points = array();
 foreach ( (array) $games as $game ) {
-	if ( empty( $game['game_date'] ) || '' === $game['player_rating'] || null === $game['player_rating'] ) {
+	if ( empty( $game['game_date'] ) || '' === $game['player_rating'] || null === $game['player_rating'] || ( '' !== $since && $game['game_date'] < $since ) ) {
 		continue;
 	}
 	$points[] = array(

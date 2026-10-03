@@ -12,6 +12,7 @@ import {
 } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import PlayerPicker from '../shared/player-picker';
+import RotationControl from '../shared/rotation-control';
 
 const DOMAIN_OPTIONS = [
 	{ label: __( 'Site default', 'chess-army-knife' ), value: '' },
@@ -33,7 +34,9 @@ export default function Edit( { attributes, setAttributes } ) {
 		height,
 		showStats,
 		lineColor,
+		rotation,
 	} = attributes;
+	const rotating = rotation && 'none' !== rotation;
 
 	const blockProps = useBlockProps();
 
@@ -51,29 +54,21 @@ export default function Edit( { attributes, setAttributes } ) {
 					title={ __( 'Player', 'chess-army-knife' ) }
 					initialOpen={ true }
 				>
-					<PlayerPicker
-						value={ { code: playerCode, name: playerName } }
-						onSelect={ ( player ) =>
-							setAttributes( {
-								playerCode: player.code,
-								playerName: player.name,
-							} )
-						}
+					<RotationControl
+						attributes={ attributes }
+						setAttributes={ setAttributes }
 					/>
-					<TextControl
-						label={ __(
-							'ECF rating code (manual override)',
-							'chess-army-knife'
-						) }
-						help={ __(
-							'e.g. 120787. You can type this directly if you already know it.',
-							'chess-army-knife'
-						) }
-						value={ playerCode }
-						onChange={ ( value ) =>
-							setAttributes( { playerCode: value } )
-						}
-					/>
+					{ ! rotating && (
+						<PlayerPicker
+							value={ { code: playerCode, name: playerName } }
+							onSelect={ ( player ) =>
+								setAttributes( {
+									playerCode: player.code,
+									playerName: player.name,
+								} )
+							}
+						/>
+					) }
 				</PanelBody>
 				<PanelBody
 					title={ __( 'Chart settings', 'chess-army-knife' ) }
@@ -164,12 +159,12 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 			</InspectorControls>
 
-			{ ! playerCode ? (
+			{ ! rotating && ! playerCode ? (
 				<Placeholder
 					icon="chart-line"
 					label={ __( 'ECF Rating Chart', 'chess-army-knife' ) }
 					instructions={ __(
-						'Choose a club member in the sidebar, or type their ECF rating code, to preview the chart.',
+						'Choose a current club member in the sidebar, or turn on rotation, to preview the chart.',
 						'chess-army-knife'
 					) }
 				>

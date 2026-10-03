@@ -1,11 +1,11 @@
 <?php
 /**
- * Server-side render for the ECF Featured Player block.
+ * Server-side render for the Featured Player block.
  *
- * Shows a player's name, optional photo, current ECF rating and club (when
- * an ECF code is given), a free-text blurb on why they're featured, and
- * links to their chess.com and/or Lichess profiles. A player without an
- * ECF code can still be featured by display name alone.
+ * Shows a current club member's name, optional photo, current ECF rating and club, a free-text blurb on why
+ * they're featured, and links to their chess.com and/or Lichess profiles. Only current members can be
+ * featured. The block can instead rotate: every hour, day, week or month it moves on to another current
+ * member whose rating has risen over the period, and says so in place of the blurb.
  *
  * @package Chess_Army_Knife
  *
@@ -19,7 +19,7 @@ $attributes = Chess_Army_Knife_Templates::apply( 'featured-player', $attributes 
 
 $name_style    = Chess_Army_Knife_Names::style_for( $attributes );
 $player_code   = Chess_Army_Knife_ECF_Client::normalise_code( $attributes['playerCode'] ?? '' );
-$name          = trim( (string) ( $attributes['playerName'] ?? '' ) );
+$name          = '';
 $heading       = trim( (string) ( $attributes['heading'] ?? '' ) );
 $blurb         = trim( (string) ( $attributes['blurb'] ?? '' ) );
 $image_id      = (int) ( $attributes['imageId'] ?? 0 );
@@ -28,16 +28,54 @@ $rating_domain = Chess_Army_Knife_ECF_Client::normalise_domain( Chess_Army_Knife
 $show_rating   = ! isset( $attributes['showRating'] ) || (bool) $attributes['showRating'];
 $show_club     = ! isset( $attributes['showClub'] ) || (bool) $attributes['showClub'];
 $show_links    = ! isset( $attributes['showLinks'] ) || (bool) $attributes['showLinks'];
+$rotation      = Chess_Army_Knife_Rotating_Member::clean_rotation( $attributes['rotation'] ?? '' );
+$days_back     = max( 1, (int) Chess_Army_Knife_Settings::resolve( 'default_days_back', empty( $attributes['daysBack'] ) ? '' : $attributes['daysBack'], 60 ) );
+$chess_com     = '';
+$lichess       = '';
 
 $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'featured-player', $attributes );
 
-if ( '' === $player_code && '' === $name ) {
-	printf(
-		'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
-		wp_kses_post( $wrapper_attributes ),
-		esc_html__( 'ECF Featured Player: choose a player or enter a display name in the block settings.', 'chess-army-knife' )
+if ( Chess_Army_Knife_Rotating_Member::NONE !== $rotation ) {
+	// Whose turn it is among the members whose rating has risen; a chosen photo, blurb and links belong to one person, so they are not used.
+	$chosen = Chess_Army_Knife_Rotating_Member::pick(
+		Chess_Army_Knife_Rotating_Member::growing_members( $rating_domain, $days_back, 2 ),
+		$rotation,
+		'featured|' . $rating_domain,
+		Chess_Army_Knife_Rotating_Member::local_time()
 	);
-	return;
+	if ( ! $chosen ) {
+		printf(
+			'<div %1$s><div class="chess-army-knife-empty">%2$s</div></div>',
+			wp_kses_post( $wrapper_attributes ),
+			esc_html__( 'No current member has a rising rating in this period yet.', 'chess-army-knife' )
+		);
+		return;
+	}
+	$player_code = Chess_Army_Knife_ECF_Client::normalise_code( $chosen['code'] );
+	$name        = Chess_Army_Knife_Names::format( $chosen['name'], $name_style, $chosen['nickname'] );
+	$image_id    = 0;
+	$image_url   = '';
+	$show_links  = false;
+	$blurb       = sprintf(
+		/* translators: 1: rating points gained, 2: number of days, 3: rating at the start, 4: rating now */
+		_n( 'Up %1$d rating point in the last %2$d days, from %3$d to %4$d.', 'Up %1$d rating points in the last %2$d days, from %3$d to %4$d.', (int) $chosen['gain'], 'chess-army-knife' ),
+		(int) $chosen['gain'],
+		$days_back,
+		(int) $chosen['from'],
+		(int) $chosen['to']
+	);
+} else {
+	// Only a current member can be featured; the name comes from their record.
+	$member = '' === $player_code ? null : Chess_Army_Knife_Rotating_Member::current_member_by_code( $player_code );
+	if ( ! $member ) {
+		printf(
+			'<div %1$s><div class="chess-army-knife-notice">%2$s</div></div>',
+			wp_kses_post( $wrapper_attributes ),
+			esc_html__( 'Featured Player: choose a current club member in the block settings, or turn on rotation.', 'chess-army-knife' )
+		);
+		return;
+	}
+	$name = Chess_Army_Knife_Names::format( $member['name'], $name_style, $member['nickname'] );
 }
 
 /**
@@ -58,8 +96,10 @@ $clean_username = function ( $value ) {
 	return preg_replace( '/[^A-Za-z0-9_-]/', '', $value );
 };
 
-$chess_com = $clean_username( $attributes['chessComUser'] ?? '' );
-$lichess   = $clean_username( $attributes['lichessUser'] ?? '' );
+if ( Chess_Army_Knife_Rotating_Member::NONE === $rotation ) {
+	$chess_com = $clean_username( $attributes['chessComUser'] ?? '' );
+	$lichess   = $clean_username( $attributes['lichessUser'] ?? '' );
+}
 
 // ECF details (best effort: the block still renders without them).
 $rating       = '';
@@ -72,10 +112,6 @@ if ( '' !== $player_code ) {
 	$admin_keys[] = Chess_Army_Knife_ECF_Client::cache_key_player( $player_code );
 
 	if ( ! is_wp_error( $player ) && is_array( $player ) ) {
-		if ( '' === $name && ! empty( $player['full_name'] ) ) {
-			// The ECF returns "Surname, Forename"; written the way the site or block chooses.
-			$name = Chess_Army_Knife_Names::format( $player['full_name'], $name_style );
-		}
 		$club         = isset( $player['club_name'] ) ? (string) $player['club_name'] : '';
 		$player_title = isset( $player['title'] ) ? (string) $player['title'] : '';
 	}
