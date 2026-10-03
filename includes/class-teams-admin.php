@@ -66,7 +66,6 @@ class Chess_Army_Knife_Teams_Admin {
 		$tag      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_TAG, true );
 		$whatsapp = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_WHATSAPP, true );
 		$group    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_GROUP, true );
-		$historic = (bool) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_HISTORIC, true );
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
@@ -80,13 +79,6 @@ class Chess_Army_Knife_Teams_Admin {
 				<td>
 					<input type="text" id="chess_army_team_group" name="chess_army_team_group" value="<?php echo esc_attr( $group ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. North Gloucestershire Chess Association', 'chess-army-knife' ); ?>" />
 					<p class="description"><?php esc_html_e( 'Optional. The Club Teams block can list teams under a heading for each group. Teams with the same group text are listed together.', 'chess-army-knife' ); ?></p>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Historic team', 'chess-army-knife' ); ?></th>
-				<td>
-					<label><input type="checkbox" name="chess_army_team_historic" value="1" <?php checked( $historic ); ?> /> <?php esc_html_e( 'This team no longer plays', 'chess-army-knife' ); ?></label>
-					<p class="description"><?php esc_html_e( 'The Club Teams block shows the squad and captain of a current team, but never those of a historic one.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -148,7 +140,7 @@ class Chess_Army_Knife_Teams_Admin {
 								<option value="<?php echo esc_attr( $person['id'] ); ?>" <?php selected( $captain, $person['id'] ); ?>><?php echo esc_html( $person['name'] ); ?></option>
 							<?php endforeach; ?>
 						</select>
-						<p class="description"><?php esc_html_e( 'Shown on the website in the Club Officers block, where team captains are listed as officers, and marked in the squad list of the Club Teams block (not for a historic team).', 'chess-army-knife' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Shown on the website in the Club Officers block, where team captains are listed as officers, and marked in the squad list of the Club Teams block.', 'chess-army-knife' ); ?></p>
 					<?php else : ?>
 						<?php $captain_person = $captain ? Chess_Army_Knife_Membership_Store::get_member( $captain ) : null; ?>
 						<?php echo esc_html( $captain_person ? $captain_person['name'] : __( 'None', 'chess-army-knife' ) ); ?>
@@ -240,7 +232,6 @@ class Chess_Army_Knife_Teams_Admin {
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_TAG, isset( $_POST['chess_army_team_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_tag'] ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_WHATSAPP, isset( $_POST['chess_army_team_whatsapp'] ) ? Chess_Army_Knife_Teams::clean_whatsapp_link( sanitize_text_field( wp_unslash( $_POST['chess_army_team_whatsapp'] ) ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_GROUP, isset( $_POST['chess_army_team_group'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_group'] ) ) : '' );
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_HISTORIC, empty( $_POST['chess_army_team_historic'] ) ? 0 : 1 );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_VENUE, isset( $_POST['chess_army_team_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_venue'] ) ) : '' );
 
 		$colour = ! empty( $_POST['chess_army_team_no_colour'] ) || ! isset( $_POST['chess_army_team_colour'] ) ? '' : (string) sanitize_hex_color( wp_unslash( $_POST['chess_army_team_colour'] ) );

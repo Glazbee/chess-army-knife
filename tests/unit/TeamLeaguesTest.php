@@ -238,11 +238,4 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertCount( 2, $outside['players'] );
 		$this->assertSame( 'Cat', $outside['non_playing_captain'] );
 	}
-
-	public function test_public_roster_is_empty_for_a_historic_team() {
-		$roster = Chess_Army_Knife_Teams::public_roster( array( 'id' => 5, 'historic' => true, 'captain_id' => 2 ) );
-
-		$this->assertSame( array(), $roster['players'] );
-		$this->assertSame( '', $roster['non_playing_captain'] );
-	}
 }

@@ -37,7 +37,6 @@ class Chess_Army_Knife_Teams {
 	const META_LEAGUES  = '_chess_army_team_leagues';
 	const META_COLOUR   = '_chess_army_team_colour';
 	const META_GROUP    = '_chess_army_team_group'; // Free-text wider group the team is listed under, e.g. a league association.
-	const META_HISTORIC = '_chess_army_team_historic'; // Set for a team that no longer plays: its squad is not shown publicly.
 	const META_TAG      = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
 	const META_WHATSAPP = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
@@ -228,7 +227,6 @@ class Chess_Army_Knife_Teams {
 			'tag'         => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
 			'whatsapp'    => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
 			'group'       => trim( (string) get_post_meta( $post->ID, self::META_GROUP, true ) ),
-			'historic'    => (bool) get_post_meta( $post->ID, self::META_HISTORIC, true ),
 			'leagues'     => $leagues,
 			'seasons'     => array_map(
 				function ( $league ) use ( $name ) {
@@ -295,15 +293,11 @@ class Chess_Army_Knife_Teams {
 
 	/**
 	 * The players to show publicly for a team: its squad, with the captain marked.
-	 * A historic team shows nobody.
 	 *
 	 * @param array $team Team from all().
 	 * @return array { players: array[] of { name, captain }, non_playing_captain: string }
 	 */
 	public static function public_roster( array $team ) {
-		if ( $team['historic'] ) {
-			return self::build_roster( array(), array(), 0 );
-		}
 		$squad = self::squad( $team['id'] );
 		$ids   = $team['captain_id'] ? array_merge( $squad, array( $team['captain_id'] ) ) : $squad;
 		return self::build_roster( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ), $squad, $team['captain_id'] );

@@ -139,7 +139,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __( 'Show players', 'chess-army-knife' ) }
 						help={ __(
-							'Lists the squad and captain of current teams. Never shown for historic teams.',
+							'Lists the squad and captain of each team shown.',
 							'chess-army-knife'
 						) }
 						checked={ showPlayers }
