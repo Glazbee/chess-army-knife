@@ -185,15 +185,47 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		);
 	}
 
+	/**
+	 * A team as all() returns it, with at most one league.
+	 *
+	 * @param string $name  Team name.
+	 * @param string $event Division of its league, or '' for none.
+	 * @param string $group Free-text group.
+	 * @return array
+	 */
+	protected function team( $name, $event = '', $group = '' ) {
+		$leagues = array();
+		if ( '' !== $event ) {
+			$leagues[] = array(
+				'org'   => '613',
+				'event' => $event,
+				'name'  => '',
+			);
+		}
+		return array(
+			'name'    => $name,
+			'group'   => $group,
+			'leagues' => $leagues,
+		);
+	}
+
+	/**
+	 * A member row.
+	 *
+	 * @param int    $id   Member id.
+	 * @param string $name Member name.
+	 * @return array
+	 */
+	protected function member( $id, $name ) {
+		return array(
+			'id'   => $id,
+			'name' => $name,
+		);
+	}
+
 	public function test_display_name_uses_the_format_and_trims_a_missing_league() {
-		$with    = array(
-			'name'    => 'Wotton Hall Lions',
-			'leagues' => array( array( 'org' => '613', 'event' => 'Division 1', 'name' => '' ) ),
-		);
-		$without = array(
-			'name'    => 'Wotton Hall Lions',
-			'leagues' => array(),
-		);
+		$with    = $this->team( 'Wotton Hall Lions', 'Division 1' );
+		$without = $this->team( 'Wotton Hall Lions' );
 
 		$this->assertSame( 'Division 1 - Wotton Hall Lions', Chess_Army_Knife_Teams::display_name( $with, '{league} - {team}' ) );
 		$this->assertSame( 'Wotton Hall Lions', Chess_Army_Knife_Teams::display_name( $without, '{league} - {team}' ) );
@@ -201,10 +233,10 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_group_teams_by_division_keeps_first_seen_order() {
-		$lions   = array( 'name' => 'Lions', 'leagues' => array( array( 'event' => 'Division 1' ) ) );
-		$rhinos  = array( 'name' => 'Rhinos', 'leagues' => array( array( 'event' => 'Division 2' ) ) );
-		$leopard = array( 'name' => 'Leopards', 'leagues' => array( array( 'event' => 'Division 1' ) ) );
-		$none    = array( 'name' => 'Club', 'leagues' => array() );
+		$lions   = $this->team( 'Lions', 'Division 1' );
+		$rhinos  = $this->team( 'Rhinos', 'Division 2' );
+		$leopard = $this->team( 'Leopards', 'Division 1' );
+		$none    = $this->team( 'Club' );
 
 		$groups = Chess_Army_Knife_Teams::group_teams( array( $lions, $rhinos, $leopard, $none ), 'division' );
 
@@ -213,9 +245,9 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_group_teams_by_group_uses_the_free_text_group() {
-		$a = array( 'name' => 'A', 'group' => 'NGCA', 'leagues' => array() );
-		$b = array( 'name' => 'B', 'group' => 'Internal', 'leagues' => array() );
-		$c = array( 'name' => 'C', 'group' => 'NGCA', 'leagues' => array() );
+		$a = $this->team( 'A', '', 'NGCA' );
+		$b = $this->team( 'B', '', 'Internal' );
+		$c = $this->team( 'C', '', 'NGCA' );
 
 		$groups = Chess_Army_Knife_Teams::group_teams( array( $a, $b, $c ), 'group' );
 
@@ -224,11 +256,7 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_build_roster_marks_the_captain_and_separates_a_non_playing_one() {
-		$members = array(
-			array( 'id' => 1, 'name' => 'Ann' ),
-			array( 'id' => 2, 'name' => 'Bob' ),
-			array( 'id' => 3, 'name' => 'Cat' ),
-		);
+		$members = array( $this->member( 1, 'Ann' ), $this->member( 2, 'Bob' ), $this->member( 3, 'Cat' ) );
 
 		$playing = Chess_Army_Knife_Teams::build_roster( $members, array( 1, 2 ), 2 );
 		$this->assertSame( array( false, true ), array_column( $playing['players'], 'captain' ) );
