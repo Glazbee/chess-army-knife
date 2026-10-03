@@ -102,7 +102,7 @@ class Chess_Army_Knife_Team_Tabs {
 	}
 
 	/**
-	 * Draw the Teams and Groups switch above the lists of each.
+	 * Draw the Teams, Groups and Leagues switch above the lists of each.
 	 */
 	public static function render_on_list_screen() {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
@@ -114,20 +114,21 @@ class Chess_Army_Knife_Team_Tabs {
 	}
 
 	/**
-	 * Draw the switch between the list of teams and the list of groups.
+	 * Draw the switch between the list of teams, the list of groups and the leagues.
 	 *
-	 * @param string $active 'teams' or 'groups'.
+	 * @param string $active 'teams', 'groups' or 'leagues'.
 	 */
 	public static function render_sections( $active ) {
 		if ( ! Chess_Army_Knife_Teams::user_can_manage() ) {
 			return;
 		}
 		$sections = array(
-			'teams'  => array( __( 'Teams', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ),
-			'groups' => array( __( 'Groups', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE ) ),
+			'teams'   => array( __( 'Teams', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ),
+			'groups'  => array( __( 'Groups', 'chess-army-knife' ), admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE ) ),
+			'leagues' => array( __( 'Leagues', 'chess-army-knife' ), admin_url( 'admin.php?page=' . Chess_Army_Knife_Leagues_Page::PAGE ) ),
 		);
 		?>
-		<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Teams and groups', 'chess-army-knife' ); ?>">
+		<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Teams, groups and leagues', 'chess-army-knife' ); ?>">
 			<?php foreach ( $sections as $key => $section ) : ?>
 				<a class="nav-tab<?php echo $active === $key ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( $section[1] ); ?>"<?php echo $active === $key ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $section[0] ); ?></a>
 			<?php endforeach; ?>
@@ -136,7 +137,7 @@ class Chess_Army_Knife_Team_Tabs {
 	}
 
 	/**
-	 * Whether the screen being shown is one of Teams' tabs that has no menu item of its own: Overview, Selection or Groups.
+	 * Whether the screen being shown is one of Teams' tabs that has no menu item of its own: Overview, Selection, Groups or Leagues.
 	 *
 	 * @return bool
 	 */
@@ -145,7 +146,7 @@ class Chess_Army_Knife_Team_Tabs {
 		$page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 		// Groups have no menu item either: they are a tab of Teams.
-		return in_array( $page, array( Chess_Army_Knife_Team_Overview::PAGE, Chess_Army_Knife_Selection_Page::SLUG ), true )
+		return in_array( $page, array( Chess_Army_Knife_Team_Overview::PAGE, Chess_Army_Knife_Selection_Page::SLUG, Chess_Army_Knife_Leagues_Page::PAGE ), true )
 			|| ( $screen && Chess_Army_Knife_Team_Groups::POST_TYPE === $screen->post_type );
 	}
 

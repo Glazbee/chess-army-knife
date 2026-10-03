@@ -20,7 +20,7 @@ class Chess_Army_Knife_Captains {
 	const CAPABILITY     = 'chess_army_captain';
 	const META_USER      = '_chess_army_team_captain_user';
 	const META_BOARDS    = '_chess_army_team_boards';
-	const DEFAULT_BOARDS = 4;
+	const DEFAULT_BOARDS = 5;
 	const MAX_BOARDS     = 20;
 
 	/**

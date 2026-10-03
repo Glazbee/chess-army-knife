@@ -5,8 +5,8 @@
 	"title": "Club Teams",
 	"category": "chess-army-knife-leagues",
 	"icon": "groups",
-	"description": "Shows the club's teams: name, description, home venue and, optionally, the leagues they play in, in one or more columns. The squad is shown only if you turn it on.",
-	"keywords": [ "chess", "club", "team", "teams", "league", "venue" ],
+	"description": "Shows the club's teams: name, description and, optionally, the leagues they play in, in one or more columns. The squad is shown only if you turn it on.",
+	"keywords": [ "chess", "club", "team", "teams", "league" ],
 	"version": "0.0.1",
 	"textdomain": "chess-army-knife",
 	"attributes": {

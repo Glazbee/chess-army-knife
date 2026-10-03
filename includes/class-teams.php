@@ -4,7 +4,7 @@
  * played beneath it.
  *
  * A team is a non-public post of type chess_army_team (17 characters; WordPress
- * allows 20). Its venue, captain and the seasons it plays in are post meta; a
+ * allows 20). Its captain and the seasons it plays in are post meta; a
  * season is one of the team's league entries (LMS organisation, event and, if
  * it differs from the team's name, the name the LMS knows it by). The squad is a person-to-team link in its own small table. The captain and
  * the squad are personal data: they are for people with the membership
@@ -31,7 +31,6 @@ class Chess_Army_Knife_Teams {
 	const MIGRATED_OPTION = 'Chess_Army_Knife_club_teams_migrated';
 	const LEGACY_OPTION   = 'Chess_Army_Knife_club_teams';
 
-	const META_VENUE        = '_chess_army_team_venue';
 	const META_CAPTAIN_NAME = '_chess_army_team_captain_name'; // The name of a captain who is not a member, used only while no member is the captain.
 	const META_CAPTAIN      = '_chess_army_team_captain';
 	const META_SEASONS      = '_chess_army_team_seasons'; // Before league entries moved onto the team: keys of Club Teams entries.
@@ -174,7 +173,7 @@ class Chess_Army_Knife_Teams {
 	/**
 	 * The teams on offer, in their page order.
 	 *
-	 * @return array[] Each { id, name, description, venue, captain_id, captain_name, colour, tag, group_id, group, group_blurb, group_order, group_pos, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
+	 * @return array[] Each { id, name, description, captain_id, captain_name, colour, tag, group_id, group, group_blurb, group_order, group_pos, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
 	public static function all() {
 		$kept = wp_cache_get( 'teams', self::MEMO_GROUP );
@@ -224,7 +223,6 @@ class Chess_Army_Knife_Teams {
 			'id'           => (int) $post->ID,
 			'name'         => $name,
 			'description'  => (string) $post->post_excerpt,
-			'venue'        => (string) get_post_meta( $post->ID, self::META_VENUE, true ),
 			'captain_id'   => (int) get_post_meta( $post->ID, self::META_CAPTAIN, true ),
 			'captain_name' => trim( (string) get_post_meta( $post->ID, self::META_CAPTAIN_NAME, true ) ),
 			'colour'       => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),

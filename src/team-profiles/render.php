@@ -1,7 +1,7 @@
 <?php
 /**
  * Server-side render for the Club Teams block: each team's name, description,
- * home venue and (optionally) leagues. The squad and captain are private and never shown.
+ * (optionally) leagues. The squad and captain are private and never shown.
  *
  * @package Chess_Army_Knife
  *
@@ -75,9 +75,6 @@ $groups       = '' !== $group_by ? Chess_Army_Knife_Teams::group_teams( $teams, 
 					<?php echo Chess_Army_Knife_A11y::heading( '' !== $group_by ? $depth + 1 : $depth, 'cak-team__name', Chess_Army_Knife_Teams::display_name( $team, $name_format ), $team_level ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 					<?php if ( $show_desc && '' !== $team['description'] ) : ?>
 						<p class="cak-team__description"><?php echo esc_html( $team['description'] ); ?></p>
-					<?php endif; ?>
-					<?php if ( '' !== $team['venue'] ) : ?>
-						<p><strong><?php esc_html_e( 'Home venue:', 'chess-army-knife' ); ?></strong> <?php echo esc_html( $team['venue'] ); ?></p>
 					<?php endif; ?>
 					<?php $roster = $show_players ? Chess_Army_Knife_Teams::public_roster( $team, $sort ) : array(); ?>
 					<?php if ( ! empty( $roster['players'] ) ) : ?>

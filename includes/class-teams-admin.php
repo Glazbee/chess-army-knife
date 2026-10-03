@@ -43,6 +43,9 @@ class Chess_Army_Knife_Teams_Admin {
 	 * Add the boxes.
 	 */
 	public static function add_meta_boxes() {
+		// WordPress hides the Excerpt box until asked, so the team's description gets a box of its own, open from the start.
+		remove_meta_box( 'postexcerpt', Chess_Army_Knife_Teams::POST_TYPE, 'normal' );
+		add_meta_box( 'chess_army_team_description', __( 'Description', 'chess-army-knife' ), array( __CLASS__, 'render_description' ), Chess_Army_Knife_Teams::POST_TYPE, 'normal', 'high' );
 		add_meta_box( 'chess_army_team_details', __( 'Team details', 'chess-army-knife' ), array( __CLASS__, 'render_details' ), Chess_Army_Knife_Teams::POST_TYPE, 'normal', 'high' );
 		add_meta_box( 'chess_army_team_squad', __( 'Squad', 'chess-army-knife' ), array( __CLASS__, 'render_squad' ), Chess_Army_Knife_Teams::POST_TYPE, 'normal', 'default' );
 	}
@@ -69,12 +72,24 @@ class Chess_Army_Knife_Teams_Admin {
 	}
 
 	/**
-	 * Render the details box: venue, captain and the seasons the team plays in.
+	 * Render the description box: a few words about the team, shown on the website under its name.
+	 *
+	 * @param WP_Post $post Team being edited.
+	 */
+	public static function render_description( $post ) {
+		?>
+		<label class="screen-reader-text" for="excerpt"><?php esc_html_e( 'Description', 'chess-army-knife' ); ?></label>
+		<textarea rows="3" class="large-text" name="excerpt" id="excerpt"><?php echo esc_textarea( $post->post_excerpt ); ?></textarea>
+		<p class="description"><?php esc_html_e( 'A few words about the team, shown on the website under its name. A hero team in the Club Teams block uses it as its blurb.', 'chess-army-knife' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the details box.
 	 *
 	 * @param WP_Post $post Team being edited.
 	 */
 	public static function render_details( $post ) {
-		$venue        = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_VENUE, true );
 		$captain      = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
 		$captain_name = trim( (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN_NAME, true ) );
 		$colour       = (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_COLOUR, true );
@@ -84,10 +99,6 @@ class Chess_Army_Knife_Teams_Admin {
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
 		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><label for="chess_army_team_venue"><?php esc_html_e( 'Home venue', 'chess-army-knife' ); ?></label></th>
-				<td><input type="text" id="chess_army_team_venue" name="chess_army_team_venue" value="<?php echo esc_attr( $venue ); ?>" class="regular-text" /></td>
-			</tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Group', 'chess-army-knife' ); ?></th>
 				<td>
@@ -154,37 +165,28 @@ class Chess_Army_Knife_Teams_Admin {
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e( 'League entries', 'chess-army-knife' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'Leagues', 'chess-army-knife' ); ?></th>
 				<td>
-					<?php
-					$leagues = Chess_Army_Knife_Teams::clean_leagues( get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_LEAGUES, true ) );
-					$rows    = count( $leagues ) + 3; // A few blank rows to add to.
-					?>
-					<table class="widefat striped" style="max-width:720px">
-<caption class="screen-reader-text"><?php esc_html_e( 'League entries', 'chess-army-knife' ); ?></caption>
-						<thead>
-							<tr>
-								<th><?php esc_html_e( 'LMS organisation ID', 'chess-army-knife' ); ?></th>
-								<th><?php esc_html_e( 'Event / division', 'chess-army-knife' ); ?></th>
-								<th><?php esc_html_e( 'Name in the LMS, if different', 'chess-army-knife' ); ?></th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php for ( $row = 0; $row < $rows; $row++ ) : ?>
-								<?php $league = isset( $leagues[ $row ] ) ? $leagues[ $row ] : array_fill_keys( array( 'org', 'event', 'name' ), '' ); ?>
-								<tr>
-									<td><input type="text" name="chess_army_team_leagues[<?php echo esc_attr( $row ); ?>][org]" value="<?php echo esc_attr( $league['org'] ); ?>" class="small-text" inputmode="numeric" placeholder="270" aria-label="<?php esc_attr_e( 'LMS organisation ID', 'chess-army-knife' ); ?>" /></td>
-									<td><input type="text" name="chess_army_team_leagues[<?php echo esc_attr( $row ); ?>][event]" value="<?php echo esc_attr( $league['event'] ); ?>" class="regular-text" placeholder="Division 1" aria-label="<?php esc_attr_e( 'Event / division', 'chess-army-knife' ); ?>" /></td>
-									<td><input type="text" name="chess_army_team_leagues[<?php echo esc_attr( $row ); ?>][name]" value="<?php echo esc_attr( $league['name'] ); ?>" class="regular-text" aria-label="<?php esc_attr_e( 'Name in the LMS, if different', 'chess-army-knife' ); ?>" /></td>
-								</tr>
-							<?php endfor; ?>
-						</tbody>
-					</table>
-					<p class="description"><?php esc_html_e( 'The leagues this team plays in, one row for each season. Import Events reads the fixtures of these and links them to this team. Clear a row to remove it; save to get more blank rows. Leave the last column empty when the LMS uses this team\'s name.', 'chess-army-knife' ); ?></p>
+					<?php $leagues = Chess_Army_Knife_Teams::clean_leagues( get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_LEAGUES, true ) ); ?>
+					<?php if ( ! $leagues ) : ?>
+						<?php esc_html_e( 'None yet', 'chess-army-knife' ); ?>
+					<?php endif; ?>
+					<?php foreach ( $leagues as $league ) : ?>
+						<?php echo esc_html( $league['event'] . ' (LMS ' . $league['org'] . ')' ); ?><br />
+					<?php endforeach; ?>
+					<p class="description">
+						<?php
+						printf(
+							/* translators: %s: link to the Leagues tab */
+							esc_html__( 'The leagues this team plays in are set on the %s tab, with the rest of the club\'s teams in each LMS organisation.', 'chess-army-knife' ),
+							'<a href="' . esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Leagues_Page::PAGE ) ) . '">' . esc_html__( 'Leagues', 'chess-army-knife' ) . '</a>'
+						);
+						?>
+					</p>
 				</td>
 			</tr>
 		</table>
-		<p class="description"><?php esc_html_e( 'The excerpt is the description shown on the website. Use Order in the Page Attributes box to arrange teams.', 'chess-army-knife' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Use Order in the Page Attributes box to arrange teams.', 'chess-army-knife' ); ?></p>
 		<?php
 	}
 
@@ -344,7 +346,6 @@ class Chess_Army_Knife_Teams_Admin {
 
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_TAG, isset( $_POST['chess_army_team_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_tag'] ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_WHATSAPP, isset( $_POST['chess_army_team_whatsapp'] ) ? Chess_Army_Knife_Teams::clean_whatsapp_link( sanitize_text_field( wp_unslash( $_POST['chess_army_team_whatsapp'] ) ) ) : '' );
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_VENUE, isset( $_POST['chess_army_team_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_venue'] ) ) : '' );
 
 		$colour = ! empty( $_POST['chess_army_team_no_colour'] ) || ! isset( $_POST['chess_army_team_colour'] ) ? '' : (string) sanitize_hex_color( wp_unslash( $_POST['chess_army_team_colour'] ) );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_COLOUR, $colour );
@@ -356,10 +357,6 @@ class Chess_Army_Knife_Teams_Admin {
 			$user_id = absint( $_POST['chess_army_team_captain_user'] );
 			Chess_Army_Knife_Captains::set_user( $post_id, $user_id && get_userdata( $user_id ) ? $user_id : 0 );
 		}
-
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each entry is cleaned by clean_leagues().
-		$leagues = isset( $_POST['chess_army_team_leagues'] ) && is_array( $_POST['chess_army_team_leagues'] ) ? wp_unslash( $_POST['chess_army_team_leagues'] ) : array();
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_LEAGUES, Chess_Army_Knife_Teams::clean_leagues( $leagues ) );
 
 		// The captain and the squad are people's details: only someone who manages members may choose them.
 		if ( ! Chess_Army_Knife_Memberships::user_can_manage() ) {

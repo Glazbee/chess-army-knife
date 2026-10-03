@@ -208,7 +208,7 @@ class Chess_Army_Knife_Menu {
 			array(
 				'group'       => $teams_group,
 				'title'       => __( 'Teams', 'chess-army-knife' ),
-				'description' => __( 'Each team\'s details, league entries and squad, its overview, and asking who can play and picking the line-up.', 'chess-army-knife' ),
+				'description' => __( 'Each team\'s details and squad, its overview, and asking who can play and picking the line-up, with Groups and Leagues tabs.', 'chess-army-knife' ),
 				'key'         => 'teams',
 				// A captain without the team permission opens on the Overview tab; everyone else on the list of teams.
 				'slug'        => $captain_only ? Chess_Army_Knife_Team_Overview::PAGE : 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE,
@@ -229,6 +229,17 @@ class Chess_Army_Knife_Menu {
 				'kind'        => 'teams',
 				'can'         => $can_teams,
 				'post_type'   => Chess_Army_Knife_Team_Groups::POST_TYPE,
+				'unlisted'    => true, // A tab of Teams.
+			),
+			array(
+				'group'       => $teams_group,
+				'title'       => __( 'Leagues', 'chess-army-knife' ),
+				'description' => __( 'Which of the club\'s teams play in which division of each LMS organisation, checked against the LMS. A tab of Teams.', 'chess-army-knife' ),
+				'key'         => 'team_leagues',
+				'slug'        => Chess_Army_Knife_Leagues_Page::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Leagues_Page', 'render_page' ),
+				'kind'        => 'teams',
+				'can'         => $can_teams,
 				'unlisted'    => true, // A tab of Teams.
 			),
 			array(
@@ -402,6 +413,10 @@ class Chess_Army_Knife_Menu {
 
 		foreach ( self::areas() as $area ) {
 			if ( ! empty( $area['unlisted'] ) ) {
+				// A tab with a screen of its own can still be opened, just not listed.
+				if ( null !== $area['callback'] ) {
+					add_submenu_page( null, $area['title'], $area['title'], $capability, $area['slug'], $area['callback'] );
+				}
 				continue;
 			}
 			$label = $area['title'] . ( Chess_Army_Knife_Memberships::MENU_SLUG === $area['slug'] ? $bubble : '' );

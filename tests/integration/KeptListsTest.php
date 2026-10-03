@@ -17,8 +17,8 @@ class KeptListsTest extends WP_UnitTestCase {
 		);
 		$this->assertSame( array( 'Lions' ), wp_list_pluck( Chess_Army_Knife_Teams::all(), 'name' ) );
 
-		update_post_meta( $id, Chess_Army_Knife_Teams::META_VENUE, 'The Hall' );
-		$this->assertSame( 'The Hall', Chess_Army_Knife_Teams::all()[0]['venue'], 'A changed field shows at once.' );
+		update_post_meta( $id, Chess_Army_Knife_Teams::META_TAG, 'The Hall' );
+		$this->assertSame( 'The Hall', Chess_Army_Knife_Teams::all()[0]['tag'], 'A changed field shows at once.' );
 
 		wp_update_post(
 			array(

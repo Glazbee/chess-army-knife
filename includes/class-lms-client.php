@@ -451,6 +451,36 @@ class Chess_Army_Knife_LMS_Client {
 	}
 
 	/**
+	 * The names of an organisation's events in the running season, for suggesting divisions and for
+	 * checking that one exists.
+	 *
+	 * @param string $org     Numeric organisation id.
+	 * @param bool   $refresh Skip the cached copies.
+	 * @return string[]|WP_Error Event names.
+	 */
+	public static function get_event_names( $org, $refresh = false ) {
+		$seasons = self::get_seasons( $org, $refresh );
+		if ( is_wp_error( $seasons ) ) {
+			return $seasons;
+		}
+
+		$names = array();
+		foreach ( self::seasons_matching( $seasons, 'active' ) as $season_id ) {
+			$events = self::v2_get( 'season/' . $season_id . '/events', self::V2_STRUCTURE_TTL, $refresh );
+			if ( is_wp_error( $events ) ) {
+				return $events;
+			}
+			foreach ( isset( $events['events'] ) && is_array( $events['events'] ) ? $events['events'] : array() as $event ) {
+				if ( isset( $event['name'] ) && '' !== trim( (string) $event['name'] ) ) {
+					$names[ (string) $event['name'] ] = (string) $event['name'];
+				}
+			}
+		}
+
+		return array_values( $names );
+	}
+
+	/**
 	 * Which seasons a season choice means.
 	 *
 	 * @param array[]         $seasons Seasons from get_seasons().

@@ -96,7 +96,6 @@ class Chess_Army_Knife_Team_Overview {
 			<table class="widefat striped" style="max-width:700px">
 				<tbody>
 					<tr><th scope="row"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></th><td><?php echo $captain ? esc_html( $captain['name'] ) : ( '' !== $team['captain_name'] ? esc_html( $team['captain_name'] ) : '&mdash;' ); ?></td></tr>
-					<tr><th scope="row"><?php esc_html_e( 'Home venue', 'chess-army-knife' ); ?></th><td><?php echo '' !== $team['venue'] ? esc_html( $team['venue'] ) : '&mdash;'; ?></td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Calendar tag', 'chess-army-knife' ); ?></th><td><?php echo '' !== $team['tag'] ? esc_html( $team['tag'] ) : '&mdash;'; ?></td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Boards', 'chess-army-knife' ); ?></th><td><?php echo (int) Chess_Army_Knife_Captains::boards( $team['id'] ); ?></td></tr>
 					<tr>

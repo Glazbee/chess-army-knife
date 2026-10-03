@@ -335,4 +335,54 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( array( 'Bob Baker', 'Ann Able', 'Dan Dyer', 'Cat Cole' ), array_column( $roster['players'], 'name' ) );
 		$this->assertSame( array( 1800, 1500, 1500, 0 ), array_column( $roster['players'], 'rating' ) );
 	}
+
+	public function test_the_leagues_page_merges_rows_into_each_teams_entries() {
+		$current = array(
+			11 => array(
+				array(
+					'org'   => '999',
+					'event' => 'Cup',
+					'name'  => '',
+				),
+				array(
+					'org'   => '270',
+					'event' => 'Old division',
+					'name'  => '',
+				),
+			),
+			12 => array(),
+		);
+		$rows    = array(
+			array(
+				'org'     => '270',
+				'team_id' => 12,
+				'event'   => 'Division 1',
+				'name'    => '',
+			),
+			array(
+				'org'     => '270',
+				'team_id' => 12,
+				'event'   => '',
+				'name'    => 'No event is dropped',
+			),
+			array(
+				'org'     => '555',
+				'team_id' => 12,
+				'event'   => 'Not a shown organisation',
+				'name'    => '',
+			),
+			array(
+				'org'     => '270',
+				'team_id' => 77,
+				'event'   => 'Not a team',
+				'name'    => '',
+			),
+		);
+
+		$merged = Chess_Army_Knife_Leagues_Page::merge( $current, array( '270' ), $rows );
+
+		$this->assertSame( array( '999' ), array_column( $merged[11], 'org' ), 'The shown organisation is replaced, the rest kept.' );
+		$this->assertSame( array( 'Division 1' ), array_column( $merged[12], 'event' ) );
+		$this->assertArrayNotHasKey( 77, $merged );
+	}
 }

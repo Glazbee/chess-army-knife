@@ -417,8 +417,8 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
-	 * Where a fixture is played, as far as the plugin knows: the club's own team's venue for
-	 * a home game, or the venue of the club that hosts it for an away game.
+	 * Where a fixture is played, as far as the plugin knows: the club venue for
+	 * a home game of one of its teams, or the venue of the club that hosts it for an away game.
 	 *
 	 * @param array $candidate A candidate from plan().
 	 * @return string[] { location, map_url, what3words }; all '' if the venue is not known.
@@ -431,19 +431,13 @@ class Chess_Army_Knife_Events_Import {
 		);
 		$default = Chess_Army_Knife_Events::default_venue();
 
-		foreach ( $candidate['club_teams'] as $season_key => $side ) {
+		foreach ( $candidate['club_teams'] as $side ) {
 			if ( 'home' !== $side ) {
 				continue;
 			}
 
-			// The club's own team is at home: where that team plays, or the club venue.
-			$team  = Chess_Army_Knife_Teams::team_for_season( $season_key );
-			$venue = $team ? trim( $team['venue'] ) : '';
-			if ( '' === $venue || 0 === strcasecmp( $venue, $default['location'] ) ) {
-				return $default;
-			}
-
-			return array_merge( $none, array( 'location' => $venue ) );
+			// The club's own team is at home: at the club venue.
+			return $default;
 		}
 
 		$away = Chess_Army_Knife_Clubs::venue_of_team( $candidate['home_team'] );
