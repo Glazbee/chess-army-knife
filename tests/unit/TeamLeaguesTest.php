@@ -184,4 +184,31 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 			'blank'               => array( '', '' ),
 		);
 	}
+
+	public function test_display_name_uses_the_format_and_trims_a_missing_league() {
+		$with    = array(
+			'name'    => 'Wotton Hall Lions',
+			'leagues' => array( array( 'org' => '613', 'event' => 'Division 1', 'name' => '' ) ),
+		);
+		$without = array(
+			'name'    => 'Wotton Hall Lions',
+			'leagues' => array(),
+		);
+
+		$this->assertSame( 'Division 1 - Wotton Hall Lions', Chess_Army_Knife_Teams::display_name( $with, '{league} - {team}' ) );
+		$this->assertSame( 'Wotton Hall Lions', Chess_Army_Knife_Teams::display_name( $without, '{league} - {team}' ) );
+		$this->assertSame( 'Wotton Hall Lions', Chess_Army_Knife_Teams::display_name( $with, '' ) );
+	}
+
+	public function test_group_by_division_keeps_first_seen_order() {
+		$lions   = array( 'name' => 'Lions', 'leagues' => array( array( 'event' => 'Division 1' ) ) );
+		$rhinos  = array( 'name' => 'Rhinos', 'leagues' => array( array( 'event' => 'Division 2' ) ) );
+		$leopard = array( 'name' => 'Leopards', 'leagues' => array( array( 'event' => 'Division 1' ) ) );
+		$none    = array( 'name' => 'Club', 'leagues' => array() );
+
+		$groups = Chess_Army_Knife_Teams::group_by_division( array( $lions, $rhinos, $leopard, $none ) );
+
+		$this->assertSame( array( 'Division 1', 'Division 2', '' ), array_column( $groups, 'label' ) );
+		$this->assertSame( array( $lions, $leopard ), $groups[0]['teams'] );
+	}
 }

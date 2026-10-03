@@ -236,6 +236,58 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
+	 * A team's heading from a format: {team} is its name and {league} the first
+	 * league it plays in, so "{league} - {team}" gives "Division 1 - Wotton Hall Lions".
+	 * Separators left dangling by a team with no league are trimmed.
+	 *
+	 * @param array  $team   Team from all().
+	 * @param string $format Format; empty means just the name.
+	 * @return string
+	 */
+	public static function display_name( array $team, $format ) {
+		$format = trim( (string) $format );
+		if ( '' === $format ) {
+			return $team['name'];
+		}
+		$league = self::division_of( $team );
+		$name   = trim( str_replace( array( '{league}', '{team}' ), array( $league, $team['name'] ), $format ) );
+		$name   = trim( $name, " \t-\xE2\x80\x93\xE2\x80\x94:|" );
+		return '' !== $name ? $name : $team['name'];
+	}
+
+	/**
+	 * The division a team plays in: the event of its first league.
+	 *
+	 * @param array $team Team from all().
+	 * @return string Empty if the team has no league.
+	 */
+	public static function division_of( array $team ) {
+		return $team['leagues'] ? (string) $team['leagues'][0]['event'] : '';
+	}
+
+	/**
+	 * Teams grouped by division, in the order each division first appears.
+	 * Teams with no league form a group of their own with an empty label.
+	 *
+	 * @param array[] $teams Teams from all().
+	 * @return array[] Each { label, teams }.
+	 */
+	public static function group_by_division( array $teams ) {
+		$groups = array();
+		foreach ( $teams as $team ) {
+			$label = self::division_of( $team );
+			if ( ! isset( $groups[ $label ] ) ) {
+				$groups[ $label ] = array(
+					'label' => $label,
+					'teams' => array(),
+				);
+			}
+			$groups[ $label ]['teams'][] = $team;
+		}
+		return array_values( $groups );
+	}
+
+	/**
 	 * The teams a member can choose, for WhatsApp groups.
 	 *
 	 * @return string[] Team name by team id.

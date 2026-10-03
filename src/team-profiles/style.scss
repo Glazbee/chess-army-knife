@@ -1,8 +1,25 @@
 @use "../shared/a11y";
 
 .wp-block-chess-army-knife-team-profiles {
+	.cak-team-profiles__grid {
+		display: grid;
+		grid-template-columns: repeat(
+			var(--cak-team-columns, 1),
+			minmax(0, 1fr)
+		);
+		gap: 0 2em;
+
+		@media (max-width: 600px) {
+			grid-template-columns: 1fr;
+		}
+	}
+
 	.cak-team {
 		margin: 0 0 1.5em;
+	}
+
+	.cak-team__description {
+		font-size: 0.9em;
 	}
 
 	.cak-team__name {
