@@ -34,7 +34,7 @@ if ( ! $tournament ) {
 $rounds_per_page = isset( $attributes['roundsPerPage'] ) ? max( 0, min( 100, (int) $attributes['roundsPerPage'] ) ) : 1;
 $page_param      = 'cak_games_' . $tournament_id;
 $wanted          = isset( $_GET[ $page_param ] ) ? absint( $_GET[ $page_param ] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only choice of which page of games to show.
-$games_page      = Chess_Army_Knife_Tournament_Summary::paginate( Chess_Army_Knife_Tournament_Summary::games_to_play( $tournament_id ), $wanted, $rounds_per_page );
+$games_page      = Chess_Army_Knife_Tournament_Summary::paginate( Chess_Army_Knife_Tournament_Summary::games_to_play( $tournament_id, Chess_Army_Knife_Names::style_for( $attributes ) ), $wanted, $rounds_per_page );
 $sections        = $games_page['sections'];
 $can_edit        = ! empty( $sections ) && Chess_Army_Knife_Tournaments::user_can_manage();
 

@@ -29,7 +29,7 @@
 }
 
 /* Errors in a darker red. */
-.cak-admin-screen .cak-selector__error,
+.cak-admin-screen .cak-picker__error,
 .cak-admin-screen .error-message,
 .cak-admin-screen .notice-error p {
 	color: #8a1f1f;

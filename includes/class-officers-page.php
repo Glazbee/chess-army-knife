@@ -27,6 +27,19 @@ class Chess_Army_Knife_Officers_Page {
 		add_action( 'admin_post_' . self::ACTION_SAVE, array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_' . self::ACTION_ASSIGN, array( __CLASS__, 'handle_assign' ) );
 		add_action( 'admin_post_' . self::ACTION_END, array( __CLASS__, 'handle_end' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
+	}
+
+	/**
+	 * Load the drag-and-drop ordering on the Officers screen.
+	 *
+	 * @param string $hook Admin page hook suffix.
+	 */
+	public static function enqueue_assets( $hook ) {
+		if ( false === strpos( (string) $hook, self::PAGE ) ) {
+			return;
+		}
+		wp_enqueue_script( 'chess-army-knife-officers-order', Chess_Army_Knife_URL . 'assets/officers-order.js', array( 'jquery-ui-sortable', 'jquery-touch-punch' ), Chess_Army_Knife_VERSION, true );
 	}
 
 	/**
@@ -48,7 +61,7 @@ class Chess_Army_Knife_Officers_Page {
 	}
 
 	/**
-	 * Save the names and order of the positions.
+	 * Save the names and the site-wide order of the positions and captains.
 	 */
 	public static function handle_save() {
 		check_admin_referer( self::ACTION_SAVE );
@@ -56,23 +69,25 @@ class Chess_Army_Knife_Officers_Page {
 			wp_die( esc_html__( 'You are not allowed to do that.', 'chess-army-knife' ), 403 );
 		}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each entry is cleaned by clean_positions().
-		$posted    = isset( $_POST['positions'] ) && is_array( $_POST['positions'] ) ? wp_unslash( $_POST['positions'] ) : array();
-		$positions = array();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each entry is cleaned by save_layout().
+		$posted = isset( $_POST['rows'] ) && is_array( $_POST['rows'] ) ? wp_unslash( $_POST['rows'] ) : array();
+		$rows   = array();
 		foreach ( $posted as $row ) {
-			// A ticked box removes the position; the name is what is kept.
-			if ( is_array( $row ) && empty( $row['remove'] ) ) {
-				$positions[] = $row;
+			// A ticked box removes the position; a captain is only ever placed, never removed here.
+			if ( ! is_array( $row ) || ! empty( $row['remove'] ) ) {
+				continue;
 			}
+			if ( isset( $row['captain'] ) ) {
+				$key = sanitize_key( (string) $row['captain'] );
+				if ( 0 === strpos( $key, 'team-' ) ) {
+					$rows[] = array( 'captain' => $key );
+				}
+				continue;
+			}
+			$rows[] = $row;
 		}
 
-		// One of the up and down buttons moves a position before saving.
-		$move = isset( $_POST['move'] ) ? sanitize_text_field( wp_unslash( $_POST['move'] ) ) : '';
-		if ( preg_match( '/^([a-z0-9_-]+):(up|down)$/', $move, $parts ) ) {
-			$positions = Chess_Army_Knife_Officers::move( Chess_Army_Knife_Officers::clean_positions( $positions ), $parts[1], $parts[2] );
-		}
-
-		Chess_Army_Knife_Officers::save_positions( $positions );
+		Chess_Army_Knife_Officers::save_layout( $rows );
 		self::back( 'saved' );
 	}
 
@@ -143,8 +158,6 @@ class Chess_Army_Knife_Officers_Page {
 
 		$done      = isset( $_GET['cak_off_done'] ) ? sanitize_key( wp_unslash( $_GET['cak_off_done'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of a form.
 		$positions = Chess_Army_Knife_Officers::positions();
-		$last_row  = count( $positions ) - 1;
-		$row_count = $last_row + 1 + self::BLANK_POSITION;
 		$terms     = Chess_Army_Knife_Officers::terms();
 		$people    = array();
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_ids( wp_list_pluck( $terms, 'person_id' ) ) as $person ) {
@@ -156,63 +169,51 @@ class Chess_Army_Knife_Officers_Page {
 				return '' === $term['end_date'];
 			}
 		);
+		$rows    = self::order_rows( $current, $people );
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Officers', 'chess-army-knife' ); ?></h1>
 			<p><?php esc_html_e( 'The people who run the club. Name the positions, put them in order, and say who holds each. The Club Officers block shows the current officers on a page; only their positions and names are shown (and, if you choose, since when), so check that each person is happy to be named on the website. Every change is kept in the history below.', 'chess-army-knife' ); ?></p>
 			<?php self::render_notice( $done ); ?>
 
-			<h2><?php esc_html_e( 'Positions', 'chess-army-knife' ); ?></h2>
+			<h2><?php esc_html_e( 'Positions and order', 'chess-army-knife' ); ?></h2>
+			<p><strong><?php esc_html_e( 'This is the club\'s order for the whole site.', 'chess-army-knife' ); ?></strong> <?php esc_html_e( 'Every Club Officers block lists the officers in this order, unless that block was given an order of its own in the editor (it has a button there to come back to this one). Drag a row by its handle, or use the arrows. Team captains can be placed among the positions.', 'chess-army-knife' ); ?></p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_SAVE ); ?>" />
 				<?php wp_nonce_field( self::ACTION_SAVE ); ?>
-				<?php // The first submit button is what the Enter key presses, so it must be the one that saves, not a move button. ?>
-				<button type="submit" class="screen-reader-text" tabindex="-1" aria-hidden="true"><?php esc_html_e( 'Save positions', 'chess-army-knife' ); ?></button>
-				<table class="widefat striped" style="max-width:720px">
-					<caption class="screen-reader-text"><?php esc_html_e( 'Positions, in the order the block lists them by default', 'chess-army-knife' ); ?></caption>
-					<thead>
-						<tr>
-							<th scope="col"><?php esc_html_e( 'Position', 'chess-army-knife' ); ?></th>
-							<th scope="col"><?php esc_html_e( 'Move', 'chess-army-knife' ); ?></th>
-							<th scope="col"><?php esc_html_e( 'Remove', 'chess-army-knife' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php for ( $row = 0; $row < $row_count; $row++ ) : ?>
-							<?php
-							$position = isset( $positions[ $row ] ) ? $positions[ $row ] : array(
-								'id'   => '',
-								'name' => '',
-							);
-							?>
-							<tr>
-								<td>
-									<input type="hidden" name="positions[<?php echo esc_attr( $row ); ?>][id]" value="<?php echo esc_attr( $position['id'] ); ?>" />
-									<input type="text" name="positions[<?php echo esc_attr( $row ); ?>][name]" value="<?php echo esc_attr( $position['name'] ); ?>" class="regular-text" maxlength="<?php echo esc_attr( Chess_Army_Knife_Officers::MAX_NAME_LENGTH ); ?>" placeholder="<?php echo esc_attr( '' === $position['id'] ? __( 'Add a position, e.g. Chairman', 'chess-army-knife' ) : '' ); ?>" aria-label="<?php esc_attr_e( 'Position name', 'chess-army-knife' ); ?>" />
-								</td>
-								<td>
-									<?php if ( '' !== $position['id'] ) : ?>
-										<?php
-										/* translators: %s: name of a position */
-										$up_label = sprintf( __( 'Move %s up', 'chess-army-knife' ), $position['name'] );
-										/* translators: %s: name of a position */
-										$down_label = sprintf( __( 'Move %s down', 'chess-army-knife' ), $position['name'] );
-										?>
-										<button type="submit" name="move" value="<?php echo esc_attr( $position['id'] . ':up' ); ?>" class="button" <?php disabled( 0 === $row ); ?>><span aria-hidden="true">&uarr;</span><span class="screen-reader-text"><?php echo esc_html( $up_label ); ?></span></button>
-										<button type="submit" name="move" value="<?php echo esc_attr( $position['id'] . ':down' ); ?>" class="button" <?php disabled( $last_row === $row ); ?>><span aria-hidden="true">&darr;</span><span class="screen-reader-text"><?php echo esc_html( $down_label ); ?></span></button>
+				<ul class="cak-officer-order" data-cak-officer-order data-moved="<?php /* translators: 1: name of a position, 2: place in the list, 3: number of places */ esc_attr_e( '%1$s moved to place %2$d of %3$d', 'chess-army-knife' ); ?>" style="list-style:none;margin:0 0 1em;padding:0;max-width:720px">
+					<?php foreach ( $rows as $index => $row ) : ?>
+						<li class="cak-officer-row" data-label="<?php echo esc_attr( $row['label'] ); ?>" style="display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:6px 8px;background:#fff;border:1px solid #c3c4c7">
+							<span class="cak-drag-handle dashicons dashicons-menu" aria-hidden="true" style="cursor:move"></span>
+							<?php if ( 'captain' === $row['kind'] ) : ?>
+								<input type="hidden" name="rows[<?php echo esc_attr( $index ); ?>][captain]" value="<?php echo esc_attr( $row['key'] ); ?>" />
+								<span style="flex:1">
+									<?php echo esc_html( $row['label'] ); ?>
+									<span class="description"><?php esc_html_e( '(chosen on the team)', 'chess-army-knife' ); ?></span>
+									<?php if ( '' !== $row['holders'] ) : ?>
+										<br /><span class="description"><?php echo esc_html( $row['holders'] ); ?></span>
 									<?php endif; ?>
-								</td>
-								<td>
-									<?php if ( '' !== $position['id'] ) : ?>
-										<input type="checkbox" name="positions[<?php echo esc_attr( $row ); ?>][remove]" value="1" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: name of a position */ __( 'Remove %s', 'chess-army-knife' ), $position['name'] ) ); ?>" />
+								</span>
+							<?php else : ?>
+								<input type="hidden" name="rows[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $row['key'] ); ?>" />
+								<span style="flex:1">
+									<input type="text" name="rows[<?php echo esc_attr( $index ); ?>][name]" value="<?php echo esc_attr( $row['label'] ); ?>" class="regular-text" maxlength="<?php echo esc_attr( Chess_Army_Knife_Officers::MAX_NAME_LENGTH ); ?>" placeholder="<?php echo esc_attr( '' === $row['key'] ? __( 'Add a position, e.g. Chairman', 'chess-army-knife' ) : '' ); ?>" aria-label="<?php esc_attr_e( 'Position name', 'chess-army-knife' ); ?>" />
+									<?php if ( '' !== $row['holders'] ) : ?>
+										<br /><span class="description"><?php echo esc_html( $row['holders'] ); ?></span>
 									<?php endif; ?>
-								</td>
-							</tr>
-						<?php endfor; ?>
-					</tbody>
-				</table>
-				<p class="description"><?php esc_html_e( 'This is the default order. Each block can be given its own order by dragging the positions in the editor. Removing a position, or clearing its name, ends the term of everyone who holds it; they stay in the history. Save to get more blank rows.', 'chess-army-knife' ); ?></p>
-				<p><button type="submit" class="button button-primary"><?php esc_html_e( 'Save positions', 'chess-army-knife' ); ?></button></p>
+								</span>
+							<?php endif; ?>
+							<button type="button" class="button cak-move-up"><span aria-hidden="true">&uarr;</span><span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: name of a position */ __( 'Move %s up', 'chess-army-knife' ), '' === $row['label'] ? __( 'this row', 'chess-army-knife' ) : $row['label'] ) ); ?></span></button>
+							<button type="button" class="button cak-move-down"><span aria-hidden="true">&darr;</span><span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: name of a position */ __( 'Move %s down', 'chess-army-knife' ), '' === $row['label'] ? __( 'this row', 'chess-army-knife' ) : $row['label'] ) ); ?></span></button>
+							<?php if ( 'position' === $row['kind'] && '' !== $row['key'] ) : ?>
+								<label><input type="checkbox" name="rows[<?php echo esc_attr( $index ); ?>][remove]" value="1" /> <?php esc_html_e( 'Remove', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $row['label'] ); ?></span></label>
+							<?php endif; ?>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+				<p class="screen-reader-text" role="status" aria-live="polite" data-cak-officer-status></p>
+				<p class="description"><?php esc_html_e( 'Removing a position, or clearing its name, ends the term of everyone who holds it; they stay in the history. Save to get more blank rows.', 'chess-army-knife' ); ?></p>
+				<p><button type="submit" class="button button-primary"><?php esc_html_e( 'Save positions and order', 'chess-army-knife' ); ?></button></p>
 			</form>
 
 			<h2><?php esc_html_e( 'Who holds each position', 'chess-army-knife' ); ?></h2>
@@ -299,6 +300,42 @@ class Chess_Army_Knife_Officers_Page {
 			<p class="description"><?php esc_html_e( 'If someone\'s record is deleted or erased, their entries are removed from this history too.', 'chess-army-knife' ); ?></p>
 		</div>
 		<?php
+	}
+
+	/**
+	 * The rows of the order list: every position and captaincy in the club's order, who holds it now, then
+	 * blank rows for new positions.
+	 *
+	 * @param array[]  $current Current terms.
+	 * @param string[] $people  Person id => name.
+	 * @return array[] Each { key, label, kind ('position' or 'captain'), holders }.
+	 */
+	protected static function order_rows( array $current, array $people ) {
+		$held = array();
+		foreach ( $current as $term ) {
+			if ( isset( $people[ $term['person_id'] ] ) ) {
+				$held[ Chess_Army_Knife_Officers::CAPTAIN_KEY === $term['position_key'] ? 'team-' . $term['team_id'] : $term['position_key'] ][] = $people[ $term['person_id'] ];
+			}
+		}
+
+		$rows = array();
+		foreach ( Chess_Army_Knife_Officers::items() as $item ) {
+			$rows[] = array(
+				'key'     => $item['key'],
+				'label'   => $item['label'],
+				'kind'    => $item['kind'],
+				'holders' => isset( $held[ $item['key'] ] ) ? implode( ', ', $held[ $item['key'] ] ) : '',
+			);
+		}
+		for ( $blank = 0; $blank < self::BLANK_POSITION; $blank++ ) {
+			$rows[] = array(
+				'key'     => '',
+				'label'   => '',
+				'kind'    => 'position',
+				'holders' => '',
+			);
+		}
+		return $rows;
 	}
 
 	/**

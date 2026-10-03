@@ -3,7 +3,12 @@ import useClubName from '../shared/use-club-name';
 import TemplatePicker from '../shared/template-picker';
 import SortableList from '../shared/sortable-list';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
+import {
+	Button,
+	PanelBody,
+	TextControl,
+	ToggleControl,
+} from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
@@ -105,11 +110,29 @@ export default function Edit( { attributes, setAttributes } ) {
 					initialOpen={ true }
 				>
 					<p>
-						{ __(
-							'Drag the positions into the order you want, or use the arrows. Positions are set up under Officers.',
-							'chess-army-knife'
-						) }
+						{ order.length
+							? __(
+									"This block has an order of its own. Drag the positions to change it, or go back to the club's order.",
+									'chess-army-knife'
+							  )
+							: __(
+									"This block follows the club's order, which is set under Officers. Drag the positions to give this block an order of its own.",
+									'chess-army-knife'
+							  ) }
 					</p>
+					{ order.length > 0 && (
+						<p>
+							<Button
+								variant="secondary"
+								onClick={ () => setAttributes( { order: [] } ) }
+							>
+								{ __(
+									"Use the club's order",
+									'chess-army-knife'
+								) }
+							</Button>
+						</p>
+					) }
 					<SortableList
 						items={ listed }
 						onChange={ ( next ) =>

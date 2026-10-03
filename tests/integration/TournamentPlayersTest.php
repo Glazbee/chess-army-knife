@@ -170,6 +170,65 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $outcome['errors'] );
 	}
 
+	public function test_saving_the_picker_makes_the_submitted_list_the_entrants() {
+		$tournament = $this->tournament();
+		$keep       = $this->saved_player( 'Keep Me', '', 1500 );
+		$drop       = $this->saved_player( 'Drop Me', '', 1500 );
+		$add        = $this->saved_player( 'Add Me', '', 1500 );
+		Chess_Army_Knife_Player_Selector::enter_players( $tournament, array( 'player_ids' => array( $keep, $drop ) ) );
+
+		$saved = Chess_Army_Knife_Player_Selector::sync_players( $tournament, array( 'player_ids' => array( $keep, $add ) ) );
+
+		$this->assertSame( 1, $saved['added'] );
+		$this->assertSame( 1, $saved['removed'] );
+		$this->assertSame( array( $add, $keep ), array_map( 'intval', wp_list_pluck( Chess_Army_Knife_Tournament_Store::get_entries( $tournament ), 'player_id' ) ), 'Unseeded entrants come by name.' );
+	}
+
+	public function test_saving_the_picker_after_the_start_changes_nothing() {
+		$tournament = $this->tournament();
+		$ids        = array();
+		foreach ( array( 'A', 'B', 'C' ) as $name ) {
+			$ids[] = $this->saved_player( $name, '', 1500 );
+		}
+		Chess_Army_Knife_Player_Selector::enter_players( $tournament, array( 'player_ids' => $ids ) );
+		Chess_Army_Knife_Tournaments::start( $tournament );
+
+		$saved = Chess_Army_Knife_Player_Selector::sync_players( $tournament, array( 'player_ids' => array( $ids[0] ) ) );
+
+		$this->assertSame( 0, $saved['removed'] );
+		$this->assertNotEmpty( $saved['errors'] );
+		$this->assertCount( 3, Chess_Army_Knife_Tournament_Store::get_entries( $tournament ) );
+	}
+
+	public function test_a_player_with_no_name_and_no_code_is_refused() {
+		$outcome = Chess_Army_Knife_Player_Selector::enter_players( $this->tournament(), array( 'new_players' => array( array( 'name' => '' ) ) ) );
+
+		$this->assertSame( 0, $outcome['added'] );
+		$this->assertNotEmpty( $outcome['errors'] );
+	}
+
+	public function test_the_csv_export_holds_the_players_and_their_results() {
+		$tournament = $this->tournament();
+		$ids        = array();
+		foreach ( array( 'Brown, Ann', 'Green, Bob' ) as $name ) {
+			$ids[] = $this->saved_player( $name, '', 1500 );
+		}
+		Chess_Army_Knife_Player_Selector::enter_players( $tournament, array( 'player_ids' => $ids ) );
+		Chess_Army_Knife_Tournaments::start( $tournament );
+		$game = Chess_Army_Knife_Tournament_Store::get_games( $tournament )[0];
+		Chess_Army_Knife_Tournaments::record_result( $game['id'], '1-0' );
+
+		$csv = Chess_Army_Knife_Tournament_Export::to_csv(
+			Chess_Army_Knife_Tournament_Store::get_tournament( $tournament ),
+			Chess_Army_Knife_Tournament_Store::get_entries( $tournament ),
+			Chess_Army_Knife_Tournament_Store::get_games( $tournament )
+		);
+
+		$this->assertStringContainsString( 'Brown, Ann', $csv );
+		$this->assertStringContainsString( 'Round 1 colour', $csv );
+		$this->assertStringContainsString( 'Manual', $csv );
+	}
+
 	public function test_a_tournament_page_is_created_once_as_a_draft() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$tournament = $this->tournament();

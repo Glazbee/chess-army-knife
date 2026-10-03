@@ -95,13 +95,14 @@ class Chess_Army_Knife_Tournament_Summary {
 	/**
 	 * Games still to be played, grouped under a round label.
 	 *
-	 * @param int $tournament_id Tournament id.
+	 * @param int         $tournament_id Tournament id.
+	 * @param string|null $name_style    Names::FIRST_SURNAME or SURNAME_FIRST for the names, or null to leave them as they are kept.
 	 * @return array[] Label => list of { id, white, black } (game id and player names).
 	 */
-	public static function games_to_play( $tournament_id ) {
+	public static function games_to_play( $tournament_id, $name_style = null ) {
 		$names = array();
 		foreach ( Chess_Army_Knife_Tournament_Store::get_entries( $tournament_id ) as $entry ) {
-			$names[ $entry['id'] ] = $entry['name'];
+			$names[ $entry['id'] ] = null === $name_style ? $entry['name'] : Chess_Army_Knife_Names::person( $entry, $name_style );
 		}
 
 		$knockout_max = 0;

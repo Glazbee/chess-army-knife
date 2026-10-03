@@ -21,7 +21,8 @@ may use. Some need a permission that an administrator gives you on your user pro
 5. Open **Officers**, name the club's positions (Chairman, Secretary...), put them in order and add who
    holds each. When someone stands down, press **Stand down** and add their successor: the history keeps
    both. Team captains are officers too; change them on the team, not here. Then add the **Club Officers**
-   block to a page and drag the positions into the order you want in its settings.
+   block to a page. It lists the officers in the order you set on the Officers screen; to give one block an
+   order of its own, drag the positions in its settings (and press **Use the club's order** to go back).
 
 ## Every week
 
@@ -71,8 +72,10 @@ themselves if they are switched on under Settings. Use **Renew** on a record whe
 - **Calendar.** Events are under **Club Events**. Mark an event **Cancelled** or **Moved** rather than
   deleting it, so nobody turns up for nothing. A repeating event has **Dates to skip** for holidays. A
   tournament can be put on the calendar from its own screen.
-- **Tournaments.** Create it, enter players, start it, enter results. The page the plugin makes for a
-  tournament lists its status, players and the games still to play.
+- **Tournaments.** **Create new**, then on the **Players** tab drag members into the tournament (or add
+  someone who is not a member) and start it. Enter results on the **Results** tab, a round at a time.
+  **Export** gives a CSV of the players and their results. The page the plugin makes for a tournament lists
+  its status, players and the games still to play.
 
 ## When someone asks to be deleted
 
