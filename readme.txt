@@ -8,7 +8,7 @@ Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A toolkit for English chess clubs: members and renewals, teams and selection, tournaments and events, with blocks for ECF ratings, league data and club information.
+A Swiss Army knife for chess club management: manage members, teams, tournaments and more. Includes blocks that integrate with the English Chess Federation (ECF) and the League Management System (LMS).
 
 == Description ==
 

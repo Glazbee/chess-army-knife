@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Chess Army Knife
  * Plugin URI:        https://glazbee.com/chess-army-knife
- * Description:       A toolkit for chess clubs: members and renewals, teams and selection, tournaments (Swiss, round-robin and knockout) and events, with blocks that show English Chess Federation (ECF) ratings, League Management System (LMS) results and club information on your website.
+ * Description:       A Swiss Army knife for chess club management: manage members, teams, tournaments and more. Includes blocks that integrate with the English Chess Federation (ECF) and the League Management System (LMS).
  * Version:           0.0.1
  * Requires at least: 7.1.2
  * Requires PHP:      7.4
