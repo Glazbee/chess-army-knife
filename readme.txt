@@ -8,7 +8,7 @@ Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Gutenberg blocks for English chess clubs: ECF ratings and league data, club tournaments, club events and club memberships.
+A toolkit for English chess clubs: members and renewals, teams and selection, tournaments and events, with blocks for ECF ratings, league data and club information.
 
 == Description ==
 

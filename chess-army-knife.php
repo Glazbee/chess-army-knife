@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name:       Chess Army Knife
- * Plugin URI:        https://example.com/chess-army-knife
- * Description:       Gutenberg blocks for chess clubs: English Chess Federation (ECF) ratings and League Management System (LMS) data, club tournaments, club events and club memberships.
+ * Plugin URI:        https://glazbee.com/chess-army-knife
+ * Description:       A toolkit for chess clubs: members and renewals, teams and selection, tournaments (Swiss, round-robin and knockout) and events, with blocks that show English Chess Federation (ECF) ratings, League Management System (LMS) results and club information on your website.
  * Version:           0.0.1
  * Requires at least: 7.1.2
  * Requires PHP:      7.4
- * Author:            Your Club
+ * Author:            Billy Glasbey
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       chess-army-knife
