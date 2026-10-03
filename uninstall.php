@@ -28,6 +28,7 @@ delete_option( 'Chess_Army_Knife_import_last' );
 delete_option( 'Chess_Army_Knife_do_not_record' );
 delete_option( 'Chess_Army_Knife_club_teams_migrated' );
 delete_option( 'Chess_Army_Knife_templates' );
+delete_option( 'Chess_Army_Knife_officer_positions' );
 // The policy pages are the club's own text, so they stay; only the plugin's note of which pages they are goes.
 delete_option( 'Chess_Army_Knife_policy_pages' );
 delete_option( 'Chess_Army_Knife_db_version' );
@@ -92,7 +93,7 @@ if ( $chess_army_knife_delete_data ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_members" );
 
-	foreach ( array( 'mail', 'optouts', 'squad', 'member_history', 'availability', 'lineups' ) as $chess_army_knife_mail_table ) {
+	foreach ( array( 'mail', 'optouts', 'squad', 'member_history', 'officers', 'availability', 'lineups' ) as $chess_army_knife_mail_table ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup of plugin-owned data and tables.
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}chess_army_knife_{$chess_army_knife_mail_table}" );
 	}

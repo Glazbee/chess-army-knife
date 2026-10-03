@@ -208,6 +208,34 @@ class Chess_Army_Knife_Membership_Privacy {
 			}
 		}
 
+		// The positions they have held as a club officer, and when.
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
+			foreach ( Chess_Army_Knife_Officers::terms() as $term ) {
+				if ( $term['person_id'] !== $member['id'] ) {
+					continue;
+				}
+				$items[] = array(
+					'group_id'    => 'chess-army-knife-officers',
+					'group_label' => __( 'Club officer positions you have held', 'chess-army-knife' ),
+					'item_id'     => 'officer-' . $term['id'],
+					'data'        => array(
+						array(
+							'name'  => __( 'Position', 'chess-army-knife' ),
+							'value' => Chess_Army_Knife_Officers::label_of_term( $term ),
+						),
+						array(
+							'name'  => __( 'From', 'chess-army-knife' ),
+							'value' => $term['start_date'],
+						),
+						array(
+							'name'  => __( 'To', 'chess-army-knife' ),
+							'value' => $term['end_date'],
+						),
+					),
+				);
+			}
+		}
+
 		// Each period of membership they have held.
 		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_email( $email ) as $member ) {
 			foreach ( Chess_Army_Knife_Member_History::periods( $member ) as $index => $period ) {

@@ -275,6 +275,16 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $club_group,
+				'title'       => __( 'Officers', 'chess-army-knife' ),
+				'description' => __( 'The club\'s officers: name the positions, say who holds them and see the history.', 'chess-army-knife' ),
+				'key'         => 'officers',
+				'slug'        => Chess_Army_Knife_Officers_Page::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_Officers_Page', 'render_page' ),
+				'kind'        => 'members',
+				'can'         => $can_members,
+			),
+			array(
+				'group'       => $club_group,
 				'title'       => __( 'Tournaments', 'chess-army-knife' ),
 				'description' => __( 'Club tournaments, players and results.', 'chess-army-knife' ),
 				'key'         => 'tournaments',

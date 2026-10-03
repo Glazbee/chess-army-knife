@@ -1,0 +1,39 @@
+@use "../shared/a11y";
+
+.wp-block-chess-army-knife-officers {
+	margin-bottom: 1.5em;
+
+	.cak-officers__heading {
+		margin: 0 0 0.5em;
+	}
+
+	.cak-officers__list {
+		margin: 0;
+		padding: 0;
+	}
+
+	.cak-officer {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25em 1em;
+		padding: 0.5em 0;
+		border-bottom: 1px solid a11y.$cak-rule;
+	}
+
+	.cak-officer__position {
+		flex: 0 0 12em;
+		margin: 0;
+		font-weight: 700;
+	}
+
+	.cak-officer__name {
+		flex: 1 1 12em;
+		margin: 0;
+	}
+
+	.cak-officer__tenure {
+		margin-left: 0.5em;
+		font-size: 0.9em;
+		opacity: 0.85;
+	}
+}

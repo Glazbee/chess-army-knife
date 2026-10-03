@@ -132,7 +132,7 @@ class Chess_Army_Knife_Teams_Admin {
 								<option value="<?php echo esc_attr( $person['id'] ); ?>" <?php selected( $captain, $person['id'] ); ?>><?php echo esc_html( $person['name'] ); ?></option>
 							<?php endforeach; ?>
 						</select>
-						<p class="description"><?php esc_html_e( 'Only visible here, to people who can manage teams; it is not shown on the website.', 'chess-army-knife' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Shown on the website only in the Club Officers block, where team captains are listed as officers.', 'chess-army-knife' ); ?></p>
 					<?php else : ?>
 						<?php $captain_person = $captain ? Chess_Army_Knife_Membership_Store::get_member( $captain ) : null; ?>
 						<?php echo esc_html( $captain_person ? $captain_person['name'] : __( 'None', 'chess-army-knife' ) ); ?>
