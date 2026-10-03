@@ -50,7 +50,7 @@ automated scanner was used. It is a code review, not a penetration test.
    screenshots. **Fixed:** the key is never printed again; a blank box keeps the saved key, typing
    replaces it, and a tick box removes it. Covered by a unit test and an integration test.
 3. **Medium. Contributors and Authors could search members by name.** The editor's player picker
-   (`/wp-json/ecf-lms/v1/players`) returns the name and ECF code of members, including juniors, to
+   (`/wp-json/chess-army-knife/v1/players`) returns the name and ECF code of members, including juniors, to
    anyone with `edit_posts`. A club site that lets members write posts would show them to every
    such member. **Fixed:** the default is now `edit_others_posts` (an Editor). The
    `Chess_Army_Knife_member_search_capability` filter still lets a site narrow it to membership
@@ -82,7 +82,8 @@ no longer be read and must be entered again.
 - Asking for a portal link sends an email only when the address is on file, so a careful observer
   could tell from the response time. The answer itself is the same.
 - Throttling is by the connecting IP address. Behind a proxy that hides visitors' addresses, all
-  visitors share one allowance.
+  visitors share one allowance; a site behind one supplies the real address with the
+  `Chess_Army_Knife_visitor_address` filter.
 - Not reviewed: the ECF rating refresh and the mailer's queue internals, the plugin's data export and
   erasure code beyond its permission checks, and the block editor scripts.
 - This remains a read of the code. Nothing was run against a live site and no scanner was used.

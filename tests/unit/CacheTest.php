@@ -13,7 +13,7 @@ class CacheTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_key_is_prefixed_and_hashed() {
-		$this->assertSame( 'ecflms_' . md5( 'abc' ), Chess_Army_Knife_Cache::key( 'abc' ) );
+		$this->assertSame( 'chess_army_knife_cache_' . md5( 'abc' ), Chess_Army_Knife_Cache::key( 'abc' ) );
 	}
 
 	public function test_remember_generates_once_then_serves_from_cache() {
@@ -53,6 +53,38 @@ class CacheTest extends Chess_Army_Knife_TestCase {
 		);
 
 		$this->assertSame( array( 120 ), array_column( $this->transients, 'ttl' ) );
+	}
+
+	public function test_a_service_that_is_being_asked_too_often_is_left_alone_for_longer() {
+		Chess_Army_Knife_Cache::remember(
+			'k',
+			6 * HOUR_IN_SECONDS,
+			function () {
+				return new WP_Error( 'limited', 'slow down', array( 'status' => 429 ) );
+			}
+		);
+
+		$this->assertSame( array( Chess_Army_Knife_Cache::RATE_LIMITED_SECONDS ), array_column( $this->transients, 'ttl' ) );
+	}
+
+	public function test_the_refresh_lock_is_let_go_after_a_fetch() {
+		Chess_Army_Knife_Cache::remember(
+			'k',
+			600,
+			function () {
+				return 'ok';
+			}
+		);
+
+		$this->assertCount( 1, $this->transients, 'Only the value is left, not the lock.' );
+	}
+
+	public function test_only_one_request_takes_a_lock_until_it_is_released() {
+		$this->assertTrue( Chess_Army_Knife_Cache::acquire_lock( 'job', 60 ) );
+		$this->assertFalse( Chess_Army_Knife_Cache::acquire_lock( 'job', 60 ) );
+
+		Chess_Army_Knife_Cache::release_lock( 'job' );
+		$this->assertTrue( Chess_Army_Knife_Cache::acquire_lock( 'job', 60 ) );
 	}
 
 	public function test_forget_removes_entry() {

@@ -29,7 +29,7 @@ export default function PlayerPicker( { value, label, onSelect } ) {
 		debounceRef.current = setTimeout( () => {
 			setIsSearching( true );
 			apiFetch( {
-				path: `/ecf-lms/v1/players?search=${ encodeURIComponent(
+				path: `/chess-army-knife/v1/players?search=${ encodeURIComponent(
 					query.trim()
 				) }`,
 			} )

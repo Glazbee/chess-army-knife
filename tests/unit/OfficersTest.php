@@ -114,6 +114,19 @@ class OfficersTest extends Chess_Army_Knife_TestCase {
 		$this->assertNotSame( 'captain', $positions[2]['id'] );
 	}
 
+	public function test_a_long_id_is_cut_to_the_length_of_the_column() {
+		$positions = Chess_Army_Knife_Officers::clean_positions(
+			array(
+				array(
+					'id'   => str_repeat( 'a', 80 ),
+					'name' => 'One',
+				),
+			)
+		);
+
+		$this->assertSame( Chess_Army_Knife_Officers::MAX_ID_LENGTH, strlen( $positions[0]['id'] ) );
+	}
+
 	public function test_the_list_of_positions_is_capped() {
 		$many = array();
 		for ( $i = 0; $i < Chess_Army_Knife_Officers::MAX_POSITIONS + 5; $i++ ) {

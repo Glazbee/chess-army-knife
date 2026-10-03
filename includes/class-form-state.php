@@ -23,15 +23,28 @@ class Chess_Army_Knife_Form_State {
 	/** Transient name prefix. */
 	const PREFIX = 'Chess_Army_Knife_form_';
 
+	/** The most fields, and the longest value, that are kept. */
+	const MAX_FIELDS = 60;
+	const MAX_LENGTH = 2000;
+
+	/** The most times one visitor's values are kept in an hour, so a bot cannot fill the options table. */
+	const MAX_SAVES_PER_HOUR = 10;
+
 	/**
 	 * Keep the values of a submitted form.
 	 *
 	 * @param array $input Raw (unslashed) form values.
-	 * @return string The key to pass back in the address.
+	 * @return string The key to pass back in the address, or '' if this visitor has had their values kept too often.
 	 */
 	public static function save( array $input ) {
+		$counter = 'Chess_Army_Knife_form_saves_' . md5( Chess_Army_Knife_Member_Requests::visitor_address() );
+		if ( (int) get_transient( $counter ) >= self::MAX_SAVES_PER_HOUR ) {
+			return '';
+		}
+		set_transient( $counter, (int) get_transient( $counter ) + 1, HOUR_IN_SECONDS );
+
 		$keep = array();
-		foreach ( $input as $name => $value ) {
+		foreach ( array_slice( $input, 0, self::MAX_FIELDS, true ) as $name => $value ) {
 			$name = (string) $name;
 			// Nothing that authorises an action, and nothing a bot filled in.
 			if ( preg_match( '/nonce|^action$|^token$|^cak_redirect$|^_wp|^cak_url$|^cak_website$/', $name ) ) {
@@ -55,7 +68,18 @@ class Chess_Army_Knife_Form_State {
 		if ( is_array( $value ) ) {
 			return array_map( array( __CLASS__, 'clean' ), $value );
 		}
-		return sanitize_textarea_field( (string) $value );
+		return mb_substr( sanitize_textarea_field( (string) $value ), 0, self::MAX_LENGTH );
+	}
+
+	/**
+	 * The address argument for a redirect after an error: the key, or nothing if no values were kept.
+	 *
+	 * @param array $input Raw (unslashed) form values.
+	 * @return array Query arguments to add.
+	 */
+	public static function redirect_args( array $input ) {
+		$key = self::save( $input );
+		return '' === $key ? array() : array( self::PARAM => $key );
 	}
 
 	/**

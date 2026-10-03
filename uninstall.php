@@ -43,18 +43,16 @@ foreach ( get_users( array( 'capability' => 'chess_army_manage_teams' ) ) as $ch
 
 global $wpdb;
 
-$like = $wpdb->esc_like( '_transient_ecflms_' ) . '%';
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- No WordPress API lists options by prefix.
-$options = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like ) );
-foreach ( $options as $option_name ) {
-	delete_option( $option_name );
-}
-
-$like_timeout = $wpdb->esc_like( '_transient_timeout_ecflms_' ) . '%';
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- No WordPress API lists options by prefix.
-$timeout_options = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like_timeout ) );
-foreach ( $timeout_options as $option_name ) {
-	delete_option( $option_name );
+// The cache, and the short-lived entries of the forms and the member portal (which can hold personal details).
+foreach ( array( 'ecflms_', 'chess_army_knife_', 'Chess_Army_Knife_' ) as $chess_army_knife_prefix ) {
+	foreach ( array( '_transient_', '_transient_timeout_' ) as $chess_army_knife_kind ) {
+		$like = $wpdb->esc_like( $chess_army_knife_kind . $chess_army_knife_prefix ) . '%';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- No WordPress API lists options by prefix.
+		$options = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like ) );
+		foreach ( $options as $option_name ) {
+			delete_option( $option_name );
+		}
+	}
 }
 
 // Drop the persistent cache table.

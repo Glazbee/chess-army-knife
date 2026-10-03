@@ -38,10 +38,7 @@ class Chess_Army_Knife_Membership_Form {
 		$result = self::submit( wp_unslash( $_POST ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked in submit().
 
 		if ( is_wp_error( $result ) ) {
-			$args = array(
-				'cak_membership_error'             => $result->get_error_code(),
-				Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
-			);
+			$args = array( 'cak_membership_error' => $result->get_error_code() ) + Chess_Army_Knife_Form_State::redirect_args( wp_unslash( $_POST ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
 		} else {
 			$args = array( 'cak_membership_applied' => $result );
 		}
@@ -127,8 +124,7 @@ class Chess_Army_Knife_Membership_Form {
 	 * @return string
 	 */
 	protected static function throttle_key() {
-		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-		return 'chess_army_knife_apply_' . md5( $address );
+		return 'chess_army_knife_apply_' . md5( Chess_Army_Knife_Member_Requests::visitor_address() );
 	}
 
 	/**

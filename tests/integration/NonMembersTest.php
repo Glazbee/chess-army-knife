@@ -129,7 +129,7 @@ class NonMembersTest extends WP_UnitTestCase {
 			)
 		);
 
-		$request = new WP_REST_Request( 'GET', '/ecf-lms/v1/players' );
+		$request = new WP_REST_Request( 'GET', '/chess-army-knife/v1/players' );
 		$request->set_param( 'search', 'Pat' );
 		$data = rest_do_request( $request )->get_data();
 

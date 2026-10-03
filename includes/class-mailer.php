@@ -23,6 +23,9 @@ class Chess_Army_Knife_Mailer {
 	const HOOK         = 'Chess_Army_Knife_send_mail';
 	const MAX_ATTEMPTS = 3;
 
+	/** How long a run holds the lock against another run, in seconds. */
+	const LOCK_SECONDS = 300;
+
 	const STATUS_QUEUED  = 'queued';
 	const STATUS_SENT    = 'sent';
 	const STATUS_FAILED  = 'failed';
@@ -164,6 +167,11 @@ class Chess_Army_Knife_Mailer {
 	public static function run() {
 		global $wpdb;
 
+		// Two runs at once (the hourly one and one set off by a new message) would send the same messages twice.
+		if ( ! Chess_Army_Knife_Cache::acquire_lock( self::HOOK, self::LOCK_SECONDS ) ) {
+			return 0;
+		}
+
 		$table = self::table();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE status = %s ORDER BY id ASC LIMIT %d", self::STATUS_QUEUED, self::batch_size() ), ARRAY_A );
@@ -180,8 +188,9 @@ class Chess_Army_Knife_Mailer {
 				continue;
 			}
 
+			$categories  = Chess_Army_Knife_Notification_Preferences::categories();
 			$unsubscribe = Chess_Army_Knife_Notification_Preferences::unsubscribe_url( $member['id'], $row['category'] );
-			$label       = Chess_Army_Knife_Notification_Preferences::categories()[ $row['category'] ];
+			$label       = isset( $categories[ $row['category'] ] ) ? $categories[ $row['category'] ] : $row['category'];
 
 			if ( wp_mail( $to, $row['subject'], self::build_body( (string) $row['message'], $label, $unsubscribe, $site ) ) ) {
 				self::finish( $row['id'], self::STATUS_SENT );
@@ -193,6 +202,8 @@ class Chess_Army_Knife_Mailer {
 				$wpdb->update( $table, array( 'attempts' => (int) $row['attempts'] + 1 ), array( 'id' => (int) $row['id'] ), array( '%d' ), array( '%d' ) );
 			}
 		}
+
+		Chess_Army_Knife_Cache::release_lock( self::HOOK );
 
 		return $sent;
 	}

@@ -95,10 +95,7 @@ class Chess_Army_Knife_Member_Requests {
 
 		$args = array( 'cak_data_sent' => '1' );
 		if ( is_wp_error( $result ) ) {
-			$args = array(
-				'cak_data_error'                   => $result->get_error_code(),
-				Chess_Army_Knife_Form_State::PARAM => Chess_Army_Knife_Form_State::save( wp_unslash( $_POST ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
-			);
+			$args = array( 'cak_data_error' => $result->get_error_code() ) + Chess_Army_Knife_Form_State::redirect_args( wp_unslash( $_POST ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only keeps what was typed so it can be shown again.
 		}
 		wp_safe_redirect( add_query_arg( $args, $page ) . '#' . self::ANCHOR );
 		exit;
@@ -270,8 +267,25 @@ class Chess_Army_Knife_Member_Requests {
 	 * @return string
 	 */
 	public static function visitor_key() {
+		return 'chess_army_knife_data_ip_' . md5( self::visitor_address() );
+	}
+
+	/**
+	 * The address of the visitor, for limiting how often one visitor can use a form.
+	 * It is the connection's address. A site behind a proxy or CDN sees the proxy's address for
+	 * everybody, so it can supply the real one with the filter below.
+	 *
+	 * @return string
+	 */
+	public static function visitor_address() {
 		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-		return 'chess_army_knife_data_ip_' . md5( $address );
+
+		/**
+		 * Filter the address a visitor's form submissions are counted against.
+		 *
+		 * @param string $address The connection's address (REMOTE_ADDR).
+		 */
+		return (string) apply_filters( 'Chess_Army_Knife_visitor_address', $address );
 	}
 
 	/**

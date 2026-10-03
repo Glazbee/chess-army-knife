@@ -24,4 +24,19 @@ class MemberRequestsTest extends Chess_Army_Knife_TestCase {
 			'no query'           => array( array(), false ),
 		);
 	}
+
+	public function test_the_visitors_address_can_be_supplied_by_a_filter() {
+		$_SERVER['REMOTE_ADDR'] = '10.0.0.1';
+		Brain\Monkey\Functions\when( 'sanitize_text_field' )->returnArg();
+		Brain\Monkey\Functions\when( 'wp_unslash' )->returnArg();
+		$this->assertSame( '10.0.0.1', Chess_Army_Knife_Member_Requests::visitor_address() );
+
+		Brain\Monkey\Functions\when( 'apply_filters' )->alias(
+			function ( $hook, $value ) {
+				return 'Chess_Army_Knife_visitor_address' === $hook ? '198.51.100.7' : $value;
+			}
+		);
+		$this->assertSame( '198.51.100.7', Chess_Army_Knife_Member_Requests::visitor_address() );
+		$this->assertSame( 'chess_army_knife_data_ip_' . md5( '198.51.100.7' ), Chess_Army_Knife_Member_Requests::visitor_key() );
+	}
 }

@@ -28,7 +28,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps();
 
 	useEffect( () => {
-		apiFetch( { path: '/ecf-lms/v1/officer-items' } )
+		apiFetch( { path: '/chess-army-knife/v1/officer-items' } )
 			.then( setItems )
 			.catch( () => setItems( [] ) );
 	}, [] );

@@ -13,7 +13,7 @@ export default function TemplatePicker( { blockSlug, value, onChange } ) {
 	useEffect( () => {
 		let cancelled = false;
 		apiFetch( {
-			path: `/ecf-lms/v1/templates?block=${ encodeURIComponent(
+			path: `/chess-army-knife/v1/templates?block=${ encodeURIComponent(
 				blockSlug
 			) }`,
 		} )

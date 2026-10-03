@@ -28,6 +28,7 @@ class Chess_Army_Knife_Officers {
 	const CAPTAIN_KEY     = 'captain';
 	const MAX_POSITIONS   = 40;
 	const MAX_NAME_LENGTH = 100;
+	const MAX_ID_LENGTH   = 40; // The length of the position_key column.
 
 	/**
 	 * Hook up the upkeep of captaincies and the clean-up when a team goes.
@@ -100,12 +101,12 @@ class Chess_Army_Knife_Officers {
 
 		foreach ( is_array( $raw ) ? $raw : array() as $position ) {
 			$name = is_array( $position ) && isset( $position['name'] ) ? trim( sanitize_text_field( (string) $position['name'] ) ) : '';
-			$name = function_exists( 'mb_substr' ) ? mb_substr( $name, 0, self::MAX_NAME_LENGTH ) : substr( $name, 0, self::MAX_NAME_LENGTH );
+			$name = mb_substr( $name, 0, self::MAX_NAME_LENGTH );
 			if ( '' === $name || count( $positions ) >= self::MAX_POSITIONS ) {
 				continue;
 			}
 
-			$id = isset( $position['id'] ) ? sanitize_key( (string) $position['id'] ) : '';
+			$id = isset( $position['id'] ) ? substr( sanitize_key( (string) $position['id'] ), 0, self::MAX_ID_LENGTH ) : '';
 			if ( '' === $id || self::CAPTAIN_KEY === $id || isset( $seen[ $id ] ) ) {
 				$id = self::new_position_id( $seen );
 			}
@@ -196,15 +197,17 @@ class Chess_Army_Knife_Officers {
 	 *
 	 * @param string $position_id Id of a position from positions().
 	 * @param int    $person_id   Member id.
-	 * @param string $start_date  Date the term began, Y-m-d; today if empty or not a date.
-	 * @return int The new row's id, or 0 if the position or the member is unknown, or they already hold it.
+	 * @param string $start_date  Date the term began, Y-m-d; today if empty.
+	 * @return int The new row's id, or 0 if the position or the member is unknown, they already hold it, or the date is not a real date today or earlier.
 	 */
 	public static function assign( $position_id, $person_id, $start_date = '' ) {
 		global $wpdb;
 
 		$names = wp_list_pluck( self::positions(), 'name', 'id' );
 		$table = self::table();
-		if ( ! isset( $names[ $position_id ] ) || ! Chess_Army_Knife_Membership_Store::get_member( $person_id ) ) {
+		$today = current_time( 'Y-m-d' );
+		$start = self::clean_date( $start_date, $today );
+		if ( ! isset( $names[ $position_id ] ) || '' === $start || $start > $today || ! Chess_Army_Knife_Membership_Store::get_member( $person_id ) ) {
 			return 0;
 		}
 
@@ -222,7 +225,7 @@ class Chess_Army_Knife_Officers {
 				'position_name' => $names[ $position_id ],
 				'team_id'       => 0,
 				'person_id'     => (int) $person_id,
-				'start_date'    => self::clean_date( $start_date, current_time( 'Y-m-d' ) ),
+				'start_date'    => $start,
 			)
 		);
 		return (int) $wpdb->insert_id;
@@ -233,8 +236,8 @@ class Chess_Army_Knife_Officers {
 	 * ended by changing the team's captain, not here.
 	 *
 	 * @param int    $term_id  Row id.
-	 * @param string $end_date Date the term ended, Y-m-d; today if empty or not a date. Never before the start.
-	 * @return bool Whether a current officer was ended.
+	 * @param string $end_date Date the term ended, Y-m-d; today if empty. Never before the start.
+	 * @return bool Whether a current officer was ended; false too if the date is not a real date today or earlier.
 	 */
 	public static function end_term( $term_id, $end_date = '' ) {
 		global $wpdb;
@@ -244,23 +247,30 @@ class Chess_Army_Knife_Officers {
 			return false;
 		}
 
-		$end = self::clean_date( $end_date, current_time( 'Y-m-d' ) );
+		$today = current_time( 'Y-m-d' );
+		$end   = self::clean_date( $end_date, $today );
+		if ( '' === $end || $end > $today ) {
+			return false;
+		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table.
 		$wpdb->update( self::table(), array( 'end_date' => max( $end, $term['start_date'] ) ), array( 'id' => (int) $term_id ) );
 		return true;
 	}
 
 	/**
-	 * Read a date, or fall back.
+	 * Read a date.
 	 *
 	 * @param string $date     A date such as 2025-03-04.
-	 * @param string $fallback Used if it is not a real date.
-	 * @return string Y-m-d
+	 * @param string $fallback Used if the date is empty.
+	 * @return string Y-m-d, or '' if it is not a real date.
 	 */
 	protected static function clean_date( $date, $fallback ) {
-		$date = (string) $date;
+		$date = trim( (string) $date );
+		if ( '' === $date ) {
+			return $fallback;
+		}
 		$time = preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ? strtotime( $date . ' 00:00:00 UTC' ) : false;
-		return ( $time && gmdate( 'Y-m-d', $time ) === $date ) ? $date : $fallback;
+		return ( $time && gmdate( 'Y-m-d', $time ) === $date ) ? $date : '';
 	}
 
 	/**
@@ -359,16 +369,27 @@ class Chess_Army_Knife_Officers {
 			}
 		}
 
-		foreach ( Chess_Army_Knife_Teams::all() as $team ) {
+		$teams = Chess_Army_Knife_Teams::all();
+
+		// A team that is trashed, unpublished or gone has no captain to list.
+		$live = wp_list_pluck( $teams, 'id' );
+		foreach ( $open as $team_id => $terms ) {
+			if ( ! in_array( (int) $team_id, $live, true ) ) {
+				foreach ( $terms as $term ) {
+					self::end_open_term( $term, $today );
+				}
+			}
+		}
+
+		foreach ( $teams as $team ) {
+			// A renamed team keeps its history under its present name.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+			$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET position_name = %s WHERE position_key = %s AND team_id = %d AND position_name <> %s", $team['name'], self::CAPTAIN_KEY, $team['id'], $team['name'] ) );
+
 			$has_current = false;
 			foreach ( isset( $open[ $team['id'] ] ) ? $open[ $team['id'] ] : array() as $term ) {
 				if ( $term['person_id'] === $team['captain_id'] ) {
 					$has_current = true;
-					// A renamed team keeps its history under its present name.
-					if ( $term['position_name'] !== $team['name'] ) {
-						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table.
-						$wpdb->update( $table, array( 'position_name' => $team['name'] ), array( 'team_id' => $team['id'] ) );
-					}
 				} else {
 					self::end_open_term( $term, $today );
 				}

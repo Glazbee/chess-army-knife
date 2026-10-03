@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 $attributes   = Chess_Army_Knife_Templates::apply( 'officers', $attributes );
 $block_title  = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $show_tenure  = ! empty( $attributes['showTenure'] );
-$with_captain = ! isset( $attributes['includeCaptains'] ) || ! empty( $attributes['includeCaptains'] );
+$with_captain = ! empty( $attributes['includeCaptains'] );
 $officers     = Chess_Army_Knife_Officers::listing(
 	array(
 		'order'            => isset( $attributes['order'] ) ? $attributes['order'] : array(),
