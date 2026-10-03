@@ -22,7 +22,7 @@ $teams       = array_filter(
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( Chess_Army_Knife_Templates::wrapper_attributes( 'team-profiles', $attributes ) ); ?>>
 	<?php if ( 0 === $team_id ) : ?>
-		<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-team-profiles__heading', '' !== $block_title ? $block_title : __( 'Our teams', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+		<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-team-profiles__heading', '' !== $block_title ? $block_title : sprintf( /* translators: %s: the club's name */ __( '%s teams', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 	<?php endif; ?>
 	<?php if ( ! $teams ) : ?>
 		<p><?php esc_html_e( 'No teams to show yet.', 'chess-army-knife' ); ?></p>

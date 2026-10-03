@@ -109,10 +109,10 @@ $heading = $block_title ? $block_title : sprintf(
 );
 
 // The chart is decorative: the summary below it and the table carry the same information.
-// Use the chosen line colour only if it stands out enough; otherwise follow the text colour.
+// The chosen line colour, or else the accent from the theme (or template), or else the text colour.
 $line_colour = sanitize_hex_color( $line_color );
-if ( ! $line_colour || ! Chess_Army_Knife_Contrast::meets( $line_colour, '#ffffff', Chess_Army_Knife_Contrast::GRAPHIC ) ) {
-	$line_colour = 'currentColor';
+if ( ! $line_colour ) {
+	$line_colour = 'var(--cak-accent, currentColor)';
 }
 
 $date_format = get_option( 'date_format' );

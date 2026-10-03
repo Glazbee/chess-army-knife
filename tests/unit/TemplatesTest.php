@@ -154,6 +154,44 @@ class TemplatesTest extends Chess_Army_Knife_TestCase {
 		);
 	}
 
+	public function test_wrapper_attributes_leaves_colours_and_radius_to_the_block_when_it_sets_them() {
+		Functions\when( 'sanitize_hex_color' )->returnArg();
+		Functions\when( 'sanitize_html_class' )->returnArg();
+		$this->add_template(
+			't1',
+			'rating-chart',
+			array(
+				'accent' => '#ff0000',
+				'bg'     => '#000000',
+				'text'   => '#ffffff',
+				'radius' => '8',
+			)
+		);
+
+		$captured = null;
+		Functions\when( 'get_block_wrapper_attributes' )->alias(
+			function ( $args ) use ( &$captured ) {
+				$captured = $args;
+				return 'wrapped';
+			}
+		);
+
+		Chess_Army_Knife_Templates::wrapper_attributes(
+			'rating-chart',
+			array(
+				'templateId'      => 't1',
+				'backgroundColor' => 'base',
+				'textColor'       => 'contrast',
+				'style'           => array(
+					'spacing' => array( 'padding' => array( 'top' => '2rem' ) ),
+					'border'  => array( 'radius' => '0px' ),
+				),
+			)
+		);
+
+		$this->assertSame( '--cak-accent:#ff0000;--cak-accent-soft:#ff000022', $captured['style'] );
+	}
+
 	public function test_custom_css_scopes_and_strips_tags_once_per_template() {
 		Functions\when( 'sanitize_html_class' )->returnArg();
 		Functions\when( 'wp_strip_all_tags' )->alias( 'strip_tags' );

@@ -1,4 +1,5 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+import useClubName from '../shared/use-club-name';
 import TemplatePicker from '../shared/template-picker';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
@@ -23,6 +24,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		attributes;
 
 	const blockProps = useBlockProps();
+	const clubName = useClubName();
 
 	return (
 		<div { ...blockProps }>
@@ -51,13 +53,17 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Custom title (optional)',
 							'chess-army-knife'
 						) }
+						help={ __(
+							"Use {club} for the club's name.",
+							'chess-army-knife'
+						) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
-						placeholder={ __(
-							'Recent club results',
-							'chess-army-knife'
+						placeholder={ sprintf(
+							__( 'Recent results for %s', 'chess-army-knife' ),
+							clubName
 						) }
 					/>
 					<RangeControl

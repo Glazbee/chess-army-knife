@@ -467,14 +467,22 @@ class Chess_Army_Knife_Templates {
 			$style[] = '--cak-accent:' . $v['accent'];
 			$style[] = '--cak-accent-soft:' . $v['accent'] . ( 7 === strlen( $v['accent'] ) ? '22' : '' );
 		}
-		if ( ! empty( $v['bg'] ) && sanitize_hex_color( $v['bg'] ) ) {
+		// Colours, padding and radius set on the block itself win over the template's.
+		$own_bg      = ! empty( $attributes['backgroundColor'] ) || ! empty( $attributes['gradient'] ) || ! empty( $attributes['style']['color']['background'] ) || ! empty( $attributes['style']['color']['gradient'] );
+		$own_text    = ! empty( $attributes['textColor'] ) || ! empty( $attributes['style']['color']['text'] );
+		$own_padding = ! empty( $attributes['style']['spacing']['padding'] );
+		$own_radius  = isset( $attributes['style']['border']['radius'] ) && '' !== $attributes['style']['border']['radius'];
+
+		if ( ! $own_bg && ! empty( $v['bg'] ) && sanitize_hex_color( $v['bg'] ) ) {
 			$style[] = 'background-color:' . $v['bg'];
-			$style[] = 'padding:1em';
+			if ( ! $own_padding ) {
+				$style[] = 'padding:1em';
+			}
 		}
-		if ( ! empty( $v['text'] ) && sanitize_hex_color( $v['text'] ) ) {
+		if ( ! $own_text && ! empty( $v['text'] ) && sanitize_hex_color( $v['text'] ) ) {
 			$style[] = 'color:' . $v['text'];
 		}
-		if ( isset( $v['radius'] ) && '' !== $v['radius'] ) {
+		if ( ! $own_radius && isset( $v['radius'] ) && '' !== $v['radius'] ) {
 			$style[] = 'border-radius:' . (int) $v['radius'] . 'px';
 			if ( ! empty( $v['bg'] ) ) {
 				$style[] = 'overflow:hidden';

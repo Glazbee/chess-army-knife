@@ -1,6 +1,25 @@
 // Accessibility helpers shared by every block (WCAG 2.2 AAA).
 $cak-scope: '[class*="wp-block-chess-army-knife-"]';
 
+// Colours and spacing follow the theme (theme.json palette and spacing scale) when it has them.
+// A block template, or the block's own settings, can still change the accent.
+#{$cak-scope} {
+	--cak-accent: var(
+		--wp--preset--color--accent,
+		var(--wp--preset--color--primary, currentcolor)
+	);
+	--cak-accent-soft: color-mix(in srgb, var(--cak-accent) 13%, transparent);
+	--cak-bg: var(--wp--preset--color--base, Canvas);
+	--cak-text: var(--wp--preset--color--contrast, CanvasText);
+	--cak-gap: var(--wp--preset--spacing--30, 1em);
+	--cak-card-padding: var(--wp--preset--spacing--30, 1em);
+}
+
+// A gap below each block, which the theme's own spacing and the block's margin setting both beat.
+:where(#{$cak-scope}) {
+	margin-bottom: 1.5em;
+}
+
 // Text for screen readers only.
 #{$cak-scope} .cak-visually-hidden {
 	position: absolute;
@@ -119,12 +138,15 @@ $cak-rule: color-mix(in srgb, currentcolor 35%, transparent);
 	}
 }
 
-// High contrast: black on white, underlined links, solid borders (1.4.6).
-// It wins over the theme and the block's own styles on purpose, because
-// the person asked for it.
+// High contrast: the theme's own text and background colours, underlined links, solid borders (1.4.6).
+// It wins over the block's own colours on purpose, because the person asked for it,
+// but it uses the theme's strongest pair, which is black on white when the theme has none.
+$cak-hc-text: var(--wp--preset--color--contrast, #000);
+$cak-hc-bg: var(--wp--preset--color--base, #fff);
+
 @mixin cak-high-contrast {
-	color: #000 !important;
-	background-color: #fff !important;
+	color: $cak-hc-text !important;
+	background-color: $cak-hc-bg !important;
 
 	*,
 	*::before,
@@ -137,35 +159,35 @@ $cak-rule: color-mix(in srgb, currentcolor 35%, transparent);
 	}
 
 	:is(th, td, li, fieldset, details, figure, dl) {
-		border-color: #000 !important;
+		border-color: $cak-hc-text !important;
 	}
 
 	a {
-		color: #0000c8 !important;
+		color: $cak-hc-text !important;
 		text-decoration: underline !important;
 	}
 
 	:is(button, .wp-element-button) {
-		background-color: #000 !important;
-		color: #fff !important;
-		border: 2px solid #000 !important;
+		background-color: $cak-hc-text !important;
+		color: $cak-hc-bg !important;
+		border: 2px solid $cak-hc-text !important;
 	}
 
 	:is(input, select, textarea) {
-		background-color: #fff !important;
-		color: #000 !important;
-		border: 2px solid #000 !important;
+		background-color: $cak-hc-bg !important;
+		color: $cak-hc-text !important;
+		border: 2px solid $cak-hc-text !important;
 	}
 
 	:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-		outline: 4px solid #000 !important;
-		box-shadow: 0 0 0 2px #fff !important;
+		outline: 4px solid $cak-hc-text !important;
+		box-shadow: 0 0 0 2px $cak-hc-bg !important;
 	}
 
 	.chess-army-knife-notice,
 	.chess-army-knife-empty,
 	[class*="__notice"] {
-		border: 2px solid #000 !important;
+		border: 2px solid $cak-hc-text !important;
 	}
 }
 

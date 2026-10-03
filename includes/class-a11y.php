@@ -34,7 +34,7 @@ class Chess_Army_Knife_A11y {
 		$tag = Chess_Army_Knife_Headings::tag( $depth );
 		// A block's main title gets the accent underline.
 		$class .= 0 === (int) $depth ? ' cak-block-title' : '';
-		return '<' . $tag . ' class="' . esc_attr( $class ) . '">' . esc_html( $text ) . '</' . $tag . '>';
+		return '<' . $tag . ' class="' . esc_attr( $class ) . '">' . esc_html( Chess_Army_Knife_Settings::with_club( $text ) ) . '</' . $tag . '>';
 	}
 
 	/**

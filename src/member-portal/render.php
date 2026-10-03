@@ -269,7 +269,7 @@ $heading      = function ( $depth, $text ) {
 		?>
 		<?php if ( $cak_seen_announcements ) : ?>
 			<section class="cak-portal__announcements">
-				<?php echo $heading( 1, __( 'Club announcements', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+				<?php echo $heading( 1, sprintf( /* translators: %s: the club's name */ __( '%s announcements', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 				<?php foreach ( array_slice( $cak_seen_announcements, 0, 10 ) as $announcement ) : ?>
 					<article class="cak-portal__announcement">
 						<?php echo $heading( 2, $announcement['title'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>

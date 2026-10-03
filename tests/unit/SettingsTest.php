@@ -204,6 +204,13 @@ class SettingsTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'Central Birmingham Chess Club', Chess_Army_Knife_Settings::club_name() );
 	}
 
+	public function test_with_club_replaces_the_placeholder_with_the_club_name() {
+		$this->set_settings( array( 'club_name' => 'Central Chess Club' ) );
+
+		$this->assertSame( 'Welcome to Central Chess Club', Chess_Army_Knife_Settings::with_club( 'Welcome to {club}' ) );
+		$this->assertSame( 'No placeholder', Chess_Army_Knife_Settings::with_club( 'No placeholder' ) );
+	}
+
 	public function test_club_name_and_venue_are_saved_and_the_old_clutter_is_gone() {
 		$clean = Chess_Army_Knife_Settings::sanitize(
 			array(

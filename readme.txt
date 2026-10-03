@@ -118,8 +118,8 @@ Anyone who can manage members sees a **Members in this photo** checklist in a ph
 The blocks aim to meet WCAG 2.2 Level AAA, and the audit and its progress are in `docs/accessibility-audit.md`.
 
 * **Headings.** Each block's title is a real heading, so people using a screen reader can move around the page. Under **Chess Army Knife → Settings → Accessibility** choose the level that fits under your page title (H2 is right when the page title is an H1). Headings inside a block go one level lower.
-* **High contrast.** Under the same settings choose **Follow the visitor's device** (the default: used for people who have asked their device for more contrast), **Always on** or **Off**. It shows the plugin's blocks in black on white with underlined links and solid borders. It covers the plugin's blocks only; the rest of your theme is the theme's responsibility.
-* **Colours.** The blocks use your theme's text colour, so their contrast is your theme's. A template that sets its own colours is refused unless the text and background have a contrast of at least 7:1 and the accent colour at least 3:1 against the background.
+* **High contrast.** Under the same settings choose **Follow the visitor's device** (the default: used for people who have asked their device for more contrast), **Always on** or **Off**. It shows the plugin's blocks in your theme's text and background colours (black on white if the theme has none), with underlined links and solid borders. It covers the plugin's blocks only; the rest of your theme is the theme's responsibility.
+* **Colours.** The blocks use your theme's text colour, and its accent (or primary) colour for underlines, highlights and chart lines, so their contrast is your theme's. A template that sets its own colours is refused unless the text and background have a contrast of at least 7:1 and the accent colour at least 3:1 against the background.
 * **Nothing moves unless you ask.** The fixtures block shows every team at once. If you choose the carousel layout it has previous, next, a button for each team and a pause button; it moves on by itself only if you turn that on, never for visitors whose device asks for less motion, and for good once a visitor uses a button. The rating chart is a picture drawn on the server, with a written summary and a table of the ratings.
 * **Forms.** After a mistake the form comes back with what was typed, a message that takes focus and links to the field, and required fields are marked in words.
 
@@ -161,6 +161,9 @@ Yes — add as many blocks as you like, each configured independently.
 == Changelog ==
 
 = Unreleased =
+
+* Changed (block styling): every block now offers link, heading and button colours, gradients, shadows, a minimum height, a font family and (except the three form blocks, whose anchors are fixed) an HTML anchor, beside the colour, spacing, typography and border settings it had. Blocks follow the theme's accent or primary colour, spacing scale and base/contrast colours, and the default gap below a block now gives way to the theme's spacing and to the block's own margin. A template's colours, padding and radius no longer override ones set on the block itself. The Rating Chart's line colour follows the accent when none is chosen, and a chosen colour is used as it is.
+* Added: use `{club}` in a block's title (and the membership form's intro and consent text and the "nothing to show" messages) for the club's name from Settings. The default titles now use it too, for example "Upcoming events at Central Chess Club".
 
 * Fixed (from a code review of the tournaments): in a Swiss, two players whose game was forfeited can be paired again, as the FIDE rules and the reference implementation do (it was treated as a game played). The pairing engine is now also checked against that reference for rounds that follow forfeits and half-point or zero-point byes.
 * Added: **End the tournament now** for a Swiss whose remaining players cannot be paired (Tournaments, Rounds). The standings stay as they are.

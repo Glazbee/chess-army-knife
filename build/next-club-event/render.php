@@ -14,6 +14,7 @@ $attributes = Chess_Army_Knife_Templates::apply( 'next-club-event', $attributes 
 
 $block_title   = isset( $attributes['title'] ) ? trim( (string) $attributes['title'] ) : '';
 $empty_message = isset( $attributes['emptyMessage'] ) ? trim( (string) $attributes['emptyMessage'] ) : '';
+$empty_message = Chess_Army_Knife_Settings::with_club( $empty_message );
 $options       = Chess_Army_Knife_Events_Display::options( $attributes );
 $show          = isset( $attributes['show'] ) ? (string) $attributes['show'] : 'next';
 $query_args    = array(
@@ -32,7 +33,7 @@ $wrapper_attributes = Chess_Army_Knife_Templates::wrapper_attributes( 'next-club
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-event__heading', '' !== $block_title ? $block_title : __( 'Next club event', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
+	<?php echo Chess_Army_Knife_A11y::heading( 0, 'cak-event__heading', '' !== $block_title ? $block_title : sprintf( /* translators: %s: the club's name */ __( 'Next event at %s', 'chess-army-knife' ), Chess_Army_Knife_Settings::club_name() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in heading(). ?>
 
 	<?php if ( empty( $events ) ) : ?>
 		<div class="chess-army-knife-empty"><?php echo esc_html( '' !== $empty_message ? $empty_message : __( 'No upcoming events.', 'chess-army-knife' ) ); ?></div>
