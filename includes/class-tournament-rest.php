@@ -98,7 +98,7 @@ class Chess_Army_Knife_Tournament_REST {
 	 * knockout round has to be recorded before a later one).
 	 *
 	 * @param WP_REST_Request $request Request with results: game id => result.
-	 * @return WP_REST_Response|WP_Error { saved: int[], errors: game id => message, reload: bool }
+	 * @return WP_REST_Response|WP_Error { saved: int[], errors: game id => message }
 	 */
 	public static function set_results( WP_REST_Request $request ) {
 		$results = $request['results'];

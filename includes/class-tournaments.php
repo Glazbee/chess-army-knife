@@ -15,6 +15,9 @@ class Chess_Army_Knife_Tournaments {
 	const STATUS_ACTIVE   = 'active';
 	const STATUS_COMPLETE = 'complete';
 
+	/** How long a tournament is locked while its games are being changed, in seconds. */
+	const LOCK_SECONDS = 120;
+
 	/**
 	 * Supported tournament formats (slug => label).
 	 *
@@ -452,10 +455,12 @@ class Chess_Army_Knife_Tournaments {
 	}
 
 	/**
-	 * Look up a player's current rating for seeding, bypassing the cache so
-	 * the snapshot reflects the rating at the moment the tournament starts.
+	 * Look up a player's current rating for seeding. The rating kept on the member's record is used if the
+	 * hourly refresh checked it within the cache period for the same rating list (so starting a tournament
+	 * does not ask the ECF about every player, which has a daily allowance); otherwise the ECF is asked,
+	 * bypassing the cache so the snapshot reflects the rating at the moment the tournament starts.
 	 *
-	 * @param array  $player Player profile (ecf_code, manual_rating).
+	 * @param array  $player Player profile (ecf_code, manual_rating, and optionally ecf_rating, ecf_rating_domain, ecf_checked_at).
 	 * @param string $domain Rating domain.
 	 * @return array { rating: int|null, source: 'ecf'|'manual'|'none' }
 	 */
@@ -463,6 +468,13 @@ class Chess_Army_Knife_Tournaments {
 		$code = Chess_Army_Knife_ECF_Client::normalise_code( $player['ecf_code'] );
 
 		if ( '' !== $code ) {
+			if ( self::stored_rating_is_fresh( $player, $domain ) ) {
+				return array(
+					'rating' => (int) $player['ecf_rating'],
+					'source' => 'ecf',
+				);
+			}
+
 			Chess_Army_Knife_Cache::forget( Chess_Army_Knife_ECF_Client::cache_key_rating( $code, $domain ) );
 			$rating = self::rating_from_data( Chess_Army_Knife_ECF_Client::get_rating( $code, $domain ) );
 			if ( null !== $rating ) {
@@ -484,6 +496,22 @@ class Chess_Army_Knife_Tournaments {
 			'rating' => null,
 			'source' => 'none',
 		);
+	}
+
+	/**
+	 * Whether the rating kept on a member's record is recent enough to seed from.
+	 *
+	 * @param array  $player Player profile.
+	 * @param string $domain Rating domain wanted.
+	 * @return bool
+	 */
+	protected static function stored_rating_is_fresh( array $player, $domain ) {
+		if ( empty( $player['ecf_rating'] ) || empty( $player['ecf_checked_at'] ) || ( isset( $player['ecf_rating_domain'] ) ? $player['ecf_rating_domain'] : '' ) !== $domain ) {
+			return false;
+		}
+		$checked = strtotime( $player['ecf_checked_at'] . ' GMT' );
+		$minutes = max( Chess_Army_Knife_Settings::MIN_ECF_CACHE_MINUTES, Chess_Army_Knife_Settings::get_cache_minutes( 'ecf_rating', 360 ) );
+		return false !== $checked && $checked >= time() - $minutes * MINUTE_IN_SECONDS;
 	}
 
 	/**
@@ -514,6 +542,41 @@ class Chess_Army_Knife_Tournaments {
 	 * @return true|WP_Error
 	 */
 	public static function start( $tournament_id ) {
+		return self::with_lock(
+			$tournament_id,
+			function () use ( $tournament_id ) {
+				return self::start_unlocked( $tournament_id );
+			}
+		);
+	}
+
+	/**
+	 * Run an action that changes a tournament's games, one at a time. Two clicks of the same button, or two
+	 * people at once, would otherwise each pair the same round.
+	 *
+	 * @param int      $tournament_id Tournament id.
+	 * @param callable $action        What to do.
+	 * @return mixed The action's result, or a WP_Error if the tournament is busy.
+	 */
+	protected static function with_lock( $tournament_id, callable $action ) {
+		$lock = 'tournament_' . (int) $tournament_id;
+		if ( ! Chess_Army_Knife_Cache::acquire_lock( $lock, self::LOCK_SECONDS ) ) {
+			return new WP_Error( 'tournament_busy', __( 'This tournament is being changed right now. Wait a moment and look at it again.', 'chess-army-knife' ) );
+		}
+		try {
+			return $action();
+		} finally {
+			Chess_Army_Knife_Cache::release_lock( $lock );
+		}
+	}
+
+	/**
+	 * Start a tournament (see start()).
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return true|WP_Error
+	 */
+	protected static function start_unlocked( $tournament_id ) {
 		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
 		if ( ! $tournament ) {
 			return new WP_Error( 'tournament_missing', __( 'Tournament not found.', 'chess-army-knife' ) );
@@ -534,9 +597,13 @@ class Chess_Army_Knife_Tournaments {
 			$player = Chess_Army_Knife_Membership_Store::get_member( $entry['player_id'] );
 			$rating = self::lookup_rating(
 				array(
-					'ecf_code'      => $entry['ecf_code'],
+					'ecf_code'          => $entry['ecf_code'],
 					// An entry with no record keeps the rating it was entered with.
-					'manual_rating' => $player ? $player['manual_rating'] : $entry['start_rating'],
+					'manual_rating'     => $player ? $player['manual_rating'] : $entry['start_rating'],
+					// The rating the hourly refresh keeps on the record, so a start does not ask the ECF for everybody.
+					'ecf_rating'        => $player ? $player['ecf_rating'] : null,
+					'ecf_rating_domain' => $player ? $player['ecf_rating_domain'] : '',
+					'ecf_checked_at'    => $player ? $player['ecf_checked_at'] : '',
 				),
 				$tournament['rating_domain']
 			);
@@ -916,7 +983,7 @@ class Chess_Army_Knife_Tournaments {
 			return;
 		}
 
-		for ( $guard = 0; $guard < 64; $guard++ ) {
+		for ( $guard = 0, $limit = count( self::knockout_games( $tournament_id ) ) + 1; $guard < $limit; $guard++ ) {
 			$acted    = false;
 			$knockout = self::knockout_games( $tournament_id );
 
@@ -1023,8 +1090,9 @@ class Chess_Army_Knife_Tournaments {
 	 */
 	protected static function is_finished( array $tournament ) {
 		if ( 'swiss' === $tournament['format'] ) {
-			$config = self::config( $tournament );
-			return self::current_round( $tournament['id'] ) >= $config['rounds'] && 0 === count( self::games_to_play( $tournament['id'] ) );
+			$config      = self::config( $tournament );
+			$ended_early = ! empty( $tournament['settings']['ended_early'] ) && self::current_round( $tournament['id'] ) > 0;
+			return ( $ended_early || self::current_round( $tournament['id'] ) >= $config['rounds'] ) && 0 === count( self::games_to_play( $tournament['id'] ) );
 		}
 
 		if ( self::has_knockout_stage( $tournament ) ) {
@@ -1203,6 +1271,21 @@ class Chess_Army_Knife_Tournaments {
 	 * @return int|WP_Error The new round number.
 	 */
 	public static function next_round( $tournament_id ) {
+		return self::with_lock(
+			$tournament_id,
+			function () use ( $tournament_id ) {
+				return self::next_round_unlocked( $tournament_id );
+			}
+		);
+	}
+
+	/**
+	 * Pair the next round (see next_round()).
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int|WP_Error The new round number.
+	 */
+	protected static function next_round_unlocked( $tournament_id ) {
 		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
 		if ( ! $tournament || 'swiss' !== $tournament['format'] ) {
 			return new WP_Error( 'swiss_only', __( 'Only Swiss tournaments are paired round by round.', 'chess-army-knife' ) );
@@ -1225,12 +1308,29 @@ class Chess_Army_Knife_Tournaments {
 
 	/**
 	 * Throw away the latest Swiss round and pair it again. Only possible while
-	 * it has no results, for example after a player withdrew or asked to be left out.
+	 * nothing in it has been played, for example after a player withdrew. A game that
+	 * was only forfeited because a player withdrew does not count as played, so
+	 * the opponent is paired again instead of keeping a free point.
 	 *
 	 * @param int $tournament_id Tournament id.
 	 * @return int|WP_Error The round that was paired again.
 	 */
 	public static function redo_round( $tournament_id ) {
+		return self::with_lock(
+			$tournament_id,
+			function () use ( $tournament_id ) {
+				return self::redo_round_unlocked( $tournament_id );
+			}
+		);
+	}
+
+	/**
+	 * Pair the latest round again (see redo_round()).
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return int|WP_Error The round that was paired again.
+	 */
+	protected static function redo_round_unlocked( $tournament_id ) {
 		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
 		if ( ! $tournament || 'swiss' !== $tournament['format'] || self::STATUS_ACTIVE !== $tournament['status'] ) {
 			return new WP_Error( 'swiss_only', __( 'Only a Swiss tournament in progress can be paired again.', 'chess-army-knife' ) );
@@ -1240,7 +1340,7 @@ class Chess_Army_Knife_Tournaments {
 		$games = array();
 		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament_id ) as $game ) {
 			if ( 'main' === $game['stage'] && $game['round'] === $round ) {
-				if ( ! $game['is_bye'] && null !== $game['result'] ) {
+				if ( ! $game['is_bye'] && null !== $game['result'] && ! self::is_forfeited_by_withdrawal( $tournament_id, $game ) ) {
 					return new WP_Error( 'swiss_round_started', __( 'This round already has results, so it cannot be paired again.', 'chess-army-knife' ) );
 				}
 				$games[] = $game;
@@ -1253,6 +1353,72 @@ class Chess_Army_Knife_Tournaments {
 
 		$generated = self::generate_swiss_round( $tournament, $round );
 		return is_wp_error( $generated ) ? $generated : $round;
+	}
+
+	/**
+	 * Whether a game has a forfeit result only because one of its players withdrew.
+	 *
+	 * @param int   $tournament_id Tournament id.
+	 * @param array $game          Game row.
+	 * @return bool
+	 */
+	public static function is_forfeited_by_withdrawal( $tournament_id, array $game ) {
+		if ( ! Chess_Army_Knife_Standings::is_forfeit( $game['result'] ) ) {
+			return false;
+		}
+		// The side that forfeited is the one that did not win.
+		$absent = Chess_Army_Knife_Standings::WHITE_FORFEIT_WIN === $game['result'] ? $game['black_entry_id'] : $game['white_entry_id'];
+		$entry  = Chess_Army_Knife_Tournament_Store::get_entry( $absent );
+		return $entry && 'withdrawn' === $entry['status'];
+	}
+
+	/**
+	 * End a Swiss tournament before every round has been paired, for example when
+	 * the remaining players cannot be paired. The standings stay as they are.
+	 *
+	 * @param int $tournament_id Tournament id.
+	 * @return true|WP_Error
+	 */
+	public static function end_early( $tournament_id ) {
+		return self::with_lock(
+			$tournament_id,
+			function () use ( $tournament_id ) {
+				$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $tournament_id );
+				if ( ! $tournament || 'swiss' !== $tournament['format'] || self::STATUS_ACTIVE !== $tournament['status'] ) {
+					return new WP_Error( 'swiss_only', __( 'Only a Swiss tournament in progress can be ended early.', 'chess-army-knife' ) );
+				}
+				if ( ! empty( self::games_to_play( $tournament_id ) ) ) {
+					return new WP_Error( 'swiss_round_unfinished', __( 'Record every result of the current round before ending the tournament.', 'chess-army-knife' ) );
+				}
+
+				$settings                = $tournament['settings'];
+				$settings['ended_early'] = true;
+				Chess_Army_Knife_Tournament_Store::save_tournament(
+					array(
+						'id'           => $tournament_id,
+						'settings'     => $settings,
+						'status'       => self::STATUS_COMPLETE,
+						'completed_at' => current_time( 'mysql', true ),
+					)
+				);
+				return true;
+			}
+		);
+	}
+
+	/**
+	 * Whether a game is in an earlier round than the latest one paired in a Swiss tournament, so that
+	 * changing its result leaves the pairings of the rounds after it based on the old result.
+	 *
+	 * @param array $game Game row.
+	 * @return bool
+	 */
+	public static function is_in_an_earlier_swiss_round( array $game ) {
+		if ( 'main' !== $game['stage'] ) {
+			return false;
+		}
+		$tournament = Chess_Army_Knife_Tournament_Store::get_tournament( $game['tournament_id'] );
+		return $tournament && 'swiss' === $tournament['format'] && $game['round'] < self::current_round( $tournament['id'] );
 	}
 
 	/**
@@ -1284,7 +1450,11 @@ class Chess_Army_Knife_Tournaments {
 		$options = array( 'initial_white' => 'black' !== $config['initial_colour'] );
 		$result  = Chess_Army_Knife_Swiss_Dutch::pair( $ids, $active, self::swiss_history( $tournament['id'], $round ), $config['rounds'], $options );
 		if ( null !== $result['error'] ) {
-			return new WP_Error( 'swiss_pairing', __( 'No valid pairing exists for this round: the remaining players have all met, or cannot receive the bye. Withdraw a player or end the tournament early.', 'chess-army-knife' ) );
+			return new WP_Error( 'swiss_pairing', __( 'No valid pairing exists for this round: the remaining players have all met, or cannot receive the bye. Withdraw a player or end the tournament now.', 'chess-army-knife' ) );
+		}
+
+		if ( empty( $result['pairings'] ) && null === $result['bye'] && empty( $asked ) ) {
+			return new WP_Error( 'swiss_nobody', __( 'Nobody is left to pair. End the tournament instead.', 'chess-army-knife' ) );
 		}
 
 		$board = 0;

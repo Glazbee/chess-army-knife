@@ -1,0 +1,7522 @@
+[
+ {
+  "id": "forfeit-bye-00",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p10",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p3",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p7",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p3",
+   "p2>p8",
+   "p4>p1",
+   "p6>p9",
+   "p7>p5"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-01",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p11",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p12",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p13",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p11",
+      "black": "p10",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p12",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p10>p8",
+   "p12>p1",
+   "p13>p2",
+   "p3>p7",
+   "p5>p4",
+   "p9>p11"
+  ],
+  "bye": "p6"
+ },
+ {
+  "id": "forfeit-bye-02",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p13",
+      "kind": "zero"
+     },
+     {
+      "player": "p9",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p5",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p8",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p4",
+   "p12>p6",
+   "p14>p5",
+   "p1>p2",
+   "p3>p11",
+   "p7>p13",
+   "p8>p9"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-03",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p6",
+      "kind": "zero"
+     },
+     {
+      "player": "p3",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p9",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p6",
+      "kind": "half"
+     },
+     {
+      "player": "p8",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p9",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p8",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p3",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p2",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p8",
+      "black": "p7",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p9",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p10",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p8",
+      "black": "p6",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p9",
+   "p2>p3",
+   "p5>p4",
+   "p7>p6",
+   "p8>p1"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-04",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p15",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p16",
+      "black": "p8",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p10",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p8",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p15",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p16",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p5",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p16",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p15",
+      "kind": "zero"
+     },
+     {
+      "player": "p4",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p15",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p16",
+      "black": "p2",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p16",
+      "kind": "pairing"
+     },
+     {
+      "player": "p2",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p1",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p16",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p15",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p12",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p16",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p14",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p15",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p14",
+   "p13>p2",
+   "p16>p5",
+   "p3>p1",
+   "p4>p8",
+   "p6>p12",
+   "p7>p11",
+   "p9>p15"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-05",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p13",
+      "kind": "zero"
+     },
+     {
+      "player": "p9",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p5",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p8",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p14",
+      "black": "p5",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p8",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p13",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p12",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p2",
+      "black": "p14",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p10",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p11",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p11>p9",
+   "p14>p10",
+   "p1>p8",
+   "p2>p12",
+   "p4>p7",
+   "p5>p13",
+   "p6>p3"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-06",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p10",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p11",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p3",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p8",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p1",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p4",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p9",
+      "black": "p11",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p5",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p8",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p1",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p3",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p11>p10",
+   "p5>p7",
+   "p6>p4",
+   "p8>p2",
+   "p9>p1"
+  ],
+  "bye": "p3"
+ },
+ {
+  "id": "forfeit-bye-07",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p15",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p13",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p15",
+      "black": "p9",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p10",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p12",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "half"
+     },
+     {
+      "player": "p11",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p11",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p2",
+      "kind": "pairing"
+     },
+     {
+      "player": "p6",
+      "kind": "zero"
+     },
+     {
+      "player": "p3",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p14",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p15",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p7",
+      "result": null,
+      "forfeit": "both"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p6",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p13",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p15",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p12",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p15",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p9",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p11",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p10",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p11>p10",
+   "p12>p6",
+   "p13>p14",
+   "p1>p15",
+   "p2>p4",
+   "p7>p5",
+   "p8>p9"
+  ],
+  "bye": "p3"
+ },
+ {
+  "id": "forfeit-bye-08",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p3",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p2",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p3",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p2",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "zero"
+     },
+     {
+      "player": "p1",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p1",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p3",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p8",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p6",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p1>p9",
+   "p5>p6",
+   "p7>p4",
+   "p8>p2"
+  ],
+  "bye": "p3"
+ },
+ {
+  "id": "forfeit-bye-09",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p8",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p3",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p6",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p1",
+      "kind": "pairing"
+     },
+     {
+      "player": "p7",
+      "kind": "half"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p4>p5",
+   "p6>p3",
+   "p7>p1",
+   "p8>p2"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-10",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p13",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p9",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p11",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p14",
+      "kind": "pairing"
+     },
+     {
+      "player": "p2",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p7",
+      "black": "p8",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p13",
+   "p12>p2",
+   "p14>p8",
+   "p4>p9",
+   "p5>p1",
+   "p6>p3",
+   "p7>p11"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-11",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p11",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p12",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p11",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "zero"
+     },
+     {
+      "player": "p6",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p9",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p10",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "half"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p12>p11",
+   "p1>p8",
+   "p3>p5",
+   "p4>p2",
+   "p6>p10",
+   "p7>p9"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-12",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p13",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "half"
+     },
+     {
+      "player": "p10",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p8",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p14",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p11",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p14",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p5",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p13",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "pairing"
+     },
+     {
+      "player": "p14",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p12",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p11>p12",
+   "p14>p13",
+   "p2>p10",
+   "p5>p4",
+   "p7>p1",
+   "p8>p6",
+   "p9>p3"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-13",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p4",
+      "result": "1-0",
+      "forfeit": "black"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p2",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p5>p3",
+   "p6>p8",
+   "p7>p2",
+   "p9>p1"
+  ],
+  "bye": "p4"
+ },
+ {
+  "id": "forfeit-bye-14",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5"
+  ],
+  "total_rounds": 3,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p5",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "0-1",
+      "forfeit": "white"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p3",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p1>p5",
+   "p3>p4"
+  ],
+  "bye": "p2"
+ },
+ {
+  "id": "forfeit-bye-15",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p7",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p13",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p14",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p10",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p5",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p14",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p5",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p13>p2",
+   "p14>p12",
+   "p1>p4",
+   "p5>p3",
+   "p6>p10",
+   "p7>p9",
+   "p8>p11"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-16",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p16",
+      "black": "p8",
+      "result": null,
+      "forfeit": "both"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p3",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p4",
+      "black": "p6",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p9",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p15",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p16",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p16",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p12",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p15",
+      "black": "p11",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p16",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p13",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p15",
+      "kind": "half"
+     },
+     {
+      "player": "p3",
+      "kind": "zero"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p11>p6",
+   "p12>p16",
+   "p13>p15",
+   "p3>p14",
+   "p5>p10",
+   "p7>p4",
+   "p8>p1",
+   "p9>p2"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-17",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p1",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     },
+     {
+      "player": "p2",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "pairing"
+     },
+     {
+      "player": "p6",
+      "kind": "zero"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p3>p6",
+   "p4>p2",
+   "p7>p5",
+   "p8>p1"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-18",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p5",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p8",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p1",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p4",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p3>p5",
+   "p4>p7",
+   "p6>p9",
+   "p8>p2"
+  ],
+  "bye": "p1"
+ },
+ {
+  "id": "forfeit-bye-19",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p16",
+      "black": "p8",
+      "result": "0-1",
+      "forfeit": "white"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p12",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p15",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p16",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p13",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p15",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p16",
+      "black": "p4",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p14",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p8",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p16",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p13",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p16",
+   "p11>p15",
+   "p12>p3",
+   "p13>p9",
+   "p1>p7",
+   "p4>p6",
+   "p5>p2",
+   "p8>p14"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-20",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p10",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p9",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p5",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p11",
+      "kind": "pairing"
+     },
+     {
+      "player": "p14",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p5",
+      "result": null,
+      "forfeit": "both"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "pairing"
+     },
+     {
+      "player": "p12",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p8",
+      "black": "p14",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p5",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "zero"
+     },
+     {
+      "player": "p6",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p3",
+      "black": "p12",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p2",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p12>p11",
+   "p13>p10",
+   "p14>p1",
+   "p2>p6",
+   "p4>p8",
+   "p5>p3",
+   "p7>p9"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-21",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p1",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p9",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p1",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p2",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p5",
+      "kind": "zero"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p3>p6",
+   "p5>p2",
+   "p7>p4",
+   "p8>p9"
+  ],
+  "bye": "p1"
+ },
+ {
+  "id": "forfeit-bye-22",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "total_rounds": 3,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p4",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     },
+     {
+      "player": "p2",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p3>p1",
+   "p4>p5",
+   "p7>p2",
+   "p8>p6"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-23",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "0-1",
+      "forfeit": "white"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p1",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p2",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p6",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p5",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p1",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p1>p2",
+   "p4>p3",
+   "p6>p9",
+   "p8>p7"
+  ],
+  "bye": "p5"
+ },
+ {
+  "id": "forfeit-bye-24",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p5",
+      "kind": "zero"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p2>p3",
+   "p5>p1",
+   "p6>p7",
+   "p8>p9"
+  ],
+  "bye": "p4"
+ },
+ {
+  "id": "forfeit-bye-25",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p5",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "pairing"
+     },
+     {
+      "player": "p6",
+      "kind": "half"
+     },
+     {
+      "player": "p1",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p3",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p4",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p7",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p2",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p4",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p3",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p1",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p2",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p3>p2",
+   "p4>p7",
+   "p5>p6"
+  ],
+  "bye": "p1"
+ },
+ {
+  "id": "forfeit-bye-26",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p11",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p12",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p11",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p7",
+      "kind": "zero"
+     },
+     {
+      "player": "p6",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p9",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p10",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p12",
+      "black": "p11",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p3",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p10",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p3",
+   "p1>p12",
+   "p5>p6",
+   "p7>p11",
+   "p8>p4",
+   "p9>p2"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-27",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p2",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p7",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p6",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p3>p7",
+   "p4>p2",
+   "p6>p1"
+  ],
+  "bye": "p5"
+ },
+ {
+  "id": "forfeit-bye-28",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p13",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p5",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p9",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p13",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p12",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p2>p11",
+   "p3>p9",
+   "p4>p13",
+   "p5>p1",
+   "p6>p8",
+   "p7>p12"
+  ],
+  "bye": "p10"
+ },
+ {
+  "id": "forfeit-bye-29",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p1",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     },
+     {
+      "player": "p2",
+      "kind": "zero"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p1>p3",
+   "p2>p8",
+   "p5>p4",
+   "p6>p7"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-30",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p10",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p11",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "zero"
+     },
+     {
+      "player": "p3",
+      "kind": "half"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p10>p3",
+   "p11>p7",
+   "p2>p8",
+   "p4>p1",
+   "p6>p9"
+  ],
+  "bye": "p5"
+ },
+ {
+  "id": "forfeit-bye-31",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p10",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p9",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p1",
+      "kind": "zero"
+     },
+     {
+      "player": "p10",
+      "kind": "half"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p10>p9",
+   "p2>p1",
+   "p3>p5",
+   "p6>p4",
+   "p7>p8"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-32",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p10",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p11",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p14",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p8",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p5",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p3",
+      "kind": "half"
+     },
+     {
+      "player": "p4",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p13",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p2",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p7",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p4",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p14",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p9",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p12>p10",
+   "p14>p2",
+   "p1>p11",
+   "p4>p13",
+   "p5>p9",
+   "p7>p3",
+   "p8>p6"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-33",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5"
+  ],
+  "total_rounds": 3,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p5",
+      "kind": "half"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p2>p5",
+   "p4>p1"
+  ],
+  "bye": "p3"
+ },
+ {
+  "id": "forfeit-bye-34",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p15",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p5",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p15",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p10",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p12",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p14",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p11",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p8",
+      "black": "p7",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p10",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p10>p15",
+   "p12>p6",
+   "p14>p2",
+   "p3>p1",
+   "p5>p11",
+   "p7>p13",
+   "p9>p4"
+  ],
+  "bye": "p8"
+ },
+ {
+  "id": "forfeit-bye-35",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "0-1",
+      "forfeit": "white"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p15",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p12>p3",
+   "p2>p5",
+   "p4>p13",
+   "p6>p11",
+   "p7>p1",
+   "p8>p14",
+   "p9>p15"
+  ],
+  "bye": "p10"
+ },
+ {
+  "id": "forfeit-bye-36",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p6",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p13",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "zero"
+     },
+     {
+      "player": "p9",
+      "kind": "half"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p10>p7",
+   "p12>p11",
+   "p2>p3",
+   "p4>p9",
+   "p6>p13",
+   "p8>p1"
+  ],
+  "bye": "p5"
+ },
+ {
+  "id": "forfeit-bye-37",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5"
+  ],
+  "total_rounds": 4,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p3",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p5",
+      "kind": "pairing"
+     },
+     {
+      "player": "p2",
+      "kind": "zero"
+     },
+     {
+      "player": "p4",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p5",
+      "black": "p1",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p3",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p2>p1",
+   "p3>p5"
+  ],
+  "bye": "p4"
+ },
+ {
+  "id": "forfeit-bye-38",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 8,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p13",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p12",
+      "black": "p9",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p11",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p14",
+      "kind": "pairing"
+     },
+     {
+      "player": "p2",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p7",
+      "black": "p8",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p10",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p13>p2",
+   "p14>p11",
+   "p4>p1",
+   "p5>p3",
+   "p6>p12",
+   "p7>p8",
+   "p9>p10"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-39",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p4",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p7",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p6",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p5",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p8",
+      "black": "p6",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p3",
+      "black": "p1",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p7",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p4",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p1>p3",
+   "p4>p7",
+   "p5>p2",
+   "p8>p6"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-40",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p3",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p1",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p5",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p10",
+      "kind": "zero"
+     },
+     {
+      "player": "p9",
+      "kind": "half"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p6",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p8",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p7",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p2",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p11",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p3",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p11",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p4",
+      "black": "p12",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p8",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p11",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p10",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p12>p11",
+   "p1>p6",
+   "p3>p7",
+   "p5>p2",
+   "p8>p4",
+   "p9>p10"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-41",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13"
+  ],
+  "total_rounds": 6,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p7",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p8",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p9",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p10",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p5",
+      "black": "p11",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p12",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p3",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p13",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p11",
+      "black": "p10",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p6",
+      "black": "p9",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p12",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p8",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p13",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p4",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p10",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p1",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p6",
+      "kind": "pairing"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p3",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p8",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p4",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p10",
+      "result": "0-1"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p12",
+      "kind": "pairing"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p10>p2",
+   "p13>p8",
+   "p1>p11",
+   "p5>p3",
+   "p6>p12",
+   "p9>p4"
+  ],
+  "bye": "p7"
+ },
+ {
+  "id": "forfeit-bye-42",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14",
+   "p15",
+   "p16"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p9",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p11",
+      "result": "0-1"
+     },
+     {
+      "white": "p12",
+      "black": "p4",
+      "result": "0-1"
+     },
+     {
+      "white": "p5",
+      "black": "p13",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p14",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p15",
+      "result": "0-1"
+     },
+     {
+      "white": "p16",
+      "black": "p8",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p11",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p2",
+      "black": "p15",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p16",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p5",
+      "result": "0-1"
+     },
+     {
+      "white": "p13",
+      "black": "p14",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p3",
+      "result": "0-1",
+      "forfeit": "white"
+     },
+     {
+      "white": "p10",
+      "black": "p7",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p8",
+      "black": "p12",
+      "result": "1-0"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p16",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p15",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p1",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p3",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p7",
+      "black": "p13",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p12",
+      "result": "0-1",
+      "forfeit": "white"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p16",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p11",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p3",
+      "black": "p1",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p14",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p13",
+      "black": "p10",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p4",
+      "black": "p8",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p9",
+      "black": "p7",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   },
+   {
+    "games": [
+     {
+      "white": "p2",
+      "black": "p11",
+      "result": "1-0"
+     },
+     {
+      "white": "p15",
+      "black": "p16",
+      "result": "0-1"
+     },
+     {
+      "white": "p1",
+      "black": "p13",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p10",
+      "black": "p5",
+      "result": "1-0"
+     },
+     {
+      "white": "p7",
+      "black": "p12",
+      "result": "0-1"
+     },
+     {
+      "white": "p6",
+      "black": "p8",
+      "result": "1-0"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p9",
+      "kind": "pairing"
+     },
+     {
+      "player": "p3",
+      "kind": "zero"
+     }
+    ]
+   },
+   {
+    "games": [
+     {
+      "white": "p16",
+      "black": "p2",
+      "result": "1-0"
+     },
+     {
+      "white": "p14",
+      "black": "p1",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p10",
+      "result": "1-0"
+     },
+     {
+      "white": "p12",
+      "black": "p3",
+      "result": null,
+      "forfeit": "both"
+     },
+     {
+      "white": "p4",
+      "black": "p15",
+      "result": "1-0"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p8",
+      "black": "p9",
+      "result": "0-1"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p14",
+   "p13>p4",
+   "p15>p12",
+   "p1>p16",
+   "p2>p3",
+   "p5>p11",
+   "p7>p8",
+   "p9>p6"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-43",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "p14"
+  ],
+  "total_rounds": 7,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p8",
+      "result": "0-1"
+     },
+     {
+      "white": "p9",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p10",
+      "result": "0-1"
+     },
+     {
+      "white": "p11",
+      "black": "p4",
+      "result": "1-0"
+     },
+     {
+      "white": "p5",
+      "black": "p12",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p13",
+      "black": "p6",
+      "result": "1/2-1/2"
+     },
+     {
+      "white": "p7",
+      "black": "p14",
+      "result": null,
+      "forfeit": "both"
+     }
+    ],
+    "byes": []
+   }
+  ],
+  "pairings": [
+   "p10>p13",
+   "p12>p3",
+   "p2>p11",
+   "p4>p9",
+   "p6>p1",
+   "p7>p14",
+   "p8>p5"
+  ],
+  "bye": null
+ },
+ {
+  "id": "forfeit-bye-44",
+  "players": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "active": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ],
+  "total_rounds": 5,
+  "rounds": [
+   {
+    "games": [
+     {
+      "white": "p1",
+      "black": "p5",
+      "result": "1-0",
+      "forfeit": "black"
+     },
+     {
+      "white": "p6",
+      "black": "p2",
+      "result": "0-1"
+     },
+     {
+      "white": "p3",
+      "black": "p7",
+      "result": "1-0"
+     },
+     {
+      "white": "p9",
+      "black": "p4",
+      "result": "1/2-1/2"
+     }
+    ],
+    "byes": [
+     {
+      "player": "p10",
+      "kind": "pairing"
+     },
+     {
+      "player": "p8",
+      "kind": "half"
+     }
+    ]
+   }
+  ],
+  "pairings": [
+   "p1>p3",
+   "p2>p10",
+   "p4>p8",
+   "p5>p9",
+   "p7>p6"
+  ],
+  "bye": null
+ }
+]

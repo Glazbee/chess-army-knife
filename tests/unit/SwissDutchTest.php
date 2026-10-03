@@ -246,6 +246,72 @@ class SwissDutchTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( $case['bye'], $result['bye'], $case['id'] . ' bye' );
 	}
 
+	public function forfeit_cases() {
+		$cases = json_decode( file_get_contents( dirname( __DIR__ ) . '/fixtures/swiss-dutch-forfeits.json' ), true );
+		$out   = array();
+		foreach ( $cases as $case ) {
+			$out[ $case['id'] ] = array( $case );
+		}
+		return $out;
+	}
+
+	/**
+	 * Rounds that follow forfeits and half-point or zero-point byes, paired identically by this engine
+	 * and by @echecs/swiss (see tests/fixtures/README.md).
+	 *
+	 * @dataProvider forfeit_cases
+	 */
+	public function test_rounds_after_forfeits_and_requested_byes_match_the_reference_implementation( array $case ) {
+		$result = Chess_Army_Knife_Swiss_Dutch::pair( $case['players'], $case['active'], $case['rounds'], $case['total_rounds'] );
+
+		$this->assertNull( $result['error'] );
+		$this->assertSame( $case['pairings'], $this->labels( $result ), $case['id'] );
+		$this->assertSame( $case['bye'], $result['bye'], $case['id'] . ' bye' );
+	}
+
+	public function test_players_whose_game_was_forfeited_may_be_paired_again() {
+		// Every other pairing has been played, and the only games left to repeat were forfeited.
+		$rounds = array(
+			array(
+				'games' => array(
+					array(
+						'white'  => 'p1',
+						'black'  => 'p3',
+						'result' => '1-0',
+					),
+					array(
+						'white'  => 'p4',
+						'black'  => 'p2',
+						'result' => '0-1',
+					),
+				),
+				'byes'  => array(),
+			),
+			array(
+				'games' => array(
+					array(
+						'white'   => 'p2',
+						'black'   => 'p1',
+						'result'  => '1-0',
+						'forfeit' => 'black',
+					),
+					array(
+						'white'   => 'p3',
+						'black'   => 'p4',
+						'result'  => '1-0',
+						'forfeit' => 'black',
+					),
+				),
+				'byes'  => array(),
+			),
+		);
+
+		$result = $this->pair( array( 'p1', 'p2', 'p3', 'p4' ), $rounds, 3 );
+
+		$this->assertNull( $result['error'] );
+		$this->assertSame( array( 'p2>p1', 'p3>p4' ), $this->labels( $result ) );
+	}
+
 	public function large_cases() {
 		$cases = json_decode( file_get_contents( dirname( __DIR__ ) . '/fixtures/swiss-dutch-large.json' ), true );
 		$out   = array();

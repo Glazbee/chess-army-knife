@@ -16,7 +16,7 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * Boot the admin page and its form handlers.
 	 */
 	public static function init() {
-		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'request_bye', 'cancel_bye', 'create_page', 'create_event', 'anonymise_entry' ) as $action ) {
+		foreach ( array( 'create', 'add_player', 'remove_player', 'start', 'save_results', 'withdraw', 'delete', 'next_round', 'redo_round', 'end_early', 'request_bye', 'cancel_bye', 'create_page', 'create_event', 'anonymise_entry' ) as $action ) {
 			add_action( 'admin_post_chess_army_knife_tournament_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -42,13 +42,14 @@ class Chess_Army_Knife_Tournaments_Page {
 	 * @param true|WP_Error|int $outcome       Result of the operation.
 	 * @param string            $success_text  Message on success.
 	 * @param int               $tournament_id Tournament to return to (0 for the list).
+	 * @param string            $success_type  Kind of notice on success: 'success' or 'warning'.
 	 */
-	protected static function finish( $outcome, $success_text, $tournament_id = 0 ) {
+	protected static function finish( $outcome, $success_text, $tournament_id = 0, $success_type = 'success' ) {
 		$is_error = is_wp_error( $outcome );
 		set_transient(
 			'chess_army_knife_notice_' . get_current_user_id(),
 			array(
-				'type'    => $is_error ? 'error' : 'success',
+				'type'    => $is_error ? 'error' : $success_type,
 				'message' => $is_error ? $outcome->get_error_message() : $success_text,
 			),
 			MINUTE_IN_SECONDS
@@ -181,6 +182,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
 		$results       = isset( $_POST['results'] ) && is_array( $_POST['results'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['results'] ) ) : array();
 		$outcome       = true;
+		$earlier       = false;
 
 		foreach ( $results as $game_id => $result ) {
 			$game = Chess_Army_Knife_Tournament_Store::get_game( (int) $game_id );
@@ -192,8 +194,12 @@ class Chess_Army_Knife_Tournaments_Page {
 				$outcome = $saved;
 				break;
 			}
+			$earlier = $earlier || Chess_Army_Knife_Tournaments::is_in_an_earlier_swiss_round( $game );
 		}
 
+		if ( $earlier ) {
+			self::finish( $outcome, __( 'Results saved. A result from an earlier round was changed, but the later rounds were paired using the old one. Check their pairings; the latest round can be paired again while it has no results.', 'chess-army-knife' ), $tournament_id, 'warning' );
+		}
 		self::finish( $outcome, __( 'Results saved.', 'chess-army-knife' ), $tournament_id );
 	}
 
@@ -236,6 +242,18 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		/* translators: %d: round number */
 		self::finish( $round, is_wp_error( $round ) ? '' : sprintf( __( 'Round %d has been paired again.', 'chess-army-knife' ), $round ), $tournament_id );
+	}
+
+	/**
+	 * End a Swiss tournament before its last round.
+	 */
+	public static function handle_end_early() {
+		self::authorise();
+		check_admin_referer( 'chess_army_knife_tournament_end_early' );
+
+		$tournament_id = isset( $_POST['tournament_id'] ) ? (int) $_POST['tournament_id'] : 0;
+
+		self::finish( Chess_Army_Knife_Tournaments::end_early( $tournament_id ), __( 'The tournament has ended. The standings stay as they are.', 'chess-army-knife' ), $tournament_id );
 	}
 
 	/**
@@ -319,7 +337,7 @@ class Chess_Army_Knife_Tournaments_Page {
 		delete_transient( $key );
 		printf(
 			'<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>',
-			'error' === $notice['type'] ? 'error' : 'success',
+			esc_attr( in_array( $notice['type'], array( 'error', 'warning' ), true ) ? $notice['type'] : 'success' ),
 			esc_html( $notice['message'] )
 		);
 	}
@@ -769,7 +787,8 @@ class Chess_Army_Knife_Tournaments_Page {
 
 		$started = false;
 		foreach ( Chess_Army_Knife_Tournament_Store::get_games( $tournament['id'] ) as $game ) {
-			if ( 'main' === $game['stage'] && $game['round'] === $current && ! $game['is_bye'] && null !== $game['result'] ) {
+			// A game forfeited only because a player withdrew does not stop the round being paired again.
+			if ( 'main' === $game['stage'] && $game['round'] === $current && ! $game['is_bye'] && null !== $game['result'] && ! Chess_Army_Knife_Tournaments::is_forfeited_by_withdrawal( $tournament['id'], $game ) ) {
 				$started = true;
 			}
 		}
@@ -806,9 +825,18 @@ class Chess_Army_Knife_Tournaments_Page {
 			<p>
 				<a
 					href="<?php echo esc_url( self::action_url( 'redo_round', array( 'tournament_id' => $tournament['id'] ) ) ); ?>"
-					onclick="return confirm('<?php echo esc_js( __( 'Pair this round again? Use this after a player withdraws.', 'chess-army-knife' ) ); ?>');"
+					onclick="return confirm('<?php echo esc_js( __( 'Pair this round again? Use this after a player withdraws, before any game of the round is played.', 'chess-army-knife' ) ); ?>');"
 				><?php esc_html_e( 'Pair this round again', 'chess-army-knife' ); ?></a>
 			</p>
+		<?php endif; ?>
+		<?php if ( $current > 0 && 0 === $waiting ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="chess_army_knife_tournament_end_early" />
+				<input type="hidden" name="tournament_id" value="<?php echo esc_attr( $tournament['id'] ); ?>" />
+				<?php wp_nonce_field( 'chess_army_knife_tournament_end_early' ); ?>
+				<?php submit_button( __( 'End the tournament now', 'chess-army-knife' ), 'secondary', 'submit', false, array( 'onclick' => "return confirm('" . esc_js( __( 'End the tournament after this round? The remaining rounds will not be paired.', 'chess-army-knife' ) ) . "');" ) ); ?>
+				<span class="description"><?php esc_html_e( 'Use this if the remaining players cannot be paired. The standings stay as they are.', 'chess-army-knife' ); ?></span>
+			</form>
 		<?php endif; ?>
 		<?php
 		self::render_requested_byes( $tournament, $current );
