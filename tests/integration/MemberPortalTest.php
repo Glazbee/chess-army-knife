@@ -826,6 +826,9 @@ class MemberPortalTest extends WP_UnitTestCase {
 
 	public function test_the_link_email_waits_until_the_reply_is_sent() {
 		remove_filter( 'Chess_Army_Knife_send_mail_after_response', '__return_false' );
+		// Mail queued by an earlier test is not this test's to count.
+		Chess_Army_Knife_Member_Requests::send_outbox();
+		reset_phpmailer_instance();
 		$this->person();
 		$request = array(
 			Chess_Army_Knife_Member_Portal::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Member_Portal::ACTION_LINK ),
