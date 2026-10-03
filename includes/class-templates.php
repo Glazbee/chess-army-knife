@@ -54,6 +54,7 @@ class Chess_Army_Knife_Templates {
 			'membership-form'      => __( 'Membership Application Form', 'chess-army-knife' ),
 			'my-data'              => __( 'Manage My Data', 'chess-army-knife' ),
 			'member-portal'        => __( 'Member Portal', 'chess-army-knife' ),
+			'officers'             => __( 'Club Officers', 'chess-army-knife' ),
 		);
 	}
 
@@ -203,6 +204,20 @@ class Chess_Army_Knife_Templates {
 				$s[] = array(
 					'key'     => 'showTags',
 					'label'   => __( 'Show tags', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				break;
+			case 'officers':
+				$s[] = array(
+					'key'     => 'showTenure',
+					'label'   => __( 'Show since when', 'chess-army-knife' ),
+					'type'    => 'select',
+					'options' => $bool,
+				);
+				$s[] = array(
+					'key'     => 'includeCaptains',
+					'label'   => __( 'Include team captains', 'chess-army-knife' ),
 					'type'    => 'select',
 					'options' => $bool,
 				);

@@ -975,6 +975,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		Chess_Army_Knife_Teams::remove_person( $id );
+		Chess_Army_Knife_Officers::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
 		Chess_Army_Knife_Member_History::remove_person( $id );
 
@@ -1019,6 +1020,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Mailer::remove_person( $id );
 		Chess_Army_Knife_Notification_Preferences::remove_person( $id );
 		Chess_Army_Knife_Teams::remove_person( $id );
+		Chess_Army_Knife_Officers::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
 		Chess_Army_Knife_Member_History::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.

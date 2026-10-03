@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "chess-army-knife/officers",
+  "title": "Club Officers",
+  "category": "chess-army-knife-leagues",
+  "icon": "businessperson",
+  "description": "Lists the club's officers: each position with the name of whoever holds it, and team captains. Only positions, names and optionally since when are shown.",
+  "keywords": [
+    "chess",
+    "club",
+    "officers",
+    "committee",
+    "chairman",
+    "captain"
+  ],
+  "version": "0.0.1",
+  "textdomain": "chess-army-knife",
+  "attributes": {
+    "templateId": {
+      "type": "string",
+      "default": ""
+    },
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "showTenure": {
+      "type": "boolean",
+      "default": false
+    },
+    "includeCaptains": {
+      "type": "boolean",
+      "default": true
+    },
+    "order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true
+    },
+    "border": {
+      "color": true,
+      "radius": true,
+      "style": true,
+      "width": true
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

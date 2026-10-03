@@ -168,6 +168,27 @@ class A11yFixturesTest extends WP_UnitTestCase {
 		$this->write( 'member-portal', 'member-portal' );
 	}
 
+	public function test_the_officers_block() {
+		Chess_Army_Knife_Membership_Store::install_table();
+		Chess_Army_Knife_Officers::install_table();
+		Chess_Army_Knife_Officers::save_positions( array( array( 'name' => 'Chairman' ), array( 'name' => 'Secretary' ) ) );
+		foreach ( Chess_Army_Knife_Officers::positions() as $position ) {
+			Chess_Army_Knife_Officers::assign(
+				$position['id'],
+				Chess_Army_Knife_Membership_Store::save_member(
+					array(
+						'name'   => 'Officer ' . $position['name'],
+						'email'  => strtolower( $position['name'] ) . '@example.test',
+						'status' => 'active',
+					)
+				),
+				'2024-03-12'
+			);
+		}
+
+		$this->write( 'officers', 'officers', array( 'showTenure' => true ) );
+	}
+
 	public function test_the_league_blocks() {
 		$league = array(
 			'orgId'     => '270',

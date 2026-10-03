@@ -150,6 +150,17 @@ class Chess_Army_Knife_Block_Help {
 				),
 				'where'    => array( 'teams' ),
 			),
+			'officers'             => array(
+				'use'      => __( 'The club\'s officers: each position with the name of whoever holds it, and team captains. Only positions and names are shown, and optionally since when.', 'chess-army-knife' ),
+				'settings' => array(
+					__( 'Drag the positions into the order you want, or use the up and down buttons.', 'chess-army-knife' ),
+					__( 'Show or hide since when, and team captains.', 'chess-army-knife' ),
+				),
+				'needs'    => array(
+					__( 'Positions with officers, set up on the Officers screen. Team captains come from the Teams.', 'chess-army-knife' ),
+				),
+				'where'    => array( 'officers', 'teams' ),
+			),
 			'tournament-status'    => array(
 				'use'      => __( 'Where a tournament stands: its status, format, players, current round, games played and the winner.', 'chess-army-knife' ),
 				'settings' => array( __( 'Choose the tournament.', 'chess-army-knife' ) ),
@@ -308,7 +319,7 @@ class Chess_Army_Knife_Block_Help {
 
 			<h2><?php esc_html_e( 'Good to know', 'chess-army-knife' ); ?></h2>
 			<ul style="list-style:disc;margin-left:1.5em">
-				<li><?php esc_html_e( 'The blocks only show people the club holds a record of, and never a captain, squad or contact details.', 'chess-army-knife' ); ?></li>
+				<li><?php esc_html_e( 'The blocks only show people the club holds a record of, and never a squad or contact details. A team\'s captain is named only in the Club Officers block.', 'chess-army-knife' ); ?></li>
 				<li><?php esc_html_e( 'Information from the ECF and the LMS is kept for a while rather than fetched on every visit, so a change there can take some time to appear. Administrators can clear it under Settings.', 'chess-army-knife' ); ?></li>
 				<li><?php esc_html_e( 'Many blocks have a Template choice in their settings. A template is a saved set of options for that kind of block, made once under Templates and reused wherever you like.', 'chess-army-knife' ); ?></li>
 			</ul>

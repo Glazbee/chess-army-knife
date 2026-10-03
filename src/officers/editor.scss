@@ -1,0 +1,20 @@
+.cak-sortable {
+	margin: 0 0 1em;
+	padding: 0;
+	list-style: none;
+}
+
+.cak-sortable__item {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0 0 4px;
+	padding: 4px 8px;
+	border: 1px solid #ddd;
+	background: #fff;
+	cursor: grab;
+}
+
+.cak-sortable__label {
+	flex: 1;
+}

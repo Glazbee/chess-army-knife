@@ -6,7 +6,7 @@ may use. Some need a permission that an administrator gives you on your user pro
 
 | You need | To use |
 |---|---|
-| The *Club memberships* permission | Members, Renewals, Member Checks, Announcements, Do Not Record |
+| The *Club memberships* permission | Members, Renewals, Member Checks, Announcements, Do Not Record, Officers |
 | The *Club teams* permission (or be a team's captain) | Teams, Clubs, Sort Clubs, Squad Review, Import Events; captains see only their own team in Team Overview and Team Selection |
 | Administrator | Settings, Setup, Policies, Templates |
 
@@ -18,6 +18,10 @@ may use. Some need a permission that an administrator gives you on your user pro
 3. Open **Policies** and decide, for each policy, whether the plugin makes you a draft page to edit or you
    will write it yourself. Read the draft against what your club really does before you mark it reviewed.
 4. The **Overview** has a **Still to do** list. Work down it; each line has a link.
+5. Open **Officers**, name the club's positions (Chairman, Secretary...), put them in order and add who
+   holds each. When someone stands down, press **Stand down** and add their successor: the history keeps
+   both. Team captains are officers too; change them on the team, not here. Then add the **Club Officers**
+   block to a page and drag the positions into the order you want in its settings.
 
 ## Every week
 

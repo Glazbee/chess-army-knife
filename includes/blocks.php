@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 function Chess_Army_Knife_register() {
 	$blocks_dir = Chess_Army_Knife_DIR . 'build/';
 
-	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'team-page', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'next-club-event', 'club-event-calendar', 'club-event-details', 'memberships', 'membership-form', 'my-data', 'team-profiles', 'member-portal' ) as $block ) {
+	foreach ( array( 'rating-chart', 'club-results', 'league-table', 'team-carousel', 'team-page', 'biggest-gainers', 'featured-player', 'tournament-status', 'tournament-standings', 'tournament-players', 'tournament-games', 'tournament-winners', 'next-club-event', 'club-event-calendar', 'club-event-details', 'memberships', 'membership-form', 'my-data', 'team-profiles', 'member-portal', 'officers' ) as $block ) {
 		$path = $blocks_dir . $block;
 		if ( file_exists( $path . '/block.json' ) ) {
 			$registered = register_block_type( $path );
@@ -54,6 +54,16 @@ function Chess_Army_Knife_register_rest_routes() {
 		array(
 			'methods'             => 'GET',
 			'callback'            => 'Chess_Army_Knife_rest_get_teams',
+			'permission_callback' => 'Chess_Army_Knife_rest_editor_permission',
+		)
+	);
+
+	register_rest_route(
+		'ecf-lms/v1',
+		'/officer-items',
+		array(
+			'methods'             => 'GET',
+			'callback'            => 'Chess_Army_Knife_rest_get_officer_items',
 			'permission_callback' => 'Chess_Army_Knife_rest_editor_permission',
 		)
 	);
@@ -101,6 +111,17 @@ function Chess_Army_Knife_rest_get_teams() {
 		);
 	}
 	return $teams;
+}
+
+/**
+ * The positions and team captaincies the Club Officers block can list, in the
+ * club's default order, for the editor's drag-and-drop ordering. Only labels:
+ * no names of people.
+ *
+ * @return array[]
+ */
+function Chess_Army_Knife_rest_get_officer_items() {
+	return Chess_Army_Knife_Officers::items();
 }
 
 /**

@@ -20,6 +20,7 @@ class TeamsTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Mailer::install_table();
 		Chess_Army_Knife_Notification_Preferences::install_table();
 		Chess_Army_Knife_Teams::install_table();
+		Chess_Army_Knife_Officers::install_table();
 	}
 
 	/**
