@@ -403,7 +403,7 @@ class Chess_Army_Knife_Menu {
 			add_submenu_page( self::SLUG, $area['title'], $label, $capability, $area['slug'], null === $area['callback'] ? '' : $area['callback'] );
 		}
 
-		// The Overview and Selection tabs of Teams have no menu item of their own, but can be opened.
+		// The Overview and Selection tabs of Teams have no menu item of their own.
 		$tabs       = array(
 			array( Chess_Army_Knife_Team_Overview::PAGE, __( 'Team Overview', 'chess-army-knife' ), array( 'Chess_Army_Knife_Team_Overview', 'render_page' ) ),
 			array( Chess_Army_Knife_Selection_Page::SLUG, __( 'Team Selection', 'chess-army-knife' ), array( 'Chess_Army_Knife_Selection_Page', 'render_page' ) ),
@@ -414,8 +414,8 @@ class Chess_Army_Knife_Menu {
 			if ( $teams_area && $tab[0] === $teams_area['slug'] ) {
 				continue;
 			}
-			add_submenu_page( self::SLUG, $tab[1], $tab[1], $capability, $tab[0], $tab[2] );
-			remove_submenu_page( self::SLUG, $tab[0] );
+			// No parent menu: the page can be opened but is not listed. (Removing a listed page makes WordPress refuse it.)
+			add_submenu_page( null, $tab[1], $tab[1], $capability, $tab[0], $tab[2] );
 		}
 	}
 
