@@ -162,6 +162,7 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 
+* Fixed: the **Tournament Players** block now has three columns, Player, ECF Code and ECF Rating, and shows the player's current ECF rating (in the tournament's rating list) instead of the rating recorded for seeding, which could be out of date or a manual estimate. A player with no ECF code shows a dash. The seed column is gone. Seeding itself is unchanged.
 * Added: a search box above **Members in this photo**, so a member can be found in a long list; ticks are kept as you search.
 * Added: **Club Officers** layout options. Choose 1 to 4 columns, put the position beside the name or on its own line above it (with "(since …)" after the name), show each position as plain text or as a heading of the level you pick (or the site's level), turn the block title off to use the page title, and turn the line between officers off.
 * Added: a **Featured Player blurb** on each member's record (Members, edit; officers only, 500 characters, included in the personal data export and removed on erasure). A rotating Featured Player block shows the featured member's blurb; a block that picks one member shows its own blurb, or the member's if the block has none. The blurb is public, so check the member is happy with it.

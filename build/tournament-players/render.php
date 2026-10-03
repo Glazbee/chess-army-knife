@@ -27,8 +27,13 @@ if ( ! $tournament ) {
 	return;
 }
 
-$players = Chess_Army_Knife_Tournament_Summary::players( $tournament );
-$started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
+$players     = Chess_Army_Knife_Tournament_Summary::players( $tournament );
+$list_labels = array(
+	'S' => '',
+	'R' => __( 'Rapid', 'chess-army-knife' ),
+	'B' => __( 'Blitz', 'chess-army-knife' ),
+);
+$rating_list = Chess_Army_Knife_ECF_Client::normalise_domain( $tournament['rating_domain'] );
 ?>
 <?php echo Chess_Army_Knife_Templates::custom_css( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built by custom_css(): the template id is escaped and the CSS has tags stripped. ?>
 <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
@@ -42,20 +47,19 @@ $started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
 			<caption class="cak-visually-hidden"><?php echo esc_html( sprintf( /* translators: %s: tournament name */ __( 'Players in %s', 'chess-army-knife' ), $tournament['name'] ) ); ?></caption>
 			<thead>
 				<tr>
-					<?php if ( $started ) : ?>
-						<th scope="col" class="is-numeric"><?php echo Chess_Army_Knife_A11y::abbr( '#', __( 'Seed', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
-					<?php endif; ?>
 					<th scope="col"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></th>
 					<th scope="col"><?php echo Chess_Army_Knife_A11y::abbr( __( 'ECF code', 'chess-army-knife' ), __( 'English Chess Federation rating code', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in abbr(). ?></th>
-					<th scope="col" class="is-numeric"><?php esc_html_e( 'Rating', 'chess-army-knife' ); ?></th>
+					<th scope="col" class="is-numeric">
+						<?php
+						// A rapid or blitz tournament shows that list's rating, and says so.
+						echo esc_html( ! empty( $list_labels[ $rating_list ] ) ? sprintf( /* translators: %s: rating list, such as Rapid */ __( 'ECF Rating (%s)', 'chess-army-knife' ), $list_labels[ $rating_list ] ) : __( 'ECF Rating', 'chess-army-knife' ) );
+						?>
+					</th>
 				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $players as $player ) : ?>
 					<tr class="<?php echo $player['withdrawn'] ? 'is-withdrawn' : ''; ?>">
-						<?php if ( $started ) : ?>
-							<td class="is-numeric"><?php echo esc_html( null === $player['seed'] ? '' : $player['seed'] ); ?></td>
-						<?php endif; ?>
 						<th scope="row">
 							<?php echo esc_html( Chess_Army_Knife_Names::person( $player, $name_style ) ); ?>
 							<?php if ( $player['withdrawn'] ) : ?>
@@ -66,11 +70,11 @@ $started = Chess_Army_Knife_Tournaments::STATUS_DRAFT !== $tournament['status'];
 						<td class="is-numeric">
 							<?php
 							if ( null !== $player['rating'] ) {
-								echo esc_html( $player['rating'] . ( 'manual' === $player['source'] ? ' ' . __( '(manual)', 'chess-army-knife' ) : '' ) );
-							} elseif ( 'pending' === $player['source'] ) {
-								esc_html_e( 'Set at start', 'chess-army-knife' );
-							} else {
+								echo esc_html( $player['rating'] );
+							} elseif ( '' !== $player['ecf_code'] ) {
 								esc_html_e( 'Unrated', 'chess-army-knife' );
+							} else {
+								echo '&mdash;<span class="cak-visually-hidden">' . esc_html__( 'No ECF code', 'chess-army-knife' ) . '</span>';
 							}
 							?>
 						</td>

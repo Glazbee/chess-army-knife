@@ -259,28 +259,25 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		$this->assertWPError( Chess_Army_Knife_Tournaments::create_page( 9999 ) );
 	}
 
-	public function test_the_players_block_lists_ratings_before_and_after_the_start() {
+	public function test_the_players_block_shows_the_ecf_rating_and_never_a_manual_one() {
 		$tournament = $this->tournament();
+		$coded      = $this->saved_player( 'Coded Cat', '120787J' );
+		Chess_Army_Knife_Membership_Store::record_rating_check( $coded, 1612, 'S' );
 		Chess_Army_Knife_Player_Selector::enter_players(
 			$tournament,
 			array(
-				'player_ids' => array( $this->saved_player( 'Manual Mo', '', 1450 ), $this->saved_player( 'Coded Cat', '120787J' ), $this->saved_player( 'Unrated Ur' ) ),
+				'player_ids' => array( $this->saved_player( 'Manual Mo', '', 1450 ), $coded ),
 			)
 		);
 		$markup = '<!-- wp:chess-army-knife/tournament-players {"tournamentId":' . $tournament . '} /-->';
 
 		$html = do_blocks( $markup );
-		$this->assertStringContainsString( 'Manual Mo', $html );
-		$this->assertStringContainsString( '1450 (manual)', $html );
-		$this->assertStringContainsString( '120787J', $html );
-		$this->assertStringContainsString( 'Set at start', $html );
-		$this->assertStringContainsString( 'Unrated', $html );
 
-		// After the start the recorded rating is shown (the ECF lookup fails offline, leaving the player unrated).
-		Chess_Army_Knife_Tournaments::start( $tournament );
-		$html = do_blocks( $markup );
-		$this->assertStringContainsString( '1450 (manual)', $html );
-		$this->assertStringNotContainsString( 'Set at start', $html );
+		$this->assertStringContainsString( 'ECF Rating', $html );
+		$this->assertStringContainsString( '120787J', $html );
+		$this->assertStringContainsString( '1612', $html, 'The rating the ECF refresh keeps for the member.' );
+		$this->assertStringNotContainsString( '1450', $html, 'A manual rating is not an ECF rating.' );
+		$this->assertStringNotContainsString( 'Seed', $html );
 	}
 
 	public function test_the_players_block_asks_for_a_tournament() {
