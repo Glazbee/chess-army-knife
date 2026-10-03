@@ -300,7 +300,7 @@ class Chess_Army_Knife_Leagues_Page {
 		return array(
 			'names'   => $names,
 			'matched' => '' !== Chess_Army_Knife_League_Data::lms_name( $loaded['fixtures'], $name ),
-			'note'    => $names ? '' : __( 'The LMS has no teams in this division yet, so this cannot be checked.', 'chess-army-knife' ),
+			'note'    => $names ? '' : __( 'The LMS has no fixtures for this division yet, so the team cannot be matched. Check back once they have been announced.', 'chess-army-knife' ),
 		);
 	}
 
@@ -343,8 +343,14 @@ class Chess_Army_Knife_Leagues_Page {
 				<?php foreach ( $by_org as $org => $assigned ) : ?>
 					<?php
 					$org       = (string) $org;
-					$events    = Chess_Army_Knife_LMS_Client::get_event_names( $org );
-					$divisions = is_wp_error( $events ) ? array() : $events;
+					$events    = Chess_Army_Knife_LMS_Client::get_season_events( $org );
+					$season    = is_wp_error( $events ) ? '' : $events['season'];
+					$ids       = array(); // LMS event id by division name, for the link to its fixtures.
+					$divisions = array();
+					foreach ( is_wp_error( $events ) ? array() : $events['events'] as $event ) {
+						$ids[ $event['name'] ] = $event['id'];
+						$divisions[]           = $event['name'];
+					}
 					// A division a team is already in stays listed even if the LMS no longer has it.
 					$missing = array();
 					foreach ( $assigned as $entry ) {
@@ -384,7 +390,20 @@ class Chess_Army_Knife_Leagues_Page {
 					<?php endif; ?>
 					<?php if ( is_wp_error( $events ) ) : ?>
 						<div class="notice notice-warning inline"><p><?php echo esc_html( $events->get_error_message() ); ?></p></div>
-					<?php elseif ( ! $divisions ) : ?>
+					<?php else : ?>
+						<p>
+							<?php
+							echo esc_html(
+								'' !== $season
+									/* translators: %s: name of the LMS season, for example 2026-27 */
+									? sprintf( __( 'Divisions are those the LMS lists for the %s season.', 'chess-army-knife' ), $season )
+									: __( 'Divisions are those the LMS lists for the current season.', 'chess-army-knife' )
+							);
+							?>
+							<?php esc_html_e( 'The LMS cannot say which teams are in a division until its fixtures have been entered, so a team can be matched to the LMS only then. Check back once the fixtures have been announced.', 'chess-army-knife' ); ?>
+						</p>
+					<?php endif; ?>
+					<?php if ( ! is_wp_error( $events ) && ! $divisions ) : ?>
 						<div class="notice notice-warning inline"><p><?php esc_html_e( 'The LMS lists no divisions for this organisation this season.', 'chess-army-knife' ); ?></p></div>
 					<?php endif; ?>
 
@@ -399,7 +418,14 @@ class Chess_Army_Knife_Leagues_Page {
 						</div>
 						<div style="flex:2;min-width:300px">
 							<?php foreach ( $divisions as $index => $division ) : ?>
-								<h3 id="cak-div-<?php echo esc_attr( $org . '-' . $index ); ?>"><?php echo esc_html( $division ); ?></h3>
+								<h3 id="cak-div-<?php echo esc_attr( $org . '-' . $index ); ?>">
+									<?php echo esc_html( $division ); ?>
+									<?php if ( isset( $ids[ $division ] ) ) : ?>
+										<a class="cak-lms-link" style="font-size:13px;font-weight:400" href="<?php echo esc_url( Chess_Army_Knife_LMS_Client::event_fixtures_url( $ids[ $division ] ) ); ?>" target="_blank" rel="noopener noreferrer">
+											<?php esc_html_e( 'Check the fixtures on the LMS', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( sprintf( /* translators: %s: division name */ __( 'for %s (opens in a new tab)', 'chess-army-knife' ), $division ) ); ?></span>
+										</a>
+									<?php endif; ?>
+								</h3>
 								<ul class="cak-division-list" data-division="<?php echo esc_attr( $division ); ?>" aria-labelledby="cak-div-<?php echo esc_attr( $org . '-' . $index ); ?>" style="list-style:none;margin:0 0 16px;padding:8px;min-height:48px;border:1px solid #8c8f94">
 									<?php foreach ( $by_div[ $division ] as $team ) : ?>
 										<?php

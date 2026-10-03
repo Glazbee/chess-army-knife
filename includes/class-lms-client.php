@@ -38,6 +38,9 @@ class Chess_Army_Knife_LMS_Client {
 	 */
 	const V2_BASE = 'https://lms.englishchess.org.uk/lms/lmsrest/v2';
 
+	/** The LMS website, for links people can follow. */
+	const SITE_BASE = 'https://lms.englishchess.org.uk/lms';
+
 	/** How long seasons and the events in them are cached: they rarely change. */
 	const V2_STRUCTURE_TTL = 6 * HOUR_IN_SECONDS;
 
@@ -475,33 +478,55 @@ class Chess_Army_Knife_LMS_Client {
 	}
 
 	/**
-	 * The names of an organisation's events in the running season, for suggesting divisions and for
-	 * checking that one exists.
+	 * An organisation's running season and its events (divisions), for listing the divisions and linking to them.
 	 *
 	 * @param string $org     Numeric organisation id.
 	 * @param bool   $refresh Skip the cached copies.
-	 * @return string[]|WP_Error Event names.
+	 * @return array|WP_Error { season: string (its name, '' if none is running), events: array[] of { id, name } }
 	 */
-	public static function get_event_names( $org, $refresh = false ) {
+	public static function get_season_events( $org, $refresh = false ) {
 		$seasons = self::get_seasons( $org, $refresh );
 		if ( is_wp_error( $seasons ) ) {
 			return $seasons;
 		}
 
-		$names = array();
-		foreach ( self::seasons_matching( $seasons, 'active' ) as $season_id ) {
-			$events = self::v2_get( 'season/' . $season_id . '/events', self::V2_STRUCTURE_TTL, $refresh );
-			if ( is_wp_error( $events ) ) {
-				return $events;
+		$ids    = self::seasons_matching( $seasons, 'active' );
+		$name   = '';
+		$events = array();
+		foreach ( $seasons as $season ) {
+			if ( $ids && $season['id'] === $ids[0] ) {
+				$name = $season['name'];
 			}
-			foreach ( isset( $events['events'] ) && is_array( $events['events'] ) ? $events['events'] : array() as $event ) {
-				if ( isset( $event['name'] ) && '' !== trim( (string) $event['name'] ) ) {
-					$names[ (string) $event['name'] ] = (string) $event['name'];
+		}
+		foreach ( $ids as $season_id ) {
+			$list = self::v2_get( 'season/' . $season_id . '/events', self::V2_STRUCTURE_TTL, $refresh );
+			if ( is_wp_error( $list ) ) {
+				return $list;
+			}
+			foreach ( isset( $list['events'] ) && is_array( $list['events'] ) ? $list['events'] : array() as $event ) {
+				if ( isset( $event['id'], $event['name'] ) && '' !== trim( (string) $event['name'] ) ) {
+					$events[ (string) $event['name'] ] = array(
+						'id'   => (int) $event['id'],
+						'name' => (string) $event['name'],
+					);
 				}
 			}
 		}
 
-		return array_values( $names );
+		return array(
+			'season' => $name,
+			'events' => array_values( $events ),
+		);
+	}
+
+	/**
+	 * Where an event's fixtures are shown on the LMS website, for people to check whether they have been entered.
+	 *
+	 * @param int $event_id LMS event id.
+	 * @return string
+	 */
+	public static function event_fixtures_url( $event_id ) {
+		return self::SITE_BASE . '/event/' . absint( $event_id ) . '/fixtures';
 	}
 
 	/**
