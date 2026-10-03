@@ -310,7 +310,7 @@ class TeamsTest extends WP_UnitTestCase {
 		$_POST = array(
 			Chess_Army_Knife_Teams_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
 			'chess_army_team_venue'                   => 'Hall',
-			'chess_army_team_captain'                 => (string) $ada,
+			'chess_army_team_captain_member'          => (string) $ada,
 			'chess_army_team_leagues'                 => array(
 				array(
 					'org'   => '613',
@@ -345,35 +345,53 @@ class TeamsTest extends WP_UnitTestCase {
 		$this->assertSame( 'Hall', Chess_Army_Knife_Teams::get( $team )['venue'] );
 	}
 
-	public function test_a_captain_who_is_not_a_member_can_be_named_and_is_shown_as_the_non_playing_captain() {
+	public function test_the_captain_is_ticked_in_the_squad_or_chosen_apart_from_it() {
 		$ada  = $this->person( 'Ada Lovelace' );
+		$bea  = $this->person( 'Bea Babbage' );
 		$team = $this->team();
 		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
 		wp_set_current_user( $user );
+		$nonce = Chess_Army_Knife_Teams_Admin::NONCE_FIELD;
 
+		// Ticked in the squad: a captain who plays. Someone outside the squad cannot be ticked.
 		$_POST = array(
-			Chess_Army_Knife_Teams_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
-			'chess_army_team_captain'                 => '-1',
-			'chess_army_team_captain_name'            => 'Pat Parent',
+			$nonce                           => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
+			'chess_army_team_squad'          => array( (string) $ada ),
+			'chess_army_team_captain_member' => (string) $bea,
 		);
 		Chess_Army_Knife_Teams_Admin::save( $team );
+		$this->assertSame( 0, Chess_Army_Knife_Teams::get( $team )['captain_id'] );
 
+		$_POST['chess_army_team_captain_member'] = (string) $ada;
+		Chess_Army_Knife_Teams_Admin::save( $team );
+		$this->assertSame( $ada, Chess_Army_Knife_Teams::get( $team )['captain_id'] );
+
+		// A captain who does not play: any member, chosen apart from the squad.
+		$_POST = array(
+			$nonce                                => wp_create_nonce( Chess_Army_Knife_Teams_Admin::NONCE_ACTION ),
+			'chess_army_team_squad'               => array( (string) $ada ),
+			'chess_army_team_captain_non_playing' => '1',
+			'chess_army_team_captain_other'       => (string) $bea,
+			'chess_army_team_captain_member'      => (string) $ada,
+		);
+		Chess_Army_Knife_Teams_Admin::save( $team );
 		$data = Chess_Army_Knife_Teams::get( $team );
+		$this->assertSame( $bea, $data['captain_id'], 'The ticked member is ignored while the captain does not play.' );
+		$this->assertSame( '', $data['captain_name'] );
+
+		// Or someone who is not a member, by name.
+		$_POST['chess_army_team_captain_other'] = '-1';
+		$_POST['chess_army_team_captain_name']  = 'Pat Parent';
+		Chess_Army_Knife_Teams_Admin::save( $team );
+		$_POST = array();
+		$data  = Chess_Army_Knife_Teams::get( $team );
 		$this->assertSame( 0, $data['captain_id'] );
 		$this->assertSame( 'Pat Parent', $data['captain_name'] );
 
 		$html = do_blocks( '<!-- wp:chess-army-knife/team-profiles {"showPlayers":true} /-->' );
 		$this->assertStringContainsString( 'Non-playing captain', $html );
 		$this->assertStringContainsString( 'Pat Parent', $html );
-
-		// Choosing a member as captain forgets the name.
-		$_POST['chess_army_team_captain'] = (string) $ada;
-		Chess_Army_Knife_Teams_Admin::save( $team );
-		$_POST = array();
-		$data  = Chess_Army_Knife_Teams::get( $team );
-		$this->assertSame( $ada, $data['captain_id'] );
-		$this->assertSame( '', $data['captain_name'] );
 	}
 
 	public function test_a_team_manager_edits_leagues_but_cannot_choose_the_captain_or_squad() {
@@ -393,7 +411,7 @@ class TeamsTest extends WP_UnitTestCase {
 					'name'  => '',
 				),
 			),
-			'chess_army_team_captain'                 => (string) $ada,
+			'chess_army_team_captain_member'          => (string) $ada,
 			'chess_army_team_squad'                   => array( (string) $ada ),
 		);
 		Chess_Army_Knife_Teams_Admin::save( $team );

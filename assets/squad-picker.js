@@ -33,6 +33,11 @@
 			.appendTo( $list );
 	}
 
+	var $nonPlaying = $( '#cak-captain-nonplaying' );
+	var $other = $( '#cak-captain-other' );
+	var $otherSelect = $( '#cak-captain-other-select' );
+	var $nameWrap = $( '#cak-captain-name-wrap' );
+
 	// Show the button that fits the list a member is in, and save them only when they are in the squad.
 	function sync( item ) {
 		var inSquad = item.parent().is( $members );
@@ -42,6 +47,29 @@
 			'disabled',
 			! inSquad
 		);
+		item.find( '.cak-captain' ).toggle( inSquad );
+		item.find( '.cak-captain-tick' )
+			.prop( 'disabled', ! inSquad || $nonPlaying.is( ':checked' ) )
+			.prop( 'checked', function ( index, checked ) {
+				return inSquad ? checked : false;
+			} );
+		refreshOther();
+	}
+
+	// A member in the squad cannot also be picked as the captain who does not play.
+	function refreshOther() {
+		var inSquad = {};
+		$members.find( 'input[name="chess_army_team_squad[]"]' ).each( function () {
+			inSquad[ this.value ] = true;
+		} );
+		$otherSelect.find( 'option' ).each( function () {
+			var taken = !! inSquad[ this.value ];
+			$( this ).prop( 'disabled', taken );
+			if ( taken && this.selected ) {
+				$otherSelect.val( '0' );
+			}
+		} );
+		$nameWrap.toggle( $otherSelect.val() === '-1' );
 	}
 
 	function moved( item, wasInSquad ) {
@@ -82,6 +110,27 @@
 		moved( item, true );
 		item.find( '.cak-add' ).trigger( 'focus' );
 	} );
+
+	// Only one member can be the captain.
+	$columns.on( 'change', '.cak-captain-tick', function () {
+		if ( this.checked ) {
+			$( '.cak-captain-tick' ).not( this ).prop( 'checked', false );
+		}
+	} );
+
+	// A captain who does not play is chosen below the squad instead of ticked in it.
+	$nonPlaying.on( 'change', function () {
+		var off = this.checked;
+		$other.toggle( off );
+		$members
+			.find( '.cak-captain-tick' )
+			.prop( 'disabled', off )
+			.prop( 'checked', function ( index, checked ) {
+				return off ? false : checked;
+			} );
+		refreshOther();
+	} );
+	$otherSelect.on( 'change', refreshOther );
 
 	// Narrow the left list as someone types; Enter must not submit the team.
 	$( '#cak-squad-filter' )

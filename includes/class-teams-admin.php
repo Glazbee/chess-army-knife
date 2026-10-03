@@ -146,26 +146,11 @@ class Chess_Army_Knife_Teams_Admin {
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="chess_army_team_captain"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></label></th>
+				<th scope="row"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></th>
 				<td>
-					<?php if ( Chess_Army_Knife_Memberships::user_can_manage() ) : ?>
-						<select id="chess_army_team_captain" name="chess_army_team_captain">
-							<option value="0"><?php esc_html_e( 'None', 'chess-army-knife' ); ?></option>
-							<option value="-1" <?php selected( ! $captain && '' !== $captain_name ); ?>><?php esc_html_e( 'Someone who is not a member…', 'chess-army-knife' ); ?></option>
-							<?php foreach ( self::candidates( array_filter( array( $captain ) ) ) as $person ) : ?>
-								<option value="<?php echo esc_attr( $person['id'] ); ?>" <?php selected( $captain, $person['id'] ); ?>><?php echo esc_html( $person['name'] ); ?></option>
-							<?php endforeach; ?>
-						</select>
-						<p>
-							<label for="chess_army_team_captain_name"><?php esc_html_e( 'Name of a captain who is not a member', 'chess-army-knife' ); ?></label><br />
-							<input type="text" id="chess_army_team_captain_name" name="chess_army_team_captain_name" value="<?php echo esc_attr( $captain_name ); ?>" class="regular-text" />
-						</p>
-						<p class="description"><?php esc_html_e( 'A member captain is shown on the website in the Club Officers block, where team captains are listed as officers, and marked in the squad list of the Club Teams block. Choose "Someone who is not a member" for, say, a parent who runs a juniors team: the name you type is shown on the Club Teams block as the non-playing captain, but they are not a club officer and have no record here.', 'chess-army-knife' ); ?></p>
-					<?php else : ?>
-						<?php $captain_person = $captain ? Chess_Army_Knife_Membership_Store::get_member( $captain ) : null; ?>
-						<?php echo esc_html( $captain_person ? $captain_person['name'] : ( '' !== $captain_name ? $captain_name : __( 'None', 'chess-army-knife' ) ) ); ?>
-						<p class="description"><?php esc_html_e( 'Only someone who can manage members can change this.', 'chess-army-knife' ); ?></p>
-					<?php endif; ?>
+					<?php $captain_person = $captain ? Chess_Army_Knife_Membership_Store::get_member( $captain ) : null; ?>
+					<?php echo esc_html( $captain_person ? $captain_person['name'] : ( '' !== $captain_name ? $captain_name : __( 'None', 'chess-army-knife' ) ) ); ?>
+					<p class="description"><?php esc_html_e( 'The captain is chosen in the Squad box below. A member captain is shown in the Club Officers block, where team captains are listed as officers, and marked in the Club Teams block.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -223,11 +208,15 @@ class Chess_Army_Knife_Teams_Admin {
 			<?php
 			return;
 		}
-		$squad_ids = $squad;
-		$people    = self::candidates( $squad_ids );
-		$also      = Chess_Army_Knife_Teams::squad_names_by_person();
-		$own       = Chess_Army_Knife_Teams::get( $post->ID );
-		$in_squad  = array_values(
+		$squad_ids    = $squad;
+		$captain_id   = (int) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN, true );
+		$captain_name = trim( (string) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_CAPTAIN_NAME, true ) );
+		$people       = self::candidates( array_merge( $squad_ids, array_filter( array( $captain_id ) ) ) );
+		// The captain does not play when they are not in the squad, or are not a member at all.
+		$non_playing = '' !== $captain_name || ( $captain_id && ! in_array( $captain_id, $squad_ids, true ) );
+		$also        = Chess_Army_Knife_Teams::squad_names_by_person();
+		$own         = Chess_Army_Knife_Teams::get( $post->ID );
+		$in_squad    = array_values(
 			array_filter(
 				$people,
 				function ( $person ) use ( $squad_ids ) {
@@ -235,7 +224,7 @@ class Chess_Army_Knife_Teams_Admin {
 				}
 			)
 		);
-		$others    = array_values(
+		$others      = array_values(
 			array_filter(
 				$people,
 				function ( $person ) use ( $squad_ids ) {
@@ -254,7 +243,7 @@ class Chess_Army_Knife_Teams_Admin {
 				</p>
 				<ul class="cak-squad-available" aria-labelledby="cak-squad-available-title" style="list-style:none;margin:0;padding:8px;min-height:48px;max-height:420px;overflow:auto;border:1px dashed #c3c4c7">
 					<?php foreach ( $others as $person ) : ?>
-						<?php self::render_person( $person, false, $also ); ?>
+						<?php self::render_person( $person, false, $also, $captain_id ); ?>
 					<?php endforeach; ?>
 				</ul>
 			</div>
@@ -267,12 +256,34 @@ class Chess_Army_Knife_Teams_Admin {
 				</h3>
 				<ul class="cak-squad-members" aria-labelledby="cak-squad-members-title" style="list-style:none;margin:0;padding:8px;min-height:48px;max-height:420px;overflow:auto;border:1px solid #8c8f94">
 					<?php foreach ( $in_squad as $person ) : ?>
-						<?php self::render_person( $person, true, $also ); ?>
+						<?php self::render_person( $person, true, $also, $captain_id, $non_playing ); ?>
 					<?php endforeach; ?>
 				</ul>
 			</div>
 		</div>
 		<p class="screen-reader-text" role="status" aria-live="polite" id="cak-squad-status"></p>
+
+		<h3><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></h3>
+		<p class="description"><?php esc_html_e( 'Tick Captain beside one person in the squad. If the captain does not play for the team, tick the box below instead and choose any member who is not in the squad, or type the name of someone who is not a member (a juniors parent, say).', 'chess-army-knife' ); ?></p>
+		<p>
+			<label><input type="checkbox" id="cak-captain-nonplaying" name="chess_army_team_captain_non_playing" value="1" <?php checked( $non_playing ); ?> /> <?php esc_html_e( 'The captain does not play for the team', 'chess-army-knife' ); ?></label>
+		</p>
+		<div id="cak-captain-other" <?php echo $non_playing ? '' : 'style="display:none"'; ?>>
+			<p>
+				<label for="cak-captain-other-select"><?php esc_html_e( 'Captain', 'chess-army-knife' ); ?></label><br />
+				<select id="cak-captain-other-select" name="chess_army_team_captain_other">
+					<option value="0"><?php esc_html_e( 'None', 'chess-army-knife' ); ?></option>
+					<option value="-1" <?php selected( '' !== $captain_name ); ?>><?php esc_html_e( 'Someone who is not a member…', 'chess-army-knife' ); ?></option>
+					<?php foreach ( $people as $person ) : ?>
+						<option value="<?php echo esc_attr( $person['id'] ); ?>" <?php selected( '' === $captain_name && $captain_id === $person['id'] ); ?> <?php disabled( in_array( $person['id'], $squad_ids, true ) ); ?>><?php echo esc_html( $person['name'] ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			</p>
+			<p id="cak-captain-name-wrap" <?php echo '' !== $captain_name ? '' : 'style="display:none"'; ?>>
+				<label for="cak-captain-name"><?php esc_html_e( 'Name of a captain who is not a member', 'chess-army-knife' ); ?></label><br />
+				<input type="text" id="cak-captain-name" name="chess_army_team_captain_name" value="<?php echo esc_attr( $captain_name ); ?>" class="regular-text" />
+			</p>
+		</div>
 		<?php
 	}
 
@@ -283,8 +294,10 @@ class Chess_Army_Knife_Teams_Admin {
 	 * @param array $person   Member row.
 	 * @param bool  $in_squad Whether they are in the squad being edited.
 	 * @param array $also     Names of the teams each member is in, by member id (see Chess_Army_Knife_Teams::squad_names_by_person()).
+	 * @param int   $captain_id Member id of the captain, or 0.
+	 * @param bool  $captain_not_playing Whether the captain is chosen separately, which switches the Captain tickboxes off.
 	 */
-	protected static function render_person( array $person, $in_squad, array $also ) {
+	protected static function render_person( array $person, $in_squad, array $also, $captain_id = 0, $captain_not_playing = false ) {
 		$name  = $person['name'];
 		$teams = isset( $also[ $person['id'] ] ) ? $also[ $person['id'] ] : array();
 		?>
@@ -302,6 +315,10 @@ class Chess_Army_Knife_Teams_Admin {
 					</span>
 				<?php endif; ?>
 			</span>
+			<label class="cak-captain" <?php echo $in_squad ? '' : 'style="display:none"'; ?>>
+				<input type="checkbox" class="cak-captain-tick" name="chess_army_team_captain_member" value="<?php echo esc_attr( $person['id'] ); ?>" <?php checked( $in_squad && ! $captain_not_playing && $captain_id === $person['id'] ); ?> <?php disabled( ! $in_squad || $captain_not_playing ); ?> />
+				<?php esc_html_e( 'Captain', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $name ); ?></span>
+			</label>
 			<button type="button" class="button cak-remove" <?php echo $in_squad ? '' : 'style="display:none"'; ?>>
 				<span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span><span class="screen-reader-text"><?php /* translators: %s: member name */ echo esc_html( sprintf( __( 'Remove %s from the squad', 'chess-army-knife' ), $name ) ); ?></span>
 			</button>
@@ -349,16 +366,27 @@ class Chess_Army_Knife_Teams_Admin {
 			return;
 		}
 
-		// Only someone the club holds a record of can captain a team.
-		// "-1" is a captain who is not a member, named in the text field; a member as captain replaces any name.
-		$choice  = isset( $_POST['chess_army_team_captain'] ) ? (int) $_POST['chess_army_team_captain'] : 0;
-		$captain = max( 0, $choice );
-		$name    = -1 === $choice && isset( $_POST['chess_army_team_captain_name'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_captain_name'] ) ) : '';
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_CAPTAIN_NAME, $name );
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_CAPTAIN, $captain && Chess_Army_Knife_Membership_Store::get_member( $captain ) ? $captain : 0 );
-
 		$squad = isset( $_POST['chess_army_team_squad'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['chess_army_team_squad'] ) ) : array();
 		Chess_Army_Knife_Teams::set_squad( $post_id, $squad );
+
+		// A captain who plays is ticked in the squad. One who does not play is chosen below it: any member, or a name typed for someone who is not a member.
+		$captain = 0;
+		$name    = '';
+		if ( ! empty( $_POST['chess_army_team_captain_non_playing'] ) ) {
+			$choice = isset( $_POST['chess_army_team_captain_other'] ) ? (int) $_POST['chess_army_team_captain_other'] : 0;
+			if ( -1 === $choice ) {
+				$name = isset( $_POST['chess_army_team_captain_name'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_captain_name'] ) ) : '';
+			} else {
+				$captain = max( 0, $choice );
+			}
+		} else {
+			$ticked  = isset( $_POST['chess_army_team_captain_member'] ) ? absint( $_POST['chess_army_team_captain_member'] ) : 0;
+			$captain = in_array( $ticked, $squad, true ) ? $ticked : 0;
+		}
+
+		// Only someone the club holds a record of can captain a team.
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_CAPTAIN_NAME, $name );
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_CAPTAIN, $captain && Chess_Army_Knife_Membership_Store::get_member( $captain ) ? $captain : 0 );
 	}
 }
 
