@@ -53,7 +53,7 @@ class Chess_Army_Knife_League_Games {
 	/**
 	 * Every league game, newest first.
 	 *
-	 * @return array[] Each { id, date ("Y-m-d"), start, title, result (see Event_Results::get(), or null) }.
+	 * @return array[] Each { id, date ("Y-m-d"), start, title, result (see Event_Results::get(), or null), sides (the sides the club's teams are on) }.
 	 */
 	public static function all() {
 		$posts = get_posts(
@@ -75,6 +75,7 @@ class Chess_Army_Knife_League_Games {
 				'start'  => $start,
 				'title'  => get_the_title( $post ),
 				'result' => Chess_Army_Knife_Event_Results::get( $post->ID ),
+				'sides'  => array_values( array_unique( array_filter( (array) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_SIDES, true ) ) ) ),
 			);
 		}
 
@@ -89,28 +90,38 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * The club's players whose name has a piece of text in it, from the games' results.
+	 * The club's players whose name, or whose membership record's name, has a piece of text in it. Each is matched
+	 * to a member by ECF code.
 	 *
-	 * @param array[]  $games From all().
-	 * @param string   $term  Part of a name.
-	 * @return array[] ECF code (digits) => { code, name, rating, games, last_played }, by name.
+	 * @param array[]  $games   From all().
+	 * @param string   $term    Part of a name.
+	 * @param array[]  $members Member rows with an ECF code (see Membership_Store::get_players()).
+	 * @return array[] ECF code (digits) => { code, name, rating, games, last_played, member }, by name. member is the
+	 *                 name on the membership record, or '' when no record has the code.
 	 */
-	public static function find_players( array $games, $term ) {
+	public static function find_players( array $games, $term, array $members = array() ) {
 		$term = trim( (string) $term );
 		if ( '' === $term ) {
 			return array();
 		}
 
-		$found = array_filter(
-			Chess_Army_Knife_Event_Results::club_players( self::result_rows( $games ) ),
-			function ( $player ) use ( $term ) {
-				return false !== stripos( $player['name'], $term );
+		$found = array();
+		foreach ( Chess_Army_Knife_Event_Results::club_players( self::result_rows( $games ) ) as $key => $player ) {
+			$player['member'] = '';
+			foreach ( $members as $member ) {
+				if ( Chess_Army_Knife_Event_Results::same_code( $member['ecf_code'], $player['code'] ) ) {
+					$player['member'] = (string) $member['name'];
+					break;
+				}
 			}
-		);
+			if ( false !== stripos( $player['name'], $term ) || ( '' !== $player['member'] && false !== stripos( $player['member'], $term ) ) ) {
+				$found[ $key ] = $player;
+			}
+		}
 		uasort(
 			$found,
 			function ( $a, $b ) {
-				return strcasecmp( $a['name'], $b['name'] );
+				return strcasecmp( '' !== $a['member'] ? $a['member'] : $a['name'], '' !== $b['member'] ? $b['member'] : $b['name'] );
 			}
 		);
 
@@ -118,11 +129,93 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
+	 * A match's score with the home team on the left, such as "3 - 1".
+	 *
+	 * @param array $game A game from all().
+	 * @return string '' until it has been played.
+	 */
+	public static function score_text( array $game ) {
+		return $game['result'] ? sprintf( '%s - %s', $game['result']['home_score'], $game['result']['away_score'] ) : '';
+	}
+
+	/**
+	 * The one side the club is on, or '' when it is on both (two of its teams met) or neither is known.
+	 *
+	 * @param array $game A game from all().
+	 * @return string 'home', 'away' or ''.
+	 */
+	protected static function club_side( array $game ) {
+		return 1 === count( $game['sides'] ) ? (string) $game['sides'][0] : '';
+	}
+
+	/**
+	 * How a match ended for the club.
+	 *
+	 * @param array $game A game from all().
+	 * @return string 'win', 'draw', 'loss', or '' if it is not played or the club's side is not known.
+	 */
+	public static function club_outcome( array $game ) {
+		$side = self::club_side( $game );
+		if ( ! $game['result'] || '' === $side ) {
+			return '';
+		}
+		if ( 'draw' === $game['result']['winner'] ) {
+			return 'draw';
+		}
+
+		return $side === $game['result']['winner'] ? 'win' : 'loss';
+	}
+
+	/**
+	 * The team the club played in a match.
+	 *
+	 * @param array $game A game from all().
+	 * @return string '' when it is not played or the club's side is not known.
+	 */
+	public static function opponent_of( array $game ) {
+		$side = self::club_side( $game );
+		if ( ! $game['result'] || '' === $side ) {
+			return '';
+		}
+
+		return (string) $game['result'][ 'home' === $side ? 'away' : 'home' ];
+	}
+
+	/**
+	 * The games against a team, and/or that ended a given way for the club.
+	 *
+	 * @param array[] $games    From all().
+	 * @param string  $opponent Part of the other team's name, or ''. A game not played is matched on its title.
+	 * @param string  $outcome  'win', 'draw', 'loss', or '' for any.
+	 * @return array[]
+	 */
+	public static function filter_games( array $games, $opponent, $outcome ) {
+		$opponent = trim( (string) $opponent );
+
+		return array_values(
+			array_filter(
+				$games,
+				function ( $game ) use ( $opponent, $outcome ) {
+					if ( '' !== $outcome && self::club_outcome( $game ) !== $outcome ) {
+						return false;
+					}
+					if ( '' === $opponent ) {
+						return true;
+					}
+					$name = self::opponent_of( $game );
+
+					return false !== stripos( '' !== $name ? $name : $game['title'], $opponent );
+				}
+			)
+		);
+	}
+
+	/**
 	 * Every board a player played, newest first.
 	 *
 	 * @param array[] $games From all().
 	 * @param string  $code  The player's ECF code.
-	 * @return array[] Each { id, date, title, board, colour ('White', 'Black' or ''), opponent, outcome ('win', 'draw', 'loss' or '') }.
+	 * @return array[] Each { id, date, title, score, board, colour ('White', 'Black' or ''), opponent, outcome ('win', 'draw', 'loss' or '') }.
 	 */
 	public static function boards_of( array $games, $code ) {
 		$boards = array();
@@ -142,6 +235,7 @@ class Chess_Army_Knife_League_Games {
 						'id'       => $game['id'],
 						'date'     => $game['date'],
 						'title'    => $game['title'],
+						'score'    => self::score_text( $game ),
 						'board'    => (int) $board['board'],
 						'colour'   => self::colour_of( $side, (string) $board['home_colour'] ),
 						'opponent' => $board[ $other ] ? (string) $board[ $other ]['name'] : '',
@@ -235,12 +329,21 @@ class Chess_Army_Knife_League_Games {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display; nothing is changed.
-		$term  = isset( $_GET['player'] ) ? sanitize_text_field( wp_unslash( $_GET['player'] ) ) : '';
-		$code  = isset( $_GET['code'] ) ? preg_replace( '/[^0-9A-Za-z]/', '', sanitize_text_field( wp_unslash( $_GET['code'] ) ) ) : '';
-		$paged = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+		$filters = array(
+			'player'   => isset( $_GET['player'] ) ? sanitize_text_field( wp_unslash( $_GET['player'] ) ) : '',
+			'opponent' => isset( $_GET['opponent'] ) ? sanitize_text_field( wp_unslash( $_GET['opponent'] ) ) : '',
+			'outcome'  => isset( $_GET['outcome'] ) ? sanitize_key( wp_unslash( $_GET['outcome'] ) ) : '',
+		);
+		$code    = isset( $_GET['code'] ) ? preg_replace( '/[^0-9A-Za-z]/', '', sanitize_text_field( wp_unslash( $_GET['code'] ) ) ) : '';
+		$paged   = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		$games = self::all();
+		if ( ! in_array( $filters['outcome'], array( 'win', 'draw', 'loss' ), true ) ) {
+			$filters['outcome'] = '';
+		}
+
+		$all   = self::all();
+		$games = self::filter_games( $all, $filters['opponent'], $filters['outcome'] );
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Club events', 'chess-army-knife' ); ?></h1>
@@ -248,101 +351,63 @@ class Chess_Army_Knife_League_Games {
 			<h2><?php esc_html_e( 'League games', 'chess-army-knife' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Fixtures brought in from the LMS, with the board order and results of those that have been played. They show in the calendar with the club\'s own events.', 'chess-army-knife' ); ?></p>
 
-			<?php self::render_player_search( $games, $term, $code ); ?>
+			<?php self::render_search_form( $filters, '' !== $code ); ?>
 
-			<?php if ( '' === $term && '' === $code ) : ?>
-				<?php self::render_games( $games, $paged ); ?>
+			<?php if ( '' !== $code ) : ?>
+				<?php self::render_player_games( $all, $games, $code ); ?>
+			<?php elseif ( '' !== $filters['player'] ) : ?>
+				<?php self::render_player_list( $all, $filters ); ?>
+			<?php else : ?>
+				<?php self::render_games( $games, $paged, $filters ); ?>
 			<?php endif; ?>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Draw the player search, and what it found.
+	 * Draw the search form: a player, a team played and how the match ended.
 	 *
-	 * @param array[] $games From all().
-	 * @param string  $term  What was searched for.
-	 * @param string  $code  ECF code of the player chosen.
+	 * @param string[] $filters   player, opponent and outcome as searched.
+	 * @param bool     $searching Whether a search is showing, so there is a way back to every game.
 	 */
-	protected static function render_player_search( array $games, $term, $code ) {
-		$date_format = get_option( 'date_format' );
+	protected static function render_search_form( array $filters, $searching ) {
+		$outcomes = array(
+			''     => __( 'Any result', 'chess-army-knife' ),
+			'win'  => __( 'Won', 'chess-army-knife' ),
+			'draw' => __( 'Drawn', 'chess-army-knife' ),
+			'loss' => __( 'Lost', 'chess-army-knife' ),
+		);
 		?>
-		<h3><?php esc_html_e( 'Find a player\'s games', 'chess-army-knife' ); ?></h3>
 		<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 			<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE ); ?>" />
 			<p>
-				<label for="cak-league-player"><?php esc_html_e( 'Player\'s name', 'chess-army-knife' ); ?></label>
-				<input type="search" id="cak-league-player" name="player" value="<?php echo esc_attr( $term ); ?>" class="regular-text" />
+				<label for="cak-league-player"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></label>
+				<input type="search" id="cak-league-player" name="player" value="<?php echo esc_attr( $filters['player'] ); ?>" class="regular-text" />
+				<label for="cak-league-opponent"><?php esc_html_e( 'Played against', 'chess-army-knife' ); ?></label>
+				<input type="search" id="cak-league-opponent" name="opponent" value="<?php echo esc_attr( $filters['opponent'] ); ?>" class="regular-text" />
+				<label for="cak-league-outcome"><?php esc_html_e( 'Match result', 'chess-army-knife' ); ?></label>
+				<select id="cak-league-outcome" name="outcome">
+					<?php foreach ( $outcomes as $value => $label ) : ?>
+						<option value="<?php echo esc_attr( $value ); ?>"<?php selected( $filters['outcome'], $value ); ?>><?php echo esc_html( $label ); ?></option>
+					<?php endforeach; ?>
+				</select>
 				<button type="submit" class="button"><?php esc_html_e( 'Search', 'chess-army-knife' ); ?></button>
-				<?php if ( '' !== $term || '' !== $code ) : ?>
+				<?php if ( $searching || array_filter( $filters ) ) : ?>
 					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE ) ); ?>"><?php esc_html_e( 'Show all games', 'chess-army-knife' ); ?></a>
 				<?php endif; ?>
 			</p>
 		</form>
 		<?php
+	}
 
-		if ( '' !== $code ) {
-			$boards = self::boards_of( $games, $code );
-			$name   = '';
-			foreach ( Chess_Army_Knife_Event_Results::club_players( self::result_rows( $games ) ) as $player ) {
-				if ( Chess_Army_Knife_Event_Results::same_code( $player['code'], $code ) ) {
-					$name = $player['name'];
-				}
-			}
-
-			if ( ! $boards ) {
-				echo '<p>' . esc_html__( 'No games found for that player.', 'chess-army-knife' ) . '</p>';
-				return;
-			}
-
-			$tally = self::tally( $boards );
-			?>
-			<h3><?php echo esc_html( $name ); ?></h3>
-			<p>
-				<?php
-				echo esc_html(
-					sprintf(
-						/* translators: 1: boards played, 2: won, 3: drawn, 4: lost */
-						_n( '%1$d game: %2$d won, %3$d drawn, %4$d lost.', '%1$d games: %2$d won, %3$d drawn, %4$d lost.', count( $boards ), 'chess-army-knife' ),
-						count( $boards ),
-						$tally['win'],
-						$tally['draw'],
-						$tally['loss']
-					)
-				);
-				?>
-			</p>
-			<table class="widefat striped">
-				<thead><tr>
-					<th scope="col"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Match', 'chess-army-knife' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Board', 'chess-army-knife' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Colour', 'chess-army-knife' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Opponent', 'chess-army-knife' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
-				</tr></thead>
-				<tbody>
-				<?php foreach ( $boards as $board ) : ?>
-					<tr>
-						<td><?php echo esc_html( self::date_text( $board['date'], $date_format ) ); ?></td>
-						<td><?php echo esc_html( $board['title'] ); ?></td>
-						<td><?php echo esc_html( (string) $board['board'] ); ?></td>
-						<td><?php echo esc_html( '' !== $board['colour'] ? $board['colour'] : '–' ); ?></td>
-						<td><?php echo esc_html( '' !== $board['opponent'] ? $board['opponent'] : __( 'Default', 'chess-army-knife' ) ); ?></td>
-						<td><?php echo esc_html( self::outcome_label( $board['outcome'] ) ); ?></td>
-					</tr>
-				<?php endforeach; ?>
-				</tbody>
-			</table>
-			<?php
-			return;
-		}
-
-		if ( '' === $term ) {
-			return;
-		}
-
-		$found = self::find_players( $games, $term );
+	/**
+	 * Draw the players a name search found, each linking to their games.
+	 *
+	 * @param array[]  $games   Every game, from all().
+	 * @param string[] $filters player, opponent and outcome as searched.
+	 */
+	protected static function render_player_list( array $games, array $filters ) {
+		$found = self::find_players( $games, $filters['player'], Chess_Army_Knife_Membership_Store::get_players( '', true ) );
 		if ( ! $found ) {
 			echo '<p>' . esc_html__( 'No player with that name has played in a league game.', 'chess-army-knife' ) . '</p>';
 			return;
@@ -350,26 +415,20 @@ class Chess_Army_Knife_League_Games {
 		?>
 		<ul>
 			<?php foreach ( $found as $player ) : ?>
+				<?php $url = add_query_arg( array_merge( array( 'page' => self::PAGE ), $filters, array( 'code' => $player['code'] ) ), admin_url( 'admin.php' ) ); ?>
 				<li>
-					<a href="
+					<a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( '' !== $player['member'] ? $player['member'] : $player['name'] ); ?></a>
 					<?php
-					echo esc_url(
-						add_query_arg(
-							array(
-								'page'   => self::PAGE,
-								'player' => $term,
-								'code'   => $player['code'],
-							),
-							admin_url( 'admin.php' )
-						)
+					echo esc_html(
+						'' !== $player['member']
+							? __( '(member)', 'chess-army-knife' )
+							: __( '(no membership record)', 'chess-army-knife' )
 					);
-					?>
-								"><?php echo esc_html( $player['name'] ); ?></a>
-					<?php
+					echo ' ';
 					echo esc_html(
 						sprintf(
 							/* translators: %d: number of games */
-							_n( '(%d game)', '(%d games)', $player['games'], 'chess-army-knife' ),
+							_n( '%d game', '%d games', $player['games'], 'chess-army-knife' ),
 							$player['games']
 						)
 					);
@@ -377,6 +436,78 @@ class Chess_Army_Knife_League_Games {
 				</li>
 			<?php endforeach; ?>
 		</ul>
+		<?php
+	}
+
+	/**
+	 * Draw one player's boards, within the games the search left in.
+	 *
+	 * @param array[] $all   Every game, from all().
+	 * @param array[] $games The games left after the opponent and result were chosen.
+	 * @param string  $code  ECF code of the player.
+	 */
+	protected static function render_player_games( array $all, array $games, $code ) {
+		$name = '';
+		foreach ( Chess_Army_Knife_Event_Results::club_players( self::result_rows( $all ) ) as $player ) {
+			if ( Chess_Army_Knife_Event_Results::same_code( $player['code'], $code ) ) {
+				$name = $player['name'];
+			}
+		}
+		$record = Chess_Army_Knife_Membership_Store::find_by_ecf_code( $code );
+		if ( $record ) {
+			$name = $record['name'];
+		}
+
+		$boards = self::boards_of( $games, $code );
+		?>
+		<h3><?php echo esc_html( $name ); ?></h3>
+		<?php
+		if ( ! $boards ) {
+			echo '<p>' . esc_html__( 'No games found for that player.', 'chess-army-knife' ) . '</p>';
+			return;
+		}
+
+		$tally       = self::tally( $boards );
+		$date_format = get_option( 'date_format' );
+		?>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: 1: boards played, 2: won, 3: drawn, 4: lost */
+					_n( '%1$d game: %2$d won, %3$d drawn, %4$d lost.', '%1$d games: %2$d won, %3$d drawn, %4$d lost.', count( $boards ), 'chess-army-knife' ),
+					count( $boards ),
+					$tally['win'],
+					$tally['draw'],
+					$tally['loss']
+				)
+			);
+			?>
+		</p>
+		<table class="widefat striped">
+			<thead><tr>
+				<th scope="col"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Match', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Score', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Board', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Colour', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Opponent', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
+			</tr></thead>
+			<tbody>
+			<?php foreach ( $boards as $board ) : ?>
+				<tr>
+					<td><?php echo esc_html( self::date_text( $board['date'], $date_format ) ); ?></td>
+					<td><?php echo esc_html( $board['title'] ); ?></td>
+					<td><?php echo esc_html( $board['score'] ); ?></td>
+					<td><?php echo esc_html( (string) $board['board'] ); ?></td>
+					<td><?php echo esc_html( '' !== $board['colour'] ? $board['colour'] : '–' ); ?></td>
+					<td><?php echo esc_html( '' !== $board['opponent'] ? $board['opponent'] : __( 'Default', 'chess-army-knife' ) ); ?></td>
+					<td><?php echo esc_html( self::outcome_label( $board['outcome'] ) ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
 		<?php
 	}
 
@@ -417,11 +548,12 @@ class Chess_Army_Knife_League_Games {
 	 * Draw the list of games, a page at a time, with the boards of the ones played.
 	 *
 	 * @param array[] $games From all().
-	 * @param int     $paged Page number.
+	 * @param int     $paged   Page number.
+	 * @param array   $filters Search in force, kept in the page links.
 	 */
-	protected static function render_games( array $games, $paged ) {
+	protected static function render_games( array $games, $paged, array $filters ) {
 		if ( ! $games ) {
-			echo '<p>' . esc_html__( 'No league games yet. They arrive when Import events is run (it also runs by itself once a day).', 'chess-army-knife' ) . '</p>';
+			echo '<p>' . esc_html( array_filter( $filters ) ? __( 'No league games match that search.', 'chess-army-knife' ) : __( 'No league games yet. They arrive when Import events is run (it also runs by itself once a day).', 'chess-army-knife' ) ) . '</p>';
 			return;
 		}
 
@@ -433,17 +565,19 @@ class Chess_Army_Knife_League_Games {
 			<thead><tr>
 				<th scope="col"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
 				<th scope="col"><?php esc_html_e( 'Match', 'chess-army-knife' ); ?></th>
-				<th scope="col"><?php esc_html_e( 'Result and boards', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Boards', 'chess-army-knife' ); ?></th>
 			</tr></thead>
 			<tbody>
 			<?php foreach ( array_slice( $games, ( $paged - 1 ) * self::PER_PAGE, self::PER_PAGE ) as $game ) : ?>
 				<tr>
 					<td><?php echo esc_html( self::date_text( $game['date'], $date_format ) ); ?></td>
 					<td><?php echo esc_html( $game['title'] ); ?></td>
+					<td><?php echo esc_html( '' !== self::score_text( $game ) ? self::score_text( $game ) : '–' ); ?></td>
 					<td>
 						<?php if ( $game['result'] ) : ?>
 							<details>
-								<summary><?php echo esc_html( sprintf( '%s–%s', $game['result']['home_score'], $game['result']['away_score'] ) ); ?></summary>
+								<summary><?php esc_html_e( 'Show boards', 'chess-army-knife' ); ?></summary>
 								<?php echo Chess_Army_Knife_Event_Results::html( $game['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in html(). ?>
 							</details>
 						<?php else : ?>
@@ -457,7 +591,7 @@ class Chess_Army_Knife_League_Games {
 		<?php
 		$links = paginate_links(
 			array(
-				'base'      => add_query_arg( 'paged', '%#%', admin_url( 'admin.php?page=' . self::PAGE ) ),
+				'base'      => add_query_arg( array_merge( array( 'page' => self::PAGE ), array_filter( $filters ), array( 'paged' => '%#%' ) ), admin_url( 'admin.php' ) ),
 				'format'    => '',
 				'current'   => $paged,
 				'total'     => $pages,
