@@ -23,6 +23,7 @@ class Chess_Army_Knife_Events_Import {
 
 	const META_LMS_KEY = '_chess_army_event_lms_key';
 	const META_EDITED  = '_chess_army_event_edited';
+	const META_SEASON  = '_chess_army_event_season'; // The LMS's name for the fixture's season, such as "2025-2026".
 	const TAG          = 'League match';
 	const ACTION       = 'chess_army_knife_import_events';
 	const ACTION_OLD   = 'chess_army_knife_import_old_seasons';
@@ -237,12 +238,13 @@ class Chess_Army_Knife_Events_Import {
 	 * @param array   $matches_by_league  Normalised match rows keyed by "org|event" (lower case).
 	 * @param string  $today              Today, "Y-m-d" (earlier fixtures are ignored).
 	 * @param string  $default_time       Start time for a fixture with none, "HH:MM".
+	 * @param string[] $season_names Season name by LMS organisation id, from season_names().
 	 * @return array {
-	 *     @type array[] $candidates Each { key, title, start, location, home_team, away_team, league, club_teams, match }, where match is the fixture's row and club_teams maps a league entry key to 'home' or 'away'.
+	 *     @type array[] $candidates Each { key, title, start, location, home_team, away_team, league, season, club_teams, match }, where match is the fixture's row and club_teams maps a league entry key to 'home' or 'away'.
 	 *     @type int     $skipped    Fixtures ignored because their date couldn't be read.
 	 * }
 	 */
-	public static function plan( array $teams, array $matches_by_league, $today, $default_time ) {
+	public static function plan( array $teams, array $matches_by_league, $today, $default_time, array $season_names = array() ) {
 		$candidates = array();
 		$skipped    = 0;
 
@@ -283,6 +285,7 @@ class Chess_Army_Knife_Events_Import {
 					'home_team'  => $match['home'],
 					'away_team'  => $match['away'],
 					'league'     => Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ),
+					'season'     => isset( $season_names[ $team['org'] ] ) ? (string) $season_names[ $team['org'] ] : '',
 					'club_teams' => $club_teams,
 					'match'      => $match,
 				);
@@ -445,6 +448,43 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
+	 * The name of the season each of the club's organisations is in, from the LMS.
+	 *
+	 * @param array[]    $teams  Club teams.
+	 * @param string|int $season 'active' for the running season, or the id of an earlier one.
+	 * @return string[] Season name by organisation id. An organisation whose seasons can't be read is left out.
+	 */
+	public static function season_names( array $teams, $season ) {
+		$names = array();
+
+		foreach ( array_unique( array_column( $teams, 'org' ) ) as $org ) {
+			$seasons = Chess_Army_Knife_LMS_Client::get_seasons( $org );
+			if ( is_wp_error( $seasons ) ) {
+				continue;
+			}
+			foreach ( $seasons as $found ) {
+				$wanted = 'active' === $season ? 'active' === $found['status'] : (int) $season === $found['id'];
+				if ( $wanted ) {
+					$names[ $org ] = '' !== $found['name'] ? $found['name'] : (string) $found['id'];
+					break;
+				}
+			}
+		}
+
+		return $names;
+	}
+
+	/**
+	 * The season to keep on a fixture's event: nothing when the LMS gave no name, so a name already kept stays.
+	 *
+	 * @param array $candidate A candidate from plan().
+	 * @return string[] Meta key => value.
+	 */
+	protected static function season_meta( array $candidate ) {
+		return '' !== $candidate['season'] ? array( self::META_SEASON => $candidate['season'] ) : array();
+	}
+
+	/**
 	 * Keep a fixture's result (score and boards) on its event.
 	 *
 	 * @param int   $event_id  Event id.
@@ -595,7 +635,7 @@ class Chess_Army_Knife_Events_Import {
 		}
 		$matches = self::fetch_matches( $teams, $summary['errors'], $summary['key_problem'], $season );
 		// An empty "today" keeps every fixture, so an earlier season comes in whole.
-		$plan = self::plan( $teams, $matches, $is_active ? current_time( 'Y-m-d' ) : '', $default_time );
+		$plan = self::plan( $teams, $matches, $is_active ? current_time( 'Y-m-d' ) : '', $default_time, self::season_names( $teams, $season ) );
 
 		$summary['skipped'] = $plan['skipped'];
 
@@ -631,7 +671,7 @@ class Chess_Army_Knife_Events_Import {
 							self::META_LMS_KEY => $candidate['key'],
 							Chess_Army_Knife_Events::META_START => $candidate['start'],
 							Chess_Army_Knife_Events::META_LEAGUES => array( $candidate['league'] ),
-						) + self::venue_meta( $venue ),
+						) + self::season_meta( $candidate ) + self::venue_meta( $venue ),
 					),
 					true
 				);
@@ -650,8 +690,13 @@ class Chess_Army_Knife_Events_Import {
 				continue;
 			}
 
-			// The result is the LMS's, not something an editor changes, so it is kept up to date even on an edited event.
+			// The result and season are the LMS's, not something an editor changes, so they are kept up to date even on an edited event.
 			self::store_result( $existing->ID, $candidate );
+			foreach ( self::season_meta( $candidate ) as $meta_key => $value ) {
+				if ( get_post_meta( $existing->ID, $meta_key, true ) !== $value ) {
+					update_post_meta( $existing->ID, $meta_key, $value );
+				}
+			}
 
 			if ( get_post_meta( $existing->ID, self::META_EDITED, true ) ) {
 				++$summary['kept'];

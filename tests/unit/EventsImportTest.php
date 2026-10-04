@@ -290,4 +290,14 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( 0, $summary['seasons'] );
 	}
+
+	public function test_plan_gives_each_fixture_the_season_of_its_organisation() {
+		$matches = array( '613|division 1' => array( $this->match( 'Our A', 'Rivals', '2026-10-05' ) ) );
+
+		$with = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '2026-09-30', '19:30', array( '613' => '2026-2027' ) );
+		$none = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '2026-09-30', '19:30' );
+
+		$this->assertSame( '2026-2027', $with['candidates'][0]['season'] );
+		$this->assertSame( '', $none['candidates'][0]['season'], 'No season name is read as none, so one already kept is not overwritten.' );
+	}
 }

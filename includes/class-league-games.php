@@ -53,7 +53,7 @@ class Chess_Army_Knife_League_Games {
 	/**
 	 * Every league game that has been played, newest first.
 	 *
-	 * @return array[] Each { id, date ("Y-m-d"), start, title, result (see Event_Results::get()), sides (the sides the club's teams are on) }.
+	 * @return array[] Each { id, date ("Y-m-d"), start, title, season (the LMS's name for it, or '' if none was kept), result (see Event_Results::get()), sides (the sides the club's teams are on) }.
 	 */
 	public static function all() {
 		$posts = get_posts(
@@ -79,6 +79,7 @@ class Chess_Army_Knife_League_Games {
 				'start'  => $start,
 				'title'  => get_the_title( $post ),
 				'result' => $result,
+				'season' => (string) get_post_meta( $post->ID, Chess_Army_Knife_Events_Import::META_SEASON, true ),
 				'sides'  => array_values( array_unique( array_filter( (array) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_SIDES, true ) ) ) ),
 			);
 		}
@@ -133,44 +134,40 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * The season a date falls in. A season runs from 1 August to 31 July.
-	 *
-	 * @param string $date "Y-m-d".
-	 * @return string The season as "2025-26", or '' if the date is not readable.
-	 */
-	public static function season_of( $date ) {
-		if ( ! preg_match( '/^(\d{4})-(\d{2})-\d{2}/', (string) $date, $parts ) ) {
-			return '';
-		}
-		$start = (int) $parts[1] - ( (int) $parts[2] < 8 ? 1 : 0 );
-
-		return sprintf( '%d-%02d', $start, ( $start + 1 ) % 100 );
-	}
-
-	/**
-	 * The seasons the games fall in, newest first.
+	 * The seasons the games fall in, the one with the latest game first. Games imported before the season was
+	 * kept have none, and come last under the key ''.
 	 *
 	 * @param array[] $games From all().
-	 * @return int[] Season ("2025-26") => number of games.
+	 * @return int[] Season name => number of games.
 	 */
 	public static function seasons( array $games ) {
-		$seasons = array();
+		$counts = array();
+		$latest = array();
 		foreach ( $games as $game ) {
-			$season = self::season_of( $game['date'] );
-			if ( '' !== $season ) {
-				$seasons[ $season ] = isset( $seasons[ $season ] ) ? $seasons[ $season ] + 1 : 1;
-			}
+			$season            = (string) $game['season'];
+			$counts[ $season ] = isset( $counts[ $season ] ) ? $counts[ $season ] + 1 : 1;
+			$latest[ $season ] = isset( $latest[ $season ] ) ? max( $latest[ $season ], $game['start'] ) : $game['start'];
 		}
-		krsort( $seasons );
 
-		return $seasons;
+		uksort(
+			$counts,
+			function ( $a, $b ) use ( $latest ) {
+				if ( '' === (string) $a || '' === (string) $b ) {
+					return '' === (string) $a ? 1 : -1; // No season goes last.
+				}
+
+				return strcmp( $latest[ $b ], $latest[ $a ] );
+			}
+		);
+
+		return $counts;
 	}
 
 	/**
 	 * The games of one season.
 	 *
 	 * @param array[] $games  From all().
-	 * @param string  $season A season such as "2025-26", or 'all'.
+	 * @param string  $season A season name, '' for games with no season kept, or 'all'.
 	 * @return array[]
 	 */
 	public static function filter_season( array $games, $season ) {
@@ -182,7 +179,7 @@ class Chess_Army_Knife_League_Games {
 			array_filter(
 				$games,
 				function ( $game ) use ( $season ) {
-					return self::season_of( $game['date'] ) === $season;
+					return (string) $game['season'] === (string) $season;
 				}
 			)
 		);
@@ -410,10 +407,13 @@ class Chess_Army_Knife_League_Games {
 		$seasons = self::seasons( $all );
 
 		// A season not asked for (or not known) is the latest, unless a player is being looked for, who may have played in any.
+		if ( 'none' === $season ) {
+			$season = '';
+		}
 		if ( 'all' !== $season && ! isset( $seasons[ $season ] ) ) {
 			$season = '' === $filters['player'] && $seasons ? (string) key( $seasons ) : 'all';
 		}
-		$filters['season'] = $season;
+		$filters['season'] = '' === $season ? 'none' : $season; // As it goes in a link.
 
 		$in_season = self::filter_season( $all, $season );
 		$games     = self::filter_games( $in_season, $filters['opponent'], $filters['outcome'] );
@@ -465,7 +465,7 @@ class Chess_Army_Knife_League_Games {
 
 		$links = array( 'all' => array( __( 'All seasons', 'chess-army-knife' ), count( $all ) ) );
 		foreach ( $seasons as $season => $count ) {
-			$links[ $season ] = array( $season, $count );
+			$links[ '' === (string) $season ? 'none' : $season ] = array( '' === (string) $season ? __( 'No season recorded', 'chess-army-knife' ) : $season, $count );
 		}
 		?>
 		<nav aria-label="<?php esc_attr_e( 'Seasons', 'chess-army-knife' ); ?>">

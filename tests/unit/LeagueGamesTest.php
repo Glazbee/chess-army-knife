@@ -21,6 +21,7 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 			'date'   => $date,
 			'start'  => $date . ' 19:30:00',
 			'title'  => $title,
+			'season' => '',
 			'sides'  => $sides,
 			'result' => array(
 				'home'       => 'home' === $sides[0] ? 'Our A' : 'Rivals',
@@ -187,27 +188,42 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '', reset( $by_result_name )['member'], 'No record has this code.' );
 	}
 
-	public function test_a_season_runs_from_august_to_july() {
-		$this->assertSame( '2025-26', Chess_Army_Knife_League_Games::season_of( '2025-08-01' ) );
-		$this->assertSame( '2025-26', Chess_Army_Knife_League_Games::season_of( '2026-07-31' ) );
-		$this->assertSame( '2026-27', Chess_Army_Knife_League_Games::season_of( '2026-10-05' ) );
-		$this->assertSame( '1999-00', Chess_Army_Knife_League_Games::season_of( '1999-12-01' ) );
-		$this->assertSame( '', Chess_Army_Knife_League_Games::season_of( '' ) );
-	}
-
-	public function test_games_are_grouped_by_season_newest_first() {
+	public function test_games_are_grouped_by_the_seasons_name_with_the_latest_first() {
 		$games    = $this->games();
-		$games[1] = array_merge( $games[1], array( 'date' => '2025-10-05' ) );
+		$games[1] = array_merge( $games[1], array( 'season' => '2025-2026' ) );
+		$games[0] = array_merge( $games[0], array( 'season' => '2026-2027' ) );
+		$games[]  = array_merge(
+			$games[1],
+			array(
+				'id'     => 9,
+				'date'   => '2024-10-01',
+				'start'  => '2024-10-01 19:30:00',
+				'season' => '',
+			)
+		);
+		$games[]  = array_merge(
+			$games[1],
+			array(
+				'id'     => 8,
+				'date'   => '2025-03-01',
+				'start'  => '2025-03-01 19:30:00',
+				'season' => '2024-2025',
+			)
+		);
 
 		$this->assertSame(
 			array(
-				'2026-27' => 1,
-				'2025-26' => 1,
+				'2026-2027' => 1,
+				'2025-2026' => 1,
+				'2024-2025' => 1,
+				''          => 1,
 			),
-			Chess_Army_Knife_League_Games::seasons( $games )
+			Chess_Army_Knife_League_Games::seasons( $games ),
+			'Games with no season recorded come last.'
 		);
-		$this->assertCount( 1, Chess_Army_Knife_League_Games::filter_season( $games, '2025-26' ) );
-		$this->assertCount( 0, Chess_Army_Knife_League_Games::filter_season( $games, '2024-25' ) );
-		$this->assertCount( 2, Chess_Army_Knife_League_Games::filter_season( $games, 'all' ) );
+		$this->assertCount( 1, Chess_Army_Knife_League_Games::filter_season( $games, '2025-2026' ) );
+		$this->assertCount( 1, Chess_Army_Knife_League_Games::filter_season( $games, '' ) );
+		$this->assertCount( 0, Chess_Army_Knife_League_Games::filter_season( $games, '2023-2024' ) );
+		$this->assertCount( 4, Chess_Army_Knife_League_Games::filter_season( $games, 'all' ) );
 	}
 }
