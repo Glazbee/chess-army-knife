@@ -160,7 +160,7 @@ class Chess_Army_Knife_League_Games {
 	/**
 	 * Every league game that has been played, newest first.
 	 *
-	 * @return array[] Each { id, date ("Y-m-d"), start, title, season (the LMS's name for it, or '' if none was kept), result (see Event_Results::get()), sides (the sides the club's teams are on) }.
+	 * @return array[] Each { id, date ("Y-m-d"), start, title, season (the LMS's name for it, or '' if none was kept), division (its division's name, or ''), result (see Event_Results::get()), sides (the sides the club's teams are on) }.
 	 */
 	public static function all() {
 		$posts = get_posts(
@@ -181,13 +181,14 @@ class Chess_Army_Knife_League_Games {
 			}
 			$start   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_START, true );
 			$games[] = array(
-				'id'     => (int) $post->ID,
-				'date'   => substr( $start, 0, 10 ),
-				'start'  => $start,
-				'title'  => get_the_title( $post ),
-				'result' => $result,
-				'season' => (string) get_post_meta( $post->ID, Chess_Army_Knife_Events_Import::META_SEASON, true ),
-				'sides'  => array_values( array_unique( array_filter( (array) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_SIDES, true ) ) ) ),
+				'id'       => (int) $post->ID,
+				'date'     => substr( $start, 0, 10 ),
+				'start'    => $start,
+				'title'    => get_the_title( $post ),
+				'result'   => $result,
+				'season'   => (string) get_post_meta( $post->ID, Chess_Army_Knife_Events_Import::META_SEASON, true ),
+				'division' => self::division_of( (array) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_LEAGUES, true ) ),
+				'sides'    => array_values( array_unique( array_filter( (array) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_SIDES, true ) ) ) ),
 			);
 		}
 
@@ -269,6 +270,69 @@ class Chess_Army_Knife_League_Games {
 		);
 
 		return $counts;
+	}
+
+	/**
+	 * The division a game was played in, from the league it is linked to.
+	 *
+	 * @param string[] $refs The league references on the event ("org|division").
+	 * @return string The division's name, or '' if there is none.
+	 */
+	public static function division_of( array $refs ) {
+		foreach ( $refs as $ref ) {
+			$league = Chess_Army_Knife_Events::parse_league_ref( $ref );
+			if ( $league ) {
+				return $league['event'];
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * The divisions the games were played in, in natural order ("Division 2" before "Division 10").
+	 *
+	 * @param array[] $games From all().
+	 * @return int[] Division name => number of games. Games with no division are left out.
+	 */
+	public static function divisions( array $games ) {
+		$counts = array();
+		foreach ( $games as $game ) {
+			$division = isset( $game['division'] ) ? (string) $game['division'] : '';
+			if ( '' !== $division ) {
+				$counts[ $division ] = isset( $counts[ $division ] ) ? $counts[ $division ] + 1 : 1;
+			}
+		}
+		uksort(
+			$counts,
+			function ( $a, $b ) {
+				return strnatcasecmp( (string) $a, (string) $b );
+			}
+		);
+
+		return $counts;
+	}
+
+	/**
+	 * The games of one division.
+	 *
+	 * @param array[] $games    From all().
+	 * @param string  $division A division's name, or 'all'.
+	 * @return array[]
+	 */
+	public static function filter_division( array $games, $division ) {
+		if ( 'all' === $division ) {
+			return $games;
+		}
+
+		return array_values(
+			array_filter(
+				$games,
+				function ( $game ) use ( $division ) {
+					return isset( $game['division'] ) && (string) $game['division'] === (string) $division;
+				}
+			)
+		);
 	}
 
 	/**
@@ -558,14 +622,15 @@ class Chess_Army_Knife_League_Games {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display; nothing is changed.
-		$filters = array(
+		$filters  = array(
 			'player'   => isset( $_GET['player'] ) ? preg_replace( '/\D/', '', sanitize_text_field( wp_unslash( $_GET['player'] ) ) ) : '', // The player's ECF code.
 			'colour'   => isset( $_GET['colour'] ) ? sanitize_key( wp_unslash( $_GET['colour'] ) ) : '',
 			'opponent' => isset( $_GET['opponent'] ) ? sanitize_text_field( wp_unslash( $_GET['opponent'] ) ) : '',
 			'outcome'  => isset( $_GET['outcome'] ) ? sanitize_key( wp_unslash( $_GET['outcome'] ) ) : '',
 		);
-		$season  = isset( $_GET['season'] ) ? sanitize_text_field( wp_unslash( $_GET['season'] ) ) : '';
-		$paged   = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+		$season   = isset( $_GET['season'] ) ? sanitize_text_field( wp_unslash( $_GET['season'] ) ) : '';
+		$division = isset( $_GET['division'] ) ? sanitize_text_field( wp_unslash( $_GET['division'] ) ) : 'all';
+		$paged    = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( ! in_array( $filters['outcome'], array( 'win', 'draw', 'loss' ), true ) ) {
@@ -590,7 +655,12 @@ class Chess_Army_Knife_League_Games {
 		$filters['season'] = $in_trash ? 'trash' : ( '' === $season ? 'none' : $season ); // As it goes in a link.
 
 		$in_season = self::filter_season( $all, $season );
-		$games     = self::filter_games( $in_season, $filters['opponent'], $filters['outcome'] );
+		$divisions = self::divisions( $in_season );
+		if ( 'all' !== $division && ! isset( $divisions[ $division ] ) ) {
+			$division = 'all'; // Not a division of this season.
+		}
+		$filters['division'] = $division;
+		$games               = self::filter_games( self::filter_division( $in_season, $division ), $filters['opponent'], $filters['outcome'] );
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Club events', 'chess-army-knife' ); ?></h1>
@@ -601,6 +671,7 @@ class Chess_Army_Knife_League_Games {
 			<p class="description"><?php esc_html_e( 'Fixtures brought in from the LMS, with the board order and results of those that have been played. They show in the calendar with the club\'s own events.', 'chess-army-knife' ); ?></p>
 
 			<?php self::render_season_links( $all, $seasons, $filters, count( $trashed ) ); ?>
+			<?php self::render_division_links( $in_season, $divisions, $filters, $in_trash ); ?>
 			<?php if ( $in_trash ) : ?>
 				<?php self::render_trash( $trashed ); ?>
 			<?php else : ?>
@@ -652,11 +723,42 @@ class Chess_Army_Knife_League_Games {
 			<?php foreach ( $tabs as $season => $tab ) : ?>
 				<?php
 				$current = (string) $season === (string) $filters['season'];
-				$url     = add_query_arg( array_merge( array( 'page' => self::PAGE ), 'trash' === (string) $season ? array() : array_filter( $filters ), array( 'season' => $season ) ), admin_url( 'admin.php' ) );
+				$url     = add_query_arg( array_merge( array( 'page' => self::PAGE ), 'trash' === (string) $season ? array() : array_diff_key( array_filter( $filters ), array( 'division' => 1 ) ), array( 'season' => $season ) ), admin_url( 'admin.php' ) );
 				?>
 				<a class="nav-tab<?php echo $current ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( $url ); ?>"<?php echo $current ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $tab[0] ); ?> <span class="count">(<?php echo esc_html( (string) $tab[1] ); ?>)</span></a>
 			<?php endforeach; ?>
 		</nav>
+		<?php
+	}
+
+	/**
+	 * Draw the tabs that pick a division of the season showing, or all of them.
+	 *
+	 * @param array[]  $in_season The season's games, from all().
+	 * @param int[]    $divisions From divisions().
+	 * @param string[] $filters   As searched; the division is the one showing.
+	 * @param bool     $in_trash  Whether the Trash is showing, which has no divisions.
+	 */
+	protected static function render_division_links( array $in_season, array $divisions, array $filters, $in_trash ) {
+		if ( $in_trash || ! $divisions ) {
+			return;
+		}
+
+		$tabs = array( 'all' => array( __( 'All divisions', 'chess-army-knife' ), count( $in_season ) ) );
+		foreach ( $divisions as $division => $count ) {
+			$tabs[ $division ] = array( (string) $division, $count );
+		}
+		?>
+		<nav class="nav-tab-wrapper" style="margin-top: 8px;" aria-label="<?php esc_attr_e( 'Divisions', 'chess-army-knife' ); ?>">
+			<?php foreach ( $tabs as $division => $tab ) : ?>
+				<?php
+				$current = (string) $division === (string) $filters['division'];
+				$url     = add_query_arg( array_merge( array( 'page' => self::PAGE ), array_filter( $filters ), array( 'division' => $division ) ), admin_url( 'admin.php' ) );
+				?>
+				<a class="nav-tab<?php echo $current ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( $url ); ?>"<?php echo $current ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $tab[0] ); ?> <span class="count">(<?php echo esc_html( (string) $tab[1] ); ?>)</span></a>
+			<?php endforeach; ?>
+		</nav>
+		<br class="clear" />
 		<?php
 	}
 
@@ -721,6 +823,7 @@ class Chess_Army_Knife_League_Games {
 			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 				<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE ); ?>" />
 				<input type="hidden" name="season" value="<?php echo esc_attr( $filters['season'] ); ?>" />
+				<input type="hidden" name="division" value="<?php echo esc_attr( $filters['division'] ); ?>" />
 				<p>
 					<label for="cak-league-player"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></label>
 					<select id="cak-league-player" name="player">

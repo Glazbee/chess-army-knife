@@ -17,13 +17,14 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 
 	private function game( $id, $date, $title, array $boards, array $sides = array( 'home' ), $winner = 'draw', $scores = array( '1', '1' ) ) {
 		return array(
-			'id'     => $id,
-			'date'   => $date,
-			'start'  => $date . ' 19:30:00',
-			'title'  => $title,
-			'season' => '',
-			'sides'  => $sides,
-			'result' => array(
+			'id'       => $id,
+			'date'     => $date,
+			'start'    => $date . ' 19:30:00',
+			'title'    => $title,
+			'season'   => '',
+			'division' => 'Division 1',
+			'sides'    => $sides,
+			'result'   => array(
 				'home'       => 'home' === $sides[0] ? 'Our A' : 'Rivals',
 				'away'       => 'home' === $sides[0] ? 'Rivals' : 'Our A',
 				'home_score' => $scores[0],
@@ -231,5 +232,37 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$this->assertCount( 1, $black );
 		$this->assertSame( 'Rivals v Our A', $black[0]['title'] );
 		$this->assertCount( 2, Chess_Army_Knife_League_Games::boards_of( $games, '120787', '' ) );
+	}
+
+	public function test_a_games_division_comes_from_its_league() {
+		$this->assertSame( 'Division 2', Chess_Army_Knife_League_Games::division_of( array( '613|Division 2' ) ) );
+		$this->assertSame( '', Chess_Army_Knife_League_Games::division_of( array() ) );
+		$this->assertSame( '', Chess_Army_Knife_League_Games::division_of( array( 'rubbish' ) ) );
+	}
+
+	public function test_games_are_grouped_by_division_in_natural_order() {
+		$games    = $this->games();
+		$games[0] = array_merge( $games[0], array( 'division' => 'Division 10' ) );
+		$games[1] = array_merge( $games[1], array( 'division' => 'Division 2' ) );
+		$games[]  = array_merge(
+			$games[1],
+			array(
+				'id'       => 7,
+				'division' => '',
+			)
+		);
+		$games[]  = array_merge( $games[1], array( 'id' => 8 ) );
+
+		$this->assertSame(
+			array(
+				'Division 2'  => 2,
+				'Division 10' => 1,
+			),
+			Chess_Army_Knife_League_Games::divisions( $games ),
+			'A game with no division is not a tab.'
+		);
+		$this->assertCount( 2, Chess_Army_Knife_League_Games::filter_division( $games, 'Division 2' ) );
+		$this->assertCount( 1, Chess_Army_Knife_League_Games::filter_division( $games, 'Division 10' ) );
+		$this->assertCount( 4, Chess_Army_Knife_League_Games::filter_division( $games, 'all' ) );
 	}
 }
