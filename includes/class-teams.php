@@ -38,6 +38,7 @@ class Chess_Army_Knife_Teams {
 	const META_COLOUR       = '_chess_army_team_colour';
 	const META_GROUP        = '_chess_army_team_group'; // Id of the Group (see Chess_Army_Knife_Team_Groups) the team is listed under; set from the group's screen.
 	const META_GROUP_POS    = '_chess_army_team_group_pos'; // The team's place within its group, from 0.
+	const META_HISTORIC     = '_chess_army_team_historic'; // A team that no longer plays: kept so its past games are matched, but left out of the lists for current teams.
 	const META_TAG          = '_chess_army_team_tag'; // The event tag given to the team's imported fixtures.
 	const META_WHATSAPP     = '_chess_army_team_whatsapp'; // The invite link of the team's WhatsApp group; only shown to members who agreed to WhatsApp and are in the squad.
 
@@ -175,7 +176,28 @@ class Chess_Army_Knife_Teams {
 	 *
 	 * @return array[] Each { id, name, description, captain_id, captain_name, colour, tag, group_id, group, group_blurb, group_order, group_pos, leagues, seasons }; leagues are { org, event, name } and seasons are their keys.
 	 */
-	public static function all() {
+	public static function all( $include_historic = false ) {
+		$teams = self::all_kept();
+
+		return $include_historic ? $teams : array_values( array_filter( $teams, array( __CLASS__, 'is_current' ) ) );
+	}
+
+	/**
+	 * Whether a team still plays.
+	 *
+	 * @param array $team Team from all().
+	 * @return bool
+	 */
+	public static function is_current( array $team ) {
+		return empty( $team['historic'] );
+	}
+
+	/**
+	 * Every published team, historic ones too, kept for the request.
+	 *
+	 * @return array[]
+	 */
+	protected static function all_kept() {
 		$kept = wp_cache_get( 'teams', self::MEMO_GROUP );
 		if ( is_array( $kept ) ) {
 			return $kept;
@@ -227,6 +249,7 @@ class Chess_Army_Knife_Teams {
 			'captain_name' => trim( (string) get_post_meta( $post->ID, self::META_CAPTAIN_NAME, true ) ),
 			'colour'       => (string) get_post_meta( $post->ID, self::META_COLOUR, true ),
 			'tag'          => trim( (string) get_post_meta( $post->ID, self::META_TAG, true ) ),
+			'historic'     => (bool) get_post_meta( $post->ID, self::META_HISTORIC, true ),
 			'whatsapp'     => (string) get_post_meta( $post->ID, self::META_WHATSAPP, true ),
 			'group_id'     => $group ? $group['id'] : 0,
 			'group'        => $group ? $group['name'] : '',
@@ -446,7 +469,7 @@ class Chess_Army_Knife_Teams {
 	 * @return array|null The team (see all()), or null if no team has that season.
 	 */
 	public static function team_for_season( $season_key ) {
-		foreach ( self::all() as $team ) {
+		foreach ( self::all( true ) as $team ) {
 			if ( in_array( $season_key, $team['seasons'], true ) ) {
 				return $team;
 			}
@@ -489,13 +512,16 @@ class Chess_Army_Knife_Teams {
 	 * Every league entry of every team: what the fixtures, the league table and
 	 * the carousel read to know which teams are the club's.
 	 *
-	 * @return array[] Each { org, event, team, team_id }.
+	 * @return array[] Each { org, event, team, team_id, historic }.
 	 */
 	public static function league_entries() {
 		$entries = array();
-		foreach ( self::all() as $team ) {
+		foreach ( self::all( true ) as $team ) { // A team that no longer plays still matches its past games.
 			foreach ( self::seasons_of( $team ) as $entry ) {
-				$entries[] = $entry + array( 'team_id' => $team['id'] );
+				$entries[] = $entry + array(
+					'team_id'  => $team['id'],
+					'historic' => $team['historic'],
+				);
 			}
 		}
 		return $entries;
@@ -535,13 +561,13 @@ class Chess_Army_Knife_Teams {
 	 * Give teams the league entries listed, creating a team for a name that has
 	 * none yet. A team is found by its name, ignoring case.
 	 *
-	 * @param array[] $entries Each { org, event, team }.
+	 * @param array[] $entries Each { org, event, team, historic }: historic marks a team that is created as one that no longer plays.
 	 * @return int How many teams were created.
 	 */
 	public static function assign_league_entries( array $entries ) {
 		$teams   = array();
 		$created = 0;
-		foreach ( self::all() as $team ) {
+		foreach ( self::all( true ) as $team ) {
 			$teams[ strtolower( $team['name'] ) ] = $team;
 		}
 
@@ -564,6 +590,9 @@ class Chess_Army_Knife_Teams {
 					continue;
 				}
 				++$created;
+				if ( ! empty( $entry['historic'] ) ) {
+					update_post_meta( $id, self::META_HISTORIC, 1 );
+				}
 				$teams[ $key ] = self::get( $id );
 			}
 

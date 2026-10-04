@@ -596,6 +596,7 @@ class Chess_Army_Knife_League_Games {
 			<h1><?php esc_html_e( 'Club events', 'chess-army-knife' ); ?></h1>
 			<?php Chess_Army_Knife_Section_Tabs::render( 'events', 'league' ); ?>
 			<?php Chess_Army_Knife_Events_Import::render_notices(); ?>
+			<?php Chess_Army_Knife_Team_Suggestions::render(); ?>
 			<h2><?php esc_html_e( 'League games', 'chess-army-knife' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Fixtures brought in from the LMS, with the board order and results of those that have been played. They show in the calendar with the club\'s own events.', 'chess-army-knife' ); ?></p>
 

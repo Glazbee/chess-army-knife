@@ -341,4 +341,42 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 		$none = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), array( '613|division 1' => array() ), '', '19:30' );
 		$this->assertSame( array(), $none['unmatched'], 'A division with no fixtures at all is not reported here.' );
 	}
+
+	public function test_a_team_name_has_a_club_prefix_only_as_a_whole_word() {
+		$prefixes = array( 'Wotton Hall', 'WH' );
+
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'Wotton Hall A', $prefixes ) );
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'wotton hall', $prefixes ), 'The name alone, whatever its case.' );
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'WH-2', $prefixes ) );
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'WH 1', $prefixes ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Whitchurch A', $prefixes ), 'WH starts Whitchurch, but not as a word.' );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Stroud A', $prefixes ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Wotton Hall A', array() ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Wotton Hall A', array( '' ) ) );
+	}
+
+	public function test_a_team_that_looks_like_the_clubs_but_has_no_entry_is_found() {
+		$matches = array(
+			'613|division 1' => array(
+				$this->match( 'Wotton Hall A', 'Rooks', '2017-09-26' ),
+				$this->match( 'Wotton Hall B', 'Knights', '2017-10-03' ),
+				$this->match( 'Rooks', 'Wotton Hall A', '2017-11-01' ),
+				$this->match( 'Whitchurch', 'Knights', '2017-11-08' ),
+			),
+		);
+
+		$found = Chess_Army_Knife_Events_Import::possible_club_teams( array( $this->team( 'Wotton Hall B' ) ), $matches, array( 'Wotton Hall', 'WH' ) );
+
+		$this->assertSame(
+			array(
+				array(
+					'org'   => '613',
+					'event' => 'Division 1',
+					'team'  => 'Wotton Hall A',
+				),
+			),
+			$found,
+			'Wotton Hall B is already a team, Whitchurch only starts with WH, and Wotton Hall A is found once.'
+		);
+	}
 }

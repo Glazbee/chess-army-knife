@@ -316,7 +316,7 @@ class Chess_Army_Knife_Clubs {
 		foreach ( Chess_Army_Knife_Settings::get_club_teams() as $entry ) {
 			$names[] = strtolower( trim( $entry['team'] ) );
 		}
-		foreach ( Chess_Army_Knife_Teams::all() as $team ) {
+		foreach ( Chess_Army_Knife_Teams::all( true ) as $team ) {
 			$names[] = strtolower( trim( $team['name'] ) );
 		}
 

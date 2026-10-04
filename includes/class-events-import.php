@@ -310,6 +310,110 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
+	 * Whether a team name starts with one of the club's prefixes, as a whole word: "WH" is in "WH A" and "WH-2", not in
+	 * "Whitchurch".
+	 *
+	 * @param string   $name     Team name.
+	 * @param string[] $prefixes What the club's team names start with.
+	 * @return bool
+	 */
+	public static function has_club_prefix( $name, array $prefixes ) {
+		$name = trim( (string) $name );
+		foreach ( $prefixes as $prefix ) {
+			$prefix = trim( (string) $prefix );
+			if ( '' === $prefix || 0 !== stripos( $name, $prefix ) ) {
+				continue;
+			}
+			$next = substr( $name, strlen( $prefix ), 1 );
+			if ( '' === $next || ! preg_match( '/[\p{L}\p{N}]/u', $next ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * The fixtures of the divisions an earlier season had that none of the club's league entries is in, so they can be
+	 * searched for teams that look like the club's. Only the organisations the club plays in are looked at.
+	 *
+	 * @param array[] $teams  Club teams (league entries).
+	 * @param int     $season Id of the earlier season.
+	 * @return array { teams: league entries with no team name, one per division; matches: fixtures by league }.
+	 */
+	protected static function other_divisions( array $teams, $season ) {
+		$own     = array();
+		$entries = array();
+		$matches = array();
+
+		foreach ( $teams as $team ) {
+			$own[ strtolower( Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ) ) ] = true;
+		}
+
+		foreach ( array_unique( array_column( $teams, 'org' ) ) as $org ) {
+			$names = Chess_Army_Knife_LMS_Client::get_event_names( $org, $season );
+			if ( is_wp_error( $names ) ) {
+				continue;
+			}
+			foreach ( $names as $event ) {
+				$group = strtolower( Chess_Army_Knife_Events::league_ref( $org, $event ) );
+				if ( isset( $own[ $group ] ) ) {
+					continue;
+				}
+				$rows = Chess_Army_Knife_LMS_Client::get_fixtures( $org, $event, false, $season );
+				if ( is_wp_error( $rows ) ) {
+					continue;
+				}
+				$entries[]         = array(
+					'org'   => (string) $org,
+					'event' => $event,
+					'team'  => '',
+				);
+				$matches[ $group ] = $rows;
+			}
+		}
+
+		return array(
+			'teams'   => $entries,
+			'matches' => $matches,
+		);
+	}
+
+	/**
+	 * Teams in the club's leagues that look like the club's but are not among its league entries.
+	 *
+	 * @param array[]  $teams             Club teams (league entries), as for plan().
+	 * @param array    $matches_by_league Fixtures by league, from fetch_matches().
+	 * @param string[] $prefixes          What the club's team names start with.
+	 * @return array[] Each { org, event, team }.
+	 */
+	public static function possible_club_teams( array $teams, array $matches_by_league, array $prefixes ) {
+		$known = array();
+		foreach ( $teams as $team ) {
+			$known[ Chess_Army_Knife_Team_Suggestions::key( $team['org'], $team['event'], $team['team'] ) ] = true;
+		}
+
+		$found = array();
+		foreach ( $teams as $team ) {
+			$group = strtolower( Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ) );
+			foreach ( isset( $matches_by_league[ $group ] ) ? $matches_by_league[ $group ] : array() as $match ) {
+				foreach ( array( $match['home'], $match['away'] ) as $name ) {
+					$key = Chess_Army_Knife_Team_Suggestions::key( $team['org'], $team['event'], $name );
+					if ( '' !== trim( $name ) && ! isset( $known[ $key ] ) && self::has_club_prefix( $name, $prefixes ) ) {
+						$found[ $key ] = array(
+							'org'   => $team['org'],
+							'event' => $team['event'],
+							'team'  => trim( $name ),
+						);
+					}
+				}
+			}
+		}
+
+		return array_values( $found );
+	}
+
+	/**
 	 * The tags of a fixture: "League match", then each of the club's teams in it that has a tag of its own.
 	 *
 	 * @param string[] $club_teams League entry key => 'home' or 'away'.
@@ -668,6 +772,17 @@ class Chess_Army_Knife_Events_Import {
 		);
 
 		$teams = Chess_Army_Knife_Settings::get_club_teams();
+		if ( $is_active ) {
+			// A team that no longer plays has nothing in the running season, and its old divisions may not exist now.
+			$teams = array_values(
+				array_filter(
+					$teams,
+					function ( $entry ) {
+						return empty( $entry['historic'] );
+					}
+				)
+			);
+		}
 		if ( empty( $teams ) ) {
 			return $summary;
 		}
@@ -679,7 +794,17 @@ class Chess_Army_Knife_Events_Import {
 		}
 		$matches = self::fetch_matches( $teams, $summary['errors'], $summary['key_problem'], $season, $summary['missing'] );
 		// An empty "today" keeps every fixture, so an earlier season comes in whole.
-		$plan = self::plan( $teams, $matches, $is_active ? current_time( 'Y-m-d' ) : '', $default_time, self::season_names( $teams, $season ) );
+		$season_names = self::season_names( $teams, $season );
+		$plan         = self::plan( $teams, $matches, $is_active ? current_time( 'Y-m-d' ) : '', $default_time, $season_names );
+
+		// A team in these leagues that looks like the club's, but is not one of its teams, is offered on League games.
+		$prefixes = Chess_Army_Knife_Settings::team_prefixes();
+		Chess_Army_Knife_Team_Suggestions::note( self::possible_club_teams( $teams, $matches, $prefixes ), $season_names, $is_active );
+		if ( ! $is_active && $prefixes ) {
+			// An earlier season may have had divisions the club has no team in now: look in them for teams that look like its own.
+			$others = self::other_divisions( $teams, $season );
+			Chess_Army_Knife_Team_Suggestions::note( self::possible_club_teams( $others['teams'], $others['matches'], $prefixes ), $season_names, false );
+		}
 
 		$summary['skipped']   = $plan['skipped'];
 		$summary['unmatched'] = $plan['unmatched'];

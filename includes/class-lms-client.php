@@ -478,6 +478,35 @@ class Chess_Army_Knife_LMS_Client {
 	}
 
 	/**
+	 * The names of the events (divisions) an organisation had in a season.
+	 *
+	 * @param string          $org    Numeric organisation id.
+	 * @param string|int|null $season 'active', or a season id or name.
+	 * @return string[]|WP_Error
+	 */
+	public static function get_event_names( $org, $season = 'active' ) {
+		$seasons = self::get_seasons( $org );
+		if ( is_wp_error( $seasons ) ) {
+			return $seasons;
+		}
+
+		$names = array();
+		foreach ( self::seasons_matching( $seasons, $season ) as $season_id ) {
+			$list = self::v2_get( 'season/' . $season_id . '/events', self::V2_STRUCTURE_TTL );
+			if ( is_wp_error( $list ) ) {
+				return $list;
+			}
+			foreach ( isset( $list['events'] ) && is_array( $list['events'] ) ? $list['events'] : array() as $event ) {
+				if ( isset( $event['name'] ) && '' !== trim( (string) $event['name'] ) ) {
+					$names[ (string) $event['name'] ] = (string) $event['name'];
+				}
+			}
+		}
+
+		return array_values( $names );
+	}
+
+	/**
 	 * An organisation's running season and its events (divisions), for listing the divisions and linking to them.
 	 *
 	 * @param string $org     Numeric organisation id.

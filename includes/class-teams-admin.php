@@ -108,6 +108,13 @@ class Chess_Army_Knife_Teams_Admin {
 				</td>
 			</tr>
 			<tr>
+				<th scope="row"><?php esc_html_e( 'Historic team', 'chess-army-knife' ); ?></th>
+				<td>
+					<label><input type="checkbox" name="chess_army_team_historic" value="1" <?php checked( (bool) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_HISTORIC, true ) ); ?> /> <?php esc_html_e( 'This team no longer plays', 'chess-army-knife' ); ?></label>
+					<p class="description"><?php esc_html_e( 'Keeps its games from past seasons, but leaves it out of the lists of current teams: selection, announcements, the Club Teams block and the Members screen.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
 				<th scope="row"><label for="chess_army_team_tag"><?php esc_html_e( 'Calendar tag', 'chess-army-knife' ); ?></label></th>
 				<td>
 					<input type="text" id="chess_army_team_tag" name="chess_army_team_tag" value="<?php echo esc_attr( $tag ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. Lions', 'chess-army-knife' ); ?>" />
@@ -344,6 +351,7 @@ class Chess_Army_Knife_Teams_Admin {
 			return;
 		}
 
+		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_HISTORIC, empty( $_POST['chess_army_team_historic'] ) ? 0 : 1 );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_TAG, isset( $_POST['chess_army_team_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_tag'] ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_WHATSAPP, isset( $_POST['chess_army_team_whatsapp'] ) ? Chess_Army_Knife_Teams::clean_whatsapp_link( sanitize_text_field( wp_unslash( $_POST['chess_army_team_whatsapp'] ) ) ) : '' );
 

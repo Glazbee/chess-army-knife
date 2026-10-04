@@ -128,16 +128,18 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame(
 			array(
 				array(
-					'org'     => '613',
-					'event'   => 'Division 1',
-					'team'    => 'Club A',
-					'team_id' => 11,
+					'org'      => '613',
+					'event'    => 'Division 1',
+					'team'     => 'Club A',
+					'team_id'  => 11,
+					'historic' => false,
 				),
 				array(
-					'org'     => '613',
-					'event'   => 'Division 2',
-					'team'    => 'Gloucester A',
-					'team_id' => 11,
+					'org'      => '613',
+					'event'    => 'Division 2',
+					'team'     => 'Gloucester A',
+					'team_id'  => 11,
+					'historic' => false,
 				),
 			),
 			$entries
