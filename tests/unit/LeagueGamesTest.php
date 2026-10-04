@@ -154,8 +154,8 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( 'Rivals', Chess_Army_Knife_League_Games::opponent_of( $games[0] ) );
 
 		$games[1]['sides'] = array( 'home', 'away' );
-		$this->assertSame( '', Chess_Army_Knife_League_Games::club_outcome( $games[1] ), 'Two club teams met.' );
-		$this->assertSame( '', Chess_Army_Knife_League_Games::opponent_of( $games[1] ) );
+		$this->assertSame( 'win', Chess_Army_Knife_League_Games::club_outcome( $games[1] ), 'Two club teams met: the home team is the club\'s side.' );
+		$this->assertSame( 'Rivals', Chess_Army_Knife_League_Games::opponent_of( $games[1] ) );
 	}
 
 	public function test_games_can_be_filtered_by_opponent_and_result() {
@@ -168,17 +168,6 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$won = Chess_Army_Knife_League_Games::filter_games( $games, '', 'win' );
 		$this->assertCount( 1, $won );
 		$this->assertSame( 1, $won[0]['id'] );
-
-		$games[] = array(
-			'id'     => 3,
-			'date'   => '2026-12-01',
-			'start'  => '2026-12-01 19:30:00',
-			'title'  => 'Our A v Later',
-			'sides'  => array( 'home' ),
-			'result' => null,
-		);
-		$this->assertCount( 1, Chess_Army_Knife_League_Games::filter_games( $games, 'later', '' ), 'A game not played yet is found by its title.' );
-		$this->assertCount( 0, Chess_Army_Knife_League_Games::filter_games( $games, 'later', 'win' ), 'It has no result to be a win.' );
 	}
 
 	public function test_a_player_is_matched_to_a_member_by_ecf_code() {

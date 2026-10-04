@@ -51,9 +51,9 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * Every league game, newest first.
+	 * Every league game that has been played, newest first.
 	 *
-	 * @return array[] Each { id, date ("Y-m-d"), start, title, result (see Event_Results::get(), or null), sides (the sides the club's teams are on) }.
+	 * @return array[] Each { id, date ("Y-m-d"), start, title, result (see Event_Results::get()), sides (the sides the club's teams are on) }.
 	 */
 	public static function all() {
 		$posts = get_posts(
@@ -68,13 +68,17 @@ class Chess_Army_Knife_League_Games {
 
 		$games = array();
 		foreach ( $posts as $post ) {
+			$result = Chess_Army_Knife_Event_Results::get( $post->ID );
+			if ( ! $result ) {
+				continue; // Nothing to show until it has been played.
+			}
 			$start   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_START, true );
 			$games[] = array(
 				'id'     => (int) $post->ID,
 				'date'   => substr( $start, 0, 10 ),
 				'start'  => $start,
 				'title'  => get_the_title( $post ),
-				'result' => Chess_Army_Knife_Event_Results::get( $post->ID ),
+				'result' => $result,
 				'sides'  => array_values( array_unique( array_filter( (array) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_SIDES, true ) ) ) ),
 			);
 		}
@@ -139,13 +143,18 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * The one side the club is on, or '' when it is on both (two of its teams met) or neither is known.
+	 * The side the club is on, or '' when it is not known. When two of its teams met, the team on the left (home) is
+	 * the club's side and the other is the opponent.
 	 *
 	 * @param array $game A game from all().
 	 * @return string 'home', 'away' or ''.
 	 */
 	protected static function club_side( array $game ) {
-		return 1 === count( $game['sides'] ) ? (string) $game['sides'][0] : '';
+		if ( in_array( 'home', $game['sides'], true ) ) {
+			return 'home';
+		}
+
+		return in_array( 'away', $game['sides'], true ) ? 'away' : '';
 	}
 
 	/**
@@ -185,7 +194,7 @@ class Chess_Army_Knife_League_Games {
 	 * The games against a team, and/or that ended a given way for the club.
 	 *
 	 * @param array[] $games    From all().
-	 * @param string  $opponent Part of the other team's name, or ''. A game not played is matched on its title.
+	 * @param string  $opponent Part of the other team's name, or ''.
 	 * @param string  $outcome  'win', 'draw', 'loss', or '' for any.
 	 * @return array[]
 	 */
@@ -202,9 +211,7 @@ class Chess_Army_Knife_League_Games {
 					if ( '' === $opponent ) {
 						return true;
 					}
-					$name = self::opponent_of( $game );
-
-					return false !== stripos( '' !== $name ? $name : $game['title'], $opponent );
+					return false !== stripos( self::opponent_of( $game ), $opponent );
 				}
 			)
 		);
@@ -553,7 +560,7 @@ class Chess_Army_Knife_League_Games {
 	 */
 	protected static function render_games( array $games, $paged, array $filters ) {
 		if ( ! $games ) {
-			echo '<p>' . esc_html( array_filter( $filters ) ? __( 'No league games match that search.', 'chess-army-knife' ) : __( 'No league games yet. They arrive when Import events is run (it also runs by itself once a day).', 'chess-army-knife' ) ) . '</p>';
+			echo '<p>' . esc_html( array_filter( $filters ) ? __( 'No league games match that search.', 'chess-army-knife' ) : __( 'No league games have been played yet. Results arrive when Import events is run (it also runs by itself once a day).', 'chess-army-knife' ) ) . '</p>';
 			return;
 		}
 
@@ -573,16 +580,12 @@ class Chess_Army_Knife_League_Games {
 				<tr>
 					<td><?php echo esc_html( self::date_text( $game['date'], $date_format ) ); ?></td>
 					<td><?php echo esc_html( $game['title'] ); ?></td>
-					<td><?php echo esc_html( '' !== self::score_text( $game ) ? self::score_text( $game ) : '–' ); ?></td>
+					<td><?php echo esc_html( self::score_text( $game ) ); ?></td>
 					<td>
-						<?php if ( $game['result'] ) : ?>
-							<details>
-								<summary><?php esc_html_e( 'Show boards', 'chess-army-knife' ); ?></summary>
-								<?php echo Chess_Army_Knife_Event_Results::html( $game['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in html(). ?>
-							</details>
-						<?php else : ?>
-							<?php esc_html_e( 'Not played yet', 'chess-army-knife' ); ?>
-						<?php endif; ?>
+						<details>
+							<summary><?php esc_html_e( 'Show boards', 'chess-army-knife' ); ?></summary>
+							<?php echo Chess_Army_Knife_Event_Results::html( $game['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in html(). ?>
+						</details>
 					</td>
 				</tr>
 			<?php endforeach; ?>
