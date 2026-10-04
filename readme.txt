@@ -162,6 +162,7 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 
+* Fixed: **older seasons imported with no results.** The LMS says the winner is "unknown" for played fixtures of older seasons even though they have scores and board results, and the import took that to mean not played, so those games had no result and were left out of League games. The winner is now worked out from the scores. Games already imported that way are filled in by importing the season again.
 * Added: **League games can be edited.** Each game has an Edit link; on a game that has a result, a **Result** box lets you correct the score and who won each board, for when the LMS changed a result after it was imported. A corrected result is kept: the import leaves it alone.
 * Changed: the **League games search** is in its own box. **Player** is a list of the players in the results, shown by their member name (matched by ECF code), with a **Played as** White or Black filter. **Played against** is a list of every team the club has played, and the match result filter is unchanged.
 * Fixed: importing an earlier season no longer reports a division that did not exist then (such as Division 4 before it was created) as an error. The other divisions are imported as before, and a note lists the divisions that were not there.

@@ -715,14 +715,17 @@ class Chess_Army_Knife_LMS_Client {
 			}
 		}
 
-		// An unplayed fixture arrives with scores of 0 and a winner of "unknown", which is not a result.
+		// An unplayed fixture arrives with scores of 0 and a winner of "unknown", which is not a result. But the LMS also
+		// says "unknown" for played fixtures of older seasons, which do have scores and board results, so the winner is
+		// then worked out from the scores.
+		$games  = self::normalise_games( isset( $fixture['games'] ) ? $fixture['games'] : array() );
 		$winner = (string) self::pick( $fixture, array( 'winner' ), '' );
-		$winner = in_array( $winner, array( 'home', 'away', 'draw' ), true ) ? $winner : '';
+		$winner = in_array( $winner, array( 'home', 'away', 'draw' ), true ) ? $winner : self::winner_from_scores( self::pick( $fixture, array( 'home_score' ), null ), self::pick( $fixture, array( 'away_score' ), null ), $games );
 
 		return array(
 			'fixture_id'  => (int) self::pick( $fixture, array( 'fixture_id' ), 0 ),
 			'players'     => $players,
-			'games'       => self::normalise_games( isset( $fixture['games'] ) ? $fixture['games'] : array() ),
+			'games'       => $games,
 			'venue'       => '',
 			'date'        => (string) self::pick( $fixture, array( 'date' ), '' ),
 			'time'        => (string) self::pick( $fixture, array( 'time' ), '' ),
@@ -733,6 +736,38 @@ class Chess_Army_Knife_LMS_Client {
 			'winner'      => $winner,
 			'result_text' => '',
 		);
+	}
+
+	/**
+	 * Who won a fixture the LMS did not name a winner for, from its scores. It counts as played only if the scores
+	 * are not both nothing, or a board has a result.
+	 *
+	 * @param mixed   $home_score Home score from the LMS.
+	 * @param mixed   $away_score Away score from the LMS.
+	 * @param array[] $games      Boards from normalise_games().
+	 * @return string 'home', 'away', 'draw', or '' when it was not played or has no scores.
+	 */
+	protected static function winner_from_scores( $home_score, $away_score, array $games ) {
+		if ( ! is_numeric( $home_score ) || ! is_numeric( $away_score ) ) {
+			return '';
+		}
+
+		$board_played = false;
+		foreach ( $games as $game ) {
+			if ( '' !== $game['result'] ) {
+				$board_played = true;
+				break;
+			}
+		}
+		if ( ! $board_played && (float) $home_score + (float) $away_score <= 0 ) {
+			return '';
+		}
+
+		if ( (float) $home_score === (float) $away_score ) {
+			return 'draw';
+		}
+
+		return (float) $home_score > (float) $away_score ? 'home' : 'away';
 	}
 
 	/**

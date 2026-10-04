@@ -476,6 +476,69 @@ class LmsClientTest extends Chess_Army_Knife_TestCase {
 		);
 	}
 
+	public function test_a_played_fixture_the_lms_calls_unknown_gets_its_winner_from_the_scores() {
+		$board = array(
+			'board'       => 1,
+			'home_colour' => '?',
+			'result'      => 'home_win',
+		);
+		$row   = Chess_Army_Knife_LMS_Client::normalise_fixture(
+			array(
+				'home_team'  => 'Knights',
+				'away_team'  => 'Gloucester A',
+				'home_score' => 4,
+				'away_score' => 1,
+				'winner'     => 'unknown',
+				'games'      => array( $board ),
+			)
+		);
+
+		$this->assertSame( 'home', $row['winner'] );
+		$this->assertSame( '4', $row['home_score'] );
+		$this->assertSame( '1', $row['away_score'] );
+
+		$away = Chess_Army_Knife_LMS_Client::normalise_fixture(
+			array(
+				'home_score' => 1.5,
+				'away_score' => 3.5,
+				'winner'     => 'unknown',
+				'games'      => array( $board ),
+			)
+		);
+		$this->assertSame( 'away', $away['winner'] );
+
+		$draw = Chess_Army_Knife_LMS_Client::normalise_fixture(
+			array(
+				'home_score' => 2.5,
+				'away_score' => 2.5,
+				'winner'     => 'unknown',
+				'games'      => array( $board ),
+			)
+		);
+		$this->assertSame( 'draw', $draw['winner'] );
+	}
+
+	public function test_an_unplayed_fixture_is_still_not_a_result() {
+		$row = Chess_Army_Knife_LMS_Client::normalise_fixture(
+			array(
+				'home_team'  => 'A',
+				'away_team'  => 'B',
+				'home_score' => 0,
+				'away_score' => 0,
+				'winner'     => 'unknown',
+				'games'      => array(
+					array(
+						'board'  => 1,
+						'result' => '',
+					),
+				),
+			)
+		);
+
+		$this->assertSame( '', $row['winner'] );
+		$this->assertSame( '', $row['home_score'] );
+	}
+
 	public function test_an_earlier_season_can_be_asked_for_by_name_and_is_cached_for_longer() {
 		$this->set_settings(
 			array(
