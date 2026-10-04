@@ -142,6 +142,9 @@ class Chess_Army_Knife_League_Games {
 		if ( ! is_admin() || ! $query->is_main_query() || Chess_Army_Knife_Events::POST_TYPE !== $query->get( 'post_type' ) ) {
 			return;
 		}
+		if ( 'trash' === $query->get( 'post_status' ) ) {
+			return; // The Trash holds league games too, so they can be restored or deleted for good.
+		}
 
 		$meta_query = array(
 			'relation' => 'AND',

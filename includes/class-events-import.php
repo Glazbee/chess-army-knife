@@ -625,7 +625,9 @@ class Chess_Army_Knife_Events_Import {
 	 *     @type int      $created   New events.
 	 *     @type int      $updated   Untouched imported events that were refreshed.
 	 *     @type int      $unchanged Events that already matched.
-	 *     @type int      $kept      Events left alone (edited by hand, or trashed).
+	 *     @type int      $kept      Events left alone: trashed + edited.
+	 *     @type int      $trashed   Events in the Trash, which the import never brings back.
+	 *     @type int      $edited    Events edited by hand, whose result is still kept up to date.
 	 *     @type int      $squad_added       People added to a squad because they played for the team.
 	 *     @type int      $players_unmatched Players (by ECF code) who are on no member record.
 	 *     @type int      $unsorted  Team names seen that are not in a club yet, so their home fixtures have no venue.
@@ -642,6 +644,8 @@ class Chess_Army_Knife_Events_Import {
 			'updated'           => 0,
 			'unchanged'         => 0,
 			'kept'              => 0,
+			'trashed'           => 0,
+			'edited'            => 0,
 			'unsorted'          => 0,
 			'squad_added'       => 0,
 			'players_unmatched' => 0,
@@ -715,6 +719,7 @@ class Chess_Army_Knife_Events_Import {
 
 			if ( 'trash' === $existing->post_status ) {
 				++$summary['kept'];
+				++$summary['trashed'];
 				continue;
 			}
 
@@ -734,6 +739,7 @@ class Chess_Army_Knife_Events_Import {
 
 			if ( get_post_meta( $existing->ID, self::META_EDITED, true ) ) {
 				++$summary['kept'];
+				++$summary['edited'];
 				continue;
 			}
 
@@ -832,6 +838,8 @@ class Chess_Army_Knife_Events_Import {
 			'updated'     => 0,
 			'unchanged'   => 0,
 			'kept'        => 0,
+			'trashed'     => 0,
+			'edited'      => 0,
 			'skipped'     => 0,
 			'seasons'     => 0,
 			'errors'      => array(),
@@ -846,7 +854,7 @@ class Chess_Army_Knife_Events_Import {
 
 			$summary = self::import( $season_id );
 			++$total['seasons'];
-			foreach ( array( 'created', 'updated', 'unchanged', 'kept', 'skipped' ) as $field ) {
+			foreach ( array( 'created', 'updated', 'unchanged', 'kept', 'trashed', 'edited', 'skipped' ) as $field ) {
 				$total[ $field ] += $summary[ $field ];
 			}
 			foreach ( $summary['errors'] as $error ) {
@@ -893,6 +901,34 @@ class Chess_Army_Knife_Events_Import {
 	 */
 	protected static function result_key() {
 		return 'chess_army_knife_import_result_' . get_current_user_id();
+	}
+
+	/**
+	 * Say why games were left alone: the ones in the Trash stay deleted, and the ones edited by hand keep their edits.
+	 *
+	 * @param array $result An import's summary.
+	 */
+	protected static function render_left_alone_note( array $result ) {
+		if ( empty( $result['trashed'] ) && empty( $result['edited'] ) ) {
+			return;
+		}
+		?>
+		<div class="notice notice-info"><p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: 1: games in the Trash, 2: games edited by hand */
+					__( 'Games left alone: %1$d are in the Trash (the import never brings back a game you deleted; restore it from the Trash and it is updated again) and %2$d were edited by hand (their result is still kept up to date).', 'chess-army-knife' ),
+					(int) $result['trashed'],
+					(int) $result['edited']
+				)
+			);
+			?>
+			<?php if ( ! empty( $result['trashed'] ) ) : ?>
+				<a href="<?php echo esc_url( admin_url( 'edit.php?post_status=trash&post_type=' . Chess_Army_Knife_Events::POST_TYPE ) ); ?>"><?php esc_html_e( 'View the Trash', 'chess-army-knife' ); ?></a>
+			<?php endif; ?>
+		</p></div>
+		<?php
 	}
 
 	/**
@@ -945,6 +981,7 @@ class Chess_Army_Knife_Events_Import {
 					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Clubs::PAGE ) ); ?>"><?php esc_html_e( 'Sort them into clubs', 'chess-army-knife' ); ?></a>
 				</p></div>
 			<?php endif; ?>
+			<?php self::render_left_alone_note( $result ); ?>
 			<?php foreach ( $result['errors'] as $error ) : ?>
 				<div class="notice notice-error"><p><?php echo esc_html( $error ); ?></p></div>
 			<?php endforeach; ?>
@@ -972,6 +1009,7 @@ class Chess_Army_Knife_Events_Import {
 				);
 				?>
 			</p></div>
+			<?php self::render_left_alone_note( $old_result ); ?>
 			<?php if ( ! empty( $old_result['missing'] ) ) : ?>
 				<div class="notice notice-info"><p>
 					<?php
