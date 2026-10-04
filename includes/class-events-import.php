@@ -508,6 +508,9 @@ class Chess_Army_Knife_Events_Import {
 	 * @param array $candidate A candidate from plan().
 	 */
 	protected static function store_result( $event_id, array $candidate ) {
+		if ( get_post_meta( $event_id, Chess_Army_Knife_Event_Results::META_EDITED, true ) ) {
+			return; // An admin corrected it by hand.
+		}
 		Chess_Army_Knife_Event_Results::store( $event_id, Chess_Army_Knife_Event_Results::build( $candidate['match'], array_values( $candidate['club_teams'] ) ) );
 	}
 
@@ -518,9 +521,10 @@ class Chess_Army_Knife_Events_Import {
 	 * @param array   $errors      Filled with a message for each league that could not be loaded.
 	 * @param bool    $key_problem Set when the LMS refuses the API key.
 	 * @param string|int $season   'active' for the running season, or a season id for an earlier one.
+	 * @param string[]   $missing  Filled with the name of each division an earlier season did not have.
 	 * @return array Normalised match rows keyed by "org|event" (lower case).
 	 */
-	protected static function fetch_matches( array $teams, array &$errors, &$key_problem, $season = 'active' ) {
+	protected static function fetch_matches( array $teams, array &$errors, &$key_problem, $season = 'active', array &$missing = array() ) {
 		$by_league = array();
 
 		foreach ( $teams as $team ) {
@@ -534,6 +538,11 @@ class Chess_Army_Knife_Events_Import {
 
 			$by_league[ $group ] = array();
 			if ( is_wp_error( $rows ) ) {
+				// A division the league had not started yet is not a fault: the other divisions still come in.
+				if ( 'active' !== $season && 'lms_event_not_found' === $rows->get_error_code() ) {
+					$missing[] = $team['event'];
+					continue;
+				}
 				/* translators: 1: league / division name, 2: error message */
 				$errors[] = sprintf( __( '%1$s: %2$s', 'chess-army-knife' ), $team['event'], $rows->get_error_message() );
 				if ( in_array( $rows->get_error_code(), array( 'lms_unauthorised', 'lms_forbidden', 'lms_no_api_key' ), true ) ) {
@@ -622,6 +631,7 @@ class Chess_Army_Knife_Events_Import {
 	 *     @type int      $unsorted  Team names seen that are not in a club yet, so their home fixtures have no venue.
 	 *     @type int      $skipped   Fixtures with a date that couldn't be read.
 	 *     @type string[] $errors    Leagues that couldn't be loaded.
+	 *     @type string[] $missing   Divisions an earlier season did not have (not a fault).
 	 *     @type bool     $key_problem Whether the LMS refused the API key (or there is none).
 	 * }
 	 */
@@ -637,6 +647,7 @@ class Chess_Army_Knife_Events_Import {
 			'players_unmatched' => 0,
 			'skipped'           => 0,
 			'errors'            => array(),
+			'missing'           => array(),
 			'key_problem'       => false,
 		);
 
@@ -650,7 +661,7 @@ class Chess_Army_Knife_Events_Import {
 		if ( '' === $default_time ) {
 			$default_time = '19:30';
 		}
-		$matches = self::fetch_matches( $teams, $summary['errors'], $summary['key_problem'], $season );
+		$matches = self::fetch_matches( $teams, $summary['errors'], $summary['key_problem'], $season, $summary['missing'] );
 		// An empty "today" keeps every fixture, so an earlier season comes in whole.
 		$plan = self::plan( $teams, $matches, $is_active ? current_time( 'Y-m-d' ) : '', $default_time, self::season_names( $teams, $season ) );
 
@@ -824,6 +835,7 @@ class Chess_Army_Knife_Events_Import {
 			'skipped'     => 0,
 			'seasons'     => 0,
 			'errors'      => array(),
+			'missing'     => array(),
 			'key_problem' => false,
 		);
 
@@ -840,6 +852,10 @@ class Chess_Army_Knife_Events_Import {
 			foreach ( $summary['errors'] as $error ) {
 				/* translators: 1: season name, 2: error message */
 				$total['errors'][] = sprintf( __( '%1$s, %2$s', 'chess-army-knife' ), $available[ $season_id ], $error );
+			}
+			foreach ( $summary['missing'] as $division ) {
+				/* translators: 1: season name, 2: division name */
+				$total['missing'][] = sprintf( __( '%1$s: %2$s', 'chess-army-knife' ), $available[ $season_id ], $division );
 			}
 			$total['key_problem'] = $total['key_problem'] || $summary['key_problem'];
 		}
@@ -956,6 +972,19 @@ class Chess_Army_Knife_Events_Import {
 				);
 				?>
 			</p></div>
+			<?php if ( ! empty( $old_result['missing'] ) ) : ?>
+				<div class="notice notice-info"><p>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: %s: list of seasons and the divisions they did not have */
+							__( 'These divisions did not exist in those seasons, so there was nothing to import (the others were imported): %s.', 'chess-army-knife' ),
+							implode( '; ', $old_result['missing'] )
+						)
+					);
+					?>
+				</p></div>
+			<?php endif; ?>
 			<?php foreach ( $old_result['errors'] as $error ) : ?>
 				<div class="notice notice-warning"><p><?php echo esc_html( $error ); ?></p></div>
 			<?php endforeach; ?>

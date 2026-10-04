@@ -24,6 +24,113 @@ class Chess_Army_Knife_League_Games {
 	 */
 	public static function init() {
 		add_action( 'pre_get_posts', array( __CLASS__, 'hide_from_club_events' ), 20 ); // After the list is sorted.
+		add_action( 'add_meta_boxes_' . Chess_Army_Knife_Events::POST_TYPE, array( __CLASS__, 'add_result_box' ) );
+		add_action( 'save_post_' . Chess_Army_Knife_Events::POST_TYPE, array( __CLASS__, 'save_result' ) );
+	}
+
+	/**
+	 * Add the box for correcting a league game's result, on the edit screen of a game that has one.
+	 *
+	 * @param WP_Post $post The event being edited.
+	 */
+	public static function add_result_box( $post ) {
+		if ( ! Chess_Army_Knife_Event_Results::get( $post->ID ) ) {
+			return;
+		}
+		add_meta_box( 'cak-league-result', __( 'Result', 'chess-army-knife' ), array( __CLASS__, 'render_result_box' ), Chess_Army_Knife_Events::POST_TYPE, 'normal', 'default' );
+	}
+
+	/**
+	 * Draw the box: the score and who won each board. The players and colours come from the LMS and are not editable.
+	 *
+	 * @param WP_Post $post The event being edited.
+	 */
+	public static function render_result_box( $post ) {
+		$result = Chess_Army_Knife_Event_Results::get( $post->ID );
+		if ( ! $result ) {
+			return;
+		}
+		wp_nonce_field( 'cak_league_result_' . $post->ID, 'cak_league_result_nonce' );
+
+		$outcomes = array(
+			''         => __( 'Not played', 'chess-army-knife' ),
+			'home_win' => sprintf( /* translators: %s: home team */ __( '%s won', 'chess-army-knife' ), $result['home'] ),
+			'draw'     => __( 'Draw', 'chess-army-knife' ),
+			'away_win' => sprintf( /* translators: %s: away team */ __( '%s won', 'chess-army-knife' ), $result['away'] ),
+		);
+		$name_of  = function ( $player ) {
+			return $player && '' !== $player['name'] ? $player['name'] : __( 'Default', 'chess-army-knife' );
+		};
+		?>
+		<p class="description"><?php esc_html_e( 'Correct the result if the LMS has changed it since it was imported. The import will then leave this result alone.', 'chess-army-knife' ); ?></p>
+		<p>
+			<label for="cak-result-home"><?php echo esc_html( $result['home'] ); ?></label>
+			<input type="text" id="cak-result-home" name="cak_result_home_score" value="<?php echo esc_attr( $result['home_score'] ); ?>" size="4" />
+			–
+			<input type="text" id="cak-result-away" name="cak_result_away_score" value="<?php echo esc_attr( $result['away_score'] ); ?>" size="4" />
+			<label for="cak-result-away"><?php echo esc_html( $result['away'] ); ?></label>
+		</p>
+		<?php if ( $result['games'] ) : ?>
+			<table class="widefat striped">
+				<thead><tr>
+					<th scope="col"><?php esc_html_e( 'Board', 'chess-army-knife' ); ?></th>
+					<th scope="col"><?php echo esc_html( $result['home'] ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
+					<th scope="col"><?php echo esc_html( $result['away'] ); ?></th>
+				</tr></thead>
+				<tbody>
+				<?php foreach ( $result['games'] as $index => $game ) : ?>
+					<tr>
+						<th scope="row"><?php echo esc_html( (string) $game['board'] ); ?></th>
+						<td><?php echo esc_html( $name_of( $game['home'] ) ); ?></td>
+						<td>
+							<label class="screen-reader-text" for="cak-board-<?php echo esc_attr( (string) $index ); ?>"><?php echo esc_html( sprintf( /* translators: %d: board number */ __( 'Result on board %d', 'chess-army-knife' ), $game['board'] ) ); ?></label>
+							<select id="cak-board-<?php echo esc_attr( (string) $index ); ?>" name="cak_result_boards[<?php echo esc_attr( (string) $index ); ?>]">
+								<?php foreach ( $outcomes as $value => $label ) : ?>
+									<option value="<?php echo esc_attr( $value ); ?>"<?php selected( $game['result'], $value ); ?>><?php echo esc_html( $label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+						<td><?php echo esc_html( $name_of( $game['away'] ) ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * Save the corrected result.
+	 *
+	 * @param int $post_id Event id.
+	 */
+	public static function save_result( $post_id ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( ! isset( $_POST['cak_league_result_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cak_league_result_nonce'] ) ), 'cak_league_result_' . $post_id ) ) {
+			return;
+		}
+		$result = Chess_Army_Knife_Event_Results::get( $post_id );
+		if ( ! $result || ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		$boards = isset( $_POST['cak_result_boards'] ) && is_array( $_POST['cak_result_boards'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['cak_result_boards'] ) ) : array();
+		$edited = Chess_Army_Knife_Event_Results::apply_edit(
+			$result,
+			array(
+				'home_score' => isset( $_POST['cak_result_home_score'] ) ? sanitize_text_field( wp_unslash( $_POST['cak_result_home_score'] ) ) : '',
+				'away_score' => isset( $_POST['cak_result_away_score'] ) ? sanitize_text_field( wp_unslash( $_POST['cak_result_away_score'] ) ) : '',
+				'boards'     => $boards,
+			)
+		);
+
+		if ( $edited !== $result ) {
+			Chess_Army_Knife_Event_Results::store( $post_id, $edited );
+			update_post_meta( $post_id, Chess_Army_Knife_Event_Results::META_EDITED, 1 );
+		}
 	}
 
 	/**
@@ -95,45 +202,6 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * The club's players whose name, or whose membership record's name, has a piece of text in it. Each is matched
-	 * to a member by ECF code.
-	 *
-	 * @param array[]  $games   From all().
-	 * @param string   $term    Part of a name.
-	 * @param array[]  $members Member rows with an ECF code (see Membership_Store::get_players()).
-	 * @return array[] ECF code (digits) => { code, name, rating, games, last_played, member }, by name. member is the
-	 *                 name on the membership record, or '' when no record has the code.
-	 */
-	public static function find_players( array $games, $term, array $members = array() ) {
-		$term = trim( (string) $term );
-		if ( '' === $term ) {
-			return array();
-		}
-
-		$found = array();
-		foreach ( Chess_Army_Knife_Event_Results::club_players( self::result_rows( $games ) ) as $key => $player ) {
-			$player['member'] = '';
-			foreach ( $members as $member ) {
-				if ( Chess_Army_Knife_Event_Results::same_code( $member['ecf_code'], $player['code'] ) ) {
-					$player['member'] = (string) $member['name'];
-					break;
-				}
-			}
-			if ( false !== stripos( $player['name'], $term ) || ( '' !== $player['member'] && false !== stripos( $player['member'], $term ) ) ) {
-				$found[ $key ] = $player;
-			}
-		}
-		uasort(
-			$found,
-			function ( $a, $b ) {
-				return strcasecmp( '' !== $a['member'] ? $a['member'] : $a['name'], '' !== $b['member'] ? $b['member'] : $b['name'] );
-			}
-		);
-
-		return $found;
-	}
-
-	/**
 	 * The seasons the games fall in, the one with the latest game first. Games imported before the season was
 	 * kept have none, and come last under the key ''.
 	 *
@@ -183,6 +251,49 @@ class Chess_Army_Knife_League_Games {
 				}
 			)
 		);
+	}
+
+	/**
+	 * Every team the club has played, for the "Played against" list.
+	 *
+	 * @param array[] $games From all().
+	 * @return string[] Team names, alphabetical.
+	 */
+	public static function opponents( array $games ) {
+		$names = array();
+		foreach ( $games as $game ) {
+			$name = self::opponent_of( $game );
+			if ( '' !== $name ) {
+				$names[ strtolower( $name ) ] = $name;
+			}
+		}
+		natcasesort( $names );
+
+		return array_values( $names );
+	}
+
+	/**
+	 * The club's players who appear in the results, for the "Player" list. Each is matched to a member by ECF code,
+	 * and shown by the member's name when there is one.
+	 *
+	 * @param array[] $games   From all().
+	 * @param array[] $members Member rows with an ECF code (see Membership_Store::get_players()).
+	 * @return string[] ECF code (digits) => name, alphabetical.
+	 */
+	public static function players( array $games, array $members ) {
+		$names = array();
+		foreach ( Chess_Army_Knife_Event_Results::club_players( self::result_rows( $games ) ) as $key => $player ) {
+			$names[ $key ] = $player['name'];
+			foreach ( $members as $member ) {
+				if ( Chess_Army_Knife_Event_Results::same_code( $member['ecf_code'], $player['code'] ) ) {
+					$names[ $key ] = (string) $member['name'];
+					break;
+				}
+			}
+		}
+		natcasesort( $names );
+
+		return $names;
 	}
 
 	/**
@@ -247,7 +358,7 @@ class Chess_Army_Knife_League_Games {
 	 * The games against a team, and/or that ended a given way for the club.
 	 *
 	 * @param array[] $games    From all().
-	 * @param string  $opponent Part of the other team's name, or ''.
+	 * @param string  $opponent The other team's name, or ''.
 	 * @param string  $outcome  'win', 'draw', 'loss', or '' for any.
 	 * @return array[]
 	 */
@@ -261,10 +372,8 @@ class Chess_Army_Knife_League_Games {
 					if ( '' !== $outcome && self::club_outcome( $game ) !== $outcome ) {
 						return false;
 					}
-					if ( '' === $opponent ) {
-						return true;
-					}
-					return false !== stripos( self::opponent_of( $game ), $opponent );
+
+					return '' === $opponent || 0 === strcasecmp( self::opponent_of( $game ), $opponent );
 				}
 			)
 		);
@@ -275,9 +384,10 @@ class Chess_Army_Knife_League_Games {
 	 *
 	 * @param array[] $games From all().
 	 * @param string  $code  The player's ECF code.
+	 * @param string  $colour 'white' or 'black' to leave out the boards played with the other colour, or '' for both.
 	 * @return array[] Each { id, date, title, score, board, colour ('White', 'Black' or ''), opponent, outcome ('win', 'draw', 'loss' or '') }.
 	 */
-	public static function boards_of( array $games, $code ) {
+	public static function boards_of( array $games, $code, $colour = '' ) {
 		$boards = array();
 
 		foreach ( $games as $game ) {
@@ -288,6 +398,10 @@ class Chess_Army_Knife_League_Games {
 				foreach ( array( 'home', 'away' ) as $side ) {
 					$player = $board[ $side ];
 					if ( ! $player || empty( $player['code'] ) || ! Chess_Army_Knife_Event_Results::same_code( $player['code'], $code ) ) {
+						continue;
+					}
+					$white = self::is_white( $side, (string) $board['home_colour'] );
+					if ( ( 'white' === $colour && true !== $white ) || ( 'black' === $colour && false !== $white ) ) {
 						continue;
 					}
 					$other    = 'home' === $side ? 'away' : 'home';
@@ -309,6 +423,22 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
+	 * Whether a side had White on a board.
+	 *
+	 * @param string $side        'home' or 'away'.
+	 * @param string $home_colour The home player's colour, 'W' or 'B'.
+	 * @return bool|null Null when the colour is not known.
+	 */
+	public static function is_white( $side, $home_colour ) {
+		$home_colour = strtoupper( $home_colour );
+		if ( ! in_array( $home_colour, array( 'W', 'B' ), true ) ) {
+			return null;
+		}
+
+		return 'home' === $side ? 'W' === $home_colour : 'B' === $home_colour;
+	}
+
+	/**
 	 * The colour a side had on a board.
 	 *
 	 * @param string $side        'home' or 'away'.
@@ -316,11 +446,10 @@ class Chess_Army_Knife_League_Games {
 	 * @return string 'White', 'Black' or '' when it is not known.
 	 */
 	public static function colour_of( $side, $home_colour ) {
-		$home_colour = strtoupper( $home_colour );
-		if ( ! in_array( $home_colour, array( 'W', 'B' ), true ) ) {
+		$white = self::is_white( $side, $home_colour );
+		if ( null === $white ) {
 			return '';
 		}
-		$white = 'home' === $side ? 'W' === $home_colour : 'B' === $home_colour;
 
 		return $white ? __( 'White', 'chess-army-knife' ) : __( 'Black', 'chess-army-knife' );
 	}
@@ -390,17 +519,20 @@ class Chess_Army_Knife_League_Games {
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display; nothing is changed.
 		$filters = array(
-			'player'   => isset( $_GET['player'] ) ? sanitize_text_field( wp_unslash( $_GET['player'] ) ) : '',
+			'player'   => isset( $_GET['player'] ) ? preg_replace( '/\D/', '', sanitize_text_field( wp_unslash( $_GET['player'] ) ) ) : '', // The player's ECF code.
+			'colour'   => isset( $_GET['colour'] ) ? sanitize_key( wp_unslash( $_GET['colour'] ) ) : '',
 			'opponent' => isset( $_GET['opponent'] ) ? sanitize_text_field( wp_unslash( $_GET['opponent'] ) ) : '',
 			'outcome'  => isset( $_GET['outcome'] ) ? sanitize_key( wp_unslash( $_GET['outcome'] ) ) : '',
 		);
 		$season  = isset( $_GET['season'] ) ? sanitize_text_field( wp_unslash( $_GET['season'] ) ) : '';
-		$code    = isset( $_GET['code'] ) ? preg_replace( '/[^0-9A-Za-z]/', '', sanitize_text_field( wp_unslash( $_GET['code'] ) ) ) : '';
 		$paged   = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( ! in_array( $filters['outcome'], array( 'win', 'draw', 'loss' ), true ) ) {
 			$filters['outcome'] = '';
+		}
+		if ( ! in_array( $filters['colour'], array( 'white', 'black' ), true ) ) {
+			$filters['colour'] = '';
 		}
 
 		$all     = self::all();
@@ -426,12 +558,10 @@ class Chess_Army_Knife_League_Games {
 			<p class="description"><?php esc_html_e( 'Fixtures brought in from the LMS, with the board order and results of those that have been played. They show in the calendar with the club\'s own events.', 'chess-army-knife' ); ?></p>
 
 			<?php self::render_season_links( $all, $seasons, $filters ); ?>
-			<?php self::render_search_form( $filters, '' !== $code ); ?>
+			<?php self::render_search_form( $filters, $all ); ?>
 
-			<?php if ( '' !== $code ) : ?>
-				<?php self::render_player_games( $all, $games, $code ); ?>
-			<?php elseif ( '' !== $filters['player'] ) : ?>
-				<?php self::render_player_list( $in_season, $filters ); ?>
+			<?php if ( '' !== $filters['player'] ) : ?>
+				<?php self::render_player_games( $all, $games, $filters['player'], $filters['colour'] ); ?>
 			<?php else : ?>
 				<?php self::render_games( $games, $paged, $filters ); ?>
 			<?php endif; ?>
@@ -442,13 +572,13 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * Whether a player, opponent or result is being searched for.
+	 * Whether a player, colour, opponent or result is being searched for.
 	 *
 	 * @param string[] $filters As searched.
 	 * @return bool
 	 */
 	protected static function is_search( array $filters ) {
-		return '' !== $filters['player'] || '' !== $filters['opponent'] || '' !== $filters['outcome'];
+		return '' !== $filters['player'] || '' !== $filters['colour'] || '' !== $filters['opponent'] || '' !== $filters['outcome'];
 	}
 
 	/**
@@ -483,78 +613,66 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * Draw the search form: a player, a team played and how the match ended.
+	 * Draw the search box: a member, the colour they had, a team played and how the match ended.
 	 *
-	 * @param string[] $filters   player, opponent and outcome as searched.
-	 * @param bool     $searching Whether a search is showing, so there is a way back to every game.
+	 * @param string[] $filters player, colour, opponent and outcome as searched, and the season showing.
+	 * @param array[]  $all     Every game, from all(), which the lists are made from.
 	 */
-	protected static function render_search_form( array $filters, $searching ) {
+	protected static function render_search_form( array $filters, array $all ) {
 		$outcomes = array(
 			''     => __( 'Any result', 'chess-army-knife' ),
 			'win'  => __( 'Won', 'chess-army-knife' ),
 			'draw' => __( 'Drawn', 'chess-army-knife' ),
 			'loss' => __( 'Lost', 'chess-army-knife' ),
 		);
+		$colours  = array(
+			''      => __( 'Either colour', 'chess-army-knife' ),
+			'white' => __( 'White', 'chess-army-knife' ),
+			'black' => __( 'Black', 'chess-army-knife' ),
+		);
+		$players  = self::players( $all, Chess_Army_Knife_Membership_Store::get_players( '', true ) );
 		?>
-		<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
-			<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE ); ?>" />
-			<input type="hidden" name="season" value="<?php echo esc_attr( $filters['season'] ); ?>" />
-			<p>
-				<label for="cak-league-player"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></label>
-				<input type="search" id="cak-league-player" name="player" value="<?php echo esc_attr( $filters['player'] ); ?>" class="regular-text" />
-				<label for="cak-league-opponent"><?php esc_html_e( 'Played against', 'chess-army-knife' ); ?></label>
-				<input type="search" id="cak-league-opponent" name="opponent" value="<?php echo esc_attr( $filters['opponent'] ); ?>" class="regular-text" />
-				<label for="cak-league-outcome"><?php esc_html_e( 'Match result', 'chess-army-knife' ); ?></label>
-				<select id="cak-league-outcome" name="outcome">
-					<?php foreach ( $outcomes as $value => $label ) : ?>
-						<option value="<?php echo esc_attr( $value ); ?>"<?php selected( $filters['outcome'], $value ); ?>><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<button type="submit" class="button"><?php esc_html_e( 'Search', 'chess-army-knife' ); ?></button>
-				<?php if ( $searching || self::is_search( $filters ) ) : ?>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE ) ); ?>"><?php esc_html_e( 'Show all games', 'chess-army-knife' ); ?></a>
-				<?php endif; ?>
-			</p>
-		</form>
-		<?php
-	}
-
-	/**
-	 * Draw the players a name search found, each linking to their games.
-	 *
-	 * @param array[]  $games   Every game, from all().
-	 * @param string[] $filters player, opponent and outcome as searched.
-	 */
-	protected static function render_player_list( array $games, array $filters ) {
-		$found = self::find_players( $games, $filters['player'], Chess_Army_Knife_Membership_Store::get_players( '', true ) );
-		if ( ! $found ) {
-			echo '<p>' . esc_html__( 'No player with that name has played in a league game.', 'chess-army-knife' ) . '</p>';
-			return;
-		}
-		?>
-		<ul>
-			<?php foreach ( $found as $player ) : ?>
-				<?php $url = add_query_arg( array_merge( array( 'page' => self::PAGE ), $filters, array( 'code' => $player['code'] ) ), admin_url( 'admin.php' ) ); ?>
-				<li>
-					<a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( '' !== $player['member'] ? $player['member'] : $player['name'] ); ?></a>
-					<?php
-					echo esc_html(
-						'' !== $player['member']
-							? __( '(member)', 'chess-army-knife' )
-							: __( '(no membership record)', 'chess-army-knife' )
-					);
-					echo ' ';
-					echo esc_html(
-						sprintf(
-							/* translators: %d: number of games */
-							_n( '%d game', '%d games', $player['games'], 'chess-army-knife' ),
-							$player['games']
-						)
-					);
-					?>
-				</li>
-			<?php endforeach; ?>
-		</ul>
+		<div class="card" style="max-width: none;">
+			<h3 style="margin-top: 0;"><?php esc_html_e( 'Search league games', 'chess-army-knife' ); ?></h3>
+			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+				<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE ); ?>" />
+				<input type="hidden" name="season" value="<?php echo esc_attr( $filters['season'] ); ?>" />
+				<p>
+					<label for="cak-league-player"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></label>
+					<select id="cak-league-player" name="player">
+						<option value=""><?php esc_html_e( 'Any player', 'chess-army-knife' ); ?></option>
+						<?php foreach ( $players as $code => $name ) : ?>
+							<option value="<?php echo esc_attr( (string) $code ); ?>"<?php selected( $filters['player'], (string) $code ); ?>><?php echo esc_html( $name ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<label for="cak-league-colour"><?php esc_html_e( 'Played as', 'chess-army-knife' ); ?></label>
+					<select id="cak-league-colour" name="colour">
+						<?php foreach ( $colours as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>"<?php selected( $filters['colour'], $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</p>
+				<p>
+					<label for="cak-league-opponent"><?php esc_html_e( 'Played against', 'chess-army-knife' ); ?></label>
+					<select id="cak-league-opponent" name="opponent">
+						<option value=""><?php esc_html_e( 'Any team', 'chess-army-knife' ); ?></option>
+						<?php foreach ( self::opponents( $all ) as $team ) : ?>
+							<option value="<?php echo esc_attr( $team ); ?>"<?php selected( $filters['opponent'], $team ); ?>><?php echo esc_html( $team ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<label for="cak-league-outcome"><?php esc_html_e( 'Match result', 'chess-army-knife' ); ?></label>
+					<select id="cak-league-outcome" name="outcome">
+						<?php foreach ( $outcomes as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>"<?php selected( $filters['outcome'], $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<button type="submit" class="button button-primary"><?php esc_html_e( 'Search', 'chess-army-knife' ); ?></button>
+					<?php if ( self::is_search( $filters ) ) : ?>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE ) ); ?>"><?php esc_html_e( 'Clear search', 'chess-army-knife' ); ?></a>
+					<?php endif; ?>
+				</p>
+			</form>
+		</div>
 		<?php
 	}
 
@@ -563,9 +681,10 @@ class Chess_Army_Knife_League_Games {
 	 *
 	 * @param array[] $all   Every game, from all().
 	 * @param array[] $games The games left after the opponent and result were chosen.
-	 * @param string  $code  ECF code of the player.
+	 * @param string  $code   ECF code of the player.
+	 * @param string  $colour 'white', 'black' or '' for the boards to show.
 	 */
-	protected static function render_player_games( array $all, array $games, $code ) {
+	protected static function render_player_games( array $all, array $games, $code, $colour ) {
 		$name = '';
 		foreach ( Chess_Army_Knife_Event_Results::club_players( self::result_rows( $all ) ) as $player ) {
 			if ( Chess_Army_Knife_Event_Results::same_code( $player['code'], $code ) ) {
@@ -577,7 +696,7 @@ class Chess_Army_Knife_League_Games {
 			$name = $record['name'];
 		}
 
-		$boards = self::boards_of( $games, $code );
+		$boards = self::boards_of( $games, $code, $colour );
 		?>
 		<h3><?php echo esc_html( $name ); ?></h3>
 		<?php
@@ -686,6 +805,7 @@ class Chess_Army_Knife_League_Games {
 				<th scope="col"><?php esc_html_e( 'Match', 'chess-army-knife' ); ?></th>
 				<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
 				<th scope="col"><?php esc_html_e( 'Boards', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></th>
 			</tr></thead>
 			<tbody>
 			<?php foreach ( array_slice( $games, ( $paged - 1 ) * self::PER_PAGE, self::PER_PAGE ) as $game ) : ?>
@@ -698,6 +818,11 @@ class Chess_Army_Knife_League_Games {
 							<summary><?php esc_html_e( 'Show boards', 'chess-army-knife' ); ?></summary>
 							<?php echo Chess_Army_Knife_Event_Results::html( $game['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in html(). ?>
 						</details>
+					</td>
+					<td>
+						<?php if ( current_user_can( 'edit_post', $game['id'] ) ) : ?>
+							<a href="<?php echo esc_url( (string) get_edit_post_link( $game['id'] ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $game['title'] ); ?></span></a>
+						<?php endif; ?>
 					</td>
 				</tr>
 			<?php endforeach; ?>

@@ -129,15 +129,6 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$this->assertCount( 1, Chess_Army_Knife_League_Games::boards_of( $games, '120787' ) );
 	}
 
-	public function test_players_are_found_by_part_of_their_name() {
-		$found = Chess_Army_Knife_League_Games::find_players( $this->games(), 'love' );
-
-		$this->assertCount( 1, $found );
-		$this->assertSame( 2, reset( $found )['games'] );
-		$this->assertSame( array(), Chess_Army_Knife_League_Games::find_players( $this->games(), 'Rival' ), 'An opponent is not one of the club\'s players.' );
-		$this->assertSame( array(), Chess_Army_Knife_League_Games::find_players( $this->games(), '  ' ) );
-	}
-
 	public function test_the_score_has_the_home_team_on_the_left() {
 		$games = $this->games();
 
@@ -163,29 +154,13 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$games = $this->games();
 
 		$this->assertCount( 2, Chess_Army_Knife_League_Games::filter_games( $games, '', '' ) );
-		$this->assertCount( 2, Chess_Army_Knife_League_Games::filter_games( $games, 'rival', '' ) );
+		$this->assertCount( 2, Chess_Army_Knife_League_Games::filter_games( $games, 'rivals', '' ), 'The team\'s name is matched exactly, whatever its case.' );
+		$this->assertCount( 0, Chess_Army_Knife_League_Games::filter_games( $games, 'Riv', '' ) );
 		$this->assertCount( 0, Chess_Army_Knife_League_Games::filter_games( $games, 'Elsewhere', '' ) );
 
 		$won = Chess_Army_Knife_League_Games::filter_games( $games, '', 'win' );
 		$this->assertCount( 1, $won );
 		$this->assertSame( 1, $won[0]['id'] );
-	}
-
-	public function test_a_player_is_matched_to_a_member_by_ecf_code() {
-		$members = array(
-			array(
-				'name'     => 'Augusta Ada King',
-				'ecf_code' => '120787',
-			),
-		);
-
-		$found = Chess_Army_Knife_League_Games::find_players( $this->games(), 'augusta', $members );
-
-		$this->assertCount( 1, $found, 'The member\'s own name finds the player in the results.' );
-		$this->assertSame( 'Augusta Ada King', reset( $found )['member'] );
-
-		$by_result_name = Chess_Army_Knife_League_Games::find_players( $this->games(), 'Bea', $members );
-		$this->assertSame( '', reset( $by_result_name )['member'], 'No record has this code.' );
 	}
 
 	public function test_games_are_grouped_by_the_seasons_name_with_the_latest_first() {
@@ -225,5 +200,36 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$this->assertCount( 1, Chess_Army_Knife_League_Games::filter_season( $games, '' ) );
 		$this->assertCount( 0, Chess_Army_Knife_League_Games::filter_season( $games, '2023-2024' ) );
 		$this->assertCount( 4, Chess_Army_Knife_League_Games::filter_season( $games, 'all' ) );
+	}
+
+	public function test_the_lists_hold_every_team_played_and_every_player() {
+		$games = $this->games();
+
+		$this->assertSame( array( 'Rivals' ), Chess_Army_Knife_League_Games::opponents( $games ) );
+
+		$members = array(
+			array(
+				'name'     => 'Augusta Ada King',
+				'ecf_code' => '120787',
+			),
+		);
+		$players = Chess_Army_Knife_League_Games::players( $games, $members );
+
+		$this->assertSame( 'Augusta Ada King', $players[120787], 'A player is shown by the name on the member record with the same ECF code.' );
+		$this->assertSame( 'Bea Turing', $players[222222], 'A player with no record is shown by the name in the results.' );
+		$this->assertSame( array( 120787, 222222 ), array_keys( $players ) );
+	}
+
+	public function test_a_players_boards_can_be_limited_to_one_colour() {
+		$games = $this->games();
+
+		$white = Chess_Army_Knife_League_Games::boards_of( $games, '120787', 'white' );
+		$black = Chess_Army_Knife_League_Games::boards_of( $games, '120787', 'black' );
+
+		$this->assertCount( 1, $white );
+		$this->assertSame( 'Our A v Rivals', $white[0]['title'] );
+		$this->assertCount( 1, $black );
+		$this->assertSame( 'Rivals v Our A', $black[0]['title'] );
+		$this->assertCount( 2, Chess_Army_Knife_League_Games::boards_of( $games, '120787', '' ) );
 	}
 }
