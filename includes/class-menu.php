@@ -282,6 +282,17 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $teams_group,
+				'title'       => __( 'League Games', 'chess-army-knife' ),
+				'description' => __( 'Fixtures brought in from the LMS, with board order and results, and a search for the games a player has played in. A tab of Club Events.', 'chess-army-knife' ),
+				'key'         => 'league_games',
+				'slug'        => Chess_Army_Knife_League_Games::PAGE,
+				'callback'    => array( 'Chess_Army_Knife_League_Games', 'render_page' ),
+				'kind'        => 'teams',
+				'can'         => $can_teams,
+				'unlisted'    => true, // A tab of another screen.
+			),
+			array(
+				'group'       => $teams_group,
 				'title'       => __( 'Import Events', 'chess-army-knife' ),
 				'description' => __( 'Bring league fixtures in from the LMS.', 'chess-army-knife' ),
 				'key'         => 'import_events',
@@ -314,7 +325,7 @@ class Chess_Army_Knife_Menu {
 			array(
 				'group'       => $club_group,
 				'title'       => __( 'Club Events', 'chess-army-knife' ),
-				'description' => __( 'Club nights and events, shown in the calendar blocks.', 'chess-army-knife' ),
+				'description' => __( 'The club\'s own events, shown in the calendar blocks, with League games and Import events tabs for fixtures from the LMS.', 'chess-army-knife' ),
 				'key'         => 'club_events',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Events::POST_TYPE,
 				'callback'    => null,

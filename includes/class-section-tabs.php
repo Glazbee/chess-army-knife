@@ -1,6 +1,6 @@
 <?php
 /**
- * Tabs for the groups of screens that share one menu item: Other clubs (and Sort clubs), Club events (and Import
+ * Tabs for the groups of screens that share one menu item: Other clubs (and Sort clubs), Club events (with League games and Import
  * events), and Settings (and Policies). Each screen draws the same tab bar above its own content, and only the
  * first tab of a group has a menu item. (Teams and Members have tabs of their own, in Team_Tabs and Member_Tabs.)
  *
@@ -60,6 +60,13 @@ class Chess_Army_Knife_Section_Tabs {
 							return current_user_can( 'edit_posts' );
 						},
 						'post_type' => Chess_Army_Knife_Events::POST_TYPE,
+					),
+					'league' => array(
+						'label'    => __( 'League games', 'chess-army-knife' ),
+						'url'      => admin_url( 'admin.php?page=' . Chess_Army_Knife_League_Games::PAGE ),
+						'can'      => $can_teams,
+						'page'     => Chess_Army_Knife_League_Games::PAGE,
+						'unlisted' => true,
 					),
 					'import' => array(
 						'label'    => __( 'Import events', 'chess-army-knife' ),

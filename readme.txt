@@ -27,7 +27,7 @@ This plugin adds eighteen blocks to the WordPress block editor, pulling live dat
 
 **Admin screens**
 
-**Overview** (what is not set up, and every screen) · **Setup** (first-run questions) · **Settings** (with a **Policies** tab) · **Teams** (with Details, Overview, Selection, Groups, Leagues and Squad review tabs), **Other clubs** (with a Sort clubs tab) · **Club Events** (with an Import events tab) · **Tournaments** · **Members** (with Checks, Membership types, Renewals, Players from the LMS and Do not record tabs) · **Announcements** · **Templates** · **Block Help**. Each is described below under the part of the plugin it belongs to.
+**Overview** (what is not set up, and every screen) · **Setup** (first-run questions) · **Settings** (with a **Policies** tab) · **Teams** (with Details, Overview, Selection, Groups, Leagues and Squad review tabs), **Other clubs** (with a Sort clubs tab) · **Club Events** (with League games and Import events tabs) · **Tournaments** · **Members** (with Checks, Membership types, Renewals, Players from the LMS and Do not record tabs) · **Announcements** · **Templates** · **Block Help**. Each is described below under the part of the plugin it belongs to.
 
 **Blocks included**
 
@@ -162,6 +162,7 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 
+* Added: **League games**, a tab of Club Events (Chess Army Knife → Club Events → League games, needs the Club teams permission). Fixtures brought in from the LMS now have their own screen, showing the board order and result of each match played, and a search by player name that lists the games that player has played in (board, colour, opponent and result, with their wins, draws and losses). The **Club events** list now holds only the club's own events. League games and club events still appear together in the calendar, the feed and the blocks.
 * Fixed: the **Tournament Players** block now has three columns, Player, ECF Code and ECF Rating, and shows the player's current ECF rating (in the tournament's rating list) instead of the rating recorded for seeding, which could be out of date or a manual estimate. A player with no ECF code shows a dash. The seed column is gone. Seeding itself is unchanged.
 * Added: a search box above **Members in this photo**, so a member can be found in a long list; ticks are kept as you search.
 * Added: **Club Officers** layout options. Choose 1 to 4 columns, put the position beside the name or on its own line above it (with "(since …)" after the name), show each position as plain text or as a heading of the level you pick (or the site's level), turn the block title off to use the page title, and turn the line between officers off.
