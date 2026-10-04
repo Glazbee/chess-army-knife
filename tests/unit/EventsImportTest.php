@@ -300,4 +300,33 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '2026-2027', $with['candidates'][0]['season'] );
 		$this->assertSame( '', $none['candidates'][0]['season'], 'No season name is read as none, so one already kept is not overwritten.' );
 	}
+
+	public function test_plan_keeps_a_past_fixture_only_when_it_has_been_played() {
+		$matches = array(
+			'613|division 1' => array(
+				$this->match( 'Our A', 'Rivals', '2026-09-10', array( 'winner' => 'home' ) ),
+				$this->match( 'Rivals', 'Our A', '2026-09-17' ),
+			),
+		);
+
+		$plan = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '2026-10-01', '19:30' );
+
+		$this->assertCount( 1, $plan['candidates'], 'A past fixture with no result is still skipped.' );
+		$this->assertSame( '2026-09-10 19:30:00', $plan['candidates'][0]['start'] );
+	}
+
+	public function test_a_finished_game_with_its_result_and_season_is_left_alone() {
+		$candidate = array(
+			'start'  => '2026-09-10 19:30:00',
+			'season' => '2026-2027',
+		);
+
+		$this->assertTrue( Chess_Army_Knife_Events_Import::is_completed( true, '2026-2027', $candidate, '2026-10-01' ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::is_completed( false, '2026-2027', $candidate, '2026-10-01' ), 'No result kept yet.' );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::is_completed( true, '', $candidate, '2026-10-01' ), 'No season kept yet.' );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::is_completed( true, '2026-2027', $candidate, '2026-09-10' ), 'The match day itself is fetched again.' );
+
+		$candidate['season'] = '';
+		$this->assertTrue( Chess_Army_Knife_Events_Import::is_completed( true, '', $candidate, '2026-10-01' ), 'The LMS named no season, so none is wanted.' );
+	}
 }

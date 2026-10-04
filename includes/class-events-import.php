@@ -257,7 +257,8 @@ class Chess_Army_Knife_Events_Import {
 					++$skipped;
 					continue;
 				}
-				if ( $date < $today ) {
+				// A fixture that is over is only wanted once it has a result, so the running season's played games are kept too.
+				if ( $date < $today && empty( $match['winner'] ) ) {
 					continue;
 				}
 
@@ -448,6 +449,22 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
+	 * Whether an event already holds everything its fixture will ever have: the fixture is over, its result is kept
+	 * and so is its season (when the LMS names one). Such a game is left alone by the import.
+	 *
+	 * @param bool   $has_result  Whether the event has a result.
+	 * @param string $kept_season The season kept on the event, or ''.
+	 * @param array  $candidate   A candidate from plan().
+	 * @param string $today       Today, "Y-m-d".
+	 * @return bool
+	 */
+	public static function is_completed( $has_result, $kept_season, array $candidate, $today ) {
+		return $has_result
+			&& substr( $candidate['start'], 0, 10 ) < $today
+			&& ( '' === $candidate['season'] || $kept_season === $candidate['season'] );
+	}
+
+	/**
 	 * The name of the season each of the club's organisations is in, from the LMS.
 	 *
 	 * @param array[]    $teams  Club teams.
@@ -591,7 +608,7 @@ class Chess_Army_Knife_Events_Import {
 	/**
 	 * Import the club's LMS fixtures as events.
 	 *
-	 * The running season brings in the upcoming fixtures and updates the squads. An earlier season
+	 * The running season brings in the upcoming fixtures, and the played ones that have no result kept yet, and updates the squads. A game that is over with its result kept is not fetched again. An earlier season
 	 * brings in every fixture it had, as past events, and leaves the squads and the Clubs list alone.
 	 *
 	 * @param string|int $season 'active' for the running season, or the id of an earlier one.
@@ -687,6 +704,12 @@ class Chess_Army_Knife_Events_Import {
 
 			if ( 'trash' === $existing->post_status ) {
 				++$summary['kept'];
+				continue;
+			}
+
+			// A game that is over, with its result and season kept, is not fetched again.
+			if ( self::is_completed( null !== Chess_Army_Knife_Event_Results::get( $existing->ID ), (string) get_post_meta( $existing->ID, self::META_SEASON, true ), $candidate, current_time( 'Y-m-d' ) ) ) {
+				++$summary['unchanged'];
 				continue;
 			}
 
