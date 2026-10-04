@@ -133,6 +133,62 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
+	 * The season a date falls in. A season runs from 1 August to 31 July.
+	 *
+	 * @param string $date "Y-m-d".
+	 * @return string The season as "2025-26", or '' if the date is not readable.
+	 */
+	public static function season_of( $date ) {
+		if ( ! preg_match( '/^(\d{4})-(\d{2})-\d{2}/', (string) $date, $parts ) ) {
+			return '';
+		}
+		$start = (int) $parts[1] - ( (int) $parts[2] < 8 ? 1 : 0 );
+
+		return sprintf( '%d-%02d', $start, ( $start + 1 ) % 100 );
+	}
+
+	/**
+	 * The seasons the games fall in, newest first.
+	 *
+	 * @param array[] $games From all().
+	 * @return int[] Season ("2025-26") => number of games.
+	 */
+	public static function seasons( array $games ) {
+		$seasons = array();
+		foreach ( $games as $game ) {
+			$season = self::season_of( $game['date'] );
+			if ( '' !== $season ) {
+				$seasons[ $season ] = isset( $seasons[ $season ] ) ? $seasons[ $season ] + 1 : 1;
+			}
+		}
+		krsort( $seasons );
+
+		return $seasons;
+	}
+
+	/**
+	 * The games of one season.
+	 *
+	 * @param array[] $games  From all().
+	 * @param string  $season A season such as "2025-26", or 'all'.
+	 * @return array[]
+	 */
+	public static function filter_season( array $games, $season ) {
+		if ( 'all' === $season ) {
+			return $games;
+		}
+
+		return array_values(
+			array_filter(
+				$games,
+				function ( $game ) use ( $season ) {
+					return self::season_of( $game['date'] ) === $season;
+				}
+			)
+		);
+	}
+
+	/**
 	 * A match's score with the home team on the left, such as "3 - 1".
 	 *
 	 * @param array $game A game from all().
@@ -341,6 +397,7 @@ class Chess_Army_Knife_League_Games {
 			'opponent' => isset( $_GET['opponent'] ) ? sanitize_text_field( wp_unslash( $_GET['opponent'] ) ) : '',
 			'outcome'  => isset( $_GET['outcome'] ) ? sanitize_key( wp_unslash( $_GET['outcome'] ) ) : '',
 		);
+		$season  = isset( $_GET['season'] ) ? sanitize_text_field( wp_unslash( $_GET['season'] ) ) : '';
 		$code    = isset( $_GET['code'] ) ? preg_replace( '/[^0-9A-Za-z]/', '', sanitize_text_field( wp_unslash( $_GET['code'] ) ) ) : '';
 		$paged   = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -349,8 +406,17 @@ class Chess_Army_Knife_League_Games {
 			$filters['outcome'] = '';
 		}
 
-		$all   = self::all();
-		$games = self::filter_games( $all, $filters['opponent'], $filters['outcome'] );
+		$all     = self::all();
+		$seasons = self::seasons( $all );
+
+		// A season not asked for (or not known) is the latest, unless a player is being looked for, who may have played in any.
+		if ( 'all' !== $season && ! isset( $seasons[ $season ] ) ) {
+			$season = '' === $filters['player'] && $seasons ? (string) key( $seasons ) : 'all';
+		}
+		$filters['season'] = $season;
+
+		$in_season = self::filter_season( $all, $season );
+		$games     = self::filter_games( $in_season, $filters['opponent'], $filters['outcome'] );
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Club events', 'chess-army-knife' ); ?></h1>
@@ -359,18 +425,60 @@ class Chess_Army_Knife_League_Games {
 			<h2><?php esc_html_e( 'League games', 'chess-army-knife' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Fixtures brought in from the LMS, with the board order and results of those that have been played. They show in the calendar with the club\'s own events.', 'chess-army-knife' ); ?></p>
 
+			<?php self::render_season_links( $all, $seasons, $filters ); ?>
 			<?php self::render_search_form( $filters, '' !== $code ); ?>
 
 			<?php if ( '' !== $code ) : ?>
 				<?php self::render_player_games( $all, $games, $code ); ?>
 			<?php elseif ( '' !== $filters['player'] ) : ?>
-				<?php self::render_player_list( $all, $filters ); ?>
+				<?php self::render_player_list( $in_season, $filters ); ?>
 			<?php else : ?>
 				<?php self::render_games( $games, $paged, $filters ); ?>
 			<?php endif; ?>
 
 			<?php Chess_Army_Knife_Events_Import::render_section(); ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Whether a player, opponent or result is being searched for.
+	 *
+	 * @param string[] $filters As searched.
+	 * @return bool
+	 */
+	protected static function is_search( array $filters ) {
+		return '' !== $filters['player'] || '' !== $filters['opponent'] || '' !== $filters['outcome'];
+	}
+
+	/**
+	 * Draw the links that pick a season, or all of them.
+	 *
+	 * @param array[]  $all      Every game, from all().
+	 * @param int[]    $seasons  From seasons().
+	 * @param string[] $filters  As searched; the season is the one showing.
+	 */
+	protected static function render_season_links( array $all, array $seasons, array $filters ) {
+		if ( ! $seasons ) {
+			return;
+		}
+
+		$links = array( 'all' => array( __( 'All seasons', 'chess-army-knife' ), count( $all ) ) );
+		foreach ( $seasons as $season => $count ) {
+			$links[ $season ] = array( $season, $count );
+		}
+		?>
+		<nav aria-label="<?php esc_attr_e( 'Seasons', 'chess-army-knife' ); ?>">
+			<ul class="subsubsub">
+				<?php foreach ( $links as $season => $link ) : ?>
+					<?php $url = add_query_arg( array_merge( array( 'page' => self::PAGE ), array_filter( $filters ), array( 'season' => $season ) ), admin_url( 'admin.php' ) ); ?>
+					<li>
+						<a href="<?php echo esc_url( $url ); ?>"<?php echo (string) $season === (string) $filters['season'] ? ' class="current" aria-current="page"' : ''; ?>><?php echo esc_html( $link[0] ); ?> <span class="count">(<?php echo esc_html( (string) $link[1] ); ?>)</span></a><?php echo array_key_last( $links ) === $season ? '' : ' |'; ?>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</nav>
+		<br class="clear" />
 		<?php
 	}
 
@@ -390,6 +498,7 @@ class Chess_Army_Knife_League_Games {
 		?>
 		<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 			<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE ); ?>" />
+			<input type="hidden" name="season" value="<?php echo esc_attr( $filters['season'] ); ?>" />
 			<p>
 				<label for="cak-league-player"><?php esc_html_e( 'Player', 'chess-army-knife' ); ?></label>
 				<input type="search" id="cak-league-player" name="player" value="<?php echo esc_attr( $filters['player'] ); ?>" class="regular-text" />
@@ -402,7 +511,7 @@ class Chess_Army_Knife_League_Games {
 					<?php endforeach; ?>
 				</select>
 				<button type="submit" class="button"><?php esc_html_e( 'Search', 'chess-army-knife' ); ?></button>
-				<?php if ( $searching || array_filter( $filters ) ) : ?>
+				<?php if ( $searching || self::is_search( $filters ) ) : ?>
 					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE ) ); ?>"><?php esc_html_e( 'Show all games', 'chess-army-knife' ); ?></a>
 				<?php endif; ?>
 			</p>
@@ -563,7 +672,7 @@ class Chess_Army_Knife_League_Games {
 	 */
 	protected static function render_games( array $games, $paged, array $filters ) {
 		if ( ! $games ) {
-			echo '<p>' . esc_html( array_filter( $filters ) ? __( 'No league games match that search.', 'chess-army-knife' ) : __( 'No league games have been played yet. Results arrive when the import below is run (it also runs by itself once a day).', 'chess-army-knife' ) ) . '</p>';
+			echo '<p>' . esc_html( self::is_search( $filters ) ? __( 'No league games match that search.', 'chess-army-knife' ) : __( 'No league games have been played yet. Results arrive when the import below is run (it also runs by itself once a day).', 'chess-army-knife' ) ) . '</p>';
 			return;
 		}
 

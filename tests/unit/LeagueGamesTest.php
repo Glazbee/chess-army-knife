@@ -186,4 +186,28 @@ class LeagueGamesTest extends Chess_Army_Knife_TestCase {
 		$by_result_name = Chess_Army_Knife_League_Games::find_players( $this->games(), 'Bea', $members );
 		$this->assertSame( '', reset( $by_result_name )['member'], 'No record has this code.' );
 	}
+
+	public function test_a_season_runs_from_august_to_july() {
+		$this->assertSame( '2025-26', Chess_Army_Knife_League_Games::season_of( '2025-08-01' ) );
+		$this->assertSame( '2025-26', Chess_Army_Knife_League_Games::season_of( '2026-07-31' ) );
+		$this->assertSame( '2026-27', Chess_Army_Knife_League_Games::season_of( '2026-10-05' ) );
+		$this->assertSame( '1999-00', Chess_Army_Knife_League_Games::season_of( '1999-12-01' ) );
+		$this->assertSame( '', Chess_Army_Knife_League_Games::season_of( '' ) );
+	}
+
+	public function test_games_are_grouped_by_season_newest_first() {
+		$games    = $this->games();
+		$games[1] = array_merge( $games[1], array( 'date' => '2025-10-05' ) );
+
+		$this->assertSame(
+			array(
+				'2026-27' => 1,
+				'2025-26' => 1,
+			),
+			Chess_Army_Knife_League_Games::seasons( $games )
+		);
+		$this->assertCount( 1, Chess_Army_Knife_League_Games::filter_season( $games, '2025-26' ) );
+		$this->assertCount( 0, Chess_Army_Knife_League_Games::filter_season( $games, '2024-25' ) );
+		$this->assertCount( 2, Chess_Army_Knife_League_Games::filter_season( $games, 'all' ) );
+	}
 }
