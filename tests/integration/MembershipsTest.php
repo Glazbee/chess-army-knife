@@ -490,7 +490,7 @@ class MembershipsTest extends WP_UnitTestCase {
 		}
 		$this->assertArrayNotHasKey( Chess_Army_Knife_Memberships::MENU_SLUG, $submenu, 'There is no separate Memberships menu.' );
 		$this->assertArrayNotHasKey( 'chess-army-teams', $submenu, 'There is no separate Teams menu.' );
-		foreach ( array( Chess_Army_Knife_Member_Checks_Page::SLUG, Chess_Army_Knife_Renewals_Page::SLUG, Chess_Army_Knife_LMS_Players::PAGE, Chess_Army_Knife_Do_Not_Record::PAGE, 'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE, Chess_Army_Knife_Clubs::PAGE, Chess_Army_Knife_Squad_Review::PAGE, Chess_Army_Knife_Events_Import::PAGE, Chess_Army_Knife_Policies::PAGE ) as $tab ) {
+		foreach ( array( Chess_Army_Knife_Member_Checks_Page::SLUG, Chess_Army_Knife_Renewals_Page::SLUG, Chess_Army_Knife_LMS_Players::PAGE, Chess_Army_Knife_Do_Not_Record::PAGE, 'edit.php?post_type=' . Chess_Army_Knife_Memberships::POST_TYPE, Chess_Army_Knife_Clubs::PAGE, Chess_Army_Knife_Squad_Review::PAGE, Chess_Army_Knife_League_Games::PAGE, Chess_Army_Knife_Policies::PAGE ) as $tab ) {
 			$this->assertNotContains( $tab, $slugs, 'This is a tab of another screen, not a menu item.' );
 		}
 		$this->assertNotContains( 'edit.php?post_type=' . Chess_Army_Knife_Team_Groups::POST_TYPE, $slugs, 'Groups is a tab of Teams, not a menu item.' );

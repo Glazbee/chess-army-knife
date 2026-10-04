@@ -63,7 +63,7 @@ class Chess_Army_Knife_Settings {
 			'ecf_club_code'               => '', // The club's ECF code, to refresh all members' ratings in one request.
 			'default_days_back'           => 60,
 			'default_max_players'         => 12,
-			'lms_api_key'                 => '', // Key for the LMS v2 API, used by Import Events.
+			'lms_api_key'                 => '', // Key for the LMS v2 API, used by the League games import.
 			'membership_payment_info'     => '', // How to pay for a membership (bank details, cash at the club...).
 			'membership_use_references'   => 1, // Give members a payment reference, for bank transfers.
 			'membership_reference_prefix' => 'MEM-', // The start of a generated reference: the prefix and the member's number.

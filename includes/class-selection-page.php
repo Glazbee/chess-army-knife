@@ -168,7 +168,7 @@ class Chess_Army_Knife_Selection_Page {
 				</thead>
 				<tbody>
 					<?php if ( ! $fixtures ) : ?>
-						<tr><td colspan="5"><?php esc_html_e( 'No upcoming fixtures. Fixtures come from Import Events once your teams are linked to their leagues.', 'chess-army-knife' ); ?></td></tr>
+						<tr><td colspan="5"><?php esc_html_e( 'No upcoming fixtures. Fixtures come from the League games import once your teams are linked to their leagues.', 'chess-army-knife' ); ?></td></tr>
 					<?php endif; ?>
 					<?php foreach ( $fixtures as $item ) : ?>
 						<?php

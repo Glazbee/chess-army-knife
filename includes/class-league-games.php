@@ -3,7 +3,7 @@
  * League games: the fixtures brought in from the LMS, apart from the club's own events.
  *
  * A league game is an event (so it still shows in the calendar, the feed and the blocks) that
- * Import Events made, which is the one with an LMS key. The Club events list leaves them out, so
+ * the LMS import made, which is the one with an LMS key. The Club events list leaves them out, so
  * it holds only what the club made itself, and this screen lists them instead. Each played game
  * shows its board order and results, and a search of the club's players shows the games each one
  * has played in. The players are found in the kept results by ECF code (see Event_Results), so
@@ -355,6 +355,7 @@ class Chess_Army_Knife_League_Games {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Club events', 'chess-army-knife' ); ?></h1>
 			<?php Chess_Army_Knife_Section_Tabs::render( 'events', 'league' ); ?>
+			<?php Chess_Army_Knife_Events_Import::render_notices(); ?>
 			<h2><?php esc_html_e( 'League games', 'chess-army-knife' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Fixtures brought in from the LMS, with the board order and results of those that have been played. They show in the calendar with the club\'s own events.', 'chess-army-knife' ); ?></p>
 
@@ -367,6 +368,8 @@ class Chess_Army_Knife_League_Games {
 			<?php else : ?>
 				<?php self::render_games( $games, $paged, $filters ); ?>
 			<?php endif; ?>
+
+			<?php Chess_Army_Knife_Events_Import::render_section(); ?>
 		</div>
 		<?php
 	}
@@ -560,7 +563,7 @@ class Chess_Army_Knife_League_Games {
 	 */
 	protected static function render_games( array $games, $paged, array $filters ) {
 		if ( ! $games ) {
-			echo '<p>' . esc_html( array_filter( $filters ) ? __( 'No league games match that search.', 'chess-army-knife' ) : __( 'No league games have been played yet. Results arrive when Import events is run (it also runs by itself once a day).', 'chess-army-knife' ) ) . '</p>';
+			echo '<p>' . esc_html( array_filter( $filters ) ? __( 'No league games match that search.', 'chess-army-knife' ) : __( 'No league games have been played yet. Results arrive when the import below is run (it also runs by itself once a day).', 'chess-army-knife' ) ) . '</p>';
 			return;
 		}
 

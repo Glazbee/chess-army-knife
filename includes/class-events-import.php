@@ -26,7 +26,6 @@ class Chess_Army_Knife_Events_Import {
 	const TAG          = 'League match';
 	const ACTION       = 'chess_army_knife_import_events';
 	const ACTION_OLD   = 'chess_army_knife_import_old_seasons';
-	const PAGE         = 'chess-army-knife-import-events';
 	const HOOK         = 'Chess_Army_Knife_import_events'; // The daily import.
 	const LAST_OPTION  = 'Chess_Army_Knife_import_last'; // What the most recent import did.
 
@@ -713,7 +712,7 @@ class Chess_Army_Knife_Events_Import {
 
 		set_transient( self::result_key(), self::import_and_record( 'manual' ), MINUTE_IN_SECONDS );
 
-		wp_safe_redirect( add_query_arg( array( 'page' => self::PAGE ), admin_url( 'admin.php' ) ) );
+		wp_safe_redirect( add_query_arg( array( 'page' => Chess_Army_Knife_League_Games::PAGE ), admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
@@ -799,7 +798,7 @@ class Chess_Army_Knife_Events_Import {
 		$summary = self::import_seasons( $chosen, $available );
 		set_transient( self::result_key() . '_old', $summary, MINUTE_IN_SECONDS );
 
-		wp_safe_redirect( add_query_arg( array( 'page' => self::PAGE ), admin_url( 'admin.php' ) ) );
+		wp_safe_redirect( add_query_arg( array( 'page' => Chess_Army_Knife_League_Games::PAGE ), admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
@@ -813,149 +812,149 @@ class Chess_Army_Knife_Events_Import {
 	}
 
 	/**
-	 * Render the import page.
+	 * Show what the import that was just run did, once. The League games screen draws this at its top.
 	 */
-	public static function render_page() {
-		if ( ! Chess_Army_Knife_Access::render_unless( Chess_Army_Knife_Teams::user_can_manage(), __( 'Import Events from LMS', 'chess-army-knife' ), 'teams' ) ) {
-			return;
-		}
-
-		$teams      = Chess_Army_Knife_Settings::get_club_teams();
+	public static function render_notices() {
 		$result     = get_transient( self::result_key() );
 		$old_result = get_transient( self::result_key() . '_old' );
 		delete_transient( self::result_key() );
 		delete_transient( self::result_key() . '_old' );
 		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'Club events', 'chess-army-knife' ); ?></h1>
-			<?php Chess_Army_Knife_Section_Tabs::render( 'events', 'import' ); ?>
-			<h2><?php esc_html_e( 'Import events from the LMS', 'chess-army-knife' ); ?></h2>
-			<?php $last_line = self::last_run_text( self::last_run(), time() ); ?>
-			<?php if ( '' !== $last_line ) : ?>
-				<p><strong><?php echo esc_html( $last_line ); ?></strong></p>
-			<?php endif; ?>
-			<p class="description"><?php esc_html_e( 'The import also runs by itself once a day, as long as there is an LMS API key and at least one team.', 'chess-army-knife' ); ?></p>
-
-			<?php if ( is_array( $result ) ) : ?>
-				<div class="notice notice-success"><p>
+		<?php if ( is_array( $result ) ) : ?>
+			<div class="notice notice-success"><p>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: 1: new events, 2: refreshed events, 3: unchanged events, 4: events left alone, 5: fixtures skipped */
+						__( 'Import finished: %1$d created, %2$d updated, %3$d unchanged, %4$d left alone, %5$d skipped (date not readable).', 'chess-army-knife' ),
+						$result['created'],
+						$result['updated'],
+						$result['unchanged'],
+						$result['kept'],
+						$result['skipped']
+					)
+				);
+				?>
+			</p></div>
+			<?php if ( ! empty( $result['squad_added'] ) || ! empty( $result['players_unmatched'] ) ) : ?>
+				<div class="notice notice-info"><p>
 					<?php
 					echo esc_html(
 						sprintf(
-							/* translators: 1: new events, 2: refreshed events, 3: unchanged events, 4: events left alone, 5: fixtures skipped */
-							__( 'Import finished: %1$d created, %2$d updated, %3$d unchanged, %4$d left alone, %5$d skipped (date not readable).', 'chess-army-knife' ),
-							$result['created'],
-							$result['updated'],
-							$result['unchanged'],
-							$result['kept'],
-							$result['skipped']
+							/* translators: 1: people added to squads, 2: players with no member record */
+							__( 'Squads: %1$d people who played for a team were added to its squad. %2$d players are not on your member records (no matching ECF code).', 'chess-army-knife' ),
+							(int) $result['squad_added'],
+							(int) $result['players_unmatched']
 						)
 					);
 					?>
 				</p></div>
-				<?php if ( ! empty( $result['squad_added'] ) || ! empty( $result['players_unmatched'] ) ) : ?>
-					<div class="notice notice-info"><p>
-						<?php
-						echo esc_html(
-							sprintf(
-								/* translators: 1: people added to squads, 2: players with no member record */
-								__( 'Squads: %1$d people who played for a team were added to its squad. %2$d players are not on your member records (no matching ECF code).', 'chess-army-knife' ),
-								(int) $result['squad_added'],
-								(int) $result['players_unmatched']
-							)
-						);
-						?>
-					</p></div>
-				<?php endif; ?>
-				<?php if ( ! empty( $result['unsorted'] ) ) : ?>
-					<div class="notice notice-info"><p>
-						<?php
-						echo esc_html(
-							/* translators: %d: number of team names */
-							sprintf( _n( '%d team name has not been put in a club, so its home fixtures have no venue.', '%d team names have not been put in a club, so their home fixtures have no venue.', $result['unsorted'], 'chess-army-knife' ), $result['unsorted'] )
-						);
-						?>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Clubs::PAGE ) ); ?>"><?php esc_html_e( 'Sort them into clubs', 'chess-army-knife' ); ?></a>
-					</p></div>
-				<?php endif; ?>
-				<?php foreach ( $result['errors'] as $error ) : ?>
-					<div class="notice notice-error"><p><?php echo esc_html( $error ); ?></p></div>
-				<?php endforeach; ?>
-				<?php endif; ?>
-
-			<?php if ( is_array( $old_result ) ) : ?>
-				<div class="notice notice-success"><p>
+			<?php endif; ?>
+			<?php if ( ! empty( $result['unsorted'] ) ) : ?>
+				<div class="notice notice-info"><p>
 					<?php
 					echo esc_html(
-						sprintf(
-							/* translators: 1: seasons imported, 2: new events, 3: refreshed events, 4: unchanged events, 5: events left alone, 6: fixtures skipped */
-							_n(
-								'Earlier seasons imported (%1$d season): %2$d created, %3$d updated, %4$d unchanged, %5$d left alone, %6$d skipped (date not readable).',
-								'Earlier seasons imported (%1$d seasons): %2$d created, %3$d updated, %4$d unchanged, %5$d left alone, %6$d skipped (date not readable).',
-								$old_result['seasons'],
-								'chess-army-knife'
-							),
+						/* translators: %d: number of team names */
+						sprintf( _n( '%d team name has not been put in a club, so its home fixtures have no venue.', '%d team names have not been put in a club, so their home fixtures have no venue.', $result['unsorted'], 'chess-army-knife' ), $result['unsorted'] )
+					);
+					?>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Clubs::PAGE ) ); ?>"><?php esc_html_e( 'Sort them into clubs', 'chess-army-knife' ); ?></a>
+				</p></div>
+			<?php endif; ?>
+			<?php foreach ( $result['errors'] as $error ) : ?>
+				<div class="notice notice-error"><p><?php echo esc_html( $error ); ?></p></div>
+			<?php endforeach; ?>
+			<?php endif; ?>
+
+		<?php if ( is_array( $old_result ) ) : ?>
+			<div class="notice notice-success"><p>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: 1: seasons imported, 2: new events, 3: refreshed events, 4: unchanged events, 5: events left alone, 6: fixtures skipped */
+						_n(
+							'Earlier seasons imported (%1$d season): %2$d created, %3$d updated, %4$d unchanged, %5$d left alone, %6$d skipped (date not readable).',
+							'Earlier seasons imported (%1$d seasons): %2$d created, %3$d updated, %4$d unchanged, %5$d left alone, %6$d skipped (date not readable).',
 							$old_result['seasons'],
-							$old_result['created'],
-							$old_result['updated'],
-							$old_result['unchanged'],
-							$old_result['kept'],
-							$old_result['skipped']
-						)
-					);
-					?>
-				</p></div>
-				<?php foreach ( $old_result['errors'] as $error ) : ?>
-					<div class="notice notice-warning"><p><?php echo esc_html( $error ); ?></p></div>
-				<?php endforeach; ?>
-			<?php endif; ?>
+							'chess-army-knife'
+						),
+						$old_result['seasons'],
+						$old_result['created'],
+						$old_result['updated'],
+						$old_result['unchanged'],
+						$old_result['kept'],
+						$old_result['skipped']
+					)
+				);
+				?>
+			</p></div>
+			<?php foreach ( $old_result['errors'] as $error ) : ?>
+				<div class="notice notice-warning"><p><?php echo esc_html( $error ); ?></p></div>
+			<?php endforeach; ?>
+		<?php endif; ?>
+		<?php
+	}
 
-			<?php if ( '' === Chess_Army_Knife_LMS_Client::api_key() ) : ?>
-				<div class="notice notice-warning inline"><p>
-					<?php
-					printf(
-						/* translators: %s: link to the Settings screen */
-						wp_kses_post( __( 'Add your LMS API key on the %s screen before importing.', 'chess-army-knife' ) ),
-						'<a href="' . esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Settings::PAGE ) ) . '">' . esc_html__( 'Settings', 'chess-army-knife' ) . '</a>'
-					);
-					?>
-				</p></div>
-			<?php endif; ?>
+	/**
+	 * Draw the import controls: when it last ran, Import now and earlier seasons. The League games screen draws
+	 * these below the games.
+	 */
+	public static function render_section() {
+		$teams = Chess_Army_Knife_Settings::get_club_teams();
+		?>
+		<h2><?php esc_html_e( 'Import league games from the LMS', 'chess-army-knife' ); ?></h2>
+		<?php $last_line = self::last_run_text( self::last_run(), time() ); ?>
+		<?php if ( '' !== $last_line ) : ?>
+			<p><strong><?php echo esc_html( $last_line ); ?></strong></p>
+		<?php endif; ?>
+		<p class="description"><?php esc_html_e( 'The import also runs by itself once a day, as long as there is an LMS API key and at least one team.', 'chess-army-knife' ); ?></p>
 
-			<p><?php esc_html_e( 'Creates an event for each upcoming fixture of your club teams, tagged "League match" and linked to its league, and adds the people who played for each team to its squad. Running it again never duplicates events. An imported event you have edited, or moved to the trash, is left alone.', 'chess-army-knife' ); ?></p>
+		<?php if ( '' === Chess_Army_Knife_LMS_Client::api_key() ) : ?>
+			<div class="notice notice-warning inline"><p>
+				<?php
+				printf(
+					/* translators: %s: link to the Settings screen */
+					wp_kses_post( __( 'Add your LMS API key on the %s screen before importing.', 'chess-army-knife' ) ),
+					'<a href="' . esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_Settings::PAGE ) ) . '">' . esc_html__( 'Settings', 'chess-army-knife' ) . '</a>'
+				);
+				?>
+			</p></div>
+		<?php endif; ?>
+
+		<p><?php esc_html_e( 'Creates an event for each upcoming fixture of your club teams, tagged "League match" and linked to its league, and adds the people who played for each team to its squad. Running it again never duplicates events. An imported event you have edited, or moved to the trash, is left alone.', 'chess-army-knife' ); ?></p>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: usual kick-off time */
+				esc_html__( 'If the LMS does not give a start time, the usual kick-off time from Settings is used (currently %s).', 'chess-army-knife' ),
+				esc_html( Chess_Army_Knife_Settings::get_options()['match_time'] )
+			);
+			?>
+		</p>
+
+		<?php if ( empty( $teams ) ) : ?>
 			<p>
 				<?php
 				printf(
-					/* translators: %s: usual kick-off time */
-					esc_html__( 'If the LMS does not give a start time, the usual kick-off time from Settings is used (currently %s).', 'chess-army-knife' ),
-					esc_html( Chess_Army_Knife_Settings::get_options()['match_time'] )
+					/* translators: %s: link to the Teams screen */
+					wp_kses_post( __( 'Add your teams, with the leagues they play in, on the %s screen first.', 'chess-army-knife' ) ),
+					'<a href="' . esc_url( admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ) . '">' . esc_html__( 'Teams', 'chess-army-knife' ) . '</a>'
 				);
 				?>
 			</p>
-
-			<?php if ( empty( $teams ) ) : ?>
-				<p>
-					<?php
-					printf(
-						/* translators: %s: link to the Teams screen */
-						wp_kses_post( __( 'Add your teams, with the leagues they play in, on the %s screen first.', 'chess-army-knife' ) ),
-						'<a href="' . esc_url( admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) ) . '">' . esc_html__( 'Teams', 'chess-army-knife' ) . '</a>'
-					);
-					?>
-				</p>
-			<?php else : ?>
-				<ul class="ul-disc">
-					<?php foreach ( $teams as $team ) : ?>
-						<li><?php echo esc_html( $team['team'] . ' — ' . $team['event'] ); ?></li>
-					<?php endforeach; ?>
-				</ul>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-					<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
-					<?php wp_nonce_field( self::ACTION ); ?>
-					<?php submit_button( __( 'Import now', 'chess-army-knife' ) ); ?>
-				</form>
-				<?php self::render_old_seasons_form( $teams ); ?>
-			<?php endif; ?>
-		</div>
+		<?php else : ?>
+			<ul class="ul-disc">
+				<?php foreach ( $teams as $team ) : ?>
+					<li><?php echo esc_html( $team['team'] . ' — ' . $team['event'] ); ?></li>
+				<?php endforeach; ?>
+			</ul>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
+				<?php wp_nonce_field( self::ACTION ); ?>
+				<?php submit_button( __( 'Import now', 'chess-army-knife' ) ); ?>
+			</form>
+			<?php self::render_old_seasons_form( $teams ); ?>
+		<?php endif; ?>
 		<?php
 	}
 

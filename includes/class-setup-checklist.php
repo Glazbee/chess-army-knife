@@ -146,7 +146,7 @@ class Chess_Army_Knife_Setup_Checklist {
 		$pages = array(
 			'settings'    => admin_url( 'admin.php?page=' . Chess_Army_Knife_Settings::PAGE ),
 			'teams'       => admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ),
-			'import'      => admin_url( 'admin.php?page=' . Chess_Army_Knife_Events_Import::PAGE ),
+			'import'      => admin_url( 'admin.php?page=' . Chess_Army_Knife_League_Games::PAGE ),
 			'clubs'       => admin_url( 'admin.php?page=' . Chess_Army_Knife_Clubs::PAGE ),
 			'tournaments' => admin_url( 'admin.php?page=' . Chess_Army_Knife_Tournaments_Page::SLUG ),
 			'policies'    => Chess_Army_Knife_Policies::screen_url(),
