@@ -242,16 +242,25 @@ class Chess_Army_Knife_Events_Import {
 	 * @return array {
 	 *     @type array[] $candidates Each { key, title, start, location, home_team, away_team, league, season, club_teams, match }, where match is the fixture's row and club_teams maps a league entry key to 'home' or 'away'.
 	 *     @type int     $skipped    Fixtures ignored because their date couldn't be read.
+	 *     @type string[] $unmatched Teams whose division had fixtures, but none with the team's name.
 	 * }
 	 */
 	public static function plan( array $teams, array $matches_by_league, $today, $default_time, array $season_names = array() ) {
 		$candidates = array();
 		$skipped    = 0;
+		$unmatched  = array();
 
 		foreach ( $teams as $team ) {
 			$group = strtolower( Chess_Army_Knife_Events::league_ref( $team['org'], $team['event'] ) );
+			$rows  = isset( $matches_by_league[ $group ] ) ? $matches_by_league[ $group ] : array();
+			$found = self::team_matches( $rows, $team['team'] );
 
-			foreach ( self::team_matches( isset( $matches_by_league[ $group ] ) ? $matches_by_league[ $group ] : array(), $team['team'] ) as $match ) {
+			// The division has fixtures but none with this team: its name in the LMS may have been different then.
+			if ( $rows && ! $found ) {
+				$unmatched[] = $team['team'] . ' (' . $team['event'] . ')';
+			}
+
+			foreach ( $found as $match ) {
 				$date = self::parse_date( $match['date'] );
 				if ( '' === $date ) {
 					++$skipped;
@@ -296,6 +305,7 @@ class Chess_Army_Knife_Events_Import {
 		return array(
 			'candidates' => array_values( $candidates ),
 			'skipped'    => $skipped,
+			'unmatched'  => array_values( array_unique( $unmatched ) ),
 		);
 	}
 
@@ -634,6 +644,7 @@ class Chess_Army_Knife_Events_Import {
 	 *     @type int      $skipped   Fixtures with a date that couldn't be read.
 	 *     @type string[] $errors    Leagues that couldn't be loaded.
 	 *     @type string[] $missing   Divisions an earlier season did not have (not a fault).
+	 *     @type string[] $unmatched Teams with no fixtures in their division under the team's name.
 	 *     @type bool     $key_problem Whether the LMS refused the API key (or there is none).
 	 * }
 	 */
@@ -652,6 +663,7 @@ class Chess_Army_Knife_Events_Import {
 			'skipped'           => 0,
 			'errors'            => array(),
 			'missing'           => array(),
+			'unmatched'         => array(),
 			'key_problem'       => false,
 		);
 
@@ -669,7 +681,8 @@ class Chess_Army_Knife_Events_Import {
 		// An empty "today" keeps every fixture, so an earlier season comes in whole.
 		$plan = self::plan( $teams, $matches, $is_active ? current_time( 'Y-m-d' ) : '', $default_time, self::season_names( $teams, $season ) );
 
-		$summary['skipped'] = $plan['skipped'];
+		$summary['skipped']   = $plan['skipped'];
+		$summary['unmatched'] = $plan['unmatched'];
 
 		if ( $is_active ) {
 			// Anyone who played for one of the club's teams is in that team's squad.
@@ -844,6 +857,7 @@ class Chess_Army_Knife_Events_Import {
 			'seasons'     => 0,
 			'errors'      => array(),
 			'missing'     => array(),
+			'unmatched'   => array(),
 			'key_problem' => false,
 		);
 
@@ -860,6 +874,10 @@ class Chess_Army_Knife_Events_Import {
 			foreach ( $summary['errors'] as $error ) {
 				/* translators: 1: season name, 2: error message */
 				$total['errors'][] = sprintf( __( '%1$s, %2$s', 'chess-army-knife' ), $available[ $season_id ], $error );
+			}
+			foreach ( $summary['unmatched'] as $team ) {
+				/* translators: 1: season name, 2: team and division */
+				$total['unmatched'][] = sprintf( __( '%1$s: %2$s', 'chess-army-knife' ), $available[ $season_id ], $team );
 			}
 			foreach ( $summary['missing'] as $division ) {
 				/* translators: 1: season name, 2: division name */
@@ -909,6 +927,21 @@ class Chess_Army_Knife_Events_Import {
 	 * @param array $result An import's summary.
 	 */
 	protected static function render_left_alone_note( array $result ) {
+		if ( ! empty( $result['unmatched'] ) ) :
+			?>
+			<div class="notice notice-warning"><p>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: list of teams */
+						__( 'No fixtures were found for these teams, so none were imported for them. Their name in the LMS may have been different then (the team name on the Leagues tab has to match it): %s.', 'chess-army-knife' ),
+						implode( '; ', $result['unmatched'] )
+					)
+				);
+				?>
+			</p></div>
+			<?php
+		endif;
 		if ( empty( $result['trashed'] ) && empty( $result['edited'] ) ) {
 			return;
 		}
@@ -918,14 +951,14 @@ class Chess_Army_Knife_Events_Import {
 			echo esc_html(
 				sprintf(
 					/* translators: 1: games in the Trash, 2: games edited by hand */
-					__( 'Games left alone: %1$d are in the Trash (the import never brings back a game you deleted; restore it from the Trash and it is updated again) and %2$d were edited by hand (their result is still kept up to date).', 'chess-army-knife' ),
+					__( 'Games left alone: %1$d are in the Trash of League games (the import never brings back a game you deleted; restore it and it is updated again) and %2$d were edited by hand (their result is still kept up to date).', 'chess-army-knife' ),
 					(int) $result['trashed'],
 					(int) $result['edited']
 				)
 			);
 			?>
 			<?php if ( ! empty( $result['trashed'] ) ) : ?>
-				<a href="<?php echo esc_url( admin_url( 'edit.php?post_status=trash&post_type=' . Chess_Army_Knife_Events::POST_TYPE ) ); ?>"><?php esc_html_e( 'View the Trash', 'chess-army-knife' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Chess_Army_Knife_League_Games::PAGE . '&season=trash' ) ); ?>"><?php esc_html_e( 'View the Trash', 'chess-army-knife' ); ?></a>
 			<?php endif; ?>
 		</p></div>
 		<?php

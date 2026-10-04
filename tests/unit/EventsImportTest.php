@@ -329,4 +329,16 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 		$candidate['season'] = '';
 		$this->assertTrue( Chess_Army_Knife_Events_Import::is_completed( true, '', $candidate, '2026-10-01' ), 'The LMS named no season, so none is wanted.' );
 	}
+
+	public function test_plan_names_a_team_that_has_no_fixtures_in_its_division() {
+		$matches = array( '613|division 1' => array( $this->match( 'Knights', 'Rooks', '2017-09-26' ) ) );
+
+		$plan = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '', '19:30' );
+
+		$this->assertSame( array(), $plan['candidates'] );
+		$this->assertSame( array( 'Our A (Division 1)' ), $plan['unmatched'], 'The division had fixtures, but none with this team\'s name.' );
+
+		$none = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), array( '613|division 1' => array() ), '', '19:30' );
+		$this->assertSame( array(), $none['unmatched'], 'A division with no fixtures at all is not reported here.' );
+	}
 }

@@ -142,9 +142,6 @@ class Chess_Army_Knife_League_Games {
 		if ( ! is_admin() || ! $query->is_main_query() || Chess_Army_Knife_Events::POST_TYPE !== $query->get( 'post_type' ) ) {
 			return;
 		}
-		if ( 'trash' === $query->get( 'post_status' ) ) {
-			return; // The Trash holds league games too, so they can be restored or deleted for good.
-		}
 
 		$meta_query = array(
 			'relation' => 'AND',
@@ -191,6 +188,46 @@ class Chess_Army_Knife_League_Games {
 				'result' => $result,
 				'season' => (string) get_post_meta( $post->ID, Chess_Army_Knife_Events_Import::META_SEASON, true ),
 				'sides'  => array_values( array_unique( array_filter( (array) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_SIDES, true ) ) ) ),
+			);
+		}
+
+		usort(
+			$games,
+			function ( $a, $b ) {
+				return strcmp( $b['start'], $a['start'] );
+			}
+		);
+
+		return $games;
+	}
+
+	/**
+	 * The league games in the Trash, newest first, played or not.
+	 *
+	 * @return array[] Each { id, date, title, score }.
+	 */
+	public static function trashed() {
+		$posts = get_posts(
+			array(
+				'post_type'      => Chess_Army_Knife_Events::POST_TYPE,
+				'post_status'    => 'trash',
+				'posts_per_page' => -1,
+				'no_found_rows'  => true,
+				'meta_key'       => Chess_Army_Knife_Events_Import::META_LMS_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Finds the imported league games.
+			)
+		);
+
+		$games = array();
+		foreach ( $posts as $post ) {
+			$start   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_START, true );
+			$result  = Chess_Army_Knife_Event_Results::get( $post->ID );
+			$games[] = array(
+				'id'     => (int) $post->ID,
+				'date'   => substr( $start, 0, 10 ),
+				'start'  => $start,
+				'title'  => get_the_title( $post ),
+				'result' => $result,
+				'score'  => $result ? sprintf( '%s - %s', $result['home_score'], $result['away_score'] ) : '',
 			);
 		}
 
@@ -538,17 +575,19 @@ class Chess_Army_Knife_League_Games {
 			$filters['colour'] = '';
 		}
 
-		$all     = self::all();
-		$seasons = self::seasons( $all );
+		$all      = self::all();
+		$seasons  = self::seasons( $all );
+		$trashed  = self::trashed();
+		$in_trash = 'trash' === $season;
 
 		// A season not asked for (or not known) is the latest, unless a player is being looked for, who may have played in any.
 		if ( 'none' === $season ) {
 			$season = '';
 		}
-		if ( 'all' !== $season && ! isset( $seasons[ $season ] ) ) {
+		if ( ! $in_trash && 'all' !== $season && ! isset( $seasons[ $season ] ) ) {
 			$season = '' === $filters['player'] && $seasons ? (string) key( $seasons ) : 'all';
 		}
-		$filters['season'] = '' === $season ? 'none' : $season; // As it goes in a link.
+		$filters['season'] = $in_trash ? 'trash' : ( '' === $season ? 'none' : $season ); // As it goes in a link.
 
 		$in_season = self::filter_season( $all, $season );
 		$games     = self::filter_games( $in_season, $filters['opponent'], $filters['outcome'] );
@@ -560,13 +599,16 @@ class Chess_Army_Knife_League_Games {
 			<h2><?php esc_html_e( 'League games', 'chess-army-knife' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Fixtures brought in from the LMS, with the board order and results of those that have been played. They show in the calendar with the club\'s own events.', 'chess-army-knife' ); ?></p>
 
-			<?php self::render_season_links( $all, $seasons, $filters ); ?>
-			<?php self::render_search_form( $filters, $all ); ?>
-
-			<?php if ( '' !== $filters['player'] ) : ?>
-				<?php self::render_player_games( $all, $games, $filters['player'], $filters['colour'] ); ?>
+			<?php self::render_season_links( $all, $seasons, $filters, count( $trashed ) ); ?>
+			<?php if ( $in_trash ) : ?>
+				<?php self::render_trash( $trashed ); ?>
 			<?php else : ?>
-				<?php self::render_games( $games, $paged, $filters ); ?>
+				<?php self::render_search_form( $filters, $all ); ?>
+				<?php if ( '' !== $filters['player'] ) : ?>
+					<?php self::render_player_games( $all, $games, $filters['player'], $filters['colour'] ); ?>
+				<?php else : ?>
+					<?php self::render_games( $games, $paged, $filters ); ?>
+				<?php endif; ?>
 			<?php endif; ?>
 
 			<?php Chess_Army_Knife_Events_Import::render_section(); ?>
@@ -585,33 +627,71 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
-	 * Draw the links that pick a season, or all of them.
+	 * Draw the tabs that pick a season, all of them, or the Trash.
 	 *
-	 * @param array[]  $all      Every game, from all().
-	 * @param int[]    $seasons  From seasons().
-	 * @param string[] $filters  As searched; the season is the one showing.
+	 * @param array[]  $all        Every game, from all().
+	 * @param int[]    $seasons    From seasons().
+	 * @param string[] $filters    As searched; the season is the one showing.
+	 * @param int      $trash_count Games in the Trash.
 	 */
-	protected static function render_season_links( array $all, array $seasons, array $filters ) {
-		if ( ! $seasons ) {
+	protected static function render_season_links( array $all, array $seasons, array $filters, $trash_count ) {
+		if ( ! $seasons && ! $trash_count ) {
 			return;
 		}
 
-		$links = array( 'all' => array( __( 'All seasons', 'chess-army-knife' ), count( $all ) ) );
+		$tabs = array( 'all' => array( __( 'All seasons', 'chess-army-knife' ), count( $all ) ) );
 		foreach ( $seasons as $season => $count ) {
-			$links[ '' === (string) $season ? 'none' : $season ] = array( '' === (string) $season ? __( 'No season recorded', 'chess-army-knife' ) : $season, $count );
+			$tabs[ '' === (string) $season ? 'none' : $season ] = array( '' === (string) $season ? __( 'No season recorded', 'chess-army-knife' ) : $season, $count );
+		}
+		if ( $trash_count ) {
+			$tabs['trash'] = array( __( 'Trash', 'chess-army-knife' ), $trash_count );
 		}
 		?>
-		<nav aria-label="<?php esc_attr_e( 'Seasons', 'chess-army-knife' ); ?>">
-			<ul class="subsubsub">
-				<?php foreach ( $links as $season => $link ) : ?>
-					<?php $url = add_query_arg( array_merge( array( 'page' => self::PAGE ), array_filter( $filters ), array( 'season' => $season ) ), admin_url( 'admin.php' ) ); ?>
-					<li>
-						<a href="<?php echo esc_url( $url ); ?>"<?php echo (string) $season === (string) $filters['season'] ? ' class="current" aria-current="page"' : ''; ?>><?php echo esc_html( $link[0] ); ?> <span class="count">(<?php echo esc_html( (string) $link[1] ); ?>)</span></a><?php echo array_key_last( $links ) === $season ? '' : ' |'; ?>
-					</li>
-				<?php endforeach; ?>
-			</ul>
+		<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Seasons', 'chess-army-knife' ); ?>">
+			<?php foreach ( $tabs as $season => $tab ) : ?>
+				<?php
+				$current = (string) $season === (string) $filters['season'];
+				$url     = add_query_arg( array_merge( array( 'page' => self::PAGE ), 'trash' === (string) $season ? array() : array_filter( $filters ), array( 'season' => $season ) ), admin_url( 'admin.php' ) );
+				?>
+				<a class="nav-tab<?php echo $current ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( $url ); ?>"<?php echo $current ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $tab[0] ); ?> <span class="count">(<?php echo esc_html( (string) $tab[1] ); ?>)</span></a>
+			<?php endforeach; ?>
 		</nav>
-		<br class="clear" />
+		<?php
+	}
+
+	/**
+	 * Draw the games in the Trash, each to restore or delete for good.
+	 *
+	 * @param array[] $trashed From trashed().
+	 */
+	protected static function render_trash( array $trashed ) {
+		$date_format = get_option( 'date_format' );
+		?>
+		<p class="description"><?php esc_html_e( 'Games you deleted. The import never brings a deleted game back: restore it and the next import updates it again.', 'chess-army-knife' ); ?></p>
+		<table class="widefat striped">
+			<thead><tr>
+				<th scope="col"><?php esc_html_e( 'Date', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Match', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Actions', 'chess-army-knife' ); ?></th>
+			</tr></thead>
+			<tbody>
+			<?php foreach ( $trashed as $game ) : ?>
+				<tr>
+					<td><?php echo esc_html( self::date_text( $game['date'], $date_format ) ); ?></td>
+					<td><?php echo esc_html( $game['title'] ); ?></td>
+					<td><?php echo esc_html( '' !== $game['score'] ? $game['score'] : '–' ); ?></td>
+					<td>
+						<?php if ( current_user_can( 'delete_post', $game['id'] ) ) : ?>
+							<a href="<?php echo esc_url( wp_nonce_url( admin_url( sprintf( 'post.php?post=%d&action=untrash', $game['id'] ) ), 'untrash-post_' . $game['id'] ) ); ?>"><?php esc_html_e( 'Restore', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $game['title'] ); ?></span></a>
+							|
+							<a href="<?php echo esc_url( (string) get_delete_post_link( $game['id'], '', true ) ); ?>"><?php esc_html_e( 'Delete permanently', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $game['title'] ); ?></span></a>
+						<?php endif; ?>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
 		<?php
 	}
 
@@ -808,7 +888,7 @@ class Chess_Army_Knife_League_Games {
 				<th scope="col"><?php esc_html_e( 'Match', 'chess-army-knife' ); ?></th>
 				<th scope="col"><?php esc_html_e( 'Result', 'chess-army-knife' ); ?></th>
 				<th scope="col"><?php esc_html_e( 'Boards', 'chess-army-knife' ); ?></th>
-				<th scope="col"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Actions', 'chess-army-knife' ); ?></th>
 			</tr></thead>
 			<tbody>
 			<?php foreach ( array_slice( $games, ( $paged - 1 ) * self::PER_PAGE, self::PER_PAGE ) as $game ) : ?>
@@ -825,6 +905,10 @@ class Chess_Army_Knife_League_Games {
 					<td>
 						<?php if ( current_user_can( 'edit_post', $game['id'] ) ) : ?>
 							<a href="<?php echo esc_url( (string) get_edit_post_link( $game['id'] ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $game['title'] ); ?></span></a>
+						<?php endif; ?>
+						<?php if ( current_user_can( 'delete_post', $game['id'] ) ) : ?>
+							|
+							<a href="<?php echo esc_url( (string) get_delete_post_link( $game['id'] ) ); ?>"><?php esc_html_e( 'Move to Trash', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $game['title'] ); ?></span></a>
 						<?php endif; ?>
 					</td>
 				</tr>
