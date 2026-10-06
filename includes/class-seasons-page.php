@@ -17,6 +17,7 @@ class Chess_Army_Knife_Seasons_Page {
 	 */
 	public static function init() {
 		add_action( 'admin_post_chess_army_knife_start_season', array( __CLASS__, 'handle_start' ) );
+		add_action( 'admin_post_chess_army_knife_save_season', array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_chess_army_knife_season_reviewed', array( __CLASS__, 'handle_reviewed' ) );
 		add_action( 'admin_post_chess_army_knife_export_payments', array( __CLASS__, 'handle_export' ) );
 	}
@@ -56,13 +57,39 @@ class Chess_Army_Knife_Seasons_Page {
 			exit;
 		}
 
-		$result = Chess_Army_Knife_Membership_Seasons::start( $name, $start, ! empty( $_POST['season_empty_squads'] ) );
+		$result = Chess_Army_Knife_Membership_Seasons::start(
+			$name,
+			$start,
+			array(
+				'empty_squads' => ! empty( $_POST['season_empty_squads'] ),
+				'end_date'     => isset( $_POST['season_end'] ) ? sanitize_text_field( wp_unslash( $_POST['season_end'] ) ) : '',
+				'lms_seasons'  => isset( $_POST['season_lms'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['season_lms'] ) ) : array(),
+			)
+		);
 		if ( is_wp_error( $result ) ) {
 			wp_safe_redirect( self::url( array( 'error' => $result->get_error_code() ) ) );
 			exit;
 		}
 
 		wp_safe_redirect( self::url( array( 'started' => 1 ) ) );
+		exit;
+	}
+
+	/**
+	 * Save a season's planned last day and the LMS seasons that belong to it.
+	 */
+	public static function handle_save() {
+		self::require_permission();
+		check_admin_referer( 'chess_army_knife_save_season' );
+
+		$id     = isset( $_POST['season'] ) ? absint( $_POST['season'] ) : 0;
+		$result = Chess_Army_Knife_Membership_Seasons::update_details(
+			$id,
+			isset( $_POST['season_end'] ) ? sanitize_text_field( wp_unslash( $_POST['season_end'] ) ) : '',
+			isset( $_POST['season_lms'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['season_lms'] ) ) : array()
+		);
+
+		wp_safe_redirect( is_wp_error( $result ) ? self::url( array( 'error' => $result->get_error_code() ) ) : self::url( array( 'saved' => 1 ) ) );
 		exit;
 	}
 
@@ -104,6 +131,9 @@ class Chess_Army_Knife_Seasons_Page {
 	 */
 	protected static function notice() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
+		if ( isset( $_GET['saved'] ) ) {
+			return array( 'success', __( 'The season has been updated.', 'chess-army-knife' ) );
+		}
 		if ( isset( $_GET['started'] ) ) {
 			return array( 'success', __( 'The new season has started. Everyone is marked as not paid.', 'chess-army-knife' ) );
 		}
@@ -113,6 +143,7 @@ class Chess_Army_Knife_Seasons_Page {
 				'season_date'    => __( 'Please enter the start date as YYYY-MM-DD.', 'chess-army-knife' ),
 				'season_order'   => __( 'The new season has to start after the current one.', 'chess-army-knife' ),
 				'season_confirm' => __( 'Please tick the box to confirm that everyone should be marked as not paid.', 'chess-army-knife' ),
+				'season_end'     => __( 'The last day has to be a date on or after the first day.', 'chess-army-knife' ),
 				'season_missing' => __( 'That season could not be found.', 'chess-army-knife' ),
 			);
 			$code   = sanitize_key( wp_unslash( $_GET['error'] ) );
@@ -139,6 +170,7 @@ class Chess_Army_Knife_Seasons_Page {
 		$format  = get_option( 'date_format' );
 		$today   = current_time( 'Y-m-d' );
 		$unpaid  = Chess_Army_Knife_Membership_Store::count_view( 'unpaid' );
+		$lms     = Chess_Army_Knife_Membership_Seasons::available_lms_seasons();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
@@ -186,6 +218,19 @@ class Chess_Army_Knife_Seasons_Page {
 							<p class="description"><?php esc_html_e( 'The season before ends the day before this.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
+					<tr>
+						<th scope="row"><label for="season_end"><?php esc_html_e( 'Last day (optional)', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="date" id="season_end" name="season_end" value="" />
+							<p class="description"><?php esc_html_e( 'When playing stops, for example the end of May. Club events set to run only in season time stop then. Leave blank to run until the next season starts. Membership itself carries on until the next season.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'LMS seasons', 'chess-army-knife' ); ?></th>
+						<td>
+							<?php self::render_lms_choices( $lms, array_keys( array_filter( $lms ) ), 'new' ); ?>
+						</td>
+					</tr>
 					<?php if ( $current ) : ?>
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Confirm', 'chess-army-knife' ); ?></th>
@@ -216,6 +261,7 @@ class Chess_Army_Knife_Seasons_Page {
 						<th><?php esc_html_e( 'Season', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'First day', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Last day', 'chess-army-knife' ); ?></th>
+						<th><?php esc_html_e( 'LMS seasons', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Payments', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Received', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'For the treasurer', 'chess-army-knife' ); ?></th>
@@ -223,7 +269,7 @@ class Chess_Army_Knife_Seasons_Page {
 				</thead>
 				<tbody>
 					<?php if ( ! $seasons ) : ?>
-						<tr><td colspan="6"><?php esc_html_e( 'No season has been started yet.', 'chess-army-knife' ); ?></td></tr>
+						<tr><td colspan="7"><?php esc_html_e( 'No season has been started yet.', 'chess-army-knife' ); ?></td></tr>
 					<?php endif; ?>
 					<?php foreach ( $seasons as $season ) : ?>
 						<?php
@@ -236,6 +282,7 @@ class Chess_Army_Knife_Seasons_Page {
 							<td><?php echo esc_html( $season['name'] ); ?><?php echo $current && $season['id'] === $current['id'] ? ' <span class="description">' . esc_html__( '(current)', 'chess-army-knife' ) . '</span>' : ''; ?></td>
 							<td><?php echo esc_html( mysql2date( $format, $season['start_date'] ) ); ?></td>
 							<td><?php echo '' === $season['end_date'] ? esc_html__( 'Until the next season', 'chess-army-knife' ) : esc_html( mysql2date( $format, $season['end_date'] ) ); ?></td>
+							<td><?php echo $season['lms_seasons'] ? esc_html( implode( ', ', $season['lms_seasons'] ) ) : '&mdash;'; ?></td>
 							<td><?php echo esc_html( (string) $total['count'] ); ?></td>
 							<td><?php echo esc_html( Chess_Army_Knife_Memberships::currency_symbol() . number_format_i18n( $total['total'] / 100, 2 ) ); ?></td>
 							<td>
@@ -252,12 +299,74 @@ class Chess_Army_Knife_Seasons_Page {
 			<p class="description"><?php esc_html_e( 'The file has each payment\'s nickname, last name, date, type, bank transfer reference and amount, and opens in Excel.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( $seasons ) : ?>
+				<h2><?php esc_html_e( 'Change a season', 'chess-army-knife' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Choose the LMS seasons that belong to a season of yours, and when playing stops. League games are grouped by them.', 'chess-army-knife' ); ?></p>
+				<?php foreach ( $seasons as $season ) : ?>
+					<?php self::render_edit_form( $season, $lms ); ?>
+				<?php endforeach; ?>
+
 				<h2><?php esc_html_e( 'Squads by season', 'chess-army-knife' ); ?></h2>
 				<?php foreach ( $seasons as $season ) : ?>
 					<?php self::render_squads( $season, $season['id'] === $current['id'] ); ?>
 				<?php endforeach; ?>
 			<?php endif; ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * The LMS seasons to choose from, as tick boxes.
+	 *
+	 * @param bool[]   $available Whether it is the running one, by LMS season name.
+	 * @param string[] $checked   Names ticked.
+	 * @param string   $suffix    Makes the ids of the boxes unique on the page.
+	 */
+	protected static function render_lms_choices( array $available, array $checked, $suffix ) {
+		// A name chosen earlier that the LMS no longer lists is still shown, so it can be unticked.
+		foreach ( $checked as $name ) {
+			if ( ! isset( $available[ $name ] ) ) {
+				$available[ $name ] = false;
+			}
+		}
+		if ( ! $available ) {
+			echo '<p class="description">' . esc_html__( 'No LMS seasons are known yet: add your LMS API key under Settings and give your teams their league entries, or import the games first.', 'chess-army-knife' ) . '</p>';
+			return;
+		}
+		foreach ( $available as $name => $running ) {
+			$id = 'season_lms_' . $suffix . '_' . md5( (string) $name );
+			?>
+			<label for="<?php echo esc_attr( $id ); ?>" style="display:block">
+				<input type="checkbox" id="<?php echo esc_attr( $id ); ?>" name="season_lms[]" value="<?php echo esc_attr( (string) $name ); ?>" <?php checked( in_array( (string) $name, $checked, true ) ); ?> />
+				<?php echo esc_html( (string) $name ); ?>
+				<?php echo $running ? '<span class="description">' . esc_html__( '(running in the LMS)', 'chess-army-knife' ) . '</span>' : ''; ?>
+			</label>
+			<?php
+		}
+	}
+
+	/**
+	 * The form to change a season's last day and its LMS seasons.
+	 *
+	 * @param array  $season Season (see Chess_Army_Knife_Membership_Seasons::all()).
+	 * @param bool[] $lms    LMS seasons to choose from.
+	 */
+	protected static function render_edit_form( array $season, array $lms ) {
+		?>
+		<details>
+			<summary><?php echo esc_html( $season['name'] ); ?></summary>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="chess_army_knife_save_season" />
+				<input type="hidden" name="season" value="<?php echo esc_attr( $season['id'] ); ?>" />
+				<?php wp_nonce_field( 'chess_army_knife_save_season' ); ?>
+				<p>
+					<label for="season_end_<?php echo esc_attr( $season['id'] ); ?>"><?php esc_html_e( 'Last day', 'chess-army-knife' ); ?></label>
+					<input type="date" id="season_end_<?php echo esc_attr( $season['id'] ); ?>" name="season_end" value="<?php echo esc_attr( $season['end_date'] ); ?>" />
+				</p>
+				<p><strong><?php esc_html_e( 'LMS seasons', 'chess-army-knife' ); ?></strong></p>
+				<?php self::render_lms_choices( $lms, $season['lms_seasons'], (string) $season['id'] ); ?>
+				<?php submit_button( __( 'Save', 'chess-army-knife' ), 'secondary', 'submit', true ); ?>
+			</form>
+		</details>
 		<?php
 	}
 

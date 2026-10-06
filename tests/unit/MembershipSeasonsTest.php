@@ -28,9 +28,27 @@ class MembershipSeasonsTest extends Chess_Army_Knife_TestCase {
 			array(
 				'name'       => '2026/27',
 				'start_date' => '2026-09-01',
+				'end_date'   => '',
 			),
 			Chess_Army_Knife_Membership_Seasons::validate( ' 2026/27 ', '2026-09-01', $this->season() )
 		);
+	}
+
+	public function test_a_planned_last_day_is_kept() {
+		$result = Chess_Army_Knife_Membership_Seasons::validate( '2026/27', '2026-09-01', $this->season(), '2027-05-31' );
+
+		$this->assertSame( '2027-05-31', $result['end_date'] );
+		$this->assertSame( '', Chess_Army_Knife_Membership_Seasons::validate( '2026/27', '2026-09-01', $this->season() )['end_date'], 'Blank leaves it open.' );
+	}
+
+	public function test_a_last_day_may_be_the_first_day_but_not_before_it_or_not_a_date() {
+		$this->assertIsArray( Chess_Army_Knife_Membership_Seasons::validate( '2026/27', '2026-09-01', null, '2026-09-01' ) );
+
+		foreach ( array( '2026-08-31', 'May', '2027-02-30' ) as $end ) {
+			$result = Chess_Army_Knife_Membership_Seasons::validate( '2026/27', '2026-09-01', null, $end );
+			$this->assertInstanceOf( WP_Error::class, $result, $end );
+			$this->assertSame( 'season_end', $result->get_error_code() );
+		}
 	}
 
 	public function test_the_first_season_can_start_on_any_date() {

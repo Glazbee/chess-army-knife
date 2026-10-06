@@ -68,6 +68,15 @@ squads of the season that ended are kept and listed under **Squads by season**. 
 (CSV)** next to a season gives the treasurer a file that opens in Excel. The first season you start counts
 the payments you have already recorded, so nobody is marked as unpaid by it.
 
+When you start a season you can give it a **last day** (when playing stops, such as the end of May) and tick
+the **LMS seasons** that belong to it; you can change both later under **Change a season**. League games
+opens on the LMS season of your current season. Tick **Only happens during the season** on a repeating club
+event (such as a club night) and it stops at the season's last day and does not appear in the summer.
+
+**A junior's free first year.** Choose **Free first year (junior)** as the payment method on the member's record,
+or press **Free year** on their row in the Members list. The season counts as paid for nothing, and they pay from
+the next season. You choose it for each junior, so it also works for a junior who joined some time ago.
+
 **7. Renewals.** **Renewals** shows who is due a payment reminder at the next daily run. Reminders go out by
 themselves if they are switched on under Settings, to members who have not paid for the season.
 

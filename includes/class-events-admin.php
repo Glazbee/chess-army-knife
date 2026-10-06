@@ -145,16 +145,17 @@ class Chess_Army_Knife_Events_Admin {
 		$end      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_END, true );
 		$location = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_LOCATION, true );
 
-		$repeat = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_REPEAT, true );
-		$until  = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_UNTIL, true );
-		$type   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_TYPE, true );
-		$skips  = Chess_Army_Knife_Events::skipped_dates( $post->ID );
-		$status = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS, true );
-		$note   = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS_NOTE, true );
-		$page   = (int) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_PAGE, true );
-		$colour = (string) sanitize_hex_color( (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_COLOUR, true ) );
-		$map    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_MAP, true );
-		$w3w    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_W3W, true );
+		$repeat    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_REPEAT, true );
+		$until     = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_UNTIL, true );
+		$type      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_TYPE, true );
+		$skips     = Chess_Army_Knife_Events::skipped_dates( $post->ID );
+		$in_season = '1' === (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_IN_SEASON, true );
+		$status    = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS, true );
+		$note      = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_STATUS_NOTE, true );
+		$page      = (int) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_PAGE, true );
+		$colour    = (string) sanitize_hex_color( (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_COLOUR, true ) );
+		$map       = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_MAP, true );
+		$w3w       = (string) get_post_meta( $post->ID, Chess_Army_Knife_Events::META_W3W, true );
 
 		$date       = '' !== $start ? substr( $start, 0, 10 ) : '';
 		$start_time = '' !== $start ? substr( $start, 11, 5 ) : Chess_Army_Knife_Events::default_time();
@@ -200,6 +201,13 @@ class Chess_Army_Knife_Events_Admin {
 				<td>
 					<input type="date" id="chess_army_event_until" name="chess_army_event_until" value="<?php echo esc_attr( $until ); ?>" />
 					<p class="description"><?php esc_html_e( 'For a repeating event: the last day it can happen. Leave blank to repeat with no end.', 'chess-army-knife' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Season time', 'chess-army-knife' ); ?></th>
+				<td>
+					<label for="chess_army_event_in_season"><input type="checkbox" id="chess_army_event_in_season" name="chess_army_event_in_season" value="1" <?php checked( $in_season ); ?> /> <?php esc_html_e( 'Only happens during the season', 'chess-army-knife' ); ?></label>
+					<p class="description"><?php esc_html_e( 'For a repeating event such as a club night: it is left out of the calendar before a season has started and after its last day (set under Members > Seasons). Nothing is left out until a first season has been started.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -378,6 +386,7 @@ class Chess_Army_Knife_Events_Admin {
 		// Skipped dates only make sense for a repeating event.
 		$skips = '' !== $repeat && isset( $_POST['chess_army_event_skip'] ) ? Chess_Army_Knife_Events::parse_dates( sanitize_textarea_field( wp_unslash( $_POST['chess_army_event_skip'] ) ) ) : array();
 		self::save_meta( $post_id, Chess_Army_Knife_Events::META_SKIP, $skips );
+		self::save_meta( $post_id, Chess_Army_Knife_Events::META_IN_SEASON, ! empty( $_POST['chess_army_event_in_season'] ) ? '1' : '' );
 
 		$status = isset( $_POST['chess_army_event_status'] ) ? sanitize_key( wp_unslash( $_POST['chess_army_event_status'] ) ) : '';
 		$status = isset( Chess_Army_Knife_Events::status_labels()[ $status ] ) ? $status : '';

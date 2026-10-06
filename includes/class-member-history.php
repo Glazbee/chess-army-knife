@@ -30,7 +30,8 @@ class Chess_Army_Knife_Member_History {
 			$periods[] = array(
 				'season'      => $season['name'],
 				'start_date'  => $season['start_date'],
-				'expiry_date' => $season['end_date'],
+				// Membership carries on over the summer: it runs until the day before the next season starts.
+				'expiry_date' => '' === $season['next_start'] ? '' : gmdate( 'Y-m-d', strtotime( $season['next_start'] . ' UTC' ) - DAY_IN_SECONDS ),
 				'type_name'   => $season['type_name'],
 				'paid_on'     => $season['paid_on'],
 			);

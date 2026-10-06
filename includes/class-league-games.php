@@ -645,12 +645,12 @@ class Chess_Army_Knife_League_Games {
 		$trashed  = self::trashed();
 		$in_trash = 'trash' === $season;
 
-		// A season not asked for (or not known) is the latest, unless a player is being looked for, who may have played in any.
+		// A season not asked for (or not known) is the club's current one if it has LMS seasons with games, else the latest, unless a player is being looked for, who may have played in any.
 		if ( 'none' === $season ) {
 			$season = '';
 		}
 		if ( ! $in_trash && 'all' !== $season && ! isset( $seasons[ $season ] ) ) {
-			$season = '' === $filters['player'] && $seasons ? (string) key( $seasons ) : 'all';
+			$season = '' === $filters['player'] && $seasons ? self::default_season( $seasons ) : 'all';
 		}
 		$filters['season'] = $in_trash ? 'trash' : ( '' === $season ? 'none' : $season ); // As it goes in a link.
 
@@ -699,6 +699,22 @@ class Chess_Army_Knife_League_Games {
 	}
 
 	/**
+	 * The season to show when none was asked for: one that belongs to the club's current season, else the latest.
+	 *
+	 * @param int[] $seasons From seasons(), the latest first.
+	 * @return string An LMS season name.
+	 */
+	public static function default_season( array $seasons ) {
+		$current = Chess_Army_Knife_Membership_Seasons::current();
+		foreach ( $current ? $current['lms_seasons'] : array() as $name ) {
+			if ( isset( $seasons[ $name ] ) ) {
+				return (string) $name;
+			}
+		}
+		return (string) key( $seasons );
+	}
+
+	/**
 	 * Draw the tabs that pick a season, all of them, or the Trash.
 	 *
 	 * @param array[]  $all        Every game, from all().
@@ -713,7 +729,10 @@ class Chess_Army_Knife_League_Games {
 
 		$tabs = array( 'all' => array( __( 'All seasons', 'chess-army-knife' ), count( $all ) ) );
 		foreach ( $seasons as $season => $count ) {
-			$tabs[ '' === (string) $season ? 'none' : $season ] = array( '' === (string) $season ? __( 'No season recorded', 'chess-army-knife' ) : $season, $count );
+			$club_season = '' === (string) $season ? null : Chess_Army_Knife_Membership_Seasons::for_lms_season( (string) $season );
+			$label       = '' === (string) $season ? __( 'No season recorded', 'chess-army-knife' ) : $season . ( $club_season ? ' (' . $club_season['name'] . ')' : '' );
+
+			$tabs[ '' === (string) $season ? 'none' : $season ] = array( $label, $count );
 		}
 		if ( $trash_count ) {
 			$tabs['trash'] = array( __( 'Trash', 'chess-army-knife' ), $trash_count );

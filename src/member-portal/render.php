@@ -146,7 +146,7 @@ $heading      = function ( $depth, $text ) {
 					<?php endif; ?>
 					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $person['status'] && Chess_Army_Knife_Membership_Seasons::current() ) : ?>
 						<dt><?php echo esc_html( sprintf( /* translators: %s: name of the season, for example 2026/27 */ __( 'Season %s', 'chess-army-knife' ), Chess_Army_Knife_Membership_Seasons::current()['name'] ) ); ?></dt>
-						<dd><?php echo '' === $person['paid_on'] ? esc_html__( 'Not paid yet', 'chess-army-knife' ) : esc_html( sprintf( /* translators: %s: date the payment was received */ __( 'Paid on %s', 'chess-army-knife' ), mysql2date( $date_format, $person['paid_on'] ) ) ); ?></dd>
+						<dd><?php echo '' === $person['paid_on'] ? esc_html__( 'Not paid yet', 'chess-army-knife' ) : ( Chess_Army_Knife_Memberships::FREE_YEAR === $person['payment_method'] ? esc_html__( 'Free first year', 'chess-army-knife' ) : esc_html( sprintf( /* translators: %s: date the payment was received */ __( 'Paid on %s', 'chess-army-knife' ), mysql2date( $date_format, $person['paid_on'] ) ) ) ); ?></dd>
 					<?php endif; ?>
 					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER !== $person['status'] && '' !== Chess_Army_Knife_Memberships::payment_reference( $person['id'], $person ) ) : ?>
 						<dt><?php esc_html_e( 'Payment reference', 'chess-army-knife' ); ?></dt>

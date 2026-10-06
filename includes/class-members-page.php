@@ -22,6 +22,7 @@ class Chess_Army_Knife_Members_Page {
 		add_action( 'admin_post_chess_army_knife_member_status', array( __CLASS__, 'handle_status' ) );
 		add_action( 'admin_post_chess_army_knife_delete_member', array( __CLASS__, 'handle_delete' ) );
 		add_action( 'admin_post_chess_army_knife_mark_paid', array( __CLASS__, 'handle_mark_paid' ) );
+		add_action( 'admin_post_chess_army_knife_mark_free_year', array( __CLASS__, 'handle_mark_free_year' ) );
 		add_action( 'admin_post_chess_army_knife_refresh_ratings', array( __CLASS__, 'handle_refresh_ratings' ) );
 		add_action( 'admin_post_chess_army_knife_bulk_members', array( __CLASS__, 'handle_bulk' ) );
 	}
@@ -122,6 +123,20 @@ class Chess_Army_Knife_Members_Page {
 
 		$back = wp_get_referer() ? remove_query_arg( array( 'paid', 'error' ), wp_get_referer() ) : self::url();
 		wp_safe_redirect( add_query_arg( Chess_Army_Knife_Membership_Store::mark_paid( $id ) ? array( 'paid' => 1 ) : array( 'error' => 'mark_paid' ), $back ) );
+		exit;
+	}
+
+	/**
+	 * Handle the Free year link: a junior's first year is free, so the season counts as paid.
+	 */
+	public static function handle_mark_free_year() {
+		self::require_permission();
+
+		$id = isset( $_GET['member'] ) ? absint( $_GET['member'] ) : 0;
+		check_admin_referer( 'chess_army_knife_mark_free_year_' . $id );
+
+		$back = wp_get_referer() ? remove_query_arg( array( 'paid', 'error' ), wp_get_referer() ) : self::url();
+		wp_safe_redirect( add_query_arg( Chess_Army_Knife_Membership_Store::mark_free_year( $id ) ? array( 'paid' => 1 ) : array( 'error' => 'mark_paid' ), $back ) );
 		exit;
 	}
 
@@ -591,6 +606,7 @@ class Chess_Army_Knife_Members_Page {
 									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) . '#membership-history' ); ?>"><?php esc_html_e( 'History', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
 									<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'] && '' === $member['paid_on'] ) : ?>
 										<a href="<?php echo esc_url( self::action_url( 'mark_paid', $member['id'] ) ); ?>"><?php esc_html_e( 'Mark paid', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
+										<a href="<?php echo esc_url( self::action_url( 'mark_free_year', $member['id'] ) ); ?>"><?php esc_html_e( 'Free year', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
 									<?php endif; ?>
 									<?php if ( ! empty( $photos[ $member['id'] ] ) ) : ?>
 										<a href="<?php echo esc_url( Chess_Army_Knife_Member_Photos::library_url( $member['id'] ) ); ?>">
@@ -895,7 +911,7 @@ class Chess_Army_Knife_Members_Page {
 							</select>
 							<label for="payment_amount" class="screen-reader-text"><?php esc_html_e( 'Amount paid', 'chess-army-knife' ); ?></label>
 							<?php echo esc_html( Chess_Army_Knife_Memberships::currency_symbol() ); ?><input type="text" id="payment_amount" name="payment_amount" size="8" inputmode="decimal" placeholder="<?php esc_attr_e( 'Amount', 'chess-army-knife' ); ?>" value="<?php echo null === $member['payment_amount'] ? '' : esc_attr( Chess_Army_Knife_Memberships::price_field_value( $member['payment_amount'] ) ); ?>" />
-							<p class="description"><?php esc_html_e( 'Payments are made outside the website, once for each season. Leave the amount blank to use the price of the membership type.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Payments are made outside the website, once for each season. Leave the amount blank to use the price of the membership type. Choose "Free first year" for a junior\'s free year (it is paid for nothing, and they pay from the next season); it can be chosen for a junior who has been a member for some time.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<?php if ( Chess_Army_Knife_Memberships::use_references() ) : ?>

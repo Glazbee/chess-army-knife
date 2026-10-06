@@ -322,9 +322,13 @@ class Chess_Army_Knife_Membership_Store {
 			$method = '';
 		}
 
-		// What was paid: what they typed, else the price of their membership type. Nothing was paid without a payment date.
+		// A junior's free year is paid for nothing, today unless they say when it began.
 		$amount = null;
-		if ( '' !== $paid_on ) {
+		if ( Chess_Army_Knife_Memberships::FREE_YEAR === $method ) {
+			$paid_on = '' === $paid_on ? $today : $paid_on;
+			$amount  = 0;
+		} elseif ( '' !== $paid_on ) {
+			// What was paid: what they typed, else the price of their membership type. Nothing was paid without a payment date.
 			if ( isset( $input['payment_amount'] ) && '' !== trim( (string) $input['payment_amount'] ) ) {
 				$amount = Chess_Army_Knife_Memberships::parse_price( sanitize_text_field( $input['payment_amount'] ) );
 				if ( null === $amount ) {
@@ -338,8 +342,8 @@ class Chess_Army_Knife_Membership_Store {
 		return $member + array(
 			'status'            => $status,
 			'payment_method'    => $method,
-			// A reference chosen for them, to match a bank transfer; blank uses the one the club's prefix and their number make.
 			'payment_amount'    => $amount,
+			// A reference chosen for them, to match a bank transfer; blank uses the one the club's prefix and their number make.
 			'payment_reference' => isset( $input['payment_reference'] ) ? mb_substr( preg_replace( '/[^A-Za-z0-9\-_\/ ]/', '', trim( sanitize_text_field( $input['payment_reference'] ) ) ), 0, 40 ) : '',
 			'paid_on'           => '' === $paid_on ? null : $paid_on,
 			'notes'             => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
@@ -874,6 +878,29 @@ class Chess_Army_Knife_Membership_Store {
 				'id'             => (int) $id,
 				'paid_on'        => current_time( 'Y-m-d' ),
 				'payment_amount' => $type ? (int) $type['price'] : null,
+			)
+		);
+		return true;
+	}
+
+	/**
+	 * Give a member their free first year (a junior's): the season now running counts as paid, for nothing.
+	 *
+	 * @param int $id Member id.
+	 * @return bool False if there is no such member, or they are not a current member.
+	 */
+	public static function mark_free_year( $id ) {
+		$member = self::get_member( $id );
+		if ( ! $member || self::STATUS_ACTIVE !== $member['status'] ) {
+			return false;
+		}
+
+		self::save_member(
+			array(
+				'id'             => (int) $id,
+				'paid_on'        => current_time( 'Y-m-d' ),
+				'payment_method' => Chess_Army_Knife_Memberships::FREE_YEAR,
+				'payment_amount' => 0,
 			)
 		);
 		return true;

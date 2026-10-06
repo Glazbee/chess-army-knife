@@ -20,6 +20,9 @@ class Chess_Army_Knife_Memberships {
 	const MENU_SLUG  = 'chess-army-memberships';
 	const CAPABILITY = 'chess_army_manage_memberships';
 
+	/** The payment method for a junior's free year: the season counts as paid, for nothing. */
+	const FREE_YEAR = 'free_year';
+
 	const META_DESCRIPTION = '_chess_army_membership_description';
 	const META_PRICE       = '_chess_army_membership_price';
 	const META_JUNIOR      = '_chess_army_membership_junior';
@@ -295,6 +298,7 @@ class Chess_Army_Knife_Memberships {
 			'bank_transfer' => __( 'Bank transfer', 'chess-army-knife' ),
 			'cash'          => __( 'Cash', 'chess-army-knife' ),
 			'cheque'        => __( 'Cheque', 'chess-army-knife' ),
+			self::FREE_YEAR => __( 'Free first year (junior)', 'chess-army-knife' ),
 			'other'         => __( 'Other', 'chess-army-knife' ),
 		);
 

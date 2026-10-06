@@ -227,7 +227,7 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
 
 		$old = Chess_Army_Knife_Membership_Seasons::all()[0]['id'];
-		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01', true );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01', array( 'empty_squads' => true ) );
 
 		$this->assertSame( array(), Chess_Army_Knife_Teams::squad( $team ) );
 		$this->assertSame( array( $team => array( $ada ) ), Chess_Army_Knife_Teams::squads_of_season( $old ), 'The old squad is still on record.' );
@@ -238,7 +238,7 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 		$ada  = $this->member();
 		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
 
-		$first = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', true );
+		$first = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'empty_squads' => true ) );
 
 		$this->assertSame( array( $ada ), Chess_Army_Knife_Teams::squad( $team ) );
 		$this->assertSame( array(), Chess_Army_Knife_Teams::squads_of_season( $first ) );
@@ -276,5 +276,232 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Club A', $html );
 		$this->assertStringContainsString( 'Ada Lovelace', $html );
 		$this->assertStringContainsString( 'Start every squad empty', $html );
+	}
+
+	/* -------------------------------------------------------------
+	 * Last day, season time and LMS seasons
+	 * ------------------------------------------------------------- */
+
+	public function test_a_planned_last_day_is_kept_when_the_next_season_starts_after_it() {
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'end_date' => '2026-05-31' ) );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+
+		$seasons = Chess_Army_Knife_Membership_Seasons::all();
+
+		$this->assertSame( '2026-05-31', $seasons[1]['end_date'], 'The planned last day stays; the summer is not season time.' );
+		$this->assertSame( '', $seasons[0]['end_date'] );
+	}
+
+	public function test_a_season_with_no_planned_last_day_ends_the_day_before_the_next() {
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+
+		$this->assertSame( '2026-08-31', Chess_Army_Knife_Membership_Seasons::all()[1]['end_date'] );
+	}
+
+	public function test_a_last_day_before_the_first_day_is_refused() {
+		$result = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'end_date' => '2025-08-01' ) );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'season_end', $result->get_error_code() );
+		$this->assertSame( array(), Chess_Army_Knife_Membership_Seasons::all() );
+	}
+
+	public function test_season_time_is_between_a_first_day_and_its_planned_last_day() {
+		$this->assertTrue( Chess_Army_Knife_Membership_Seasons::contains_date( '2030-01-01' ), 'Nothing is outside season time before a season has been started.' );
+
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'end_date' => '2026-05-31' ) );
+
+		$this->assertFalse( Chess_Army_Knife_Membership_Seasons::contains_date( '2025-08-31' ) );
+		$this->assertTrue( Chess_Army_Knife_Membership_Seasons::contains_date( '2025-09-01' ) );
+		$this->assertTrue( Chess_Army_Knife_Membership_Seasons::contains_date( '2026-05-31' ) );
+		$this->assertFalse( Chess_Army_Knife_Membership_Seasons::contains_date( '2026-06-01' ) );
+
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+
+		$this->assertTrue( Chess_Army_Knife_Membership_Seasons::contains_date( '2027-03-01' ), 'A season with no last day runs on.' );
+	}
+
+	public function test_a_club_night_that_only_runs_in_season_time_is_left_out_of_the_summer() {
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'end_date' => '2026-05-31' ) );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$night = self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
+				'post_title'  => 'Club night',
+				'post_status' => 'publish',
+			)
+		);
+		$all   = self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
+				'post_title'  => 'Summer blitz',
+				'post_status' => 'publish',
+			)
+		);
+		foreach ( array( $night, $all ) as $id ) {
+			update_post_meta( $id, Chess_Army_Knife_Events::META_START, '2025-09-02 19:00:00' );
+			update_post_meta( $id, Chess_Army_Knife_Events::META_REPEAT, 'weekly' );
+		}
+		update_post_meta( $night, Chess_Army_Knife_Events::META_IN_SEASON, '1' );
+
+		$starts = function ( $title ) {
+			$found = array();
+			foreach ( Chess_Army_Knife_Events::query(
+				array(
+					'after'  => '2026-05-20 00:00:00',
+					'before' => '2026-09-10 00:00:00',
+					'limit'  => 0,
+				)
+			) as $event ) {
+				if ( $title === $event['title'] ) {
+					$found[] = substr( $event['start'], 0, 10 );
+				}
+			}
+			return $found;
+		};
+
+		$this->assertSame( array( '2026-05-26', '2026-09-01', '2026-09-08' ), $starts( 'Club night' ) );
+		$this->assertContains( '2026-07-14', $starts( 'Summer blitz' ), 'An event not tied to the season carries on.' );
+	}
+
+	public function test_an_occurrence_outside_season_time_cannot_be_downloaded() {
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'end_date' => '2026-05-31' ) );
+		$night = self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
+				'post_title'  => 'Club night',
+				'post_status' => 'publish',
+			)
+		);
+		update_post_meta( $night, Chess_Army_Knife_Events::META_START, '2025-09-02 19:00:00' );
+		update_post_meta( $night, Chess_Army_Knife_Events::META_REPEAT, 'weekly' );
+		update_post_meta( $night, Chess_Army_Knife_Events::META_IN_SEASON, '1' );
+
+		$this->assertNotNull( Chess_Army_Knife_Events::get_occurrence( $night, '2026-05-26 19:00:00' ) );
+		$this->assertNull( Chess_Army_Knife_Events::get_occurrence( $night, '2026-06-02 19:00:00' ) );
+	}
+
+	public function test_an_lms_season_belongs_to_one_season_of_ours() {
+		$first  = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'lms_seasons' => array( '2024-2025', '2025-2026' ) ) );
+		$second = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01', array( 'lms_seasons' => array( '2025-2026' ) ) );
+
+		$this->assertSame( $second, Chess_Army_Knife_Membership_Seasons::for_lms_season( '2025-2026' )['id'] );
+		$this->assertSame( array( '2024-2025' ), Chess_Army_Knife_Membership_Seasons::get( $first )['lms_seasons'] );
+		$this->assertNull( Chess_Army_Knife_Membership_Seasons::for_lms_season( '2030-2031' ) );
+	}
+
+	public function test_the_lms_seasons_and_last_day_of_a_season_can_be_changed() {
+		$id = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+
+		$this->assertTrue( Chess_Army_Knife_Membership_Seasons::update_details( $id, '2026-05-31', array( ' 2025-2026 ', '', '2025-2026' ) ) );
+
+		$season = Chess_Army_Knife_Membership_Seasons::get( $id );
+		$this->assertSame( '2026-05-31', $season['end_date'] );
+		$this->assertSame( array( '2025-2026' ), $season['lms_seasons'] );
+
+		$this->assertWPError( Chess_Army_Knife_Membership_Seasons::update_details( $id, '2025-01-01', array() ) );
+		$this->assertWPError( Chess_Army_Knife_Membership_Seasons::update_details( 999999, '', array() ) );
+
+		Chess_Army_Knife_Membership_Seasons::update_details( $id, '', array() );
+		$this->assertSame( '', Chess_Army_Knife_Membership_Seasons::get( $id )['end_date'] );
+	}
+
+	public function test_the_lms_seasons_on_offer_include_those_kept_on_imported_games() {
+		$game = self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Events::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		update_post_meta( $game, Chess_Army_Knife_Events_Import::META_SEASON, '2025-2026' );
+
+		$this->assertArrayHasKey( '2025-2026', Chess_Army_Knife_Membership_Seasons::available_lms_seasons() );
+	}
+
+	public function test_league_games_open_on_the_lms_season_of_the_current_season() {
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'lms_seasons' => array( '2025-2026' ) ) );
+		$seasons = array(
+			'2026-2027' => 3,
+			'2025-2026' => 5,
+		);
+
+		$this->assertSame( '2025-2026', Chess_Army_Knife_League_Games::default_season( $seasons ) );
+		$this->assertSame( '2026-2027', Chess_Army_Knife_League_Games::default_season( array( '2026-2027' => 3 ) ), 'Else the latest.' );
+	}
+
+	public function test_membership_carries_on_over_the_summer() {
+		$ada = $this->member();
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', array( 'end_date' => '2026-05-31' ) );
+		$this->pay( $ada, '2025-09-10' );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-10' );
+
+		$periods = Chess_Army_Knife_Member_History::periods( Chess_Army_Knife_Membership_Store::get_member( $ada ) );
+		$summary = Chess_Army_Knife_Member_History::summarise( $periods, '2026-10-01' );
+
+		$this->assertSame( '2026-08-31', $periods[0]['expiry_date'], 'Runs to the day before the next season, not to the last day of playing.' );
+		$this->assertSame( array(), $summary['lapses'], 'The summer is not a lapse.' );
+		$this->assertSame( '2025-09-01', $summary['continuous_since'] );
+	}
+
+	/* -------------------------------------------------------------
+	 * A junior's free year
+	 * ------------------------------------------------------------- */
+
+	public function test_a_free_year_counts_as_paid_for_nothing_and_ends_with_the_season() {
+		$junior = $this->member( array( 'name' => 'Young Player' ) );
+		$id     = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		$this->assertSame( 1, Chess_Army_Knife_Membership_Store::count_view( 'unpaid' ) );
+
+		$this->assertTrue( Chess_Army_Knife_Membership_Store::mark_free_year( $junior ) );
+
+		$member = Chess_Army_Knife_Membership_Store::get_member( $junior );
+		$this->assertSame( 'free_year', $member['payment_method'] );
+		$this->assertSame( 0, $member['payment_amount'] );
+		$this->assertSame( 0, Chess_Army_Knife_Membership_Store::count_view( 'unpaid' ) );
+		$payments = Chess_Army_Knife_Membership_Seasons::payments_for_season( $id );
+		$this->assertCount( 1, $payments );
+		$this->assertSame( 'free_year', $payments[0]['method'] );
+		$this->assertSame( 0, $payments[0]['amount'] );
+
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+
+		$this->assertSame( 1, Chess_Army_Knife_Membership_Store::count_view( 'unpaid' ), 'They pay from the next season.' );
+		$this->assertCount( 1, Chess_Army_Knife_Membership_Seasons::paid_seasons( $junior ), 'The free year stays in their history.' );
+	}
+
+	public function test_a_free_year_can_be_given_to_a_junior_who_has_been_a_member_for_some_time() {
+		$junior = $this->member( array( 'name' => 'Young Player' ) );
+		$id     = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+
+		$clean       = Chess_Army_Knife_Membership_Store::sanitize_member(
+			array(
+				'name'           => 'Young Player',
+				'payment_method' => 'free_year',
+			),
+			true
+		);
+		$clean['id'] = $junior;
+		Chess_Army_Knife_Membership_Store::save_member( $clean );
+
+		$payments = Chess_Army_Knife_Membership_Seasons::payments_for_season( $id );
+		$this->assertSame( 'free_year', $payments[0]['method'] );
+		$this->assertSame( current_time( 'Y-m-d' ), $payments[0]['paid_on'] );
+	}
+
+	public function test_only_a_current_member_can_have_a_free_year() {
+		$this->assertFalse( Chess_Army_Knife_Membership_Store::mark_free_year( $this->member( array( 'status' => 'pending' ) ) ) );
+		$this->assertFalse( Chess_Army_Knife_Membership_Store::mark_free_year( 999999 ) );
+	}
+
+	public function test_the_treasurers_file_shows_a_free_year_at_nothing() {
+		$junior = $this->member( array( 'name' => 'Player, Young' ) );
+		$id     = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		Chess_Army_Knife_Membership_Store::mark_free_year( $junior );
+
+		$csv = Chess_Army_Knife_Payment_Export::to_csv( Chess_Army_Knife_Membership_Seasons::payments_for_season( $id ) );
+
+		$this->assertStringContainsString( '"Free first year (junior)",,0.00', $csv );
 	}
 }

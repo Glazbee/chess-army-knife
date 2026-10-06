@@ -27,6 +27,7 @@ class Chess_Army_Knife_Events {
 	const META_REPEAT      = '_chess_army_event_repeat'; // 'weekly', 'monthly' or 'annually'; absent for a one-off.
 	const META_UNTIL       = '_chess_army_event_until'; // Last date a repeating event can occur, "Y-m-d"; absent for no end.
 	const META_SKIP        = '_chess_army_event_skip'; // Dates, "Y-m-d", on which a repeating event does not happen (holidays).
+	const META_IN_SEASON   = '_chess_army_event_in_season'; // '1' for an event that only happens during season time, such as a club night.
 	const META_STATUS      = '_chess_army_event_status'; // 'cancelled' or 'moved'; absent for an event going ahead as planned.
 	const META_STATUS_NOTE = '_chess_army_event_status_note'; // A few words for the status, such as where a moved event went.
 	const META_TYPE        = '_chess_army_event_type'; // A key of types(); absent for an event with no type.
@@ -389,6 +390,28 @@ class Chess_Army_Knife_Events {
 	}
 
 	/**
+	 * Leave out the occurrences of an event that falls outside season time, if the event only runs in season time.
+	 *
+	 * @param int      $post_id Event id.
+	 * @param string[] $starts  Starts, "Y-m-d H:i:s".
+	 * @return string[]
+	 */
+	public static function only_in_season( $post_id, array $starts ) {
+		if ( '1' !== (string) get_post_meta( $post_id, self::META_IN_SEASON, true ) ) {
+			return $starts;
+		}
+
+		return array_values(
+			array_filter(
+				$starts,
+				function ( $start ) {
+					return Chess_Army_Knife_Membership_Seasons::contains_date( substr( $start, 0, 10 ) );
+				}
+			)
+		);
+	}
+
+	/**
 	 * Get events as data arrays, soonest first by default. A repeating event
 	 * appears once for each of its occurrences in the window, all with the same id.
 	 *
@@ -466,13 +489,16 @@ class Chess_Army_Knife_Events {
 			$length   = '' !== $end ? max( 0, (int) self::to_timestamp( $end ) - (int) self::to_timestamp( $first ) ) : 0;
 			$earliest = '' !== $after ? gmdate( 'Y-m-d H:i:s', strtotime( $after . ' UTC' ) - $length ) : ''; // Counts an occurrence still under way.
 
-			$starts = self::occurrence_starts(
-				$first,
-				(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
-				(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
-				$earliest,
-				(string) $args['before'],
-				self::skipped_dates( $post->ID )
+			$starts = self::only_in_season(
+				$post->ID,
+				self::occurrence_starts(
+					$first,
+					(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
+					(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
+					$earliest,
+					(string) $args['before'],
+					self::skipped_dates( $post->ID )
+				)
 			);
 			foreach ( $starts as $start ) {
 				$events[] = self::data( $post, $start );
@@ -549,13 +575,16 @@ class Chess_Army_Knife_Events {
 		}
 
 		$start  = (string) $start;
-		$starts = self::occurrence_starts(
-			(string) get_post_meta( $post->ID, self::META_START, true ),
-			(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
-			(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
-			$start,
-			gmdate( 'Y-m-d H:i:s', strtotime( $start . ' UTC' ) + 1 ),
-			self::skipped_dates( $post->ID )
+		$starts = self::only_in_season(
+			$post->ID,
+			self::occurrence_starts(
+				(string) get_post_meta( $post->ID, self::META_START, true ),
+				(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
+				(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
+				$start,
+				gmdate( 'Y-m-d H:i:s', strtotime( $start . ' UTC' ) + 1 ),
+				self::skipped_dates( $post->ID )
+			)
 		);
 
 		return in_array( $start, $starts, true ) ? self::data( $post, $start ) : null;
@@ -640,13 +669,16 @@ class Chess_Army_Knife_Events {
 		$length = '' !== $end ? max( 0, (int) self::to_timestamp( $end ) - (int) self::to_timestamp( $first ) ) : 0;
 		$now    = gmdate( 'Y-m-d H:i:s', strtotime( current_time( 'mysql' ) . ' UTC' ) - $length ); // An occurrence still under way counts.
 
-		$starts = self::occurrence_starts(
-			$first,
-			(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
-			(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
-			$now,
-			'',
-			self::skipped_dates( $post->ID )
+		$starts = self::only_in_season(
+			$post->ID,
+			self::occurrence_starts(
+				$first,
+				(string) get_post_meta( $post->ID, self::META_REPEAT, true ),
+				(string) get_post_meta( $post->ID, self::META_UNTIL, true ),
+				$now,
+				'',
+				self::skipped_dates( $post->ID )
+			)
 		);
 
 		return self::data( $post, $starts ? $starts[0] : '' );
