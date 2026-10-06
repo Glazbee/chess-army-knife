@@ -414,7 +414,7 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '', $member['email'] );
 		$this->assertSame( 0, $member['membership_type_id'] );
 		$this->assertSame( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, $member['status'] );
-		$this->assertNull( $member['expiry_date'] );
+		$this->assertArrayNotHasKey( 'expiry_date', $member, 'The form does not set dates.' );
 	}
 
 	public function test_admin_can_keep_a_type_that_is_no_longer_offered() {
