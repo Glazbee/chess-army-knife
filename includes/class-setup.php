@@ -523,10 +523,10 @@ class Chess_Army_Knife_Setup {
 		);
 
 		if ( ! $import ) {
-			return array( 'problem' => __( 'The team was added. Fetch its fixtures from Import Events when you are ready.', 'chess-army-knife' ) );
+			return array( 'problem' => __( 'The team was added. Fetch its fixtures from League games when you are ready.', 'chess-army-knife' ) );
 		}
 		if ( '' === Chess_Army_Knife_LMS_Client::api_key() ) {
-			return array( 'problem' => __( 'The team was added, but there is no LMS API key yet, so no fixtures were fetched. Enter the key and use Import Events.', 'chess-army-knife' ) );
+			return array( 'problem' => __( 'The team was added, but there is no LMS API key yet, so no fixtures were fetched. Enter the key and use the League games import.', 'chess-army-knife' ) );
 		}
 
 		return Chess_Army_Knife_Events_Import::import_and_record( 'manual' );

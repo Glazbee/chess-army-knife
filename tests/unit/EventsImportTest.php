@@ -290,4 +290,93 @@ class EventsImportTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( 0, $summary['seasons'] );
 	}
+
+	public function test_plan_gives_each_fixture_the_season_of_its_organisation() {
+		$matches = array( '613|division 1' => array( $this->match( 'Our A', 'Rivals', '2026-10-05' ) ) );
+
+		$with = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '2026-09-30', '19:30', array( '613' => '2026-2027' ) );
+		$none = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '2026-09-30', '19:30' );
+
+		$this->assertSame( '2026-2027', $with['candidates'][0]['season'] );
+		$this->assertSame( '', $none['candidates'][0]['season'], 'No season name is read as none, so one already kept is not overwritten.' );
+	}
+
+	public function test_plan_keeps_a_past_fixture_only_when_it_has_been_played() {
+		$matches = array(
+			'613|division 1' => array(
+				$this->match( 'Our A', 'Rivals', '2026-09-10', array( 'winner' => 'home' ) ),
+				$this->match( 'Rivals', 'Our A', '2026-09-17' ),
+			),
+		);
+
+		$plan = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '2026-10-01', '19:30' );
+
+		$this->assertCount( 1, $plan['candidates'], 'A past fixture with no result is still skipped.' );
+		$this->assertSame( '2026-09-10 19:30:00', $plan['candidates'][0]['start'] );
+	}
+
+	public function test_a_finished_game_with_its_result_and_season_is_left_alone() {
+		$candidate = array(
+			'start'  => '2026-09-10 19:30:00',
+			'season' => '2026-2027',
+		);
+
+		$this->assertTrue( Chess_Army_Knife_Events_Import::is_completed( true, '2026-2027', $candidate, '2026-10-01' ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::is_completed( false, '2026-2027', $candidate, '2026-10-01' ), 'No result kept yet.' );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::is_completed( true, '', $candidate, '2026-10-01' ), 'No season kept yet.' );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::is_completed( true, '2026-2027', $candidate, '2026-09-10' ), 'The match day itself is fetched again.' );
+
+		$candidate['season'] = '';
+		$this->assertTrue( Chess_Army_Knife_Events_Import::is_completed( true, '', $candidate, '2026-10-01' ), 'The LMS named no season, so none is wanted.' );
+	}
+
+	public function test_plan_names_a_team_that_has_no_fixtures_in_its_division() {
+		$matches = array( '613|division 1' => array( $this->match( 'Knights', 'Rooks', '2017-09-26' ) ) );
+
+		$plan = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), $matches, '', '19:30' );
+
+		$this->assertSame( array(), $plan['candidates'] );
+		$this->assertSame( array( 'Our A (Division 1)' ), $plan['unmatched'], 'The division had fixtures, but none with this team\'s name.' );
+
+		$none = Chess_Army_Knife_Events_Import::plan( array( $this->team( 'Our A' ) ), array( '613|division 1' => array() ), '', '19:30' );
+		$this->assertSame( array(), $none['unmatched'], 'A division with no fixtures at all is not reported here.' );
+	}
+
+	public function test_a_team_name_has_a_club_prefix_only_as_a_whole_word() {
+		$prefixes = array( 'Wotton Hall', 'WH' );
+
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'Wotton Hall A', $prefixes ) );
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'wotton hall', $prefixes ), 'The name alone, whatever its case.' );
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'WH-2', $prefixes ) );
+		$this->assertTrue( Chess_Army_Knife_Events_Import::has_club_prefix( 'WH 1', $prefixes ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Whitchurch A', $prefixes ), 'WH starts Whitchurch, but not as a word.' );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Stroud A', $prefixes ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Wotton Hall A', array() ) );
+		$this->assertFalse( Chess_Army_Knife_Events_Import::has_club_prefix( 'Wotton Hall A', array( '' ) ) );
+	}
+
+	public function test_a_team_that_looks_like_the_clubs_but_has_no_entry_is_found() {
+		$matches = array(
+			'613|division 1' => array(
+				$this->match( 'Wotton Hall A', 'Rooks', '2017-09-26' ),
+				$this->match( 'Wotton Hall B', 'Knights', '2017-10-03' ),
+				$this->match( 'Rooks', 'Wotton Hall A', '2017-11-01' ),
+				$this->match( 'Whitchurch', 'Knights', '2017-11-08' ),
+			),
+		);
+
+		$found = Chess_Army_Knife_Events_Import::possible_club_teams( array( $this->team( 'Wotton Hall B' ) ), $matches, array( 'Wotton Hall', 'WH' ) );
+
+		$this->assertSame(
+			array(
+				array(
+					'org'   => '613',
+					'event' => 'Division 1',
+					'team'  => 'Wotton Hall A',
+				),
+			),
+			$found,
+			'Wotton Hall B is already a team, Whitchurch only starts with WH, and Wotton Hall A is found once.'
+		);
+	}
 }

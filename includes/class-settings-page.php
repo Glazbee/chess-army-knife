@@ -55,6 +55,7 @@ class Chess_Army_Knife_Settings {
 	public static function defaults() {
 		return array(
 			'club_name'                   => '', // The club's name; the site's title is used until it is set.
+			'team_prefixes'               => '', // What the club's team names start with in the LMS, separated by commas; the club's name until it is set.
 			'club_venue_map'              => '', // Link to the venue on a map.
 			'club_venue_w3w'              => '', // The venue's what3words address.
 			'club_venue'                  => '', // Where the club meets: used by club events that don't set their own location.
@@ -63,7 +64,7 @@ class Chess_Army_Knife_Settings {
 			'ecf_club_code'               => '', // The club's ECF code, to refresh all members' ratings in one request.
 			'default_days_back'           => 60,
 			'default_max_players'         => 12,
-			'lms_api_key'                 => '', // Key for the LMS v2 API, used by Import Events.
+			'lms_api_key'                 => '', // Key for the LMS v2 API, used by the League games import.
 			'membership_payment_info'     => '', // How to pay for a membership (bank details, cash at the club...).
 			'membership_use_references'   => 1, // Give members a payment reference, for bank transfers.
 			'membership_reference_prefix' => 'MEM-', // The start of a generated reference: the prefix and the member's number.
@@ -271,6 +272,23 @@ class Chess_Army_Knife_Settings {
 	}
 
 	/**
+	 * What the club's team names start with in the LMS, such as "Wotton Hall" and "WH": the ones set in Settings, or the
+	 * club's name (without a trailing "Chess Club") until then.
+	 *
+	 * @return string[]
+	 */
+	public static function team_prefixes() {
+		$prefixes = array_values( array_filter( array_map( 'trim', explode( ',', (string) self::get_options()['team_prefixes'] ) ) ) );
+		if ( $prefixes ) {
+			return $prefixes;
+		}
+
+		$name = trim( preg_replace( '/\s+(chess\s+)?(club|society|association)$/i', '', self::club_name() ) );
+
+		return '' !== $name ? array( $name ) : array();
+	}
+
+	/**
 	 * Text with {club} replaced by the club's name, so a block's title or message can use it.
 	 *
 	 * @param string $text Plain text.
@@ -309,6 +327,9 @@ class Chess_Army_Knife_Settings {
 
 		if ( isset( $input['club_name'] ) ) {
 			$clean['club_name'] = sanitize_text_field( $input['club_name'] );
+		}
+		if ( isset( $input['team_prefixes'] ) ) {
+			$clean['team_prefixes'] = sanitize_text_field( $input['team_prefixes'] );
 		}
 		if ( isset( $input['club_venue_map'] ) ) {
 			$clean['club_venue_map'] = Chess_Army_Knife_Events::clean_map_url( $input['club_venue_map'] );
@@ -454,6 +475,13 @@ class Chess_Army_Knife_Settings {
 						<td>
 							<input type="text" id="club_name" name="<?php echo esc_attr( self::OPTION ); ?>[club_name]" value="<?php echo esc_attr( $options['club_name'] ); ?>" class="regular-text" placeholder="<?php echo esc_attr( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) ); ?>" />
 							<p class="description"><?php esc_html_e( 'Used in emails, policies and anywhere the club\'s name is shown. Leave blank to use the site title.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="team_prefixes"><?php esc_html_e( 'Team name prefixes', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="team_prefixes" name="<?php echo esc_attr( self::OPTION ); ?>[team_prefixes]" value="<?php echo esc_attr( $options['team_prefixes'] ); ?>" class="regular-text" placeholder="<?php echo esc_attr( implode( ', ', self::team_prefixes() ) ); ?>" />
+							<p class="description"><?php esc_html_e( 'What your teams\' names start with in the LMS, separated by commas (for example "Wotton Hall, WH"). A team in the LMS with one of these that is not one of your teams is offered on League games, so you can add it, as a historic team if it no longer plays. Leave blank to use the club name.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>

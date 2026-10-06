@@ -15,7 +15,8 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Event_Results {
 
-	const META = '_chess_army_event_result';
+	const META        = '_chess_army_event_result';
+	const META_EDITED = '_chess_army_event_result_edited'; // Set when an admin corrected the result by hand; the import then leaves it alone.
 
 	/**
 	 * A fixture's result in the form it is kept.
@@ -94,6 +95,41 @@ class Chess_Army_Knife_Event_Results {
 		if ( get_post_meta( $event_id, self::META, true ) !== $result ) {
 			update_post_meta( $event_id, self::META, $result );
 		}
+	}
+
+	/**
+	 * A result with an admin's corrections applied: the score, and who won each board. The players, colours and boards
+	 * themselves are the LMS's and are not changed. The winner of the match follows from the score.
+	 *
+	 * @param array $result From build().
+	 * @param array $posted { home_score, away_score: text such as 3 or 2.5; boards: board position => 'home_win', 'away_win', 'draw' or '' }.
+	 * @return array The corrected result. A score that is not a whole or half number, or a board result that is not one of
+	 *               the four, is ignored and the old one kept.
+	 */
+	public static function apply_edit( array $result, array $posted ) {
+		foreach ( array( 'home_score', 'away_score' ) as $field ) {
+			$value = isset( $posted[ $field ] ) ? trim( (string) $posted[ $field ] ) : '';
+			if ( preg_match( '/^\d{1,3}(\.5)?$/', $value ) ) {
+				$result[ $field ] = $value;
+			}
+		}
+
+		$home = (float) $result['home_score'];
+		$away = (float) $result['away_score'];
+		if ( $home !== $away ) {
+			$result['winner'] = $home > $away ? 'home' : 'away';
+		} else {
+			$result['winner'] = 'draw';
+		}
+
+		$boards = isset( $posted['boards'] ) && is_array( $posted['boards'] ) ? $posted['boards'] : array();
+		foreach ( $result['games'] as $index => $game ) {
+			if ( isset( $boards[ $index ] ) && in_array( $boards[ $index ], array( 'home_win', 'away_win', 'draw', '' ), true ) ) {
+				$result['games'][ $index ]['result'] = $boards[ $index ];
+			}
+		}
+
+		return $result;
 	}
 
 	/**

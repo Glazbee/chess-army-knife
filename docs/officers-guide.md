@@ -7,7 +7,7 @@ may use. Some need a permission that an administrator gives you on your user pro
 | You need | To use |
 |---|---|
 | The *Club memberships* permission | Members, Renewals, Member Checks, Announcements, Do Not Record, Officers |
-| The *Club teams* permission (or be a team's captain) | Teams (Details, Overview, Selection and Groups tabs), Clubs, Sort Clubs, Squad Review, Import Events; captains see only their own team in the Overview and Selection tabs |
+| The *Club teams* permission (or be a team's captain) | Teams (Details, Overview, Selection and Groups tabs), Clubs, Sort Clubs, Squad Review, League games (with the import); captains see only their own team in the Overview and Selection tabs |
 | Administrator | Settings, Setup, Policies, Templates |
 
 ## Once, when you start
@@ -26,7 +26,7 @@ may use. Some need a permission that an administrator gives you on your user pro
 
 ## Every week
 
-**1. Fetch the fixtures.** *Import Events* runs by itself once a day. Press **Import now** if you need
+**1. Fetch the fixtures.** The import on *Club events → League games* runs by itself once a day. Press **Import now** if you need
 fresh results sooner. The screen says when it last ran and how many leagues failed. A red line on the
 Overview about the API key means the LMS stopped accepting it.
 
@@ -98,7 +98,7 @@ A person has the right to ask. Do these in order:
 
 | What you see | Look at |
 |---|---|
-| No fixtures on the calendar | Overview → *Still to do*; Import Events (did it run? any leagues failed?); Settings → *Test the LMS connection* |
+| No fixtures on the calendar | Overview → *Still to do*; League games (did the import run? any leagues failed?); Settings → *Test the LMS connection* |
 | An away fixture has no venue | Sort Clubs: the other club's team names are probably still unsorted |
 | A member says they never got an email | Members → their record: is the email right, and have they turned that kind of email off? |
 | A block shows "No event called ..." | The league name does not match the LMS exactly (case and spaces); check it in the block settings |

@@ -167,4 +167,50 @@ class EventResultsTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( '', Chess_Army_Knife_Event_Results::html( 5 ) );
 	}
+
+	public function test_an_edit_changes_the_score_and_the_boards_and_works_out_the_winner() {
+		$result = Chess_Army_Knife_Event_Results::build( $this->played_match(), array( 'home' ) );
+
+		$edited = Chess_Army_Knife_Event_Results::apply_edit(
+			$result,
+			array(
+				'home_score' => '1',
+				'away_score' => '2',
+				'boards'     => array(
+					0 => 'away_win',
+					1 => 'draw',
+				),
+			)
+		);
+
+		$this->assertSame( '1', $edited['home_score'] );
+		$this->assertSame( 'away', $edited['winner'] );
+		$this->assertSame( 'away_win', $edited['games'][0]['result'] );
+		$this->assertSame( $result['games'][0]['home'], $edited['games'][0]['home'], 'The players are not changed.' );
+	}
+
+	public function test_an_edit_ignores_values_that_are_not_scores_or_results() {
+		$result = Chess_Army_Knife_Event_Results::build( $this->played_match(), array( 'home' ) );
+
+		$edited = Chess_Army_Knife_Event_Results::apply_edit(
+			$result,
+			array(
+				'home_score' => 'lots',
+				'away_score' => '0.7',
+				'boards'     => array( 0 => 'checkmate' ),
+			)
+		);
+
+		$this->assertSame( $result, $edited );
+		$this->assertSame(
+			'draw',
+			Chess_Army_Knife_Event_Results::apply_edit(
+				$result,
+				array(
+					'home_score' => '1',
+					'away_score' => '1',
+				)
+			)['winner']
+		);
+	}
 }

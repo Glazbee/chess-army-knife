@@ -124,7 +124,7 @@ class Chess_Army_Knife_Team_Overview {
 			?>
 			<h3><?php esc_html_e( 'Next fixtures', 'chess-army-knife' ); ?></h3>
 			<?php if ( ! $events ) : ?>
-				<p><?php esc_html_e( 'No fixtures are coming up. Run Import Events to fetch them.', 'chess-army-knife' ); ?></p>
+				<p><?php esc_html_e( 'No fixtures are coming up. Run the League games import to fetch them.', 'chess-army-knife' ); ?></p>
 			<?php else : ?>
 				<table class="widefat striped" style="max-width:700px">
 					<thead>

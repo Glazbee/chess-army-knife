@@ -331,7 +331,7 @@ class Chess_Army_Knife_Leagues_Page {
 			<?php if ( null !== $saved ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Leagues saved.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
-			<p class="description"><?php esc_html_e( 'For each LMS organisation, put the club\'s teams in the division they play in: drag a team into a division, or use the arrow buttons to move it up or down. A team plays in one division of an organisation. Import Events, the fixtures carousel and league table highlighting all read these entries.', 'chess-army-knife' ); ?></p>
+			<p class="description"><?php esc_html_e( 'For each LMS organisation, put the club\'s teams in the division they play in: drag a team into a division, or use the arrow buttons to move it up or down. A team plays in one division of an organisation. The League games import, the fixtures carousel and league table highlighting all read these entries.', 'chess-army-knife' ); ?></p>
 			<?php if ( ! $teams ) : ?>
 				<p><?php esc_html_e( 'There are no teams yet. Add teams on the Teams tab first.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>

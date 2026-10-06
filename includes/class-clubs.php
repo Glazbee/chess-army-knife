@@ -316,7 +316,7 @@ class Chess_Army_Knife_Clubs {
 		foreach ( Chess_Army_Knife_Settings::get_club_teams() as $entry ) {
 			$names[] = strtolower( trim( $entry['team'] ) );
 		}
-		foreach ( Chess_Army_Knife_Teams::all() as $team ) {
+		foreach ( Chess_Army_Knife_Teams::all( true ) as $team ) {
 			$names[] = strtolower( trim( $team['name'] ) );
 		}
 
@@ -499,11 +499,11 @@ class Chess_Army_Knife_Clubs {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Other clubs', 'chess-army-knife' ); ?></h1>
 			<?php Chess_Army_Knife_Section_Tabs::render( 'clubs', 'sort' ); ?>
-			<p><?php esc_html_e( 'The LMS does not say where teams play. Import Events notes every team name it sees. Tell the plugin which names belong to one club and where that club plays, and away fixtures are given that venue the next time you import. The names are suggestions: untick any that do not belong. Nothing here is shown on your website except the venue on events.', 'chess-army-knife' ); ?></p>
+			<p><?php esc_html_e( 'The LMS does not say where teams play. The League games import notes every team name it sees. Tell the plugin which names belong to one club and where that club plays, and away fixtures are given that venue the next time you import. The names are suggestions: untick any that do not belong. Nothing here is shown on your website except the venue on events.', 'chess-army-knife' ); ?></p>
 			<p><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . self::POST_TYPE ) ); ?>"><?php esc_html_e( 'See all clubs', 'chess-army-knife' ); ?></a></p>
 
 			<?php if ( $done ) : ?>
-				<div class="notice notice-success" role="status"><p><?php esc_html_e( 'Saved. Import Events again to give the fixtures their venues.', 'chess-army-knife' ); ?></p></div>
+				<div class="notice notice-success" role="status"><p><?php esc_html_e( 'Saved. Run the League games import again to give the fixtures their venues.', 'chess-army-knife' ); ?></p></div>
 			<?php endif; ?>
 			<?php if ( isset( $_GET['cak_csv_created'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display of the outcome of a form. ?>
 				<div class="notice notice-success" role="status"><p>
@@ -537,7 +537,7 @@ class Chess_Army_Knife_Clubs {
 			</form>
 
 			<?php if ( ! $groups ) : ?>
-				<p><?php esc_html_e( 'Every team name seen is in a club, or none has been seen yet. Run Import Events to look for more.', 'chess-army-knife' ); ?></p>
+				<p><?php esc_html_e( 'Every team name seen is in a club, or none has been seen yet. Run the League games import to look for more.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
 
 			<?php foreach ( $groups as $index => $group ) : ?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Squad Review: who is in a squad but has not played for the team lately. Import Events only ever
+ * Squad Review: who is in a squad but has not played for the team lately. The League games import only ever
  * adds people to a squad, so squads grow; this screen lists those who have not appeared for the team
  * since a date (a year by default) and lets an officer take them out in one go.
  *
@@ -182,7 +182,7 @@ class Chess_Army_Knife_Squad_Review {
 					<p><?php esc_html_e( 'Nobody has been away from a squad that long.', 'chess-army-knife' ); ?></p>
 				<?php endif; ?>
 			</form>
-			<p class="description"><?php esc_html_e( 'Appearances come from the board results of the league import, so run Import Events first. A person added by hand who has not played yet is counted from the day they were added.', 'chess-army-knife' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Appearances come from the board results of the league import, so run the League games import first. A person added by hand who has not played yet is counted from the day they were added.', 'chess-army-knife' ); ?></p>
 		</div>
 		<?php
 	}

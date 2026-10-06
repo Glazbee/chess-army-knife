@@ -127,7 +127,7 @@ class Chess_Army_Knife_LMS_Players {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
 			<?php Chess_Army_Knife_Member_Tabs::render( 'players' ); ?>
-			<p><?php esc_html_e( 'These people played for your teams in the results Import Events has kept, and are not on your membership records. Add the ones who are your members: each is added as a pending member with just the name and ECF code the LMS holds, and their consent to the club holding those details is recorded as given. You then confirm their membership and add their contact details from the Members screen. Newsletter and WhatsApp choices are not assumed: they stay off until the person agrees. Nobody is added until you tick them.', 'chess-army-knife' ); ?></p>
+			<p><?php esc_html_e( 'These people played for your teams in the results the League games import has kept, and are not on your membership records. Add the ones who are your members: each is added as a pending member with just the name and ECF code the LMS holds, and their consent to the club holding those details is recorded as given. You then confirm their membership and add their contact details from the Members screen. Newsletter and WhatsApp choices are not assumed: they stay off until the person agrees. Nobody is added until you tick them.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( null !== $added ) : ?>
 				<div class="notice notice-success" role="status"><p>
@@ -137,7 +137,7 @@ class Chess_Army_Knife_LMS_Players {
 			<?php endif; ?>
 
 			<?php if ( empty( $candidates ) ) : ?>
-				<p><?php esc_html_e( 'There is nobody to add. Import Events keeps the results of the fixtures it brings in, so run it (and import earlier seasons if you want the history) and come back; anyone who played and is already a member is not listed.', 'chess-army-knife' ); ?></p>
+				<p><?php esc_html_e( 'There is nobody to add. The League games import keeps the results of the fixtures it brings in, so run it (and import earlier seasons if you want the history) and come back; anyone who played and is already a member is not listed.', 'chess-army-knife' ); ?></p>
 			<?php else : ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
@@ -173,7 +173,7 @@ class Chess_Army_Knife_LMS_Players {
 					<p><label><input type="checkbox" name="all_players" value="1" /> <?php esc_html_e( 'Add everyone in the list', 'chess-army-knife' ); ?></label></p>
 					<p><button type="submit" class="button button-primary"><?php esc_html_e( 'Add the ticked people as pending members', 'chess-army-knife' ); ?></button></p>
 				</form>
-				<p class="description"><?php esc_html_e( 'They join their teams\' squads the next time Import Events runs, if they have played this season. Someone who is not a member of the club (a loan player, say) does not need adding.', 'chess-army-knife' ); ?></p>
+				<p class="description"><?php esc_html_e( 'They join their teams\' squads the next time the League games import runs, if they have played this season. Someone who is not a member of the club (a loan player, say) does not need adding.', 'chess-army-knife' ); ?></p>
 			<?php endif; ?>
 		</div>
 		<?php
