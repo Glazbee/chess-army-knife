@@ -5,8 +5,6 @@
  * and where their membership lapsed.
  *
  * A period is a season the person paid for (see Chess_Army_Knife_Membership_Seasons).
- * People who were members before seasons were started have no paid seasons:
- * their current dates are shown as a single period.
  *
  * @package Chess_Army_Knife
  */
@@ -23,27 +21,18 @@ class Chess_Army_Knife_Member_History {
 	 * The periods of membership a person has held, earliest first: each season they paid for.
 	 *
 	 * @param array $member Member row.
-	 * @return array[] Each { start_date, expiry_date ('' for none), type_name, paid_on }.
+	 * @return array[] Each { season (its name), start_date, expiry_date ('' while the season has no end), type_name, paid_on }.
 	 */
 	public static function periods( array $member ) {
 		$periods = array();
 
 		foreach ( Chess_Army_Knife_Membership_Seasons::paid_seasons( $member['id'] ) as $season ) {
 			$periods[] = array(
+				'season'      => $season['name'],
 				'start_date'  => $season['start_date'],
 				'expiry_date' => $season['end_date'],
 				'type_name'   => $season['type_name'],
 				'paid_on'     => $season['paid_on'],
-			);
-		}
-
-		// Someone who joined before seasons were started: their current dates are all there is.
-		if ( ! $periods && '' !== $member['start_date'] && in_array( $member['status'], array( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, Chess_Army_Knife_Membership_Store::STATUS_CANCELLED ), true ) ) {
-			$periods[] = array(
-				'start_date'  => $member['start_date'],
-				'expiry_date' => $member['expiry_date'],
-				'type_name'   => $member['type_name'],
-				'paid_on'     => $member['paid_on'],
 			);
 		}
 

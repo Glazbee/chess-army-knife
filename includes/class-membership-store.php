@@ -23,9 +23,6 @@ class Chess_Army_Knife_Membership_Store {
 	/** Someone the club holds details for who is not a member, such as a tournament guest. */
 	const STATUS_NONMEMBER = 'nonmember';
 
-	/** Shown for an active member whose expiry date has passed. */
-	const STATUS_EXPIRED = 'expired';
-
 	/** The lowest rating that can be entered by hand for someone without an ECF rating. */
 	const MAX_BLURB_LENGTH  = 500;
 	const MIN_MANUAL_RATING = 1300;
@@ -94,8 +91,6 @@ class Chess_Army_Knife_Membership_Store {
 			type_name VARCHAR(191) NOT NULL DEFAULT '',
 			status VARCHAR(12) NOT NULL DEFAULT 'pending',
 			source VARCHAR(10) NOT NULL DEFAULT 'form',
-			start_date DATE NULL,
-			expiry_date DATE NULL,
 			payment_method VARCHAR(20) NOT NULL DEFAULT '',
 			payment_reference VARCHAR(40) NOT NULL DEFAULT '',
 			payment_amount INT(11) NULL,
@@ -176,21 +171,6 @@ class Chess_Army_Knife_Membership_Store {
 			self::STATUS_CANCELLED => __( 'Cancelled', 'chess-army-knife' ),
 			self::STATUS_NONMEMBER => __( 'Not a member', 'chess-army-knife' ),
 		);
-	}
-
-	/**
-	 * A member's status as people would describe it: an active member whose
-	 * expiry date has passed is expired.
-	 *
-	 * @param array  $member Member row.
-	 * @param string $today  Today's site-local date, YYYY-MM-DD.
-	 * @return string One of the STATUS_ constants.
-	 */
-	public static function effective_status( array $member, $today ) {
-		if ( self::STATUS_ACTIVE === $member['status'] && '' !== (string) $member['expiry_date'] && $member['expiry_date'] < $today ) {
-			return self::STATUS_EXPIRED;
-		}
-		return $member['status'];
 	}
 
 	/* -------------------------------------------------------------
@@ -323,14 +303,9 @@ class Chess_Army_Knife_Membership_Store {
 			return new WP_Error( 'member_status', __( 'Please choose a status.', 'chess-army-knife' ) );
 		}
 
-		$start   = self::clean_date( $input, 'start_date' );
-		$expiry  = self::clean_date( $input, 'expiry_date' );
 		$paid_on = self::clean_date( $input, 'paid_on' );
-		if ( null === $start || null === $expiry || null === $paid_on ) {
+		if ( null === $paid_on ) {
 			return new WP_Error( 'member_date', __( 'Please enter dates as YYYY-MM-DD.', 'chess-army-knife' ) );
-		}
-		if ( '' !== $start && '' !== $expiry && $expiry < $start ) {
-			return new WP_Error( 'member_date_order', __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ) );
 		}
 
 		$rating = null;
@@ -362,8 +337,6 @@ class Chess_Army_Knife_Membership_Store {
 
 		return $member + array(
 			'status'            => $status,
-			'start_date'        => '' === $start ? null : $start,
-			'expiry_date'       => '' === $expiry ? null : $expiry,
 			'payment_method'    => $method,
 			// A reference chosen for them, to match a bank transfer; blank uses the one the club's prefix and their number make.
 			'payment_amount'    => $amount,
@@ -417,7 +390,6 @@ class Chess_Army_Knife_Membership_Store {
 			'active'    => __( 'Current members', 'chess-army-knife' ),
 			'pending'   => __( 'Pending applications', 'chess-army-knife' ),
 			'unpaid'    => __( 'Unpaid this season', 'chess-army-knife' ),
-			'expired'   => __( 'Expired', 'chess-army-knife' ),
 			'closed'    => __( 'Declined or cancelled', 'chess-army-knife' ),
 			'nonmember' => __( 'Not members', 'chess-army-knife' ),
 		);
@@ -427,21 +399,18 @@ class Chess_Army_Knife_Membership_Store {
 	 * The SQL condition for a view.
 	 *
 	 * @param string $view  A key of view_labels().
-	 * @param string $today Today's site-local date, YYYY-MM-DD.
 	 * @return array { condition, values } for $wpdb->prepare().
 	 */
-	protected static function view_condition( $view, $today ) {
+	protected static function view_condition( $view ) {
 		switch ( $view ) {
 			case 'active':
-				return array( "status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s )", array( $today ) );
+				return array( "status = 'active'", array() );
 			case 'unpaid':
-				return array( "status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) AND paid_on IS NULL", array( $today ) );
+				return array( "status = 'active' AND paid_on IS NULL", array() );
 			case 'paid':
 				return array( 'paid_on IS NOT NULL', array() ); // Not a list an admin picks.
 			case 'pending':
 				return array( "status = 'pending'", array() );
-			case 'expired':
-				return array( "status = 'active' AND expiry_date < %s", array( $today ) );
 			case 'closed':
 				return array( "status IN ( 'rejected', 'cancelled' )", array() );
 			case 'nonmember':
@@ -476,7 +445,7 @@ class Chess_Army_Knife_Membership_Store {
 		);
 		$table = self::table();
 
-		list( $condition, $values ) = self::view_condition( $args['view'], current_time( 'Y-m-d' ) );
+		list( $condition, $values ) = self::view_condition( $args['view'] );
 
 		if ( '' !== $args['search'] ) {
 			$like       = '%' . $wpdb->esc_like( $args['search'] ) . '%';
@@ -515,7 +484,7 @@ class Chess_Army_Knife_Membership_Store {
 		global $wpdb;
 
 		$table                      = self::table();
-		list( $condition, $values ) = self::view_condition( $view, current_time( 'Y-m-d' ) );
+		list( $condition, $values ) = self::view_condition( $view );
 		$sql                        = "SELECT COUNT(*) FROM {$table} WHERE {$condition}";
 		if ( $values ) {
 			$sql = $wpdb->prepare( $sql, $values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The table name and condition are built above from fixed strings; every value is a placeholder.
@@ -601,8 +570,8 @@ class Chess_Army_Knife_Membership_Store {
 		global $wpdb;
 
 		$table  = self::table();
-		$where  = $members_only ? "( status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) )" : "( status = 'nonmember' OR ( status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) ) )";
-		$values = array( current_time( 'Y-m-d' ) );
+		$where  = $members_only ? "status = 'active'" : "status IN ( 'nonmember', 'active' )";
+		$values = array();
 
 		if ( $coded ) {
 			$where .= " AND ecf_code <> ''";
@@ -618,8 +587,12 @@ class Chess_Army_Knife_Membership_Store {
 			$values[] = (int) $limit;
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Plugin-owned custom table; the table name and condition are built above from fixed strings and every value is a placeholder.
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
+		if ( $values ) {
+			$sql = $wpdb->prepare( $sql, $values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The table name and condition are built above from fixed strings; every value is a placeholder.
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Plugin-owned custom table; prepared above.
+		$rows = $wpdb->get_results( $sql, ARRAY_A );
 		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
 	}
 
@@ -646,7 +619,7 @@ class Chess_Army_Knife_Membership_Store {
 	 * @return bool
 	 */
 	public static function can_play( array $member ) {
-		return self::STATUS_NONMEMBER === $member['status'] || self::STATUS_ACTIVE === self::effective_status( $member, current_time( 'Y-m-d' ) );
+		return self::STATUS_NONMEMBER === $member['status'] || self::STATUS_ACTIVE === $member['status'];
 	}
 
 	/**
@@ -833,8 +806,7 @@ class Chess_Army_Knife_Membership_Store {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE ecf_code <> '' AND status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) AND ( ecf_checked_at IS NULL OR ecf_checked_at < %s ) ORDER BY ecf_checked_at IS NULL DESC, ecf_checked_at ASC, id ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
-				current_time( 'Y-m-d' ),
+				"SELECT * FROM {$table} WHERE ecf_code <> '' AND status = 'active' AND ( ecf_checked_at IS NULL OR ecf_checked_at < %s ) ORDER BY ecf_checked_at IS NULL DESC, ecf_checked_at ASC, id ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
 				$cutoff_utc,
 				max( 1, (int) $limit )
 			),
@@ -885,54 +857,26 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
-	 * Current members whose membership ends within a range of dates.
+	 * Note that a member has paid for the season now running: today, at the price of their membership type.
 	 *
-	 * @param string $from First expiry date (Y-m-d).
-	 * @param string $to   Last expiry date (Y-m-d).
-	 * @return array[]
+	 * @param int $id Member id.
+	 * @return bool False if there is no such member, or they are not a current member.
 	 */
-	public static function get_expiring( $from, $to ) {
-		global $wpdb;
-
-		$table = self::table();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE status = %s AND expiry_date BETWEEN %s AND %s ORDER BY expiry_date ASC, name ASC", self::STATUS_ACTIVE, $from, $to ), ARRAY_A );
-		return array_map( array( __CLASS__, 'cast_member' ), (array) $rows );
-	}
-
-	/**
-	 * Renew a member: the membership runs on for another period of its type.
-	 * It starts the day after the current one ends, or today if that has already
-	 * passed. The payment is noted as received today.
-	 *
-	 * @param int         $id    Member id.
-	 * @param string|null $today Site-local date (Y-m-d); today by default.
-	 * @return string The new expiry date, or '' if the member cannot be renewed (not a current or lapsed member, or a type that does not expire).
-	 */
-	public static function renew_member( $id, $today = null ) {
+	public static function mark_paid( $id ) {
 		$member = self::get_member( $id );
-		$today  = $today ? $today : current_time( 'Y-m-d' );
-		$type   = $member ? Chess_Army_Knife_Memberships::get_type( $member['membership_type_id'] ) : null;
-
-		if ( ! $member || ! $type || $type['months'] <= 0 || self::STATUS_ACTIVE !== $member['status'] ) {
-			return '';
+		if ( ! $member || self::STATUS_ACTIVE !== $member['status'] ) {
+			return false;
 		}
 
-		$start = $today;
-		if ( $member['expiry_date'] >= $today ) {
-			$start = gmdate( 'Y-m-d', strtotime( $member['expiry_date'] . ' UTC' ) + DAY_IN_SECONDS );
-		}
-		$expiry = Chess_Army_Knife_Memberships::expiry_from( $start, $type['months'] );
-
+		$type = Chess_Army_Knife_Memberships::get_type( $member['membership_type_id'] );
 		self::save_member(
 			array(
 				'id'             => (int) $id,
-				'expiry_date'    => $expiry,
-				'paid_on'        => $today,
-				'payment_amount' => (int) $type['price'],
+				'paid_on'        => current_time( 'Y-m-d' ),
+				'payment_amount' => $type ? (int) $type['price'] : null,
 			)
 		);
-		return $expiry;
+		return true;
 	}
 
 	/**
@@ -967,25 +911,29 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
-	 * Members whose details the club no longer has a reason to keep: applications
-	 * and memberships that ended before the cutoff. A current member, or one with
-	 * no expiry date, is never included. Records already stripped of personal
-	 * details are left out.
+	 * Members whose details the club no longer has a reason to keep: applications that went nowhere, and members
+	 * who have not paid for any season since the cutoff. Someone who has paid this season, or is new, is never
+	 * included, and nobody is until seasons have been running since before the cutoff. Records already stripped of
+	 * personal details are left out.
 	 *
 	 * @param string $cutoff_utc  Applications last changed before this UTC "Y-m-d H:i:s" are included.
-	 * @param string $cutoff_date Memberships that expired before this site-local date are included.
+	 * @param string $cutoff_date Members whose last paid season ended before this site-local date are included.
 	 * @return array[]
 	 */
 	public static function get_stale_members( $cutoff_utc, $cutoff_date ) {
 		global $wpdb;
 
-		$table = self::table();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$table    = self::table();
+		$payments = Chess_Army_Knife_Membership_Seasons::payments_table();
+		$seasons  = Chess_Army_Knife_Membership_Seasons::seasons_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE name <> %s AND ( ( status IN ( 'pending', 'rejected', 'cancelled', 'nonmember' ) AND updated_at < %s ) OR ( status = 'active' AND expiry_date IS NOT NULL AND expiry_date < %s ) ) ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is internal.
+				"SELECT * FROM {$table} WHERE name <> %s AND ( ( status IN ( 'pending', 'rejected', 'cancelled', 'nonmember' ) AND updated_at < %s ) OR ( status = 'active' AND paid_on IS NULL AND created_at < %s AND NOT EXISTS ( SELECT 1 FROM {$payments} p INNER JOIN {$seasons} s ON s.id = p.season_id WHERE p.member_id = {$table}.id AND ( s.end_date IS NULL OR s.end_date >= %s ) ) AND EXISTS ( SELECT 1 FROM {$seasons} WHERE start_date < %s ) ) ) ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table names are internal.
 				self::erased_name(),
 				$cutoff_utc,
+				$cutoff_utc,
+				$cutoff_date,
 				$cutoff_date
 			),
 			ARRAY_A
@@ -1070,35 +1018,27 @@ class Chess_Army_Knife_Membership_Store {
 	}
 
 	/**
-	 * Approve an application: the membership starts today unless it already
-	 * has a start date, and ends after the length of its type unless it
-	 * already has an expiry date.
+	 * Approve an application: the person becomes a member. They pay for the season on their record, like everyone.
 	 *
 	 * @param int $id Member id.
 	 * @return bool False if there is no such member.
 	 */
 	public static function approve( $id ) {
-		$member = self::get_member( $id );
-		if ( ! $member ) {
+		if ( ! self::get_member( $id ) ) {
 			return false;
 		}
 
-		$start = $member['start_date'] ? $member['start_date'] : current_time( 'Y-m-d' );
-		$type  = Chess_Army_Knife_Memberships::get_type( $member['membership_type_id'] );
-
 		self::save_member(
 			array(
-				'id'          => $member['id'],
-				'status'      => self::STATUS_ACTIVE,
-				'start_date'  => $start,
-				'expiry_date' => $member['expiry_date'] ? $member['expiry_date'] : ( Chess_Army_Knife_Memberships::expiry_from( $start, $type ? $type['months'] : 0 ) ?: null ),
+				'id'     => (int) $id,
+				'status' => self::STATUS_ACTIVE,
 			)
 		);
 		return true;
 	}
 
 	/**
-	 * Move a member to another membership type. Their dates are left as they are.
+	 * Move a member to another membership type.
 	 *
 	 * @param int   $id   Member id.
 	 * @param array $type Membership type (see Chess_Army_Knife_Memberships::get_type()).
@@ -1260,7 +1200,7 @@ class Chess_Army_Knife_Membership_Store {
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];
 		$row['ecf_checked_at']     = null === $row['ecf_checked_at'] ? '' : (string) $row['ecf_checked_at'];
 
-		foreach ( array( 'date_of_birth', 'start_date', 'expiry_date', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
+		foreach ( array( 'date_of_birth', 'paid_on', 'notes', 'consent_at', 'newsletter_consent_at', 'whatsapp_consent_at' ) as $key ) {
 			$row[ $key ] = null === $row[ $key ] ? '' : (string) $row[ $key ];
 		}
 

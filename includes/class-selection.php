@@ -157,7 +157,7 @@ class Chess_Army_Knife_Selection {
 		$people = array();
 		foreach ( Chess_Army_Knife_Teams::squad( $team_id ) as $person_id ) {
 			$person = Chess_Army_Knife_Membership_Store::get_member( $person_id );
-			if ( $person && Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === Chess_Army_Knife_Membership_Store::effective_status( $person, $today ) ) {
+			if ( $person && Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $person['status'] ) {
 				$people[] = $person;
 			}
 		}

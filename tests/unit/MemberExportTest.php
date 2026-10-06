@@ -31,8 +31,6 @@ class MemberExportTest extends Chess_Army_Knife_TestCase {
 			'manual_rating'         => null,
 			'type_name'             => 'Adult',
 			'status'                => 'active',
-			'start_date'            => '2026-01-01',
-			'expiry_date'           => '2026-12-31',
 			'payment_method'        => 'cash',
 			'paid_on'               => '2026-01-02',
 			'notes'                 => 'Private note',
@@ -58,7 +56,7 @@ class MemberExportTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_every_row_has_a_cell_for_each_column() {
-		$row = Chess_Army_Knife_Member_Export::row( $this->member(), '2026-09-30', array() );
+		$row = Chess_Army_Knife_Member_Export::row( $this->member(), array() );
 
 		$this->assertCount( count( Chess_Army_Knife_Member_Export::columns() ), $row );
 	}
@@ -75,7 +73,6 @@ class MemberExportTest extends Chess_Army_Knife_TestCase {
 						)
 					),
 				),
-				'2026-09-30',
 				array( 1 => array( 'Club A', 'Club B' ) )
 			)
 		);
@@ -90,19 +87,21 @@ class MemberExportTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_private_notes_are_not_exported() {
-		$csv = Chess_Army_Knife_Member_Export::to_csv( array( $this->member() ), '2026-09-30', array() );
+		$csv = Chess_Army_Knife_Member_Export::to_csv( array( $this->member() ), array() );
 
 		$this->assertStringNotContainsString( 'Private note', $csv );
 	}
 
-	public function test_an_expired_member_is_exported_as_expired() {
-		$row = Chess_Army_Knife_Member_Export::row( $this->member( array( 'expiry_date' => '2026-01-31' ) ), '2026-09-30', array() );
+	public function test_the_row_says_whether_they_have_paid_for_the_season() {
+		$paid   = Chess_Army_Knife_Member_Export::row( $this->member(), array() );
+		$unpaid = Chess_Army_Knife_Member_Export::row( $this->member( array( 'paid_on' => '' ) ), array() );
 
-		$this->assertSame( 'Expired', $row[1] );
+		$this->assertContains( '2026-01-02', $paid );
+		$this->assertNotContains( '2026-01-02', $unpaid );
 	}
 
 	public function test_commas_quotes_and_line_breaks_survive() {
-		$rows = $this->parse( Chess_Army_Knife_Member_Export::to_csv( array( $this->member( array( 'name' => "O'Neil, \"Sam\"\nJr" ) ) ), '2026-09-30', array() ) );
+		$rows = $this->parse( Chess_Army_Knife_Member_Export::to_csv( array( $this->member( array( 'name' => "O'Neil, \"Sam\"\nJr" ) ) ), array() ) );
 
 		$this->assertSame( "O'Neil, \"Sam\"\nJr", $rows[1][0] );
 	}
@@ -122,7 +121,7 @@ class MemberExportTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_a_malicious_name_is_neutralised_in_the_file() {
-		$rows = $this->parse( Chess_Army_Knife_Member_Export::to_csv( array( $this->member( array( 'name' => '=1+1' ) ) ), '2026-09-30', array() ) );
+		$rows = $this->parse( Chess_Army_Knife_Member_Export::to_csv( array( $this->member( array( 'name' => '=1+1' ) ) ), array() ) );
 
 		$this->assertSame( "'=1+1", $rows[1][0] );
 	}

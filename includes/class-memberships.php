@@ -1,12 +1,11 @@
 <?php
 /**
  * Club memberships: the membership types the club advertises (a post type
- * with a price and length) and the helpers around prices, expiry dates,
- * payment details and the permission needed to manage members.
+ * with a price) and the helpers around prices, payment details and the permission needed to manage members.
  *
  * Each membership type (junior, adult, senior, ...) is a non-public post of
- * type chess_army_membership. Its description, price (in pence) and length
- * (in months, 0 for no expiry) live in post meta. The people who hold or
+ * type chess_army_membership. Its description and price (in pence), for a season,
+ * live in post meta. The people who hold or
  * have applied for a membership live in their own table, see
  * Chess_Army_Knife_Membership_Store.
  *
@@ -23,7 +22,6 @@ class Chess_Army_Knife_Memberships {
 
 	const META_DESCRIPTION = '_chess_army_membership_description';
 	const META_PRICE       = '_chess_army_membership_price';
-	const META_MONTHS      = '_chess_army_membership_months';
 	const META_JUNIOR      = '_chess_army_membership_junior';
 
 	/**
@@ -162,54 +160,6 @@ class Chess_Army_Knife_Memberships {
 	}
 
 	/**
-	 * How long a membership lasts, as text: "per year", "per month", "one-off".
-	 *
-	 * @param int $months Length in months, 0 for no expiry.
-	 * @return string
-	 */
-	public static function period_label( $months ) {
-		$months = (int) $months;
-
-		if ( $months <= 0 ) {
-			return __( 'one-off', 'chess-army-knife' );
-		}
-		if ( 12 === $months ) {
-			return __( 'per year', 'chess-army-knife' );
-		}
-		if ( 1 === $months ) {
-			return __( 'per month', 'chess-army-knife' );
-		}
-
-		/* translators: %d: number of months */
-		return sprintf( _n( 'for %d month', 'for %d months', $months, 'chess-army-knife' ), $months );
-	}
-
-	/**
-	 * The last day of a membership that starts on a date. A 12 month
-	 * membership starting on 1 September runs to 31 August.
-	 *
-	 * @param string $start  Start date, YYYY-MM-DD.
-	 * @param int    $months Length in months, 0 for no expiry.
-	 * @return string YYYY-MM-DD, or '' for no expiry or an invalid start date.
-	 */
-	public static function expiry_from( $start, $months ) {
-		$months = (int) $months;
-
-		if ( $months <= 0 || ! self::is_valid_date( $start ) ) {
-			return '';
-		}
-
-		list( $year, $month, $day ) = array_map( 'intval', explode( '-', $start ) );
-
-		$index = $year * 12 + ( $month - 1 ) + $months;
-		$year  = intdiv( $index, 12 );
-		$month = $index % 12 + 1;
-		$day   = min( $day, (int) gmdate( 't', gmmktime( 0, 0, 0, $month, 1, $year ) ) ); // 31 January plus one month is the end of February.
-
-		return gmdate( 'Y-m-d', gmmktime( 0, 0, 0, $month, $day - 1, $year ) );
-	}
-
-	/**
 	 * Whether text is a real date in YYYY-MM-DD form.
 	 *
 	 * @param string $date Text to check.
@@ -250,16 +200,14 @@ class Chess_Army_Knife_Memberships {
 	 *     @type string $description
 	 *     @type int    $price        In pence.
 	 *     @type string $price_label  For example "£25".
-	 *     @type int    $months       Length in months, 0 for no expiry.
-	 *     @type string $period_label For example "per year".
+	 *     @type string $period_label Always "per season".
 	 *     @type bool   $is_junior    Whether the type is for juniors (under 18).
 	 *     @type string $status       Post status.
 	 * }
 	 */
 	public static function type_data( $post ) {
-		$id     = (int) $post->ID;
-		$price  = (int) get_post_meta( $id, self::META_PRICE, true );
-		$months = (int) get_post_meta( $id, self::META_MONTHS, true );
+		$id    = (int) $post->ID;
+		$price = (int) get_post_meta( $id, self::META_PRICE, true );
 
 		return array(
 			'id'           => $id,
@@ -267,8 +215,7 @@ class Chess_Army_Knife_Memberships {
 			'description'  => (string) get_post_meta( $id, self::META_DESCRIPTION, true ),
 			'price'        => $price,
 			'price_label'  => self::format_price( $price ),
-			'months'       => $months,
-			'period_label' => self::period_label( $months ),
+			'period_label' => __( 'per season', 'chess-army-knife' ),
 			'is_junior'    => '1' === (string) get_post_meta( $id, self::META_JUNIOR, true ),
 			'status'       => $post->post_status,
 		);

@@ -2,7 +2,7 @@
 /**
  * The Chess Army Knife > Member Checks screen: lists that help a membership
  * secretary tidy the records. Members missing an ECF code, members whose code
- * is invalid, incomplete applications, expired memberships and possible
+ * is invalid, incomplete applications, unpaid memberships and possible
  * duplicates. Every list can be ticked and exported to CSV.
  *
  * Needs the chess_army_manage_memberships permission, like the Members screen.
@@ -66,17 +66,16 @@ class Chess_Army_Knife_Member_Checks_Page {
 	 * The codes the ECF can be asked about: current members whose code looks right.
 	 *
 	 * @param array[] $members Every person held.
-	 * @param string  $today   Today's site-local date, YYYY-MM-DD.
 	 * @return array[]
 	 */
-	protected static function codes_to_verify( array $members, $today ) {
+	protected static function codes_to_verify( array $members ) {
 		return array_values(
 			array_filter(
 				$members,
-				function ( $member ) use ( $today ) {
+				function ( $member ) {
 					return '' !== $member['ecf_code']
 						&& Chess_Army_Knife_Member_Audit::ecf_code_looks_valid( $member['ecf_code'] )
-						&& Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
+						&& Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'];
 				}
 			)
 		);
@@ -106,8 +105,7 @@ class Chess_Army_Knife_Member_Checks_Page {
 		self::require_permission();
 		check_admin_referer( 'chess_army_knife_verify_ecf_codes' );
 
-		$today   = current_time( 'Y-m-d' );
-		$members = self::codes_to_verify( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'people' ) ), $today );
+		$members = self::codes_to_verify( Chess_Army_Knife_Membership_Store::get_members( array( 'view' => 'people' ) ) );
 		$result  = Chess_Army_Knife_Member_Audit::verify_next_codes( $members, self::VERIFY_BATCH );
 
 		wp_safe_redirect(
@@ -130,29 +128,22 @@ class Chess_Army_Knife_Member_Checks_Page {
 	 * @return array[] Each { label, count } by check key.
 	 */
 	protected static function counts( array $members, $today ) {
-		$expired = array_filter(
-			$members,
-			function ( $member ) use ( $today ) {
-				return Chess_Army_Knife_Membership_Store::STATUS_EXPIRED === Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
-			}
-		);
-
 		return array(
 			'missing_ecf' => array(
 				'label' => __( 'Missing ECF codes', 'chess-army-knife' ),
-				'count' => count( Chess_Army_Knife_Member_Audit::missing_ecf_code( $members, $today ) ),
+				'count' => count( Chess_Army_Knife_Member_Audit::missing_ecf_code( $members ) ),
 			),
 			'invalid_ecf' => array(
 				'label' => __( 'Invalid ECF codes', 'chess-army-knife' ),
-				'count' => count( Chess_Army_Knife_Member_Audit::malformed_ecf_code( $members, $today ) ) + count( self::unknown_to_ecf( self::codes_to_verify( $members, $today ) ) ),
+				'count' => count( Chess_Army_Knife_Member_Audit::malformed_ecf_code( $members ) ) + count( self::unknown_to_ecf( self::codes_to_verify( $members ) ) ),
 			),
 			'incomplete'  => array(
 				'label' => __( 'Incomplete applications', 'chess-army-knife' ),
 				'count' => count( Chess_Army_Knife_Member_Audit::incomplete_applications( $members, $today ) ),
 			),
-			'expired'     => array(
-				'label' => __( 'Expired memberships', 'chess-army-knife' ),
-				'count' => count( $expired ),
+			'unpaid'      => array(
+				'label' => __( 'Unpaid memberships', 'chess-army-knife' ),
+				'count' => count( Chess_Army_Knife_Member_Audit::unpaid( $members ) ),
 			),
 			'duplicates'  => array(
 				'label' => __( 'Possible duplicates', 'chess-army-knife' ),
@@ -274,19 +265,19 @@ class Chess_Army_Knife_Member_Checks_Page {
 			<?php
 			switch ( $current ) {
 				case 'invalid_ecf':
-					self::render_invalid_ecf( $members, $today );
+					self::render_invalid_ecf( $members );
 					break;
 				case 'incomplete':
 					self::render_incomplete( $members, $today, $format );
 					break;
-				case 'expired':
-					self::render_expired( $members, $today, $format );
+				case 'unpaid':
+					self::render_unpaid( $members );
 					break;
 				case 'duplicates':
 					self::render_duplicates( $members );
 					break;
 				default:
-					self::render_missing_ecf( $members, $today );
+					self::render_missing_ecf( $members );
 			}
 			?>
 		</div>
@@ -297,11 +288,10 @@ class Chess_Army_Knife_Member_Checks_Page {
 	 * Current members with no ECF code.
 	 *
 	 * @param array[] $members Every person held.
-	 * @param string  $today   Today's site-local date, YYYY-MM-DD.
 	 */
-	protected static function render_missing_ecf( array $members, $today ) {
+	protected static function render_missing_ecf( array $members ) {
 		$rows = array();
-		foreach ( Chess_Army_Knife_Member_Audit::missing_ecf_code( $members, $today ) as $member ) {
+		foreach ( Chess_Army_Knife_Member_Audit::missing_ecf_code( $members ) as $member ) {
 			$rows[] = array(
 				'id'    => $member['id'],
 				'cells' => array(
@@ -321,10 +311,9 @@ class Chess_Army_Knife_Member_Checks_Page {
 	 * Current members whose ECF code looks wrong, or that the ECF does not know.
 	 *
 	 * @param array[] $members Every person held.
-	 * @param string  $today   Today's site-local date, YYYY-MM-DD.
 	 */
-	protected static function render_invalid_ecf( array $members, $today ) {
-		$coded      = self::codes_to_verify( $members, $today );
+	protected static function render_invalid_ecf( array $members ) {
+		$coded      = self::codes_to_verify( $members );
 		$unverified = 0;
 		$seen       = array();
 		foreach ( $coded as $member ) {
@@ -336,7 +325,7 @@ class Chess_Army_Knife_Member_Checks_Page {
 		}
 
 		$rows = array();
-		foreach ( Chess_Army_Knife_Member_Audit::malformed_ecf_code( $members, $today ) as $member ) {
+		foreach ( Chess_Army_Knife_Member_Audit::malformed_ecf_code( $members ) as $member ) {
 			$rows[] = array(
 				'id'    => $member['id'],
 				'cells' => array(
@@ -408,53 +397,36 @@ class Chess_Army_Knife_Member_Checks_Page {
 	}
 
 	/**
-	 * Members whose last day of membership has passed.
+	 * Current members who have not paid for the season now running.
 	 *
 	 * @param array[] $members Every person held.
-	 * @param string  $today   Today's site-local date, YYYY-MM-DD.
-	 * @param string  $format  Date format.
 	 */
-	protected static function render_expired( array $members, $today, $format ) {
-		$expired = array_filter(
-			$members,
-			function ( $member ) use ( $today ) {
-				return Chess_Army_Knife_Membership_Store::STATUS_EXPIRED === Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
-			}
-		);
-		usort(
-			$expired,
-			function ( $a, $b ) {
-				return strcmp( $b['expiry_date'], $a['expiry_date'] ); // Most recently lapsed first: the likeliest to renew.
-			}
-		);
-
+	protected static function render_unpaid( array $members ) {
 		$rows = array();
-		foreach ( $expired as $member ) {
-			$renew  = wp_nonce_url(
+		foreach ( Chess_Army_Knife_Member_Audit::unpaid( $members ) as $member ) {
+			$paid   = wp_nonce_url(
 				add_query_arg(
 					array(
-						'action' => 'chess_army_knife_renew_member',
+						'action' => 'chess_army_knife_mark_paid',
 						'member' => $member['id'],
 					),
 					admin_url( 'admin-post.php' )
 				),
-				'chess_army_knife_renew_member_' . $member['id']
+				'chess_army_knife_mark_paid_' . $member['id']
 			);
 			$rows[] = array(
 				'id'    => $member['id'],
 				'cells' => array(
 					self::member_link( $member ),
 					esc_html( $member['type_name'] ),
-					esc_html( mysql2date( $format, $member['expiry_date'] ) ),
-					esc_html( Chess_Army_Knife_Member_History::duration_label( gmdate( 'Y-m-d', strtotime( $member['expiry_date'] . ' UTC' ) + DAY_IN_SECONDS ), $today ) ),
 					self::contact_cell( $member ),
-					'<a href="' . esc_url( $renew ) . '">' . esc_html__( 'Renew', 'chess-army-knife' ) . '</a>',
+					'<a href="' . esc_url( $paid ) . '">' . esc_html__( 'Mark paid', 'chess-army-knife' ) . '</a>',
 				),
 			);
 		}
 
-		echo '<p class="description">' . esc_html__( 'Members whose last day of membership has passed, most recent first. Renew moves their last day forward by the length of their membership type.', 'chess-army-knife' ) . '</p>';
-		self::render_table( array( __( 'Name', 'chess-army-knife' ), __( 'Membership', 'chess-army-knife' ), __( 'Last day', 'chess-army-knife' ), __( 'Lapsed for', 'chess-army-knife' ), __( 'Contact', 'chess-army-knife' ), '' ), $rows );
+		echo '<p class="description">' . esc_html__( 'Current members who have not paid for this season. Mark paid notes a payment today at the price of their membership type; open a record to enter the date, method and amount yourself.', 'chess-army-knife' ) . '</p>';
+		self::render_table( array( __( 'Name', 'chess-army-knife' ), __( 'Membership', 'chess-army-knife' ), __( 'Contact', 'chess-army-knife' ), '' ), $rows );
 	}
 
 	/**
@@ -468,14 +440,13 @@ class Chess_Army_Knife_Member_Checks_Page {
 			'email'    => __( 'Same email address', 'chess-army-knife' ),
 			'name'     => __( 'Same name', 'chess-army-knife' ),
 		);
-		$statuses = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
-		$today    = current_time( 'Y-m-d' );
+		$statuses = Chess_Army_Knife_Membership_Store::status_labels();
 		$rows     = array();
 
 		foreach ( Chess_Army_Knife_Member_Audit::duplicate_groups( $members ) as $group ) {
 			$rows[] = array( 'group' => $reasons[ $group['reason'] ] );
 			foreach ( $group['members'] as $member ) {
-				$status = Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
+				$status = $member['status'];
 				$rows[] = array(
 					'id'    => $member['id'],
 					'cells' => array(

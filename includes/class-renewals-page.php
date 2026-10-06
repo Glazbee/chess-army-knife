@@ -18,7 +18,6 @@ class Chess_Army_Knife_Renewals_Page {
 	public static function init() {
 		add_action( 'admin_post_chess_army_knife_send_reminders', array( __CLASS__, 'handle_send' ) );
 		add_action( 'admin_post_chess_army_knife_test_reminder', array( __CLASS__, 'handle_test' ) );
-		add_action( 'admin_post_chess_army_knife_renew_member', array( __CLASS__, 'handle_renew' ) );
 	}
 
 	/**
@@ -60,35 +59,21 @@ class Chess_Army_Knife_Renewals_Page {
 
 		$user   = wp_get_current_user();
 		$sample = array(
-			'id'          => 0,
-			'name'        => __( 'Sample Member', 'chess-army-knife' ),
-			'type_name'   => __( 'Adult', 'chess-army-knife' ),
-			'expiry_date' => gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' UTC' ) + 7 * DAY_IN_SECONDS ),
+			'id'        => 0,
+			'name'      => __( 'Sample Member', 'chess-army-knife' ),
+			'type_name' => __( 'Adult', 'chess-army-knife' ),
 		);
-		$mail   = Chess_Army_Knife_Renewal_Reminders::compose( $sample, 7 );
+		$season = Chess_Army_Knife_Membership_Seasons::current();
+		$mail   = Chess_Army_Knife_Renewal_Reminders::compose(
+			$sample,
+			$season ? $season : array(
+				'id'   => 0,
+				'name' => Chess_Army_Knife_Membership_Seasons::suggest_name( current_time( 'Y-m-d' ) ),
+			)
+		);
 		$sent   = wp_mail( $user->user_email, '[' . __( 'Test', 'chess-army-knife' ) . '] ' . $mail['subject'], $mail['body'] );
 
 		wp_safe_redirect( self::url( array( 'test' => $sent ? 'sent' : 'failed' ) ) );
-		exit;
-	}
-
-	/**
-	 * Mark a member as renewed: their membership runs on for another period.
-	 */
-	public static function handle_renew() {
-		self::require_permission();
-
-		$id = isset( $_GET['member'] ) ? absint( $_GET['member'] ) : 0;
-		check_admin_referer( 'chess_army_knife_renew_member_' . $id );
-
-		$expiry = Chess_Army_Knife_Membership_Store::renew_member( $id );
-
-		wp_safe_redirect(
-			add_query_arg(
-				'' === $expiry ? array( 'error' => 'renew' ) : array( 'renewed' => $expiry ),
-				admin_url( 'admin.php?page=' . Chess_Army_Knife_Memberships::MENU_SLUG )
-			)
-		);
 		exit;
 	}
 
@@ -126,8 +111,8 @@ class Chess_Army_Knife_Renewals_Page {
 				<?php
 				echo esc_html(
 					$enabled
-						/* translators: %s: list of days, for example "30, 7, 0, -7" */
-						? sprintf( __( 'Reminders are on. They go out at these days from the last day of membership: %s.', 'chess-army-knife' ), $days )
+						/* translators: %s: list of days, for example "0, 14, 28" */
+						? sprintf( __( 'Reminders are on. Members who have not paid are emailed at these days from the start of the season: %s.', 'chess-army-knife' ), $days )
 						: __( 'Reminders are off. Turn them on, and set the days and wording, under Chess Army Knife > Settings.', 'chess-army-knife' )
 				);
 				?>
@@ -139,7 +124,7 @@ class Chess_Army_Knife_Renewals_Page {
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Member', 'chess-army-knife' ); ?></th>
-						<th><?php esc_html_e( 'Last day of membership', 'chess-army-knife' ); ?></th>
+						<th><?php esc_html_e( 'Season', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Reminder', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Email goes to', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Will be sent?', 'chess-army-knife' ); ?></th>
@@ -158,17 +143,14 @@ class Chess_Army_Knife_Renewals_Page {
 						?>
 						<tr>
 							<td><?php echo esc_html( $member['name'] ); ?></td>
-							<td><?php echo esc_html( mysql2date( get_option( 'date_format' ), $member['expiry_date'] ) ); ?></td>
+							<td><?php echo esc_html( $item['season']['name'] ); ?></td>
 							<td>
 								<?php
-								if ( $stage > 0 ) {
-									/* translators: %d: days before the last day of membership */
-									echo esc_html( sprintf( _n( '%d day before', '%d days before', $stage, 'chess-army-knife' ), $stage ) );
-								} elseif ( 0 === $stage ) {
-									esc_html_e( 'On the last day', 'chess-army-knife' );
+								if ( 0 === $stage ) {
+									esc_html_e( 'On the first day of the season', 'chess-army-knife' );
 								} else {
-									/* translators: %d: days after the last day of membership */
-									echo esc_html( sprintf( _n( '%d day after', '%d days after', -$stage, 'chess-army-knife' ), -$stage ) );
+									/* translators: %d: days after the season started */
+									echo esc_html( sprintf( _n( '%d day after the season started', '%d days after the season started', $stage, 'chess-army-knife' ), $stage ) );
 								}
 								?>
 							</td>
@@ -195,7 +177,7 @@ class Chess_Army_Knife_Renewals_Page {
 				<?php endif; ?>
 				<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=chess_army_knife_test_reminder' ), 'chess_army_knife_test_reminder' ) ); ?>" class="button"><?php esc_html_e( 'Send me a test email', 'chess-army-knife' ); ?></a>
 			</p>
-			<p class="description"><?php esc_html_e( 'When a member pays, use Renew on the Members screen: it moves their last day forward by the length of their membership type and starts a fresh set of reminders.', 'chess-army-knife' ); ?></p>
+			<p class="description"><?php esc_html_e( 'When a member pays, record it on their record (or use Mark paid on the Members screen) and they are left out of the next reminders. Start a new season, under Seasons, to ask everyone to pay again.', 'chess-army-knife' ); ?></p>
 		</div>
 		<?php
 	}

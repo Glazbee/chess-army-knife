@@ -61,13 +61,11 @@ class Chess_Army_Knife_Member_Stats {
 	public static function compute( array $people, $today ) {
 		$month     = substr( $today, 0, 7 );
 		$year      = substr( $today, 0, 4 );
-		$soon      = gmdate( 'Y-m-d', strtotime( $today . ' UTC' ) + 30 * DAY_IN_SECONDS );
 		$bands     = self::RATING_BANDS;
 		$stats     = array(
 			'current'          => 0,
 			'pending'          => 0,
-			'expiring_30_days' => 0,
-			'lapsed'           => 0,
+			'unpaid'           => 0,
 			'guests'           => 0,
 			'joined_month'     => 0,
 			'joined_year'      => 0,
@@ -95,19 +93,16 @@ class Chess_Army_Knife_Member_Stats {
 				continue; // Declined or cancelled.
 			}
 
-			if ( '' !== $person['start_date'] ) {
-				$stats['joined_month'] += substr( $person['start_date'], 0, 7 ) === $month ? 1 : 0;
-				$stats['joined_year']  += substr( $person['start_date'], 0, 4 ) === $year ? 1 : 0;
-			}
-
-			if ( '' !== $person['expiry_date'] && $person['expiry_date'] < $today ) {
-				++$stats['lapsed'];
-				continue;
+			// Joined when their record was made (UTC, so a record made just after midnight may fall in the day before).
+			$joined = isset( $person['created_at'] ) ? substr( (string) $person['created_at'], 0, 10 ) : '';
+			if ( '' !== $joined ) {
+				$stats['joined_month'] += substr( $joined, 0, 7 ) === $month ? 1 : 0;
+				$stats['joined_year']  += substr( $joined, 0, 4 ) === $year ? 1 : 0;
 			}
 
 			++$stats['current'];
-			if ( '' !== $person['expiry_date'] && $person['expiry_date'] <= $soon ) {
-				++$stats['expiring_30_days'];
+			if ( '' === $person['paid_on'] ) {
+				++$stats['unpaid'];
 			}
 
 			$type             = '' !== $person['type_name'] ? $person['type_name'] : __( 'No type', 'chess-army-knife' );

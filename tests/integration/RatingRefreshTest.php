@@ -157,7 +157,6 @@ class RatingRefreshTest extends WP_UnitTestCase {
 		$this->member( 'Current', '100001A' );
 		$this->member( 'No code', '' );
 		$this->member( 'Applicant', '100002B', array( 'status' => 'pending' ) );
-		$this->member( 'Lapsed', '100003C', array( 'expiry_date' => '2020-01-01' ) );
 		$this->member( 'Left', '100004D', array( 'status' => 'cancelled' ) );
 		$this->member( 'Guest', '100005E', array( 'status' => 'nonmember' ) );
 

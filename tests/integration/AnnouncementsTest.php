@@ -71,7 +71,7 @@ class AnnouncementsTest extends WP_UnitTestCase {
 	public function test_an_announcement_goes_to_every_current_member_once() {
 		$this->person( 'Ada Lovelace' );
 		$this->person( 'Bob Smith' );
-		$this->person( 'Lapsed Member', array( 'expiry_date' => '2000-01-01' ) );
+		$this->person( 'Lapsed Member', array( 'status' => 'cancelled' ) );
 		$this->person( 'A Guest', array( 'status' => 'nonmember' ) );
 		$this->person( 'Pending One', array( 'status' => 'pending' ) );
 		$id = $this->announcement();
@@ -130,7 +130,7 @@ class AnnouncementsTest extends WP_UnitTestCase {
 		);
 		$ada  = $this->person( 'Ada Lovelace' );
 		$bob  = $this->person( 'Bob Smith' );
-		$old  = $this->person( 'Lapsed Member', array( 'expiry_date' => '2000-01-01' ) );
+		$old  = $this->person( 'Lapsed Member', array( 'status' => 'cancelled' ) );
 		$this->person( 'Cy Jones' );
 		Chess_Army_Knife_Teams::set_squad( $team, array( $ada, $bob, $old ) );
 

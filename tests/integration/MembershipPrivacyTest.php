@@ -36,7 +36,30 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 	 */
 	private function age( $id, $months ) {
 		global $wpdb;
-		$wpdb->update( Chess_Army_Knife_Membership_Store::table(), array( 'updated_at' => gmdate( 'Y-m-d H:i:s', strtotime( "-$months" ) ) ), array( 'id' => $id ) );
+		$then = gmdate( 'Y-m-d H:i:s', strtotime( "-$months" ) );
+		$wpdb->update(
+			Chess_Army_Knife_Membership_Store::table(),
+			array(
+				'created_at' => $then,
+				'updated_at' => $then,
+			),
+			array( 'id' => $id )
+		);
+	}
+
+	/**
+	 * Record a payment for the season now running.
+	 *
+	 * @param int    $id   Member id.
+	 * @param string $date Date paid, Y-m-d.
+	 */
+	private function pay( $id, $date ) {
+		Chess_Army_Knife_Membership_Store::save_member(
+			array(
+				'id'      => $id,
+				'paid_on' => $date,
+			)
+		);
 	}
 
 	private function ids( array $members ) {
@@ -85,7 +108,7 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( 'Cash', $values['Payment method'] );
 		$this->assertSame( 'Prefers email', $values['Club notes'] );
 		$this->assertSame( '2026-09-01 10:00:00', $values['Agreed to the club keeping these details (UTC)'] );
-		$this->assertArrayNotHasKey( 'Membership expires', $values, 'Empty fields are left out.' );
+		$this->assertArrayNotHasKey( 'Paid for this season on', $values, 'Empty fields are left out.' );
 	}
 
 	public function test_the_exporter_finds_nothing_for_an_unknown_or_empty_address() {
@@ -119,7 +142,6 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 				'type_name'          => 'Junior',
 				'paid_on'            => '2026-09-05',
 				'payment_method'     => 'bank_transfer',
-				'expiry_date'        => '2027-08-31',
 			)
 		);
 
@@ -244,7 +266,6 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 				'member_retention_months' => 24,
 			)
 		);
-		$today = current_time( 'Y-m-d' );
 
 		$old_declined = $this->member(
 			array(
@@ -269,17 +290,14 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		);
 		$lapsed       = $this->member(
 			array(
-				'name'        => 'Lapsed long ago',
-				'email'       => 'd@example.test',
-				'expiry_date' => wp_date( 'Y-m-d', strtotime( '-30 months' ) ),
+				'name'  => 'Lapsed long ago',
+				'email' => 'd@example.test',
 			)
 		);
 		$lapsed_paid  = $this->member(
 			array(
-				'name'        => 'Lapsed and paid',
-				'email'       => 'e@example.test',
-				'expiry_date' => wp_date( 'Y-m-d', strtotime( '-30 months' ) ),
-				'paid_on'     => '2023-09-01',
+				'name'  => 'Lapsed and paid',
+				'email' => 'e@example.test',
 			)
 		);
 
@@ -292,30 +310,34 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		);
 		$lapsed_lately   = $this->member(
 			array(
-				'name'        => 'Lapsed lately',
-				'email'       => 'g@example.test',
-				'expiry_date' => wp_date( 'Y-m-d', strtotime( '-1 month' ) ),
+				'name'  => 'Paid last season',
+				'email' => 'g@example.test',
 			)
 		);
 		$current         = $this->member(
 			array(
-				'name'        => 'Current',
-				'email'       => 'h@example.test',
-				'expiry_date' => $today,
+				'name'  => 'Paid this season',
+				'email' => 'h@example.test',
 			)
 		);
-		$no_expiry       = $this->member(
+		$new_unpaid      = $this->member(
 			array(
-				'name'  => 'Life member',
+				'name'  => 'New and unpaid',
 				'email' => 'i@example.test',
 			)
 		);
 
-		foreach ( array( $old_declined, $old_pending, $old_left ) as $id ) {
+		foreach ( array( $old_declined, $old_pending, $old_left, $lapsed, $lapsed_paid, $lapsed_lately, $current ) as $id ) {
 			$this->age( $id, '30 months' );
 		}
-		$this->age( $no_expiry, '30 months' );
-		$this->age( $current, '30 months' );
+
+		// Seasons have been running for years: one that ended well over two years ago, last season, and this one.
+		Chess_Army_Knife_Membership_Seasons::start( 'Old', wp_date( 'Y-m-d', strtotime( '-40 months' ) ) );
+		$this->pay( $lapsed_paid, '2023-09-01' );
+		Chess_Army_Knife_Membership_Seasons::start( 'Last', wp_date( 'Y-m-d', strtotime( '-26 months' ) ) );
+		$this->pay( $lapsed_lately, '2024-09-01' );
+		Chess_Army_Knife_Membership_Seasons::start( 'This', wp_date( 'Y-m-d', strtotime( '-2 months' ) ) );
+		$this->pay( $current, wp_date( 'Y-m-d' ) );
 
 		$erased = Chess_Army_Knife_Membership_Privacy::purge_old_records();
 
@@ -323,8 +345,8 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		foreach ( array( $old_declined, $old_pending, $old_left, $lapsed ) as $id ) {
 			$this->assertNull( Chess_Army_Knife_Membership_Store::get_member( $id ), "Record $id is deleted." );
 		}
-		$this->assertSame( Chess_Army_Knife_Membership_Store::erased_name(), Chess_Army_Knife_Membership_Store::get_member( $lapsed_paid )['name'], 'A paid record is kept without personal details.' );
-		foreach ( array( $recent_declined, $lapsed_lately, $current, $no_expiry ) as $id ) {
+		$this->assertSame( Chess_Army_Knife_Membership_Store::erased_name(), Chess_Army_Knife_Membership_Store::get_member( $lapsed_paid )['name'], 'Someone who paid is kept without personal details.' );
+		foreach ( array( $recent_declined, $lapsed_lately, $current, $new_unpaid ) as $id ) {
 			$this->assertNotNull( Chess_Army_Knife_Membership_Store::get_member( $id ), "Record $id is kept." );
 			$this->assertNotSame( Chess_Army_Knife_Membership_Store::erased_name(), Chess_Army_Knife_Membership_Store::get_member( $id )['name'] );
 		}

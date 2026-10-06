@@ -70,8 +70,8 @@ class Chess_Army_Knife_Settings {
 			'membership_reference_prefix' => 'MEM-', // The start of a generated reference: the prefix and the member's number.
 			'membership_thanks_message'   => '', // What an applicant is told on applying; blank uses the standard wording.
 			'member_retention_months'     => 24, // Months to keep lapsed members and old applications; 0 keeps them for ever.
-			'renewal_reminders_enabled'   => 0, // Email members as their membership runs out.
-			'renewal_reminder_days'       => '30,7,0,-7', // Days before (positive) or after (negative) the last day of membership.
+			'renewal_reminders_enabled'   => 0, // Email members who have not paid for the season.
+			'renewal_reminder_days'       => '0,14,28', // Days after the season starts.
 			'renewal_reminder_subject'    => '',
 			'renewal_reminder_message'    => '',
 			'club_teams'                  => '',  // Raw textarea: one "org | event | team" per line.
@@ -607,17 +607,17 @@ class Chess_Army_Knife_Settings {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Renewal reminders', 'chess-army-knife' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Payment reminders', 'chess-army-knife' ); ?></th>
 						<td>
-							<label><input type="checkbox" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminders_enabled]" value="1" <?php checked( ! empty( $options['renewal_reminders_enabled'] ) ); ?> /> <?php esc_html_e( 'Email members as their membership runs out', 'chess-army-knife' ); ?></label>
-							<p class="description"><?php esc_html_e( 'A daily job emails current members once at each stage below (a junior\'s email goes to their parent or guardian). Members can stop these emails with the link in each one. See Memberships > Renewals for who would be emailed.', 'chess-army-knife' ); ?></p>
+							<label><input type="checkbox" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminders_enabled]" value="1" <?php checked( ! empty( $options['renewal_reminders_enabled'] ) ); ?> /> <?php esc_html_e( 'Email members who have not paid for the season', 'chess-army-knife' ); ?></label>
+							<p class="description"><?php esc_html_e( 'A daily job emails current members who have not paid for the season once at each stage below (a junior\'s email goes to their parent or guardian). Members can stop these emails with the link in each one. See Memberships > Renewals for who would be emailed.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="renewal_reminder_days"><?php esc_html_e( 'Reminder days', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="text" id="renewal_reminder_days" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminder_days]" value="<?php echo esc_attr( $options['renewal_reminder_days'] ); ?>" class="regular-text" />
-							<p class="description"><?php esc_html_e( 'Days before the last day of membership, separated by commas; 0 is the last day itself and a negative number is days after. The default, 30,7,0,-7, sends four reminders.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Days after the season starts, separated by commas; 0 is the first day itself. The default, 0,14,28, sends three reminders.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -630,7 +630,7 @@ class Chess_Army_Knife_Settings {
 						<th scope="row"><label for="renewal_reminder_message"><?php esc_html_e( 'Reminder message', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<textarea id="renewal_reminder_message" name="<?php echo esc_attr( self::OPTION ); ?>[renewal_reminder_message]" rows="6" class="large-text" placeholder="<?php echo esc_attr( Chess_Army_Knife_Renewal_Reminders::default_text()['body'] ); ?>"><?php echo esc_textarea( $options['renewal_reminder_message'] ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'Leave blank to use the wording shown. You can use {name}, {type}, {expiry}, {when} (for example "runs out on 31 March"), {reference} and {payment} (your payment instructions with the member\'s reference). Plain text only.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Leave blank to use the wording shown. You can use {name}, {type}, {season}, {when} (for example "has not been paid for the 2026/27 season"), {reference} and {payment} (your payment instructions with the member\'s reference). Plain text only.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 				</table>

@@ -712,9 +712,8 @@ class MemberPortalTest extends WP_UnitTestCase {
 		$ada  = $this->person(
 			'Ada Lovelace',
 			array(
-				'type_name'   => 'Adult',
-				'expiry_date' => '2099-12-31',
-				'phone'       => '0123',
+				'type_name' => 'Adult',
+				'phone'     => '0123',
 			)
 		);
 		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );

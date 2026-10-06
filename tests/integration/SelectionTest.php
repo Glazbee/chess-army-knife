@@ -195,7 +195,7 @@ class SelectionTest extends WP_UnitTestCase {
 		$low    = $this->player( 'Low Rated', 1200 );
 		$high   = $this->player( 'High Rated', 1900 );
 		$none   = $this->player( 'No Rating', null, array( 'manual_rating' => 1500 ) );
-		$lapsed = $this->player( 'Lapsed Member', 2000, array( 'expiry_date' => '2000-01-01' ) );
+		$lapsed = $this->player( 'Lapsed Member', 2000, array( 'status' => 'cancelled' ) );
 		$guest  = $this->player( 'A Guest', 2100, array( 'status' => 'nonmember' ) );
 
 		$this->assertSame( array( $high, $none, $low ), wp_list_pluck( Chess_Army_Knife_Selection::pool( $this->team ), 'id' ) );

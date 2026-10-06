@@ -30,11 +30,10 @@ class MembershipsTest extends WP_UnitTestCase {
 	 *
 	 * @param string $name   Name.
 	 * @param int    $price  Price in pence.
-	 * @param int    $months Length in months.
 	 * @param array  $post   Other post fields.
 	 * @return int
 	 */
-	private function membership_type( $name, $price, $months = 12, array $post = array() ) {
+	private function membership_type( $name, $price, array $post = array() ) {
 		$id = self::factory()->post->create(
 			$post + array(
 				'post_type'   => Chess_Army_Knife_Memberships::POST_TYPE,
@@ -43,7 +42,6 @@ class MembershipsTest extends WP_UnitTestCase {
 			)
 		);
 		update_post_meta( $id, Chess_Army_Knife_Memberships::META_PRICE, $price );
-		update_post_meta( $id, Chess_Army_Knife_Memberships::META_MONTHS, $months );
 		return $id;
 	}
 
@@ -79,9 +77,9 @@ class MembershipsTest extends WP_UnitTestCase {
 	}
 
 	public function test_types_are_ordered_by_page_order_and_only_published_are_offered() {
-		$this->membership_type( 'Senior', 3000, 12, array( 'menu_order' => 2 ) );
-		$this->membership_type( 'Junior', 1000, 12, array( 'menu_order' => 1 ) );
-		$this->membership_type( 'Hidden', 500, 12, array( 'post_status' => 'draft' ) );
+		$this->membership_type( 'Senior', 3000, array( 'menu_order' => 2 ) );
+		$this->membership_type( 'Junior', 1000, array( 'menu_order' => 1 ) );
+		$this->membership_type( 'Hidden', 500, array( 'post_status' => 'draft' ) );
 
 		$this->assertSame(
 			array( 'Junior', 'Senior' ),
@@ -97,13 +95,13 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertCount( 3, Chess_Army_Knife_Memberships::types( false ) );
 	}
 
-	public function test_type_data_carries_price_and_length() {
-		$id   = $this->membership_type( 'Adult', 2550, 12 );
+	public function test_type_data_carries_price_and_is_for_a_season() {
+		$id   = $this->membership_type( 'Adult', 2550 );
 		$type = Chess_Army_Knife_Memberships::get_type( $id );
 
 		$this->assertSame( 2550, $type['price'] );
 		$this->assertSame( '£25.50', $type['price_label'] );
-		$this->assertSame( 'per year', $type['period_label'] );
+		$this->assertSame( 'per season', $type['period_label'] );
 		$this->assertNull( Chess_Army_Knife_Memberships::get_type( self::factory()->post->create() ), 'An ordinary post is not a membership type.' );
 	}
 
@@ -117,7 +115,6 @@ class MembershipsTest extends WP_UnitTestCase {
 			Chess_Army_Knife_Memberships_Admin::NONCE_FIELD => wp_create_nonce( Chess_Army_Knife_Memberships_Admin::NONCE_ACTION ),
 			'chess_army_membership_description' => 'For over 18s',
 			'chess_army_membership_price'       => '£25.50',
-			'chess_army_membership_months'      => '12',
 		);
 		Chess_Army_Knife_Memberships_Admin::save( $id );
 
@@ -232,7 +229,7 @@ class MembershipsTest extends WP_UnitTestCase {
 				'name'               => 'Grace Hopper',
 				'membership_type_id' => $type,
 				'type_name'          => 'Adult',
-				'expiry_date'        => '2027-08-31',
+				'paid_on'            => '2026-09-05',
 				'source'             => Chess_Army_Knife_Membership_Store::SOURCE_MANUAL,
 			)
 		);
@@ -241,8 +238,9 @@ class MembershipsTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'Hopper, Grace', $member['name'] );
 		$this->assertSame( $type, $member['membership_type_id'] );
-		$this->assertSame( '2027-08-31', $member['expiry_date'] );
-		$this->assertSame( '', $member['start_date'], 'A missing date reads back as an empty string.' );
+		$this->assertSame( '2026-09-05', $member['paid_on'] );
+		$this->assertNull( $member['payment_amount'], 'A missing amount reads back as null.' );
+		$this->assertSame( '', Chess_Army_Knife_Membership_Store::get_member( $this->member() )['paid_on'], 'A missing date reads back as an empty string.' );
 		$this->assertSame( 'manual', $member['source'] );
 
 		Chess_Army_Knife_Membership_Store::save_member(
@@ -266,22 +264,14 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertSame( 'form', $member['source'] );
 	}
 
-	public function test_views_separate_current_pending_expired_and_closed_members() {
-		$today = current_time( 'Y-m-d' );
-
-		$this->member( array( 'name' => 'Current no expiry' ) );
+	public function test_views_separate_current_unpaid_pending_and_closed_members() {
 		$this->member(
 			array(
-				'name'        => 'Current until today',
-				'expiry_date' => $today,
+				'name'    => 'Paid',
+				'paid_on' => current_time( 'Y-m-d' ),
 			)
 		);
-		$this->member(
-			array(
-				'name'        => 'Lapsed',
-				'expiry_date' => gmdate( 'Y-m-d', strtotime( '-1 day', strtotime( $today ) ) ),
-			)
-		);
+		$this->member( array( 'name' => 'Unpaid' ) );
 		$this->member(
 			array(
 				'name'   => 'Applicant',
@@ -307,15 +297,16 @@ class MembershipsTest extends WP_UnitTestCase {
 			return $names;
 		};
 
-		$this->assertSame( array( 'expiry, Current no', 'today, Current until' ), $view( 'active' ) );
+		$this->assertSame( array( 'Paid', 'Unpaid' ), $view( 'active' ) );
 		$this->assertSame( array( 'Applicant' ), $view( 'pending' ) );
-		$this->assertSame( array( 'Lapsed' ), $view( 'expired' ) );
+		$this->assertSame( array( 'Unpaid' ), $view( 'unpaid' ) );
 		$this->assertSame( array( 'Declined', 'Left' ), $view( 'closed' ) );
-		$this->assertCount( 6, Chess_Army_Knife_Membership_Store::get_members() );
+		$this->assertCount( 5, Chess_Army_Knife_Membership_Store::get_members() );
 
 		$this->assertSame( 2, Chess_Army_Knife_Membership_Store::count_view( 'active' ) );
 		$this->assertSame( 1, Chess_Army_Knife_Membership_Store::count_view( 'pending' ) );
-		$this->assertSame( 6, Chess_Army_Knife_Membership_Store::count_view( 'all' ) );
+		$this->assertSame( 5, Chess_Army_Knife_Membership_Store::count_view( 'all' ) );
+		$this->assertSame( 1, Chess_Army_Knife_Membership_Store::count_view( 'unpaid' ) );
 	}
 
 	public function test_members_can_be_searched_by_name_or_email_without_sql_injection() {
@@ -343,8 +334,8 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertSame( array(), $search( '%' ), 'A percent sign is not a wildcard.' );
 	}
 
-	public function test_approving_starts_today_and_runs_for_the_length_of_the_type() {
-		$type = $this->membership_type( 'Adult', 2500, 12 );
+	public function test_approving_makes_an_applicant_a_member_who_still_has_to_pay() {
+		$type = $this->membership_type( 'Adult', 2500 );
 		$id   = $this->member(
 			array(
 				'status'             => 'pending',
@@ -354,36 +345,23 @@ class MembershipsTest extends WP_UnitTestCase {
 
 		$this->assertTrue( Chess_Army_Knife_Membership_Store::approve( $id ) );
 
-		$today  = current_time( 'Y-m-d' );
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
 		$this->assertSame( 'active', $member['status'] );
-		$this->assertSame( $today, $member['start_date'] );
-		$this->assertSame( Chess_Army_Knife_Memberships::expiry_from( $today, 12 ), $member['expiry_date'] );
+		$this->assertSame( '', $member['paid_on'] );
 		$this->assertFalse( Chess_Army_Knife_Membership_Store::approve( 999999 ) );
 	}
 
-	public function test_approving_keeps_dates_that_were_already_set_and_never_expires_a_lifetime_type() {
-		$lifetime = $this->membership_type( 'Life', 10000, 0 );
-		$id       = $this->member(
-			array(
-				'status'             => 'pending',
-				'membership_type_id' => $lifetime,
-			)
-		);
-		Chess_Army_Knife_Membership_Store::approve( $id );
-		$this->assertSame( '', Chess_Army_Knife_Membership_Store::get_member( $id )['expiry_date'] );
+	public function test_marking_paid_notes_today_at_the_price_of_the_type() {
+		$type = $this->membership_type( 'Adult', 2500 );
+		$id   = $this->member( array( 'membership_type_id' => $type ) );
 
-		$dated = $this->member(
-			array(
-				'status'      => 'pending',
-				'start_date'  => '2026-09-01',
-				'expiry_date' => '2027-06-30',
-			)
-		);
-		Chess_Army_Knife_Membership_Store::approve( $dated );
-		$member = Chess_Army_Knife_Membership_Store::get_member( $dated );
-		$this->assertSame( '2026-09-01', $member['start_date'] );
-		$this->assertSame( '2027-06-30', $member['expiry_date'] );
+		$this->assertTrue( Chess_Army_Knife_Membership_Store::mark_paid( $id ) );
+
+		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
+		$this->assertSame( current_time( 'Y-m-d' ), $member['paid_on'] );
+		$this->assertSame( 2500, $member['payment_amount'] );
+		$this->assertFalse( Chess_Army_Knife_Membership_Store::mark_paid( 999999 ) );
+		$this->assertFalse( Chess_Army_Knife_Membership_Store::mark_paid( $this->member( array( 'status' => 'pending' ) ) ), 'Only a current member can pay.' );
 	}
 
 	/* -------------------------------------------------------------
@@ -701,27 +679,27 @@ class MembershipsTest extends WP_UnitTestCase {
 		$this->assertSame( 0, Chess_Army_Knife_Membership_Store::count_view( 'all' ) );
 	}
 
-	public function test_an_application_cannot_choose_its_own_status_or_dates() {
+	public function test_an_application_cannot_choose_its_own_status_or_payment() {
 		$this->type_id = $this->membership_type( 'Junior', 1000 );
 
 		$id = Chess_Army_Knife_Membership_Form::submit(
 			$this->application(
 				array(
-					'status'      => 'active',
-					'expiry_date' => '2099-01-01',
-					'notes'       => 'x',
+					'status'  => 'active',
+					'paid_on' => '2026-09-05',
+					'notes'   => 'x',
 				)
 			)
 		);
 
 		$member = Chess_Army_Knife_Membership_Store::get_member( $id );
 		$this->assertSame( 'pending', $member['status'] );
-		$this->assertSame( '', $member['expiry_date'] );
+		$this->assertSame( '', $member['paid_on'] );
 		$this->assertSame( '', $member['notes'] );
 	}
 
 	public function test_an_application_for_a_draft_type_is_refused() {
-		$this->type_id = $this->membership_type( 'Hidden', 1000, 12, array( 'post_status' => 'draft' ) );
+		$this->type_id = $this->membership_type( 'Hidden', 1000, array( 'post_status' => 'draft' ) );
 
 		$result = Chess_Army_Knife_Membership_Form::submit( $this->application() );
 
@@ -765,10 +743,10 @@ class MembershipsTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_memberships_block_advertises_types_with_prices_and_how_to_pay() {
-		$this->membership_type( 'Junior', 1000, 12, array( 'menu_order' => 1 ) );
-		$adult = $this->membership_type( 'Adult', 2550, 12, array( 'menu_order' => 2 ) );
+		$this->membership_type( 'Junior', 1000, array( 'menu_order' => 1 ) );
+		$adult = $this->membership_type( 'Adult', 2550, array( 'menu_order' => 2 ) );
 		update_post_meta( $adult, Chess_Army_Knife_Memberships::META_DESCRIPTION, 'For over 18s' );
-		$this->membership_type( 'Hidden', 500, 12, array( 'post_status' => 'draft' ) );
+		$this->membership_type( 'Hidden', 500, array( 'post_status' => 'draft' ) );
 		update_option(
 			'Chess_Army_Knife_settings',
 			array(
@@ -821,7 +799,7 @@ class MembershipsTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_free_membership_says_free_without_a_period() {
-		$this->membership_type( 'Guest', 0, 12 );
+		$this->membership_type( 'Guest', 0 );
 
 		$html = $this->render( 'memberships' );
 
@@ -831,7 +809,7 @@ class MembershipsTest extends WP_UnitTestCase {
 
 	public function test_the_form_block_shows_the_form_with_its_protections() {
 		$type = $this->membership_type( 'Junior', 1000 );
-		$this->membership_type( 'Hidden', 500, 12, array( 'post_status' => 'draft' ) );
+		$this->membership_type( 'Hidden', 500, array( 'post_status' => 'draft' ) );
 
 		$html = $this->render( 'membership-form' );
 

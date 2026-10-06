@@ -30,9 +30,8 @@ $session = '' !== $token ? Chess_Army_Knife_Member_Portal::session( $token ) : n
 $change  = '' !== $email_link ? Chess_Army_Knife_Member_Portal::pending_email_change( $email_link ) : null;
 
 $categories  = Chess_Army_Knife_Notification_Preferences::categories();
-$labels      = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
+$labels      = Chess_Army_Knife_Membership_Store::status_labels();
 $date_format = get_option( 'date_format' );
-$today       = current_time( 'Y-m-d' );
 
 /**
  * The hidden fields every portal form carries.
@@ -128,7 +127,7 @@ $heading      = function ( $depth, $text ) {
 			<?php
 			// Fill the form back in if this person's details were the ones that came back with an error.
 			$kept_person   = Chess_Army_Knife_Form_State::has_values() && (int) Chess_Army_Knife_Form_State::value( 'person' ) === (int) $person['id'];
-			$person_status = Chess_Army_Knife_Membership_Store::effective_status( $person, $today );
+			$person_status = $person['status'];
 			$is_junior     = Chess_Army_Knife_Member_Portal::is_junior( $person );
 			$has_parent    = '' !== $person['guardian_name'] . $person['guardian_email'];
 			$teams         = Chess_Army_Knife_Teams::teams_of_person( $person['id'] );
@@ -145,9 +144,9 @@ $heading      = function ( $depth, $text ) {
 						<dt><?php esc_html_e( 'Type', 'chess-army-knife' ); ?></dt>
 						<dd><?php echo esc_html( $person['type_name'] ); ?></dd>
 					<?php endif; ?>
-					<?php if ( '' !== $person['expiry_date'] ) : ?>
-						<dt><?php esc_html_e( 'Last day', 'chess-army-knife' ); ?></dt>
-						<dd><?php echo esc_html( mysql2date( $date_format, $person['expiry_date'] ) ); ?></dd>
+					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $person['status'] && Chess_Army_Knife_Membership_Seasons::current() ) : ?>
+						<dt><?php echo esc_html( sprintf( /* translators: %s: name of the season, for example 2026/27 */ __( 'Season %s', 'chess-army-knife' ), Chess_Army_Knife_Membership_Seasons::current()['name'] ) ); ?></dt>
+						<dd><?php echo '' === $person['paid_on'] ? esc_html__( 'Not paid yet', 'chess-army-knife' ) : esc_html( sprintf( /* translators: %s: date the payment was received */ __( 'Paid on %s', 'chess-army-knife' ), mysql2date( $date_format, $person['paid_on'] ) ) ); ?></dd>
 					<?php endif; ?>
 					<?php if ( Chess_Army_Knife_Membership_Store::STATUS_NONMEMBER !== $person['status'] && '' !== Chess_Army_Knife_Memberships::payment_reference( $person['id'], $person ) ) : ?>
 						<dt><?php esc_html_e( 'Payment reference', 'chess-army-knife' ); ?></dt>
@@ -172,7 +171,7 @@ $heading      = function ( $depth, $text ) {
 						<?php endforeach; ?>
 					</ul>
 				<?php endif; ?>
-				<?php if ( in_array( $person_status, array( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, Chess_Army_Knife_Membership_Store::STATUS_EXPIRED ), true ) && '' !== Chess_Army_Knife_Memberships::payment_instructions( $person['id'], $person ) ) : ?>
+				<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $person_status && '' === $person['paid_on'] && '' !== Chess_Army_Knife_Memberships::payment_instructions( $person['id'], $person ) ) : ?>
 					<p class="cak-portal__pay"><?php echo esc_html( Chess_Army_Knife_Memberships::payment_instructions( $person['id'], $person ) ); ?></p>
 				<?php endif; ?>
 

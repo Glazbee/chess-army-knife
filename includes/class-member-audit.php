@@ -18,6 +18,23 @@ class Chess_Army_Knife_Member_Audit {
 	const VERDICT_VALID   = 'valid';
 	const VERDICT_UNKNOWN = 'unknown';
 
+	/**
+	 * Current members who have not paid for the season now running.
+	 *
+	 * @param array[] $members Member rows.
+	 * @return array[]
+	 */
+	public static function unpaid( array $members ) {
+		return array_values(
+			array_filter(
+				$members,
+				function ( $member ) {
+					return Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'] && '' === $member['paid_on'];
+				}
+			)
+		);
+	}
+
 	/* -------------------------------------------------------------
 	 * ECF codes
 	 * ------------------------------------------------------------- */
@@ -26,15 +43,14 @@ class Chess_Army_Knife_Member_Audit {
 	 * Current members with no ECF rating code.
 	 *
 	 * @param array[] $members Member rows.
-	 * @param string  $today   Today's site-local date, YYYY-MM-DD.
 	 * @return array[]
 	 */
-	public static function missing_ecf_code( array $members, $today ) {
+	public static function missing_ecf_code( array $members ) {
 		return array_values(
 			array_filter(
 				$members,
-				function ( $member ) use ( $today ) {
-					return '' === $member['ecf_code'] && Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
+				function ( $member ) {
+					return '' === $member['ecf_code'] && Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'];
 				}
 			)
 		);
@@ -61,15 +77,14 @@ class Chess_Army_Knife_Member_Audit {
 	 * Current members who have an ECF code that does not look like one.
 	 *
 	 * @param array[] $members Member rows.
-	 * @param string  $today   Today's site-local date, YYYY-MM-DD.
 	 * @return array[]
 	 */
-	public static function malformed_ecf_code( array $members, $today ) {
+	public static function malformed_ecf_code( array $members ) {
 		return array_values(
 			array_filter(
 				$members,
-				function ( $member ) use ( $today ) {
-					return '' !== $member['ecf_code'] && ! self::ecf_code_looks_valid( $member['ecf_code'] ) && Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
+				function ( $member ) {
+					return '' !== $member['ecf_code'] && ! self::ecf_code_looks_valid( $member['ecf_code'] ) && Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'];
 				}
 			)
 		);

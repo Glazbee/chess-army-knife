@@ -388,7 +388,7 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '', $member['email'] );
 		$this->assertSame( 0, $member['membership_type_id'] );
 		$this->assertSame( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, $member['status'] );
-		$this->assertNull( $member['expiry_date'] );
+		$this->assertNull( $member['payment_amount'] );
 	}
 
 	public function test_admin_can_keep_a_type_that_is_no_longer_offered() {
@@ -415,8 +415,6 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 			array(
 				'name'           => 'Grace',
 				'status'         => 'cancelled',
-				'start_date'     => '2026-09-01',
-				'expiry_date'    => '2027-08-31',
 				'paid_on'        => '2026-09-05',
 				'payment_method' => 'cash',
 				'notes'          => ' Paid at the club ',
@@ -425,8 +423,8 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		);
 
 		$this->assertSame( 'cancelled', $member['status'] );
-		$this->assertSame( '2026-09-01', $member['start_date'] );
-		$this->assertSame( '2027-08-31', $member['expiry_date'] );
+		$this->assertArrayNotHasKey( 'start_date', $member );
+		$this->assertArrayNotHasKey( 'expiry_date', $member );
 		$this->assertSame( '2026-09-05', $member['paid_on'] );
 		$this->assertSame( 'cash', $member['payment_method'] );
 		$this->assertSame( 'Paid at the club', $member['notes'] );
@@ -514,51 +512,10 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
 	public function invalid_admin_input() {
 		return array(
-			'unknown status'      => array( array( 'status' => 'vip' ), 'member_status' ),
-			'bad expiry date'     => array( array( 'expiry_date' => 'next year' ), 'member_date' ),
-			'bad paid date'       => array( array( 'paid_on' => '2026-13-01' ), 'member_date' ),
-			'expiry before start' => array(
-				array(
-					'start_date'  => '2026-09-01',
-					'expiry_date' => '2026-08-01',
-				),
-				'member_date_order',
-			),
-			'bad email'           => array( array( 'email' => 'nope' ), 'member_email' ),
-			'unknown type'        => array( array( 'membership_type_id' => '99' ), 'member_type' ),
-		);
-	}
-
-	public function test_effective_status_turns_lapsed_active_members_into_expired() {
-		$today = '2026-09-29';
-		$base  = array(
-			'status'      => 'active',
-			'expiry_date' => '',
-		);
-
-		$this->assertSame( 'active', Chess_Army_Knife_Membership_Store::effective_status( $base, $today ), 'No expiry never lapses.' );
-		$this->assertSame( 'active', Chess_Army_Knife_Membership_Store::effective_status( array( 'expiry_date' => '2026-09-29' ) + $base, $today ), 'The expiry date is the last day.' );
-		$this->assertSame( 'expired', Chess_Army_Knife_Membership_Store::effective_status( array( 'expiry_date' => '2026-09-28' ) + $base, $today ) );
-		$this->assertSame(
-			'cancelled',
-			Chess_Army_Knife_Membership_Store::effective_status(
-				array(
-					'status'      => 'cancelled',
-					'expiry_date' => '2020-01-01',
-				),
-				$today
-			),
-			'Only active members expire.'
-		);
-		$this->assertSame(
-			'pending',
-			Chess_Army_Knife_Membership_Store::effective_status(
-				array(
-					'status'      => 'pending',
-					'expiry_date' => '',
-				),
-				$today
-			)
+			'unknown status' => array( array( 'status' => 'vip' ), 'member_status' ),
+			'bad paid date'  => array( array( 'paid_on' => '2026-13-01' ), 'member_date' ),
+			'bad email'      => array( array( 'email' => 'nope' ), 'member_email' ),
+			'unknown type'   => array( array( 'membership_type_id' => '99' ), 'member_type' ),
 		);
 	}
 }

@@ -158,7 +158,6 @@ class A11yFixturesTest extends WP_UnitTestCase {
 				)
 			);
 			update_post_meta( $id, Chess_Army_Knife_Memberships::META_PRICE, 2500 );
-			update_post_meta( $id, Chess_Army_Knife_Memberships::META_MONTHS, 12 );
 			update_post_meta( $id, Chess_Army_Knife_Memberships::META_JUNIOR, (string) $junior );
 		}
 

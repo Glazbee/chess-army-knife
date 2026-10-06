@@ -13,8 +13,8 @@ class MemberStatsTest extends Chess_Army_Knife_TestCase {
 		return $extra + array(
 			'status'                => 'active',
 			'type_name'             => 'Adult',
-			'start_date'            => '',
-			'expiry_date'           => '',
+			'created_at'            => '',
+			'paid_on'               => '',
 			'date_of_birth'         => '',
 			'newsletter_consent_at' => '',
 			'whatsapp_consent_at'   => '',
@@ -27,10 +27,9 @@ class MemberStatsTest extends Chess_Army_Knife_TestCase {
 		$stats = Chess_Army_Knife_Member_Stats::compute(
 			array(
 				$this->person(),
-				$this->person( array( 'expiry_date' => '2026-10-15' ) ), // Last day is today: still current.
-				$this->person( array( 'expiry_date' => '2026-11-14' ) ), // Within 30 days.
-				$this->person( array( 'expiry_date' => '2026-11-15' ) ), // 31 days: not "expiring".
-				$this->person( array( 'expiry_date' => '2026-10-14' ) ), // Lapsed.
+				$this->person( array( 'paid_on' => '2026-09-05' ) ),
+				$this->person( array( 'paid_on' => '2026-10-01' ) ),
+				$this->person( array( 'paid_on' => '2026-10-15' ) ),
 				$this->person( array( 'status' => 'pending' ) ),
 				$this->person( array( 'status' => 'rejected' ) ),
 				$this->person( array( 'status' => 'cancelled' ) ),
@@ -40,18 +39,17 @@ class MemberStatsTest extends Chess_Army_Knife_TestCase {
 		);
 
 		$this->assertSame( 4, $stats['current'] );
-		$this->assertSame( 2, $stats['expiring_30_days'] );
-		$this->assertSame( 1, $stats['lapsed'] );
+		$this->assertSame( 1, $stats['unpaid'] );
 		$this->assertSame( 1, $stats['pending'] );
 		$this->assertSame( 1, $stats['guests'] );
 	}
 
-	public function test_joiners_are_counted_by_start_date() {
+	public function test_joiners_are_counted_by_when_their_record_was_made() {
 		$stats = Chess_Army_Knife_Member_Stats::compute(
 			array(
-				$this->person( array( 'start_date' => '2026-10-02' ) ),
-				$this->person( array( 'start_date' => '2026-03-01' ) ),
-				$this->person( array( 'start_date' => '2025-10-02' ) ),
+				$this->person( array( 'created_at' => '2026-10-02 09:30:00' ) ),
+				$this->person( array( 'created_at' => '2026-03-01 18:00:00' ) ),
+				$this->person( array( 'created_at' => '2025-10-02 18:00:00' ) ),
 				$this->person(),
 			),
 			self::TODAY

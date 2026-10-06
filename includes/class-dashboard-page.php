@@ -138,9 +138,8 @@ class Chess_Army_Knife_Dashboard_Page {
 				<?php
 				self::tile( __( 'Current members', 'chess-army-knife' ), $stats['current'], '', true );
 				self::tile( __( 'Pending applications', 'chess-army-knife' ), $stats['pending'] );
-				self::tile( __( 'Expiring in 30 days', 'chess-army-knife' ), $stats['expiring_30_days'] );
-				self::tile( __( 'Renewal reminders due', 'chess-army-knife' ), $stats['renewal_due'] );
-				self::tile( __( 'Lapsed', 'chess-army-knife' ), $stats['lapsed'], __( 'active records past their last day', 'chess-army-knife' ) );
+				self::tile( __( 'Unpaid this season', 'chess-army-knife' ), $stats['unpaid'] );
+				self::tile( __( 'Payment reminders due', 'chess-army-knife' ), $stats['renewal_due'] );
 				self::tile( __( 'Joined this month', 'chess-army-knife' ), $stats['joined_month'] );
 				self::tile( __( 'Joined this year', 'chess-army-knife' ), $stats['joined_year'] );
 				self::tile( __( 'Guests (not members)', 'chess-army-knife' ), $stats['guests'] );

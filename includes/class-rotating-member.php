@@ -171,7 +171,7 @@ class Chess_Army_Knife_Rotating_Member {
 	 * @return bool
 	 */
 	public static function is_current( array $member ) {
-		return Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === Chess_Army_Knife_Membership_Store::effective_status( $member, current_time( 'Y-m-d' ) );
+		return Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'];
 	}
 
 	/**

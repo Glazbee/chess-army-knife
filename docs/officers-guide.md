@@ -57,8 +57,8 @@ need no login). When the replies are in, pick the boards (or use **Fill from rep
 the fixture has started.
 
 **5. Deal with applications.** New applications wait on **Members** under *Pending*. Approve or decline.
-An approved member's dates follow their membership type. Tell people how to pay; record the payment on
-their record when it arrives.
+Approving makes someone a member; they pay for the season like everyone else. Tell people how to pay;
+record the payment on their record when it arrives, or use **Mark paid** on the Members list.
 
 **6. Seasons.** Membership is paid for every season. At the start of each season, open **Members → Seasons**
 and press **Start new season**: everyone is marked as not paid and has to pay again, and you are asked to
@@ -67,8 +67,8 @@ Members). Record each payment on the member's record with its date, method and a
 (CSV)** next to a season gives the treasurer a file that opens in Excel. The first season you start counts
 the payments you have already recorded, so nobody is marked as unpaid by it.
 
-**7. Renewals.** **Renewals** shows who is due a reminder at the next daily run. Reminders go out by
-themselves if they are switched on under Settings. Use **Renew** on a record when someone has paid again: it runs the membership on for another period and notes the payment as received today.
+**7. Renewals.** **Renewals** shows who is due a payment reminder at the next daily run. Reminders go out by
+themselves if they are switched on under Settings, to members who have not paid for the season.
 
 ## Now and then
 

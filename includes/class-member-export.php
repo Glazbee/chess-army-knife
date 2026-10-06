@@ -1,7 +1,7 @@
 <?php
 /**
  * Export of chosen members to a CSV file: contact details, ratings, ECF
- * codes and membership dates, for the treasurer, team captains or an import
+ * codes and payment, for the treasurer, team captains or an import
  * into another system.
  *
  * The file holds personal details, so only someone with the membership
@@ -25,8 +25,6 @@ class Chess_Army_Knife_Member_Export {
 			'name'               => __( 'Name', 'chess-army-knife' ),
 			'status'             => __( 'Status', 'chess-army-knife' ),
 			'membership_type'    => __( 'Membership type', 'chess-army-knife' ),
-			'start_date'         => __( 'Start date', 'chess-army-knife' ),
-			'expiry_date'        => __( 'Expiry date', 'chess-army-knife' ),
 			'email'              => __( 'Email', 'chess-army-knife' ),
 			'phone'              => __( 'Phone', 'chess-army-knife' ),
 			'date_of_birth'      => __( 'Date of birth', 'chess-army-knife' ),
@@ -39,7 +37,7 @@ class Chess_Army_Knife_Member_Export {
 			'ecf_checked_at'     => __( 'ECF rating checked (UTC)', 'chess-army-knife' ),
 			'manual_rating'      => __( 'Manual rating', 'chess-army-knife' ),
 			'teams'              => __( 'Teams', 'chess-army-knife' ),
-			'paid_on'            => __( 'Payment received', 'chess-army-knife' ),
+			'paid_on'            => __( 'Paid for this season', 'chess-army-knife' ),
 			'payment_method'     => __( 'Payment method', 'chess-army-knife' ),
 			'payment_reference'  => __( 'Payment reference', 'chess-army-knife' ),
 			'newsletter_consent' => __( 'Newsletter', 'chess-army-knife' ),
@@ -51,22 +49,19 @@ class Chess_Army_Knife_Member_Export {
 	/**
 	 * One member as a row of text cells, in the order of columns().
 	 *
-	 * @param array    $member    Member row.
-	 * @param string   $today     Today's site-local date, YYYY-MM-DD.
+	 * @param array    $member     Member row.
 	 * @param string[] $team_names Names of the squads they are in.
 	 * @return string[]
 	 */
-	public static function row( array $member, $today, array $team_names ) {
-		$statuses = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
-		$status   = Chess_Army_Knife_Membership_Store::effective_status( $member, $today );
+	public static function row( array $member, array $team_names ) {
+		$statuses = Chess_Army_Knife_Membership_Store::status_labels();
+		$status   = $member['status'];
 		$methods  = Chess_Army_Knife_Memberships::payment_methods();
 
 		return array(
 			$member['name'],
 			isset( $statuses[ $status ] ) ? $statuses[ $status ] : $status,
 			$member['type_name'],
-			$member['start_date'],
-			$member['expiry_date'],
 			$member['email'],
 			$member['phone'],
 			$member['date_of_birth'],
@@ -110,18 +105,17 @@ class Chess_Army_Knife_Member_Export {
 	 * The whole file as text: a header row then one row per member.
 	 *
 	 * @param array[] $members Member rows.
-	 * @param string  $today   Today's site-local date, YYYY-MM-DD.
 	 * @param array   $squads  Names of the squads by member id (see Chess_Army_Knife_Teams::squad_names_by_person()).
 	 * @return string CSV, starting with a byte order mark so Excel reads it as UTF-8.
 	 */
-	public static function to_csv( array $members, $today, array $squads ) {
+	public static function to_csv( array $members, array $squads ) {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- An in-memory stream to build the CSV text, not a file.
 		$out = fopen( 'php://temp', 'r+' );
 
 		fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array_values( self::columns() ) ), ',', '"', '' );
 		foreach ( $members as $member ) {
 			$teams = isset( $squads[ $member['id'] ] ) ? $squads[ $member['id'] ] : array();
-			fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), self::row( $member, $today, $teams ) ), ',', '"', '' );
+			fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), self::row( $member, $teams ) ), ',', '"', '' );
 		}
 
 		rewind( $out );
@@ -137,7 +131,7 @@ class Chess_Army_Knife_Member_Export {
 	 * @param array[] $members Member rows.
 	 */
 	public static function download( array $members ) {
-		$csv = self::to_csv( $members, current_time( 'Y-m-d' ), Chess_Army_Knife_Teams::squad_names_by_person() );
+		$csv = self::to_csv( $members, Chess_Army_Knife_Teams::squad_names_by_person() );
 
 		nocache_headers();
 		header( 'Content-Type: text/csv; charset=utf-8' );

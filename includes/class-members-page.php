@@ -21,6 +21,7 @@ class Chess_Army_Knife_Members_Page {
 		add_action( 'admin_post_chess_army_knife_save_member', array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_chess_army_knife_member_status', array( __CLASS__, 'handle_status' ) );
 		add_action( 'admin_post_chess_army_knife_delete_member', array( __CLASS__, 'handle_delete' ) );
+		add_action( 'admin_post_chess_army_knife_mark_paid', array( __CLASS__, 'handle_mark_paid' ) );
 		add_action( 'admin_post_chess_army_knife_refresh_ratings', array( __CLASS__, 'handle_refresh_ratings' ) );
 		add_action( 'admin_post_chess_army_knife_bulk_members', array( __CLASS__, 'handle_bulk' ) );
 	}
@@ -72,18 +73,6 @@ class Chess_Army_Knife_Members_Page {
 
 		$clean = self::keep_recorded_consents( $clean, $previous );
 
-		// A member who becomes active with no dates starts today and lasts as long as their type says.
-		$becomes_active = Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $clean['status'] && ( ! $previous || Chess_Army_Knife_Membership_Store::STATUS_ACTIVE !== $previous['status'] );
-		if ( $becomes_active ) {
-			$type = Chess_Army_Knife_Memberships::get_type( $clean['membership_type_id'] );
-			if ( null === $clean['start_date'] ) {
-				$clean['start_date'] = current_time( 'Y-m-d' );
-			}
-			if ( null === $clean['expiry_date'] ) {
-				$clean['expiry_date'] = Chess_Army_Knife_Memberships::expiry_from( $clean['start_date'], $type ? $type['months'] : 0 ) ?: null;
-			}
-		}
-
 		if ( $id ) {
 			$clean['id'] = $id;
 		} else {
@@ -120,6 +109,20 @@ class Chess_Army_Knife_Members_Page {
 			}
 		}
 		return $clean;
+	}
+
+	/**
+	 * Handle the Mark paid link: the member has paid for the season now running.
+	 */
+	public static function handle_mark_paid() {
+		self::require_permission();
+
+		$id = isset( $_GET['member'] ) ? absint( $_GET['member'] ) : 0;
+		check_admin_referer( 'chess_army_knife_mark_paid_' . $id );
+
+		$back = wp_get_referer() ? remove_query_arg( array( 'paid', 'error' ), wp_get_referer() ) : self::url();
+		wp_safe_redirect( add_query_arg( Chess_Army_Knife_Membership_Store::mark_paid( $id ) ? array( 'paid' => 1 ) : array( 'error' => 'mark_paid' ), $back ) );
+		exit;
 	}
 
 	/**
@@ -409,7 +412,7 @@ class Chess_Army_Knife_Members_Page {
 			'member_status'     => __( 'Please choose a status.', 'chess-army-knife' ),
 			'member_date'       => __( 'Please enter dates as YYYY-MM-DD.', 'chess-army-knife' ),
 			'member_date_order' => __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ),
-			'renew'             => __( 'That membership could not be renewed: it must be a current or lapsed member whose type has a length.', 'chess-army-knife' ),
+			'mark_paid'         => __( 'That payment could not be recorded: the person must be a current member.', 'chess-army-knife' ),
 			'member_rating'     => __( 'That manual rating is out of range.', 'chess-army-knife' ),
 			'member_reference'  => __( 'Another member already has that payment reference. Please choose a different one.', 'chess-army-knife' ),
 		);
@@ -450,9 +453,8 @@ class Chess_Army_Knife_Members_Page {
 			$notice = array( 'success', 'dnr' === $_GET['deleted'] ? __( 'Member deleted. The plugin will not record them again by itself.', 'chess-army-knife' ) : __( 'Member deleted.', 'chess-army-knife' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only screen state, compared with fixed text.
 		} elseif ( isset( $_GET['updated'] ) ) {
 			$notice = array( 'success', __( 'Member updated.', 'chess-army-knife' ) );
-		} elseif ( isset( $_GET['renewed'] ) ) {
-			/* translators: %s: new last day of membership */
-			$notice = array( 'success', sprintf( __( 'Membership renewed until %s.', 'chess-army-knife' ), mysql2date( get_option( 'date_format' ), sanitize_text_field( wp_unslash( $_GET['renewed'] ) ) ) ) );
+		} elseif ( isset( $_GET['paid'] ) ) {
+			$notice = array( 'success', __( 'Payment recorded for the season.', 'chess-army-knife' ) );
 		} elseif ( isset( $_GET['rr_checked'] ) ) {
 			$notice = array(
 				isset( $_GET['rr_failed'] ) && absint( $_GET['rr_failed'] ) ? 'warning' : 'success',
@@ -513,7 +515,7 @@ class Chess_Army_Knife_Members_Page {
 		);
 		$today   = current_time( 'Y-m-d' );
 		$photos  = Chess_Army_Knife_Member_Photos::counts();
-		$labels  = Chess_Army_Knife_Membership_Store::status_labels() + array( Chess_Army_Knife_Membership_Store::STATUS_EXPIRED => __( 'Expired', 'chess-army-knife' ) );
+		$labels  = Chess_Army_Knife_Membership_Store::status_labels();
 		$methods = Chess_Army_Knife_Memberships::payment_methods();
 		$squads  = Chess_Army_Knife_Teams::squad_names_by_person();
 		?>
@@ -564,7 +566,6 @@ class Chess_Army_Knife_Members_Page {
 						<th><?php esc_html_e( 'Membership', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Status', 'chess-army-knife' ); ?></th>
-						<th><?php esc_html_e( 'Expires', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Contact', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Payment', 'chess-army-knife' ); ?></th>
 						<th><?php esc_html_e( 'Agreed to', 'chess-army-knife' ); ?></th>
@@ -573,10 +574,10 @@ class Chess_Army_Knife_Members_Page {
 				</thead>
 				<tbody>
 					<?php if ( empty( $members ) ) : ?>
-						<tr><td colspan="10"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
+						<tr><td colspan="9"><?php esc_html_e( 'No members found.', 'chess-army-knife' ); ?></td></tr>
 					<?php endif; ?>
 					<?php foreach ( $members as $member ) : ?>
-						<?php $status = Chess_Army_Knife_Membership_Store::effective_status( $member, $today ); ?>
+						<?php $status = $member['status']; ?>
 						<tr>
 							<th scope="row" class="check-column"><label class="cak-check"><input type="checkbox" name="members[]" value="<?php echo esc_attr( $member['id'] ); ?>" /><span class="screen-reader-text"><?php echo esc_html( $member['name'] ); ?></span></label></th>
 							<td>
@@ -588,8 +589,8 @@ class Chess_Army_Knife_Members_Page {
 									<?php endif; ?>
 									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
 									<a href="<?php echo esc_url( self::url( array( 'edit' => $member['id'] ) ) . '#membership-history' ); ?>"><?php esc_html_e( 'History', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
-									<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'] ) : ?>
-										<a href="<?php echo esc_url( self::action_url( 'renew_member', $member['id'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Renew this membership for another period and note the payment as received today?', 'chess-army-knife' ) ); ?>');"><?php esc_html_e( 'Renew', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
+									<?php if ( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $member['status'] && '' === $member['paid_on'] ) : ?>
+										<a href="<?php echo esc_url( self::action_url( 'mark_paid', $member['id'] ) ); ?>"><?php esc_html_e( 'Mark paid', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( $member['name'] ); ?></span></a> |
 									<?php endif; ?>
 									<?php if ( ! empty( $photos[ $member['id'] ] ) ) : ?>
 										<a href="<?php echo esc_url( Chess_Army_Knife_Member_Photos::library_url( $member['id'] ) ); ?>">
@@ -607,7 +608,6 @@ class Chess_Army_Knife_Members_Page {
 							<td><?php echo esc_html( $member['type_name'] ); ?></td>
 							<td><?php echo isset( $squads[ $member['id'] ] ) ? esc_html( implode( ', ', $squads[ $member['id'] ] ) ) : '&mdash;'; ?></td>
 							<td><?php echo esc_html( isset( $labels[ $status ] ) ? $labels[ $status ] : $status ); ?></td>
-							<td><?php echo '' === $member['expiry_date'] ? '&mdash;' : esc_html( mysql2date( get_option( 'date_format' ), $member['expiry_date'] ) ); ?></td>
 							<td>
 								<?php echo esc_html( Chess_Army_Knife_Membership_Store::contact_email( $member ) ); ?>
 								<?php if ( '' !== $member['phone'] . $member['guardian_phone'] ) : ?>
@@ -704,6 +704,10 @@ class Chess_Army_Knife_Members_Page {
 			/* translators: %s: total length of time they have been a member, for example "3 years, 2 months" */
 			echo esc_html( sprintf( __( 'In all, %s as a member.', 'chess-army-knife' ), Chess_Army_Knife_Member_History::duration_label( $summary['runs'][0]['from'], gmdate( 'Y-m-d', strtotime( $summary['runs'][0]['from'] . ' UTC' ) + max( 0, $summary['days'] - 1 ) * DAY_IN_SECONDS ) ) ) );
 			?>
+			<?php
+			/* translators: %d: number of seasons they have paid for */
+			echo esc_html( sprintf( _n( 'Paid for %d season.', 'Paid for %d seasons.', count( $periods ), 'chess-army-knife' ), count( $periods ) ) );
+			?>
 		</p>
 		<?php if ( $summary['lapses'] ) : ?>
 			<p><strong><?php esc_html_e( 'Lapses', 'chess-army-knife' ); ?></strong></p>
@@ -722,19 +726,17 @@ class Chess_Army_Knife_Members_Page {
 <caption class="screen-reader-text"><?php esc_html_e( 'Membership history', 'chess-army-knife' ); ?></caption>
 			<thead>
 				<tr>
+					<th><?php esc_html_e( 'Season', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Membership', 'chess-army-knife' ); ?></th>
-					<th><?php esc_html_e( 'Started', 'chess-army-knife' ); ?></th>
-					<th><?php esc_html_e( 'Last day', 'chess-army-knife' ); ?></th>
 					<th><?php esc_html_e( 'Paid', 'chess-army-knife' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( array_reverse( $periods ) as $period ) : ?>
 					<tr>
+						<td><?php echo esc_html( $period['season'] ); ?></td>
 						<td><?php echo '' === $period['type_name'] ? '&mdash;' : esc_html( $period['type_name'] ); ?></td>
-						<td><?php echo esc_html( mysql2date( $format, $period['start_date'] ) ); ?></td>
-						<td><?php echo '' === $period['expiry_date'] ? esc_html__( 'No end date', 'chess-army-knife' ) : esc_html( mysql2date( $format, $period['expiry_date'] ) ); ?></td>
-						<td><?php echo '' === $period['paid_on'] ? esc_html__( 'Not recorded', 'chess-army-knife' ) : esc_html( mysql2date( $format, $period['paid_on'] ) ); ?></td>
+						<td><?php echo esc_html( mysql2date( $format, $period['paid_on'] ) ); ?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -751,12 +753,11 @@ class Chess_Army_Knife_Members_Page {
 		$editing = null !== $member;
 		$member  = $editing ? $member : array(
 			'manual_rating' => null,
-		) + array_fill_keys( array( 'name', 'nickname', 'blurb', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
+		) + array_fill_keys( array( 'name', 'nickname', 'blurb', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
 			'payment_amount'     => null,
 			'guardian_id'        => 0,
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
-			'start_date'         => current_time( 'Y-m-d' ),
 		);
 		$types   = Chess_Army_Knife_Memberships::types( false );
 
@@ -883,18 +884,7 @@ class Chess_Army_Knife_Members_Page {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="start_date"><?php esc_html_e( 'Starts', 'chess-army-knife' ); ?></label></th>
-						<td><input type="date" id="start_date" name="start_date" value="<?php echo esc_attr( $member['start_date'] ); ?>" /></td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="expiry_date"><?php esc_html_e( 'Expires', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="date" id="expiry_date" name="expiry_date" value="<?php echo esc_attr( $member['expiry_date'] ); ?>" />
-							<p class="description"><?php esc_html_e( 'The last day of membership. When an application is approved, or a member is added as active, a blank date is filled in from the length of their membership type.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="paid_on"><?php esc_html_e( 'Payment received', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="paid_on"><?php esc_html_e( 'Paid for this season', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="date" id="paid_on" name="paid_on" value="<?php echo esc_attr( $member['paid_on'] ); ?>" />
 							<select id="payment_method" name="payment_method" aria-label="<?php esc_attr_e( 'Payment method', 'chess-army-knife' ); ?>">

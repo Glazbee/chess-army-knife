@@ -5,6 +5,8 @@
  * @package Chess_Army_Knife
  */
 
+use Brain\Monkey\Functions;
+
 class MembershipsTest extends Chess_Army_Knife_TestCase {
 
 	/**
@@ -53,42 +55,19 @@ class MembershipsTest extends Chess_Army_Knife_TestCase {
 		}
 	}
 
-	/**
-	 * @dataProvider periods
-	 */
-	public function test_period_label( $months, $expected ) {
-		$this->assertSame( $expected, Chess_Army_Knife_Memberships::period_label( $months ) );
-	}
-
-	public function periods() {
-		return array(
-			'no expiry' => array( 0, 'one-off' ),
-			'month'     => array( 1, 'per month' ),
-			'year'      => array( 12, 'per year' ),
-			'season'    => array( 9, 'for 9 months' ),
+	public function test_a_membership_is_priced_for_a_season() {
+		Functions\when( 'get_post_meta' )->justReturn( '' );
+		Functions\when( 'get_the_title' )->justReturn( 'Adult' );
+		$type = Chess_Army_Knife_Memberships::type_data(
+			(object) array(
+				'ID'          => 5,
+				'post_title'  => 'Adult',
+				'post_status' => 'publish',
+			)
 		);
-	}
 
-	/**
-	 * @dataProvider expiries
-	 */
-	public function test_expiry_from( $start, $months, $expected ) {
-		$this->assertSame( $expected, Chess_Army_Knife_Memberships::expiry_from( $start, $months ) );
-	}
-
-	public function expiries() {
-		return array(
-			'a year runs to the day before' => array( '2026-09-01', 12, '2027-08-31' ),
-			'mid-year start'                => array( '2026-09-29', 12, '2027-09-28' ),
-			'first of the year'             => array( '2026-01-01', 12, '2026-12-31' ),
-			'a month'                       => array( '2026-10-15', 1, '2026-11-14' ),
-			'crossing a year end'           => array( '2026-12-15', 3, '2027-03-14' ),
-			'31 January plus a month'       => array( '2026-01-31', 1, '2026-02-27' ),
-			'31 January plus a month, leap' => array( '2028-01-31', 1, '2028-02-28' ),
-			'no expiry'                     => array( '2026-09-01', 0, '' ),
-			'invalid start'                 => array( 'soon', 12, '' ),
-			'impossible start'              => array( '2026-02-30', 12, '' ),
-		);
+		$this->assertSame( 'per season', $type['period_label'] );
+		$this->assertArrayNotHasKey( 'months', $type );
 	}
 
 	public function test_is_valid_date() {

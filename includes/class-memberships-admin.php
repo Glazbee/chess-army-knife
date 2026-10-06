@@ -59,7 +59,6 @@ class Chess_Army_Knife_Memberships_Admin {
 	public static function render_meta_box( $post ) {
 		$description = (string) get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_DESCRIPTION, true );
 		$price       = get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_PRICE, true );
-		$months      = get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_MONTHS, true );
 		$is_junior   = '1' === (string) get_post_meta( $post->ID, Chess_Army_Knife_Memberships::META_JUNIOR, true );
 
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
@@ -76,14 +75,7 @@ class Chess_Army_Knife_Memberships_Admin {
 				<th scope="row"><label for="chess_army_membership_price"><?php echo esc_html( sprintf( /* translators: %s: currency symbol */ __( 'Price (%s)', 'chess-army-knife' ), Chess_Army_Knife_Memberships::currency_symbol() ) ); ?></label></th>
 				<td>
 					<input type="text" id="chess_army_membership_price" name="chess_army_membership_price" value="<?php echo esc_attr( '' === $price ? '' : Chess_Army_Knife_Memberships::price_field_value( $price ) ); ?>" class="small-text" inputmode="decimal" placeholder="25.00" />
-					<p class="description"><?php esc_html_e( 'Leave blank or enter 0 for a free membership.', 'chess-army-knife' ); ?></p>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><label for="chess_army_membership_months"><?php esc_html_e( 'Length (months)', 'chess-army-knife' ); ?></label></th>
-				<td>
-					<input type="number" id="chess_army_membership_months" name="chess_army_membership_months" value="<?php echo esc_attr( '' === $months ? 12 : (int) $months ); ?>" min="0" max="120" class="small-text" />
-					<p class="description"><?php esc_html_e( 'How long a membership lasts once approved, used to suggest its expiry date. 12 is a year; 0 means it does not expire.', 'chess-army-knife' ); ?></p>
+					<p class="description"><?php esc_html_e( 'The price for a season. Leave blank or enter 0 for a free membership.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -120,9 +112,6 @@ class Chess_Army_Knife_Memberships_Admin {
 		} elseif ( null !== Chess_Army_Knife_Memberships::parse_price( $price ) ) {
 			update_post_meta( $post_id, Chess_Army_Knife_Memberships::META_PRICE, Chess_Army_Knife_Memberships::parse_price( $price ) );
 		}
-
-		$months = isset( $_POST['chess_army_membership_months'] ) ? absint( $_POST['chess_army_membership_months'] ) : 12;
-		update_post_meta( $post_id, Chess_Army_Knife_Memberships::META_MONTHS, min( 120, $months ) );
 
 		update_post_meta( $post_id, Chess_Army_Knife_Memberships::META_JUNIOR, empty( $_POST['chess_army_membership_junior'] ) ? '0' : '1' );
 	}

@@ -109,7 +109,7 @@ class PluginTest extends WP_UnitTestCase {
 		};
 		$save( 'Test Player' );
 		$save( 'Test Nocode', array( 'ecf_code' => '' ) );
-		$save( 'Test Expired', array( 'expiry_date' => '2020-01-01' ) );
+		$save( 'Test Cancelled', array( 'status' => 'cancelled' ) );
 		$save( 'Test Pending', array( 'status' => 'pending' ) );
 		$save( 'Test Declined', array( 'status' => 'rejected' ) );
 		$save( 'Someone Else', array( 'ecf_code' => '999999A' ) );
@@ -308,10 +308,9 @@ class PluginTest extends WP_UnitTestCase {
 		);
 		Chess_Army_Knife_Membership_Store::save_member(
 			array(
-				'name'        => 'Lapsed Three',
-				'status'      => 'active',
-				'ecf_code'    => '333333C',
-				'expiry_date' => '2020-01-01',
+				'name'     => 'Lapsed Three',
+				'status'   => 'cancelled',
+				'ecf_code' => '333333C',
 			)
 		);
 		$this->mock_http(

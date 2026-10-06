@@ -81,7 +81,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 		$this->member( 'Member, Ada' );
 		$this->member( 'Guest, Gus', array( 'status' => 'nonmember' ) );
 		$this->member( 'Pat Applicant', array( 'status' => 'pending' ) );
-		$this->member( 'Lapsed Member', array( 'expiry_date' => '2020-01-01' ) );
+		$this->member( 'Lapsed Member', array( 'status' => 'cancelled' ) );
 		$photo = $this->photo();
 
 		$html = $this->field_html( $photo );
@@ -95,7 +95,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 
 	public function test_someone_already_tagged_stays_in_the_checklist_even_if_no_longer_a_member() {
 		$this->manager();
-		$lapsed = $this->member( 'Lapsed Member', array( 'expiry_date' => '2020-01-01' ) );
+		$lapsed = $this->member( 'Lapsed Member', array( 'status' => 'cancelled' ) );
 		$photo  = $this->photo();
 		Chess_Army_Knife_Member_Photos::set_members( $photo, array( $lapsed ) );
 

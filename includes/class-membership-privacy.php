@@ -78,9 +78,7 @@ class Chess_Army_Knife_Membership_Privacy {
 				__( 'Latest ECF rating (fetched from the ECF)', 'chess-army-knife' ) => null === $member['ecf_rating'] ? '' : $member['ecf_rating'] . ( '' !== $member['ecf_rating_domain'] ? ' (' . $member['ecf_rating_domain'] . ')' : '' ),
 				__( 'Membership type', 'chess-army-knife' ) => $member['type_name'],
 				__( 'Status', 'chess-army-knife' )         => isset( $labels[ $member['status'] ] ) ? $labels[ $member['status'] ] : $member['status'],
-				__( 'Membership starts', 'chess-army-knife' ) => $member['start_date'],
-				__( 'Membership expires', 'chess-army-knife' ) => $member['expiry_date'],
-				__( 'Payment received on', 'chess-army-knife' ) => $member['paid_on'],
+				__( 'Paid for this season on', 'chess-army-knife' ) => $member['paid_on'],
 				__( 'Payment method', 'chess-army-knife' ) => isset( $methods[ $member['payment_method'] ] ) ? $methods[ $member['payment_method'] ] : '',
 				__( 'Club notes', 'chess-army-knife' )     => $member['notes'],
 				__( 'Parent or guardian email', 'chess-army-knife' ) => $member['guardian_email'],
@@ -251,12 +249,8 @@ class Chess_Army_Knife_Membership_Privacy {
 							'value' => $period['type_name'],
 						),
 						array(
-							'name'  => __( 'Started', 'chess-army-knife' ),
-							'value' => $period['start_date'],
-						),
-						array(
-							'name'  => __( 'Last day', 'chess-army-knife' ),
-							'value' => $period['expiry_date'],
+							'name'  => __( 'Season', 'chess-army-knife' ),
+							'value' => $period['season'],
 						),
 						array(
 							'name'  => __( 'Payment received', 'chess-army-knife' ),

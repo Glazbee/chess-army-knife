@@ -38,7 +38,7 @@ class NonMembersTest extends WP_UnitTestCase {
 			)
 		);
 
-		foreach ( array( 'all', 'active', 'pending', 'expired', 'closed' ) as $view ) {
+		foreach ( array( 'all', 'active', 'pending', 'unpaid', 'closed' ) as $view ) {
 			$this->assertNotContains( 'Guest', $this->names( $view ), "$view leaves out non-members." );
 		}
 		$this->assertSame( array( 'Applicant', 'Member' ), $this->names( 'all' ) );
@@ -49,17 +49,11 @@ class NonMembersTest extends WP_UnitTestCase {
 		$this->assertSame( 1, Chess_Army_Knife_Membership_Store::count_view( 'nonmember' ) );
 	}
 
-	public function test_a_non_member_never_counts_as_a_current_member_even_with_an_expiry_date_in_the_future() {
-		$this->person(
-			'Guest',
-			array(
-				'status'      => 'nonmember',
-				'expiry_date' => '2099-01-01',
-			)
-		);
+	public function test_a_non_member_never_counts_as_a_current_member_or_as_unpaid() {
+		$this->person( 'Guest', array( 'status' => 'nonmember' ) );
 
 		$this->assertSame( array(), $this->names( 'active' ) );
-		$this->assertSame( array(), $this->names( 'expired' ) );
+		$this->assertSame( array(), $this->names( 'unpaid' ) );
 	}
 
 	public function test_the_admin_form_can_record_someone_as_not_a_member() {

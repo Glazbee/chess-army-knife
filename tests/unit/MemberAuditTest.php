@@ -51,9 +51,9 @@ class MemberAuditTest extends Chess_Army_Knife_TestCase {
 			),
 			$this->member(
 				array(
-					'id'          => 2,
-					'ecf_code'    => '',
-					'expiry_date' => '2026-01-31',
+					'id'       => 2,
+					'ecf_code' => '',
+					'status'   => 'cancelled',
 				)
 			),
 			$this->member(
@@ -66,7 +66,7 @@ class MemberAuditTest extends Chess_Army_Knife_TestCase {
 			$this->member( array( 'id' => 4 ) ),
 		);
 
-		$found = Chess_Army_Knife_Member_Audit::missing_ecf_code( $members, self::TODAY );
+		$found = Chess_Army_Knife_Member_Audit::missing_ecf_code( $members );
 
 		$this->assertSame( array( 1 ), array_column( $found, 'id' ) );
 	}
@@ -97,7 +97,7 @@ class MemberAuditTest extends Chess_Army_Knife_TestCase {
 			$this->member( array( 'id' => 3 ) ),
 		);
 
-		$found = Chess_Army_Knife_Member_Audit::malformed_ecf_code( $members, self::TODAY );
+		$found = Chess_Army_Knife_Member_Audit::malformed_ecf_code( $members );
 
 		$this->assertSame( array( 1 ), array_column( $found, 'id' ) );
 	}
