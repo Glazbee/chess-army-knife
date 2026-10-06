@@ -912,14 +912,14 @@ class Chess_Army_Knife_Members_Page {
 							</td>
 						</tr>
 					<?php endif; ?>
-					<tr>
+					<tr id="cak-extras-row">
 						<th scope="row"><?php esc_html_e( 'Optional extras', 'chess-army-knife' ); ?></th>
 						<td>
-							<label style="display:block">
+							<label style="display:block" id="cak-newsletter-choice">
 								<input type="checkbox" name="newsletter" value="1" <?php checked( '' !== $member['newsletter_consent_at'] ); ?> />
 								<?php esc_html_e( 'Has agreed to receive the club newsletter', 'chess-army-knife' ); ?>
 							</label>
-							<label style="display:block">
+							<label style="display:block" id="cak-whatsapp-choice">
 								<input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $member['whatsapp_consent_at'] ); ?> />
 								<?php esc_html_e( 'Has agreed to be added to the WhatsApp groups of the teams they are in (their phone number is visible to the group)', 'chess-army-knife' ); ?>
 							</label>
