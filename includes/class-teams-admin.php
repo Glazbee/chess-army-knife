@@ -24,6 +24,174 @@ class Chess_Army_Knife_Teams_Admin {
 		add_action( 'add_meta_boxes_' . Chess_Army_Knife_Teams::POST_TYPE, array( __CLASS__, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . Chess_Army_Knife_Teams::POST_TYPE, array( __CLASS__, 'save' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+		add_action( 'post_submitbox_misc_actions', array( __CLASS__, 'render_archive_status' ) );
+		add_action( 'admin_post_' . self::ARCHIVE_ACTION, array( __CLASS__, 'handle_archive' ) );
+		add_filter( 'post_row_actions', array( __CLASS__, 'row_actions' ), 10, 2 );
+		add_filter( 'views_edit-' . Chess_Army_Knife_Teams::POST_TYPE, array( __CLASS__, 'views' ) );
+		add_action( 'pre_get_posts', array( __CLASS__, 'filter_list' ) );
+	}
+
+	/**
+	 * Which part of the Teams list is asked for. Current teams unless chosen otherwise.
+	 *
+	 * @return string 'current', 'historic' or 'all'.
+	 */
+	protected static function requested_scope() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only narrows a list.
+		return Chess_Army_Knife_Teams::clean_scope( isset( $_GET[ self::SCOPE_ARG ] ) ? sanitize_key( wp_unslash( $_GET[ self::SCOPE_ARG ] ) ) : '' );
+	}
+
+	/**
+	 * Show only the chosen part of the Teams list. The Trash lists every team in it.
+	 *
+	 * @param WP_Query $query Query being run.
+	 */
+	public static function filter_list( $query ) {
+		if ( ! is_admin() || ! $query->is_main_query() || Chess_Army_Knife_Teams::POST_TYPE !== $query->get( 'post_type' ) || 'trash' === $query->get( 'post_status' ) ) {
+			return;
+		}
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || 'edit-' . Chess_Army_Knife_Teams::POST_TYPE !== $screen->id ) {
+			return;
+		}
+		$meta_query = Chess_Army_Knife_Teams::scope_meta_query( self::requested_scope() );
+		if ( $meta_query ) {
+			$query->set( 'meta_query', $meta_query );
+		}
+	}
+
+	/**
+	 * Replace the list's status links with Current, Historic and All, keeping the Trash link.
+	 *
+	 * @param string[] $views Status links.
+	 * @return string[]
+	 */
+	public static function views( $views ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only decides which link is lit.
+		$active   = isset( $_GET['post_status'] ) && 'trash' === $_GET['post_status'] ? '' : self::requested_scope();
+		$trash    = isset( $views['trash'] ) ? $views['trash'] : '';
+		$base     = admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE );
+		$labels   = array(
+			'current'  => __( 'Current', 'chess-army-knife' ),
+			'historic' => __( 'Historic', 'chess-army-knife' ),
+			'all'      => __( 'All', 'chess-army-knife' ),
+		);
+		$teams    = Chess_Army_Knife_Teams::all( true );
+		$historic = count(
+			array_filter(
+				$teams,
+				function ( $team ) {
+					return ! Chess_Army_Knife_Teams::is_current( $team );
+				}
+			)
+		);
+		$counts   = array(
+			'current'  => count( $teams ) - $historic,
+			'historic' => $historic,
+			'all'      => count( $teams ),
+		);
+
+		$links = array();
+		foreach ( $labels as $scope => $label ) {
+			$links[ $scope ] = sprintf(
+				'<a href="%1$s"%2$s>%3$s <span class="count">(%4$d)</span></a>',
+				esc_url( 'current' === $scope ? $base : add_query_arg( self::SCOPE_ARG, $scope, $base ) ),
+				$active === $scope ? ' class="current" aria-current="page"' : '',
+				esc_html( $label ),
+				$counts[ $scope ]
+			);
+		}
+		if ( $trash ) {
+			$links['trash'] = $trash;
+		}
+		return $links;
+	}
+
+	/**
+	 * Whether a team is archived (historic).
+	 *
+	 * @param int $team_id Team id.
+	 * @return bool
+	 */
+	protected static function is_archived( $team_id ) {
+		return (bool) get_post_meta( $team_id, Chess_Army_Knife_Teams::META_HISTORIC, true );
+	}
+
+	/**
+	 * The link that archives a team, or brings an archived one back.
+	 *
+	 * @param int $team_id Team id.
+	 * @return string URL, with its nonce.
+	 */
+	protected static function archive_url( $team_id ) {
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					'action' => self::ARCHIVE_ACTION,
+					'team'   => $team_id,
+					'to'     => self::is_archived( $team_id ) ? 'current' : 'historic',
+				),
+				admin_url( 'admin-post.php' )
+			),
+			self::ARCHIVE_ACTION . $team_id
+		);
+	}
+
+	/**
+	 * Add Archive or Restore to a team's row on the list.
+	 *
+	 * @param string[] $actions Row actions.
+	 * @param WP_Post  $post    Team.
+	 * @return string[]
+	 */
+	public static function row_actions( $actions, $post ) {
+		if ( Chess_Army_Knife_Teams::POST_TYPE !== $post->post_type || 'trash' === $post->post_status || ! current_user_can( 'edit_post', $post->ID ) ) {
+			return $actions;
+		}
+		$label                  = self::is_archived( $post->ID ) ? __( 'Restore', 'chess-army-knife' ) : __( 'Archive', 'chess-army-knife' );
+		$actions['cak_archive'] = '<a href="' . esc_url( self::archive_url( $post->ID ) ) . '">' . esc_html( $label ) . '</a>';
+		return $actions;
+	}
+
+	/**
+	 * Show whether the team is archived in the Publish box, with the link to change it.
+	 *
+	 * @param WP_Post $post Team being edited.
+	 */
+	public static function render_archive_status( $post ) {
+		if ( ! $post || Chess_Army_Knife_Teams::POST_TYPE !== $post->post_type || 'auto-draft' === $post->post_status || ! current_user_can( 'edit_post', $post->ID ) ) {
+			return;
+		}
+		$archived = self::is_archived( $post->ID );
+		?>
+		<div class="misc-pub-section misc-pub-cak-archive">
+			<span class="dashicons dashicons-archive" aria-hidden="true"></span>
+			<?php esc_html_e( 'Team:', 'chess-army-knife' ); ?>
+			<strong><?php echo esc_html( $archived ? __( 'Historic', 'chess-army-knife' ) : __( 'Current', 'chess-army-knife' ) ); ?></strong>
+			<a href="<?php echo esc_url( self::archive_url( $post->ID ) ); ?>"><?php echo esc_html( $archived ? __( 'Restore team', 'chess-army-knife' ) : __( 'Archive team', 'chess-army-knife' ) ); ?></a>
+			<p class="description"><?php esc_html_e( 'An archived team keeps its games from past seasons but is left out of the lists of current teams.', 'chess-army-knife' ); ?></p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Archive a team or bring it back, then return to where the link was clicked.
+	 */
+	public static function handle_archive() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- The nonce is checked just below.
+		$team_id = isset( $_GET['team'] ) ? absint( $_GET['team'] ) : 0;
+		check_admin_referer( self::ARCHIVE_ACTION . $team_id );
+		$post = get_post( $team_id );
+		if ( ! $post || Chess_Army_Knife_Teams::POST_TYPE !== $post->post_type || ! current_user_can( 'edit_post', $team_id ) ) {
+			wp_die( esc_html__( 'You are not allowed to change this team.', 'chess-army-knife' ), '', array( 'response' => 403 ) );
+		}
+		$archive = isset( $_GET['to'] ) && 'historic' === sanitize_key( wp_unslash( $_GET['to'] ) );
+		// phpcs:enable
+		update_post_meta( $team_id, Chess_Army_Knife_Teams::META_HISTORIC, $archive ? 1 : 0 );
+
+		$back = wp_get_referer();
+		wp_safe_redirect( $back ? $back : admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Teams::POST_TYPE ) );
+		exit;
 	}
 
 	/**
@@ -105,13 +273,6 @@ class Chess_Army_Knife_Teams_Admin {
 					<?php $current = Chess_Army_Knife_Teams::get( $post->ID ); ?>
 					<?php echo esc_html( $current && '' !== $current['group'] ? $current['group'] : __( 'None', 'chess-army-knife' ) ); ?>
 					<p class="description"><?php esc_html_e( 'A group chooses its teams: add this team to a group on the Groups tab of Teams.', 'chess-army-knife' ); ?></p>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Historic team', 'chess-army-knife' ); ?></th>
-				<td>
-					<label><input type="checkbox" name="chess_army_team_historic" value="1" <?php checked( (bool) get_post_meta( $post->ID, Chess_Army_Knife_Teams::META_HISTORIC, true ) ); ?> /> <?php esc_html_e( 'This team no longer plays', 'chess-army-knife' ); ?></label>
-					<p class="description"><?php esc_html_e( 'Keeps its games from past seasons, but leaves it out of the lists of current teams: selection, announcements, the Club Teams block and the Members screen.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -351,7 +512,6 @@ class Chess_Army_Knife_Teams_Admin {
 			return;
 		}
 
-		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_HISTORIC, empty( $_POST['chess_army_team_historic'] ) ? 0 : 1 );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_TAG, isset( $_POST['chess_army_team_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['chess_army_team_tag'] ) ) : '' );
 		update_post_meta( $post_id, Chess_Army_Knife_Teams::META_WHATSAPP, isset( $_POST['chess_army_team_whatsapp'] ) ? Chess_Army_Knife_Teams::clean_whatsapp_link( sanitize_text_field( wp_unslash( $_POST['chess_army_team_whatsapp'] ) ) ) : '' );
 

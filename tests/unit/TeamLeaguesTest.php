@@ -393,4 +393,23 @@ class TeamLeaguesTest extends Chess_Army_Knife_TestCase {
 
 		$this->assertSame( array( 'cup', 'Division 1', 'Division 2', 'Division 10' ), $sorted );
 	}
+
+	public function test_the_teams_list_shows_current_teams_unless_another_scope_is_asked_for() {
+		$this->assertSame( 'current', Chess_Army_Knife_Teams::clean_scope( '' ) );
+		$this->assertSame( 'current', Chess_Army_Knife_Teams::clean_scope( 'nonsense' ) );
+		$this->assertSame( 'historic', Chess_Army_Knife_Teams::clean_scope( 'historic' ) );
+		$this->assertSame( 'all', Chess_Army_Knife_Teams::clean_scope( 'all' ) );
+	}
+
+	public function test_each_scope_picks_its_teams_by_the_historic_flag() {
+		$this->assertSame( array(), Chess_Army_Knife_Teams::scope_meta_query( 'all' ) );
+
+		$historic = Chess_Army_Knife_Teams::scope_meta_query( 'historic' );
+		$this->assertSame( '1', $historic[0]['value'] );
+
+		// A team never marked historic has no flag at all, so it counts as current.
+		$current = Chess_Army_Knife_Teams::scope_meta_query( 'whatever' );
+		$this->assertSame( 'OR', $current['relation'] );
+		$this->assertSame( 'NOT EXISTS', $current[0]['compare'] );
+	}
 }

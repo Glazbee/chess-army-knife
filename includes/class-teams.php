@@ -193,6 +193,49 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
+	 * The part of the Teams list to show: current teams, historic ones or all.
+	 *
+	 * @param mixed $scope Requested scope.
+	 * @return string 'current', 'historic' or 'all'; current when the request is not one of these.
+	 */
+	public static function clean_scope( $scope ) {
+		return in_array( $scope, array( 'historic', 'all' ), true ) ? $scope : 'current';
+	}
+
+	/**
+	 * The meta query that picks the teams in a scope.
+	 *
+	 * @param string $scope See clean_scope().
+	 * @return array[] Meta query clauses; empty for all teams.
+	 */
+	public static function scope_meta_query( $scope ) {
+		$scope = self::clean_scope( $scope );
+		if ( 'historic' === $scope ) {
+			return array(
+				array(
+					'key'   => self::META_HISTORIC,
+					'value' => '1',
+				),
+			);
+		}
+		if ( 'current' === $scope ) {
+			// A team never marked historic has no value at all.
+			return array(
+				'relation' => 'OR',
+				array(
+					'key'     => self::META_HISTORIC,
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'   => self::META_HISTORIC,
+					'value' => '0',
+				),
+			);
+		}
+		return array();
+	}
+
+	/**
 	 * Every published team, historic ones too, kept for the request.
 	 *
 	 * @return array[]
