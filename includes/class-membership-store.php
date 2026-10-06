@@ -277,9 +277,6 @@ class Chess_Army_Knife_Membership_Store {
 					$phone = '';
 				}
 			} else {
-				if ( '' === $email ) {
-					return new WP_Error( 'member_email', __( 'Please enter a valid email address.', 'chess-army-knife' ) );
-				}
 				// Only needed for juniors, so not kept.
 				$date_of_birth  = '';
 				$guardian_name  = '';
@@ -288,10 +285,11 @@ class Chess_Army_Knife_Membership_Store {
 			}
 		}
 
-		// A WhatsApp group shows a phone number to the other members, so there must be one to add.
-		if ( ! empty( $input['whatsapp'] ) && '' === $phone . $guardian_phone ) {
-			return new WP_Error( 'member_whatsapp', __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ) );
-		}
+		// A WhatsApp group shows a phone number to the other members, so without one there is nothing to add.
+		$whatsapp = ! empty( $input['whatsapp'] ) && '' !== $phone . $guardian_phone;
+
+		// The newsletter is sent by email, so without an address there is nothing to send it to.
+		$newsletter = ! empty( $input['newsletter'] ) && '' !== $email . $guardian_email;
 
 		$now    = current_time( 'mysql', true );
 		$member = array(
@@ -308,8 +306,8 @@ class Chess_Army_Knife_Membership_Store {
 			'membership_type_id'    => $type_id,
 			'type_name'             => $type ? $type['name'] : '',
 			// Optional extras, each agreed separately; blank means not agreed.
-			'newsletter_consent_at' => ! empty( $input['newsletter'] ) ? $now : null,
-			'whatsapp_consent_at'   => ! empty( $input['whatsapp'] ) ? $now : null,
+			'newsletter_consent_at' => $newsletter ? $now : null,
+			'whatsapp_consent_at'   => $whatsapp ? $now : null,
 		);
 
 		if ( ! $is_admin ) {
@@ -321,23 +319,9 @@ class Chess_Army_Knife_Membership_Store {
 			return new WP_Error( 'member_status', __( 'Please choose a status.', 'chess-army-knife' ) );
 		}
 
-		$start   = self::clean_date( $input, 'start_date' );
-		$expiry  = self::clean_date( $input, 'expiry_date' );
 		$paid_on = self::clean_date( $input, 'paid_on' );
-		if ( null === $start || null === $expiry || null === $paid_on ) {
+		if ( null === $paid_on ) {
 			return new WP_Error( 'member_date', __( 'Please enter dates as YYYY-MM-DD.', 'chess-army-knife' ) );
-		}
-		if ( '' !== $start && '' !== $expiry && $expiry < $start ) {
-			return new WP_Error( 'member_date_order', __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ) );
-		}
-
-		$rating = null;
-		if ( isset( $input['manual_rating'] ) && '' !== trim( (string) $input['manual_rating'] ) ) {
-			$rating = (int) $input['manual_rating'];
-			if ( $rating < self::MIN_MANUAL_RATING || $rating > self::MAX_MANUAL_RATING ) {
-				/* translators: 1: lowest manual rating, 2: highest manual rating */
-				return new WP_Error( 'member_rating', sprintf( __( 'A manual rating must be between %1$d and %2$d.', 'chess-army-knife' ), self::MIN_MANUAL_RATING, self::MAX_MANUAL_RATING ) );
-			}
 		}
 
 		$method = isset( $input['payment_method'] ) ? sanitize_key( $input['payment_method'] ) : '';
@@ -347,8 +331,6 @@ class Chess_Army_Knife_Membership_Store {
 
 		return $member + array(
 			'status'            => $status,
-			'start_date'        => '' === $start ? null : $start,
-			'expiry_date'       => '' === $expiry ? null : $expiry,
 			'payment_method'    => $method,
 			// A reference chosen for them, to match a bank transfer; blank uses the one the club's prefix and their number make.
 			'payment_reference' => isset( $input['payment_reference'] ) ? mb_substr( preg_replace( '/[^A-Za-z0-9\-_\/ ]/', '', trim( sanitize_text_field( $input['payment_reference'] ) ) ), 0, 40 ) : '',
@@ -356,7 +338,6 @@ class Chess_Army_Knife_Membership_Store {
 			'notes'             => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
 			// Shown on the website when the member is the Featured Player, so only an officer can write it.
 			'blurb'             => isset( $input['blurb'] ) ? mb_substr( sanitize_textarea_field( $input['blurb'] ), 0, self::MAX_BLURB_LENGTH ) : '',
-			'manual_rating'     => $rating,
 		);
 	}
 

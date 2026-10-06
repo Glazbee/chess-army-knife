@@ -307,14 +307,13 @@ class Chess_Army_Knife_Member_Checks_Page {
 				'cells' => array(
 					self::member_link( $member ),
 					esc_html( $member['type_name'] ),
-					null === $member['manual_rating'] ? '&mdash;' : esc_html( (string) $member['manual_rating'] ),
 					self::contact_cell( $member ),
 				),
 			);
 		}
 
 		echo '<p class="description">' . esc_html__( 'Current members with no ECF rating code, so no rating can be shown for them. Add their code on their record.', 'chess-army-knife' ) . '</p>';
-		self::render_table( array( __( 'Name', 'chess-army-knife' ), __( 'Membership', 'chess-army-knife' ), __( 'Manual rating', 'chess-army-knife' ), __( 'Contact', 'chess-army-knife' ) ), $rows );
+		self::render_table( array( __( 'Name', 'chess-army-knife' ), __( 'Membership', 'chess-army-knife' ), __( 'Contact', 'chess-army-knife' ) ), $rows );
 	}
 
 	/**

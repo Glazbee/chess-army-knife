@@ -75,12 +75,11 @@ class Chess_Army_Knife_Members_Page {
 		// A member who becomes active with no dates starts today and lasts as long as their type says.
 		$becomes_active = Chess_Army_Knife_Membership_Store::STATUS_ACTIVE === $clean['status'] && ( ! $previous || Chess_Army_Knife_Membership_Store::STATUS_ACTIVE !== $previous['status'] );
 		if ( $becomes_active ) {
-			$type = Chess_Army_Knife_Memberships::get_type( $clean['membership_type_id'] );
-			if ( null === $clean['start_date'] ) {
-				$clean['start_date'] = current_time( 'Y-m-d' );
-			}
-			if ( null === $clean['expiry_date'] ) {
-				$clean['expiry_date'] = Chess_Army_Knife_Memberships::expiry_from( $clean['start_date'], $type ? $type['months'] : 0 ) ?: null;
+			$type                = Chess_Army_Knife_Memberships::get_type( $clean['membership_type_id'] );
+			$start               = $previous && $previous['start_date'] ? $previous['start_date'] : current_time( 'Y-m-d' );
+			$clean['start_date'] = $start;
+			if ( ! $previous || ! $previous['expiry_date'] ) {
+				$clean['expiry_date'] = Chess_Army_Knife_Memberships::expiry_from( $start, $type ? $type['months'] : 0 ) ?: null;
 			}
 		}
 
@@ -405,13 +404,11 @@ class Chess_Army_Knife_Members_Page {
 	 */
 	protected static function error_message( $code ) {
 		$messages = array(
-			'member_missing'    => __( 'That member no longer exists.', 'chess-army-knife' ),
-			'member_status'     => __( 'Please choose a status.', 'chess-army-knife' ),
-			'member_date'       => __( 'Please enter dates as YYYY-MM-DD.', 'chess-army-knife' ),
-			'member_date_order' => __( 'The expiry date cannot be before the start date.', 'chess-army-knife' ),
-			'renew'             => __( 'That membership could not be renewed: it must be a current or lapsed member whose type has a length.', 'chess-army-knife' ),
-			'member_rating'     => __( 'That manual rating is out of range.', 'chess-army-knife' ),
-			'member_reference'  => __( 'Another member already has that payment reference. Please choose a different one.', 'chess-army-knife' ),
+			'member_missing'   => __( 'That member no longer exists.', 'chess-army-knife' ),
+			'member_status'    => __( 'Please choose a status.', 'chess-army-knife' ),
+			'member_date'      => __( 'Please enter dates as YYYY-MM-DD.', 'chess-army-knife' ),
+			'renew'            => __( 'That membership could not be renewed: it must be a current or lapsed member whose type has a length.', 'chess-army-knife' ),
+			'member_reference' => __( 'Another member already has that payment reference. Please choose a different one.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : Chess_Army_Knife_Membership_Form::error_message( $code );
 	}
@@ -749,15 +746,16 @@ class Chess_Army_Knife_Members_Page {
 	 */
 	protected static function render_form( $member ) {
 		$editing = null !== $member;
-		$member  = $editing ? $member : array(
-			'manual_rating' => null,
-		) + array_fill_keys( array( 'name', 'nickname', 'blurb', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
+		$member  = $editing ? $member : array_fill_keys( array( 'name', 'nickname', 'blurb', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
 			'guardian_id'        => 0,
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
-			'start_date'         => current_time( 'Y-m-d' ),
 		);
 		$types   = Chess_Army_Knife_Memberships::types( false );
+
+		// The date of birth is only asked for juniors, but one already recorded stays visible.
+		$junior_type = Chess_Army_Knife_Memberships::get_type( (int) $member['membership_type_id'] );
+		$show_dob    = '' !== (string) $member['date_of_birth'] || ( $junior_type && ! empty( $junior_type['is_junior'] ) );
 
 		// The details a treasurer needs to match a payment.
 		$reference = $editing ? Chess_Army_Knife_Memberships::payment_reference( $member['id'], $member ) : '';
@@ -771,20 +769,25 @@ class Chess_Army_Knife_Members_Page {
 
 			<?php self::render_notices(); ?>
 
+			<p class="description"><strong style="color:#d63638" aria-hidden="true">*</strong> <?php esc_html_e( 'Required. Everything else is optional.', 'chess-army-knife' ); ?></p>
+
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="chess_army_knife_save_member" />
 				<input type="hidden" name="member_id" value="<?php echo esc_attr( $editing ? $member['id'] : 0 ); ?>" />
 				<?php wp_nonce_field( 'chess_army_knife_save_member' ); ?>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="name"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></label></th>
-						<td><input type="text" id="name" name="name" class="regular-text" value="<?php echo esc_attr( $member['name'] ); ?>" required /></td>
+						<th scope="row"><label for="name"><strong><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></strong> <span style="color:#d63638" aria-hidden="true">*</span><span class="screen-reader-text"><?php esc_html_e( '(required)', 'chess-army-knife' ); ?></span></label></th>
+						<td>
+								<input type="text" id="name" name="name" class="regular-text" value="<?php echo esc_attr( $member['name'] ); ?>" required />
+								<p class="description"><?php esc_html_e( 'Enter the name as Surname, Forename.', 'chess-army-knife' ); ?></p>
+							</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="nickname"><?php esc_html_e( 'Nickname', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<input type="text" id="nickname" name="nickname" class="regular-text" maxlength="60" value="<?php echo esc_attr( $member['nickname'] ); ?>" />
-							<p class="description"><?php esc_html_e( 'Optional. Used in place of their first name on the website, for example Maddy for Madeline.', 'chess-army-knife' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Optional. Used in place of their first name on the website, for example Jim for James.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -804,7 +807,10 @@ class Chess_Army_Knife_Members_Page {
 					</tr>
 					<tr>
 						<th scope="row"><label for="date_of_birth"><?php esc_html_e( 'Date of birth', 'chess-army-knife' ); ?></label></th>
-						<td><input type="date" id="date_of_birth" name="date_of_birth" value="<?php echo esc_attr( $member['date_of_birth'] ); ?>" /></td>
+						<td>
+								<input type="date" id="date_of_birth" name="date_of_birth" value="<?php echo esc_attr( $member['date_of_birth'] ); ?>" />
+								<p class="description"><?php esc_html_e( 'Optional. Only shown for a junior membership type.', 'chess-army-knife' ); ?></p>
+							</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="guardian_choice"><?php esc_html_e( 'Parent or guardian', 'chess-army-knife' ); ?></label></th>
@@ -846,24 +852,12 @@ class Chess_Army_Knife_Members_Page {
 						<td><input type="text" id="ecf_code" name="ecf_code" class="regular-text" value="<?php echo esc_attr( $member['ecf_code'] ); ?>" /></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="manual_rating"><?php esc_html_e( 'Manual rating', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="number" id="manual_rating" name="manual_rating" min="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ); ?>" max="<?php echo esc_attr( Chess_Army_Knife_Membership_Store::MAX_MANUAL_RATING ); ?>" value="<?php echo esc_attr( null === $member['manual_rating'] ? '' : $member['manual_rating'] ); ?>" />
-							<p class="description">
-								<?php
-								/* translators: %d: lowest manual rating */
-								echo esc_html( sprintf( __( 'Only for someone without an ECF code: used to seed them in tournaments. %d or higher.', 'chess-army-knife' ), Chess_Army_Knife_Membership_Store::MIN_MANUAL_RATING ) );
-								?>
-							</p>
-						</td>
-					</tr>
-					<tr>
 						<th scope="row"><label for="membership_type_id"><?php esc_html_e( 'Membership type', 'chess-army-knife' ); ?></label></th>
 						<td>
 							<select id="membership_type_id" name="membership_type_id">
 								<option value="0"><?php esc_html_e( '— None —', 'chess-army-knife' ); ?></option>
 								<?php foreach ( $types as $type ) : ?>
-									<option value="<?php echo esc_attr( $type['id'] ); ?>" <?php selected( $member['membership_type_id'], $type['id'] ); ?>>
+									<option value="<?php echo esc_attr( $type['id'] ); ?>" data-junior="<?php echo esc_attr( ! empty( $type['is_junior'] ) ? '1' : '0' ); ?>" <?php selected( $member['membership_type_id'], $type['id'] ); ?>>
 										<?php echo esc_html( $type['name'] . ' (' . $type['price_label'] . ' ' . $type['period_label'] . ')' ); ?>
 									</option>
 								<?php endforeach; ?>
@@ -879,17 +873,6 @@ class Chess_Army_Knife_Members_Page {
 								<?php endforeach; ?>
 							</select>
 							<p class="description"><?php esc_html_e( 'Use "Not a member" for people the club holds details for who have not joined, such as tournament guests. They can be chosen as tournament players and tagged in photos, but are left out of the member lists and counts.', 'chess-army-knife' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="start_date"><?php esc_html_e( 'Starts', 'chess-army-knife' ); ?></label></th>
-						<td><input type="date" id="start_date" name="start_date" value="<?php echo esc_attr( $member['start_date'] ); ?>" /></td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="expiry_date"><?php esc_html_e( 'Expires', 'chess-army-knife' ); ?></label></th>
-						<td>
-							<input type="date" id="expiry_date" name="expiry_date" value="<?php echo esc_attr( $member['expiry_date'] ); ?>" />
-							<p class="description"><?php esc_html_e( 'The last day of membership. When an application is approved, or a member is added as active, a blank date is filled in from the length of their membership type.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -929,14 +912,14 @@ class Chess_Army_Knife_Members_Page {
 							</td>
 						</tr>
 					<?php endif; ?>
-					<tr>
+					<tr id="cak-extras-row">
 						<th scope="row"><?php esc_html_e( 'Optional extras', 'chess-army-knife' ); ?></th>
 						<td>
-							<label style="display:block">
+							<label style="display:block" id="cak-newsletter-choice">
 								<input type="checkbox" name="newsletter" value="1" <?php checked( '' !== $member['newsletter_consent_at'] ); ?> />
 								<?php esc_html_e( 'Has agreed to receive the club newsletter', 'chess-army-knife' ); ?>
 							</label>
-							<label style="display:block">
+							<label style="display:block" id="cak-whatsapp-choice">
 								<input type="checkbox" name="whatsapp" value="1" <?php checked( '' !== $member['whatsapp_consent_at'] ); ?> />
 								<?php esc_html_e( 'Has agreed to be added to the WhatsApp groups of the teams they are in (their phone number is visible to the group)', 'chess-army-knife' ); ?>
 							</label>

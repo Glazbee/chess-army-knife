@@ -35,7 +35,6 @@ $error_fields = array(
 	'member_email'    => array( 'cak-member-email', __( 'Email address', 'chess-army-knife' ) ),
 	'member_dob'      => array( 'cak-member-dob', __( 'Junior\'s date of birth', 'chess-army-knife' ) ),
 	'member_type'     => array( 'cak-member-type', __( 'Membership', 'chess-army-knife' ) ),
-	'member_whatsapp' => array( 'cak-member-phone', __( 'Phone', 'chess-army-knife' ) ),
 	'member_guardian' => array( 'cak-member-guardian', __( 'Parent or guardian\'s name', 'chess-army-knife' ) ),
 	'consent'         => array( 'cak-member-consent', __( 'I have read how the club uses these details', 'chess-army-knife' ) ),
 );
@@ -93,7 +92,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				</p>
 				<p>
 					<label for="cak-member-nickname"><?php esc_html_e( 'Preferred first name (optional)', 'chess-army-knife' ); ?></label>
-					<span id="cak-member-nickname-hint" class="cak-membership-form__hint"><?php esc_html_e( 'If you would rather we used a different first name, for example Maddy instead of Madeline.', 'chess-army-knife' ); ?></span>
+					<span id="cak-member-nickname-hint" class="cak-membership-form__hint"><?php esc_html_e( 'If you would rather we used a different first name, for example Jim instead of James.', 'chess-army-knife' ); ?></span>
 					<input type="text" id="cak-member-nickname" name="nickname" maxlength="60" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'nickname' ) ); ?>" autocomplete="nickname" aria-describedby="cak-member-nickname-hint" />
 				</p>
 				<p>
@@ -139,13 +138,14 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				</p>
 			</fieldset>
 
-			<fieldset class="cak-membership-form__group" aria-describedby="cak-optional-hint">
+			<?php // Scripts show each choice only once there is an email address or phone number to use for it (see view.js); without a script both always show. ?>
+			<fieldset class="cak-membership-form__group" id="cak-optional-section" aria-describedby="cak-optional-hint">
 				<legend><?php esc_html_e( 'Optional: club news and WhatsApp', 'chess-army-knife' ); ?></legend>
 				<p id="cak-optional-hint" class="cak-membership-form__hint"><?php esc_html_e( 'These are separate choices. You can say no to both and still be a member, and change your mind at any time.', 'chess-army-knife' ); ?></p>
-				<p class="cak-membership-form__check">
+				<p class="cak-membership-form__check" id="cak-newsletter-choice">
 					<label><input type="checkbox" name="newsletter" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'newsletter' ) ); ?> /> <?php esc_html_e( 'Yes, email me the club newsletter', 'chess-army-knife' ); ?></label>
 				</p>
-				<p class="cak-membership-form__check">
+				<p class="cak-membership-form__check" id="cak-whatsapp-choice">
 					<label><input type="checkbox" name="whatsapp" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp' ) ); ?> /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group of the team(s) the club puts me in. Everyone in the group can see the name and phone number.', 'chess-army-knife' ); ?></label>
 				</p>
 			</fieldset>

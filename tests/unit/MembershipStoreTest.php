@@ -27,6 +27,20 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( $email, $result['email'] );
 	}
 
+	public function test_an_adult_can_apply_without_an_email_address_or_phone() {
+		$input  = $this->form_input(
+			array(
+				'email' => '',
+				'phone' => '',
+			)
+		);
+		$result = Chess_Army_Knife_Membership_Store::sanitize_member( $input, false );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( '', $result['email'] );
+		$this->assertSame( '', $result['phone'] );
+	}
+
 	public function test_the_clip_lengths_match_the_columns_in_the_table() {
 		$source = file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-membership-store.php' );
 		preg_match_all( '/^\s+(\w+) VARCHAR\((\d+)\)/m', $source, $found );
@@ -281,9 +295,10 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertNull( $one['whatsapp_consent_at'] );
 	}
 
-	public function test_a_whatsapp_group_needs_a_phone_number() {
+	public function test_a_whatsapp_agreement_is_only_recorded_with_a_phone_number() {
 		$adult = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp' => '1' ) ), false );
-		$this->assertSame( 'member_whatsapp', $adult->get_error_code() );
+		$this->assertIsArray( $adult, 'No phone number is not an error.' );
+		$this->assertNull( $adult['whatsapp_consent_at'] );
 
 		// A junior can use their parent's number.
 		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'whatsapp' => '1' ) ), false );
@@ -298,7 +313,21 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 			),
 			false
 		);
-		$this->assertSame( 'member_whatsapp', $no_number->get_error_code(), 'The junior\'s own number is not kept, so it cannot be used.' );
+		$this->assertNull( $no_number['whatsapp_consent_at'], 'The junior\'s own number is not kept, so it cannot be used.' );
+	}
+
+	public function test_a_newsletter_agreement_is_only_recorded_with_an_email_address() {
+		$input = $this->form_input(
+			array(
+				'email'      => '',
+				'newsletter' => '1',
+			)
+		);
+		$none  = Chess_Army_Knife_Membership_Store::sanitize_member( $input, false );
+		$this->assertNull( $none['newsletter_consent_at'] );
+
+		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'newsletter' => '1' ) ), false );
+		$this->assertSame( '2026-09-29', $junior['newsletter_consent_at'], 'A junior uses their parent\'s address.' );
 	}
 
 	public function test_the_club_offers_its_teams_by_id() {
@@ -370,7 +399,6 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 	public function invalid_public_input() {
 		return array(
 			'no name'                       => array( array( 'name' => '  ' ), 'member_name' ),
-			'no email'                      => array( array( 'email' => '' ), 'member_email' ),
 			'bad email'                     => array( array( 'email' => 'not-an-email' ), 'member_email' ),
 			'email too long for its column' => array( array( 'email' => self::long_email() ), 'member_email' ),
 			'bad date of birth'             => array( array( 'date_of_birth' => '01/05/2015' ), 'member_dob' ),
@@ -388,7 +416,7 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '', $member['email'] );
 		$this->assertSame( 0, $member['membership_type_id'] );
 		$this->assertSame( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, $member['status'] );
-		$this->assertNull( $member['expiry_date'] );
+		$this->assertArrayNotHasKey( 'expiry_date', $member, 'The form does not set dates.' );
 	}
 
 	public function test_admin_can_keep_a_type_that_is_no_longer_offered() {
@@ -415,8 +443,6 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 			array(
 				'name'           => 'Grace',
 				'status'         => 'cancelled',
-				'start_date'     => '2026-09-01',
-				'expiry_date'    => '2027-08-31',
 				'paid_on'        => '2026-09-05',
 				'payment_method' => 'cash',
 				'notes'          => ' Paid at the club ',
@@ -425,8 +451,9 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		);
 
 		$this->assertSame( 'cancelled', $member['status'] );
-		$this->assertSame( '2026-09-01', $member['start_date'] );
-		$this->assertSame( '2027-08-31', $member['expiry_date'] );
+		$this->assertArrayNotHasKey( 'start_date', $member, 'The dates are not set from the form.' );
+		$this->assertArrayNotHasKey( 'expiry_date', $member );
+		$this->assertArrayNotHasKey( 'manual_rating', $member );
 		$this->assertSame( '2026-09-05', $member['paid_on'] );
 		$this->assertSame( 'cash', $member['payment_method'] );
 		$this->assertSame( 'Paid at the club', $member['notes'] );
@@ -456,18 +483,10 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
 	public function invalid_admin_input() {
 		return array(
-			'unknown status'      => array( array( 'status' => 'vip' ), 'member_status' ),
-			'bad expiry date'     => array( array( 'expiry_date' => 'next year' ), 'member_date' ),
-			'bad paid date'       => array( array( 'paid_on' => '2026-13-01' ), 'member_date' ),
-			'expiry before start' => array(
-				array(
-					'start_date'  => '2026-09-01',
-					'expiry_date' => '2026-08-01',
-				),
-				'member_date_order',
-			),
-			'bad email'           => array( array( 'email' => 'nope' ), 'member_email' ),
-			'unknown type'        => array( array( 'membership_type_id' => '99' ), 'member_type' ),
+			'unknown status' => array( array( 'status' => 'vip' ), 'member_status' ),
+			'bad paid date'  => array( array( 'paid_on' => '2026-13-01' ), 'member_date' ),
+			'bad email'      => array( array( 'email' => 'nope' ), 'member_email' ),
+			'unknown type'   => array( array( 'membership_type_id' => '99' ), 'member_type' ),
 		);
 	}
 
