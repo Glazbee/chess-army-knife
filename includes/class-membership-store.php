@@ -277,9 +277,6 @@ class Chess_Army_Knife_Membership_Store {
 					$phone = '';
 				}
 			} else {
-				if ( '' === $email ) {
-					return new WP_Error( 'member_email', __( 'Please enter a valid email address.', 'chess-army-knife' ) );
-				}
 				// Only needed for juniors, so not kept.
 				$date_of_birth  = '';
 				$guardian_name  = '';
@@ -341,7 +338,6 @@ class Chess_Army_Knife_Membership_Store {
 			'notes'             => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
 			// Shown on the website when the member is the Featured Player, so only an officer can write it.
 			'blurb'             => isset( $input['blurb'] ) ? mb_substr( sanitize_textarea_field( $input['blurb'] ), 0, self::MAX_BLURB_LENGTH ) : '',
-			'manual_rating'     => $rating,
 		);
 	}
 

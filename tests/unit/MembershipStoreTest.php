@@ -28,7 +28,12 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_an_adult_can_apply_without_an_email_address_or_phone() {
-		$result = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'email' => '', 'phone' => '' ) ), false );
+		$result = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input(
+				array(
+					'email' => '',
+					'phone' => '',
+				)
+			), false );
 
 		$this->assertIsArray( $result );
 		$this->assertSame( '', $result['email'] );
@@ -311,7 +316,12 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 	}
 
 	public function test_a_newsletter_agreement_is_only_recorded_with_an_email_address() {
-		$none = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'email' => '', 'newsletter' => '1' ) ), false );
+		$none = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input(
+				array(
+					'email'      => '',
+					'newsletter' => '1',
+				)
+			), false );
 		$this->assertNull( $none['newsletter_consent_at'] );
 
 		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'newsletter' => '1' ) ), false );
@@ -471,10 +481,10 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 
 	public function invalid_admin_input() {
 		return array(
-			'unknown status'      => array( array( 'status' => 'vip' ), 'member_status' ),
-			'bad paid date'       => array( array( 'paid_on' => '2026-13-01' ), 'member_date' ),
-			'bad email'           => array( array( 'email' => 'nope' ), 'member_email' ),
-			'unknown type'        => array( array( 'membership_type_id' => '99' ), 'member_type' ),
+			'unknown status' => array( array( 'status' => 'vip' ), 'member_status' ),
+			'bad paid date'  => array( array( 'paid_on' => '2026-13-01' ), 'member_date' ),
+			'bad email'      => array( array( 'email' => 'nope' ), 'member_email' ),
+			'unknown type'   => array( array( 'membership_type_id' => '99' ), 'member_type' ),
 		);
 	}
 
