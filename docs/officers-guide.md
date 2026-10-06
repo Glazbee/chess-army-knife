@@ -73,7 +73,7 @@ the **LMS seasons** that belong to it; you can change both later under **Change 
 opens on the LMS season of your current season. Tick **Only happens during the season** on a repeating club
 event (such as a club night) and it stops at the season's last day and does not appear in the summer.
 
-**A junior's free first year.** Choose **Free first year (junior)** as the payment method on the member's record,
+**A junior's free first year.** Choose **Free first year** as the payment method on the member's record,
 or press **Free year** on their row in the Members list. The season counts as paid for nothing, and they pay from
 the next season. You choose it for each junior, so it also works for a junior who joined some time ago.
 

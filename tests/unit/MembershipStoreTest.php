@@ -524,8 +524,22 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '2026-09-01', $dated['paid_on'] );
 	}
 
-	public function test_a_free_year_is_one_of_the_payment_methods() {
-		$this->assertArrayHasKey( 'free_year', Chess_Army_Knife_Memberships::payment_methods() );
+	public function test_the_payment_methods_are_bank_transfer_cash_and_a_free_first_year() {
+		$this->assertSame( array( 'bank_transfer', 'cash', 'free_year' ), array_keys( Chess_Army_Knife_Memberships::payment_methods() ) );
+	}
+
+	public function test_a_payment_method_that_is_not_offered_is_dropped() {
+		foreach ( array( 'cheque', 'other' ) as $method ) {
+			$member = Chess_Army_Knife_Membership_Store::sanitize_member(
+				array(
+					'name'           => 'Grace',
+					'payment_method' => $method,
+				),
+				true
+			);
+
+			$this->assertSame( '', $member['payment_method'], $method );
+		}
 	}
 
 	/**

@@ -502,6 +502,6 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 
 		$csv = Chess_Army_Knife_Payment_Export::to_csv( Chess_Army_Knife_Membership_Seasons::payments_for_season( $id ) );
 
-		$this->assertStringContainsString( '"Free first year (junior)",,0.00', $csv );
+		$this->assertStringContainsString( '"Free first year",,0.00', $csv );
 	}
 }
