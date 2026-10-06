@@ -288,10 +288,8 @@ class Chess_Army_Knife_Membership_Store {
 			}
 		}
 
-		// A WhatsApp group shows a phone number to the other members, so there must be one to add.
-		if ( ! empty( $input['whatsapp'] ) && '' === $phone . $guardian_phone ) {
-			return new WP_Error( 'member_whatsapp', __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ) );
-		}
+		// A WhatsApp group shows a phone number to the other members, so without one there is nothing to add.
+		$whatsapp = ! empty( $input['whatsapp'] ) && '' !== $phone . $guardian_phone;
 
 		$now    = current_time( 'mysql', true );
 		$member = array(
@@ -309,7 +307,7 @@ class Chess_Army_Knife_Membership_Store {
 			'type_name'             => $type ? $type['name'] : '',
 			// Optional extras, each agreed separately; blank means not agreed.
 			'newsletter_consent_at' => ! empty( $input['newsletter'] ) ? $now : null,
-			'whatsapp_consent_at'   => ! empty( $input['whatsapp'] ) ? $now : null,
+			'whatsapp_consent_at'   => $whatsapp ? $now : null,
 		);
 
 		if ( ! $is_admin ) {

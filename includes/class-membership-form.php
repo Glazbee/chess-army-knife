@@ -112,7 +112,6 @@ class Chess_Army_Knife_Membership_Form {
 			'member_email'    => __( 'Please enter a valid email address.', 'chess-army-knife' ),
 			'member_dob'      => __( 'Please enter a valid date of birth.', 'chess-army-knife' ),
 			'member_type'     => __( 'Please choose a membership type.', 'chess-army-knife' ),
-			'member_whatsapp' => __( 'Please give a phone number to be added to the WhatsApp group.', 'chess-army-knife' ),
 			'member_guardian' => __( 'Please give a parent or guardian\'s name and email address.', 'chess-army-knife' ),
 		);
 		return isset( $messages[ $code ] ) ? $messages[ $code ] : __( 'Something went wrong. Please try again.', 'chess-army-knife' );

@@ -35,7 +35,6 @@ $error_fields = array(
 	'member_email'    => array( 'cak-member-email', __( 'Email address', 'chess-army-knife' ) ),
 	'member_dob'      => array( 'cak-member-dob', __( 'Junior\'s date of birth', 'chess-army-knife' ) ),
 	'member_type'     => array( 'cak-member-type', __( 'Membership', 'chess-army-knife' ) ),
-	'member_whatsapp' => array( 'cak-member-phone', __( 'Phone', 'chess-army-knife' ) ),
 	'member_guardian' => array( 'cak-member-guardian', __( 'Parent or guardian\'s name', 'chess-army-knife' ) ),
 	'consent'         => array( 'cak-member-consent', __( 'I have read how the club uses these details', 'chess-army-knife' ) ),
 );

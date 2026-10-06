@@ -289,9 +289,10 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertNull( $one['whatsapp_consent_at'] );
 	}
 
-	public function test_a_whatsapp_group_needs_a_phone_number() {
+	public function test_a_whatsapp_agreement_is_only_recorded_with_a_phone_number() {
 		$adult = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'whatsapp' => '1' ) ), false );
-		$this->assertSame( 'member_whatsapp', $adult->get_error_code() );
+		$this->assertIsArray( $adult, 'No phone number is not an error.' );
+		$this->assertNull( $adult['whatsapp_consent_at'] );
 
 		// A junior can use their parent's number.
 		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'whatsapp' => '1' ) ), false );
@@ -306,7 +307,7 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 			),
 			false
 		);
-		$this->assertSame( 'member_whatsapp', $no_number->get_error_code(), 'The junior\'s own number is not kept, so it cannot be used.' );
+		$this->assertNull( $no_number['whatsapp_consent_at'], 'The junior\'s own number is not kept, so it cannot be used.' );
 	}
 
 	public function test_the_club_offers_its_teams_by_id() {
