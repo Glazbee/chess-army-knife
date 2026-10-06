@@ -138,13 +138,14 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				</p>
 			</fieldset>
 
-			<fieldset class="cak-membership-form__group" aria-describedby="cak-optional-hint">
+			<?php // Scripts show each choice only once there is an email address or phone number to use for it (see view.js); without a script both always show. ?>
+			<fieldset class="cak-membership-form__group" id="cak-optional-section" aria-describedby="cak-optional-hint">
 				<legend><?php esc_html_e( 'Optional: club news and WhatsApp', 'chess-army-knife' ); ?></legend>
 				<p id="cak-optional-hint" class="cak-membership-form__hint"><?php esc_html_e( 'These are separate choices. You can say no to both and still be a member, and change your mind at any time.', 'chess-army-knife' ); ?></p>
-				<p class="cak-membership-form__check">
+				<p class="cak-membership-form__check" id="cak-newsletter-choice">
 					<label><input type="checkbox" name="newsletter" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'newsletter' ) ); ?> /> <?php esc_html_e( 'Yes, email me the club newsletter', 'chess-army-knife' ); ?></label>
 				</p>
-				<p class="cak-membership-form__check">
+				<p class="cak-membership-form__check" id="cak-whatsapp-choice">
 					<label><input type="checkbox" name="whatsapp" value="1" <?php checked( Chess_Army_Knife_Form_State::checked( 'whatsapp' ) ); ?> /> <?php esc_html_e( 'Yes, add me (or my junior) to the WhatsApp group of the team(s) the club puts me in. Everyone in the group can see the name and phone number.', 'chess-army-knife' ); ?></label>
 				</p>
 			</fieldset>

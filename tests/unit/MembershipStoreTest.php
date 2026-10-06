@@ -310,6 +310,14 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertNull( $no_number['whatsapp_consent_at'], 'The junior\'s own number is not kept, so it cannot be used.' );
 	}
 
+	public function test_a_newsletter_agreement_is_only_recorded_with_an_email_address() {
+		$none = Chess_Army_Knife_Membership_Store::sanitize_member( $this->form_input( array( 'email' => '', 'newsletter' => '1' ) ), false );
+		$this->assertNull( $none['newsletter_consent_at'] );
+
+		$junior = Chess_Army_Knife_Membership_Store::sanitize_member( $this->junior_input( array( 'newsletter' => '1' ) ), false );
+		$this->assertSame( '2026-09-29', $junior['newsletter_consent_at'], 'A junior uses their parent\'s address.' );
+	}
+
 	public function test_the_club_offers_its_teams_by_id() {
 		$this->assertSame(
 			array(

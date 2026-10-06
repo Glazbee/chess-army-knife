@@ -291,6 +291,9 @@ class Chess_Army_Knife_Membership_Store {
 		// A WhatsApp group shows a phone number to the other members, so without one there is nothing to add.
 		$whatsapp = ! empty( $input['whatsapp'] ) && '' !== $phone . $guardian_phone;
 
+		// The newsletter is sent by email, so without an address there is nothing to send it to.
+		$newsletter = ! empty( $input['newsletter'] ) && '' !== $email . $guardian_email;
+
 		$now    = current_time( 'mysql', true );
 		$member = array(
 			'name'                  => $name,
@@ -306,7 +309,7 @@ class Chess_Army_Knife_Membership_Store {
 			'membership_type_id'    => $type_id,
 			'type_name'             => $type ? $type['name'] : '',
 			// Optional extras, each agreed separately; blank means not agreed.
-			'newsletter_consent_at' => ! empty( $input['newsletter'] ) ? $now : null,
+			'newsletter_consent_at' => $newsletter ? $now : null,
 			'whatsapp_consent_at'   => $whatsapp ? $now : null,
 		);
 
