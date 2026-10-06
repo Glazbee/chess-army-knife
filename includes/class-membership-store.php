@@ -98,6 +98,7 @@ class Chess_Army_Knife_Membership_Store {
 			expiry_date DATE NULL,
 			payment_method VARCHAR(20) NOT NULL DEFAULT '',
 			payment_reference VARCHAR(40) NOT NULL DEFAULT '',
+			payment_amount INT(11) NULL,
 			paid_on DATE NULL,
 			notes TEXT NULL,
 			consent_at DATETIME NULL,
@@ -126,6 +127,7 @@ class Chess_Army_Knife_Membership_Store {
 			'blurb'             => "VARCHAR(500) NOT NULL DEFAULT '' AFTER nickname",
 			'guardian_id'       => 'BIGINT(20) UNSIGNED NOT NULL DEFAULT 0 AFTER guardian_phone',
 			'payment_reference' => "VARCHAR(40) NOT NULL DEFAULT '' AFTER payment_method",
+			'payment_amount'    => 'INT(11) NULL AFTER payment_reference',
 		);
 	}
 
@@ -345,12 +347,26 @@ class Chess_Army_Knife_Membership_Store {
 			$method = '';
 		}
 
+		// What was paid: what they typed, else the price of their membership type. Nothing was paid without a payment date.
+		$amount = null;
+		if ( '' !== $paid_on ) {
+			if ( isset( $input['payment_amount'] ) && '' !== trim( (string) $input['payment_amount'] ) ) {
+				$amount = Chess_Army_Knife_Memberships::parse_price( sanitize_text_field( $input['payment_amount'] ) );
+				if ( null === $amount ) {
+					return new WP_Error( 'member_amount', __( 'Please enter the amount paid as a number, such as 25 or 12.50.', 'chess-army-knife' ) );
+				}
+			} elseif ( $type ) {
+				$amount = (int) $type['price'];
+			}
+		}
+
 		return $member + array(
 			'status'            => $status,
 			'start_date'        => '' === $start ? null : $start,
 			'expiry_date'       => '' === $expiry ? null : $expiry,
 			'payment_method'    => $method,
 			// A reference chosen for them, to match a bank transfer; blank uses the one the club's prefix and their number make.
+			'payment_amount'    => $amount,
 			'payment_reference' => isset( $input['payment_reference'] ) ? mb_substr( preg_replace( '/[^A-Za-z0-9\-_\/ ]/', '', trim( sanitize_text_field( $input['payment_reference'] ) ) ), 0, 40 ) : '',
 			'paid_on'           => '' === $paid_on ? null : $paid_on,
 			'notes'             => isset( $input['notes'] ) ? sanitize_textarea_field( $input['notes'] ) : '',
@@ -400,6 +416,7 @@ class Chess_Army_Knife_Membership_Store {
 			'all'       => __( 'All members and applications', 'chess-army-knife' ),
 			'active'    => __( 'Current members', 'chess-army-knife' ),
 			'pending'   => __( 'Pending applications', 'chess-army-knife' ),
+			'unpaid'    => __( 'Unpaid this season', 'chess-army-knife' ),
 			'expired'   => __( 'Expired', 'chess-army-knife' ),
 			'closed'    => __( 'Declined or cancelled', 'chess-army-knife' ),
 			'nonmember' => __( 'Not members', 'chess-army-knife' ),
@@ -417,6 +434,10 @@ class Chess_Army_Knife_Membership_Store {
 		switch ( $view ) {
 			case 'active':
 				return array( "status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s )", array( $today ) );
+			case 'unpaid':
+				return array( "status = 'active' AND ( expiry_date IS NULL OR expiry_date >= %s ) AND paid_on IS NULL", array( $today ) );
+			case 'paid':
+				return array( 'paid_on IS NOT NULL', array() ); // Not a list an admin picks.
 			case 'pending':
 				return array( "status = 'pending'", array() );
 			case 'expired':
@@ -905,12 +926,25 @@ class Chess_Army_Knife_Membership_Store {
 
 		self::save_member(
 			array(
-				'id'          => (int) $id,
-				'expiry_date' => $expiry,
-				'paid_on'     => $today,
+				'id'             => (int) $id,
+				'expiry_date'    => $expiry,
+				'paid_on'        => $today,
+				'payment_amount' => (int) $type['price'],
 			)
 		);
 		return $expiry;
+	}
+
+	/**
+	 * Mark every member as not paid, for a new season. The payments of earlier seasons are kept in the ledger
+	 * (see Chess_Army_Knife_Membership_Seasons); a member's chosen payment reference is theirs, so it stays.
+	 */
+	public static function clear_payments() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Plugin-owned custom table; the table name is internal and no value is dynamic.
+		$wpdb->query( 'UPDATE ' . self::table() . " SET paid_on = NULL, payment_method = '', payment_amount = NULL" );
+		do_action( 'Chess_Army_Knife_members_changed' );
 	}
 
 	/**
@@ -1013,9 +1047,9 @@ class Chess_Army_Knife_Membership_Store {
 			if ( false === $wpdb->update( self::table(), $data, array( 'id' => $id ) ) ) {
 				return 0;
 			}
-			// Only a change to the membership itself can start or extend a period.
-			if ( array_intersect( array( 'status', 'start_date', 'expiry_date', 'membership_type_id', 'paid_on' ), array_keys( $data ) ) ) {
-				Chess_Army_Knife_Member_History::record( $id );
+			// A change to the payment, or to the type it was for, goes in the season's ledger.
+			if ( array_intersect( array( 'membership_type_id', 'paid_on', 'payment_method', 'payment_reference', 'payment_amount' ), array_keys( $data ) ) ) {
+				Chess_Army_Knife_Membership_Seasons::record_payment( $id );
 			}
 			do_action( 'Chess_Army_Knife_members_changed' );
 			return $id;
@@ -1030,7 +1064,7 @@ class Chess_Army_Knife_Membership_Store {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->insert( self::table(), $data );
 		$id = (int) $wpdb->insert_id;
-		Chess_Army_Knife_Member_History::record( $id );
+		Chess_Army_Knife_Membership_Seasons::record_payment( $id );
 		do_action( 'Chess_Army_Knife_members_changed' );
 		return $id;
 	}
@@ -1130,9 +1164,9 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Teams::remove_person( $id );
 		Chess_Army_Knife_Officers::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
-		Chess_Army_Knife_Member_History::remove_person( $id );
 
-		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) ) {
+		// The payments stay with the record, without personal details, for the club's accounts.
+		if ( '' === $member['paid_on'] && ! Chess_Army_Knife_Membership_Seasons::has_payments( $id ) && ! Chess_Army_Knife_Member_Photos::photo_ids( $id ) ) {
 			self::delete_member( $id );
 			return 'deleted';
 		}
@@ -1202,7 +1236,7 @@ class Chess_Army_Knife_Membership_Store {
 		Chess_Army_Knife_Teams::remove_person( $id );
 		Chess_Army_Knife_Officers::remove_person( $id );
 		Chess_Army_Knife_Selection::remove_person( $id );
-		Chess_Army_Knife_Member_History::remove_person( $id );
+		Chess_Army_Knife_Membership_Seasons::remove_person( $id );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::table(), array( 'id' => (int) $id ), array( '%d' ) );
 		do_action( 'Chess_Army_Knife_members_changed' );
@@ -1220,6 +1254,7 @@ class Chess_Army_Knife_Membership_Store {
 		$row['blurb']              = isset( $row['blurb'] ) ? (string) $row['blurb'] : '';
 		$row['guardian_id']        = isset( $row['guardian_id'] ) ? (int) $row['guardian_id'] : 0;
 		$row['payment_reference']  = isset( $row['payment_reference'] ) ? (string) $row['payment_reference'] : '';
+		$row['payment_amount']     = isset( $row['payment_amount'] ) ? (int) $row['payment_amount'] : null;
 		$row['membership_type_id'] = (int) $row['membership_type_id'];
 		$row['manual_rating']      = null === $row['manual_rating'] ? null : (int) $row['manual_rating'];
 		$row['ecf_rating']         = null === $row['ecf_rating'] ? null : (int) $row['ecf_rating'];

@@ -15,7 +15,7 @@ class MemberPhotosTest extends WP_UnitTestCase {
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
 		$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Membership_Store::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		Chess_Army_Knife_Membership_Store::install_table();
-		Chess_Army_Knife_Member_History::install_table();
+		Chess_Army_Knife_Membership_Seasons::install_tables();
 	}
 
 	public function tear_down() {

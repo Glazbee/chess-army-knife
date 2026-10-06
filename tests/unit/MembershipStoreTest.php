@@ -444,6 +444,64 @@ class MembershipStoreTest extends Chess_Army_Knife_TestCase {
 		$this->assertSame( '', $member['payment_method'] );
 	}
 
+	public function test_the_amount_paid_is_read_as_pounds_and_pence() {
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member(
+			array(
+				'name'           => 'Grace',
+				'paid_on'        => '2026-09-05',
+				'payment_amount' => '£12.50',
+			),
+			true
+		);
+
+		$this->assertSame( 1250, $member['payment_amount'] );
+	}
+
+	public function test_a_blank_amount_is_the_price_of_the_membership_type() {
+		Functions\when( 'get_post_meta' )->alias(
+			function ( $id, $key ) {
+				return Chess_Army_Knife_Memberships::META_PRICE === $key ? '2500' : '';
+			}
+		);
+
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member(
+			array(
+				'name'               => 'Grace',
+				'membership_type_id' => '7',
+				'paid_on'            => '2026-09-05',
+			),
+			true
+		);
+
+		$this->assertSame( 2500, $member['payment_amount'] );
+	}
+
+	public function test_nothing_is_paid_without_a_payment_date() {
+		$member = Chess_Army_Knife_Membership_Store::sanitize_member(
+			array(
+				'name'           => 'Grace',
+				'payment_amount' => '25',
+			),
+			true
+		);
+
+		$this->assertNull( $member['payment_amount'] );
+	}
+
+	public function test_an_amount_that_is_not_a_price_is_rejected() {
+		$result = Chess_Army_Knife_Membership_Store::sanitize_member(
+			array(
+				'name'           => 'Grace',
+				'paid_on'        => '2026-09-05',
+				'payment_amount' => 'a tenner',
+			),
+			true
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'member_amount', $result->get_error_code() );
+	}
+
 	/**
 	 * @dataProvider invalid_admin_input
 	 */

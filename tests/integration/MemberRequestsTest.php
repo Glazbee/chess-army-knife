@@ -17,7 +17,7 @@ class MemberRequestsTest extends WP_UnitTestCase {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Membership_Store::install_table();
-		Chess_Army_Knife_Member_History::install_table();
+		Chess_Army_Knife_Membership_Seasons::install_tables();
 		Chess_Army_Knife_Teams::install_table();
 		reset_phpmailer_instance();
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.77';

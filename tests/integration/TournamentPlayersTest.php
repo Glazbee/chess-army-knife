@@ -18,7 +18,7 @@ class TournamentPlayersTest extends WP_UnitTestCase {
 		Chess_Army_Knife_Tournament_Store::install_tables();
 		$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . Chess_Army_Knife_Membership_Store::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		Chess_Army_Knife_Membership_Store::install_table();
-		Chess_Army_Knife_Member_History::install_table();
+		Chess_Army_Knife_Membership_Seasons::install_tables();
 	}
 
 	private function tournament() {

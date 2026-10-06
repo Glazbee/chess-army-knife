@@ -6,7 +6,7 @@ may use. Some need a permission that an administrator gives you on your user pro
 
 | You need | To use |
 |---|---|
-| The *Club memberships* permission | Members, Renewals, Member Checks, Announcements, Do Not Record, Officers |
+| The *Club memberships* permission | Members, Seasons, Renewals, Member Checks, Announcements, Do Not Record, Officers |
 | The *Club teams* permission (or be a team's captain) | Teams (Details, Overview, Selection and Groups tabs), Clubs, Sort Clubs, Squad Review, League games (with the import); captains see only their own team in the Overview and Selection tabs |
 | Administrator | Settings, Setup, Policies, Templates |
 
@@ -60,7 +60,14 @@ the fixture has started.
 An approved member's dates follow their membership type. Tell people how to pay; record the payment on
 their record when it arrives.
 
-**6. Renewals.** **Renewals** shows who is due a reminder at the next daily run. Reminders go out by
+**6. Seasons.** Membership is paid for every season. At the start of each season, open **Members → Seasons**
+and press **Start new season**: everyone is marked as not paid and has to pay again, and you are asked to
+check your teams (players and captains change) and to see who has not paid (**Unpaid this season** on
+Members). Record each payment on the member's record with its date, method and amount. **Download payments
+(CSV)** next to a season gives the treasurer a file that opens in Excel. The first season you start counts
+the payments you have already recorded, so nobody is marked as unpaid by it.
+
+**7. Renewals.** **Renewals** shows who is due a reminder at the next daily run. Reminders go out by
 themselves if they are switched on under Settings. Use **Renew** on a record when someone has paid again: it runs the membership on for another period and notes the payment as received today.
 
 ## Now and then

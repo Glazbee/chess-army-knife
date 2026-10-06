@@ -4,9 +4,8 @@
  * club can see when someone first joined, how long they have been a member
  * and where their membership lapsed.
  *
- * A period is recorded whenever a member is saved as active with a start
- * date (approving an application, renewing, or editing by hand), one row per
- * start date. People who were members before this table existed have no rows:
+ * A period is a season the person paid for (see Chess_Army_Knife_Membership_Seasons).
+ * People who were members before seasons were started have no paid seasons:
  * their current dates are shown as a single period.
  *
  * @package Chess_Army_Knife
@@ -16,128 +15,29 @@ defined( 'ABSPATH' ) || exit;
 
 class Chess_Army_Knife_Member_History {
 
-	/**
-	 * Full name of the history table.
-	 *
-	 * @return string
-	 */
-	public static function table() {
-		global $wpdb;
-		return $wpdb->prefix . 'chess_army_knife_member_history';
-	}
-
-	/**
-	 * Create or upgrade the history table.
-	 */
-	public static function install_table() {
-		global $wpdb;
-
-		$charset = $wpdb->get_charset_collate();
-		$table   = self::table();
-
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-
-		dbDelta(
-			"CREATE TABLE {$table} (
-			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-			member_id BIGINT(20) UNSIGNED NOT NULL,
-			type_name VARCHAR(191) NOT NULL DEFAULT '',
-			start_date DATE NOT NULL,
-			expiry_date DATE NULL,
-			paid_on DATE NULL,
-			updated_at DATETIME NOT NULL,
-			PRIMARY KEY  (id),
-			UNIQUE KEY member_start (member_id,start_date)
-			) {$charset};"
-		);
-	}
-
-	/* -------------------------------------------------------------
-	 * Recording
-	 * ------------------------------------------------------------- */
-
-	/**
-	 * Note a member's current period. Does nothing unless they are active with a
-	 * start date. A period that has already been noted for that start date is
-	 * brought up to date (an extended expiry, a payment), so editing a member
-	 * never adds a second row for the same period.
-	 *
-	 * @param int $member_id Member id.
-	 */
-	public static function record( $member_id ) {
-		global $wpdb;
-
-		$member = Chess_Army_Knife_Membership_Store::get_member( $member_id );
-		if ( ! $member || Chess_Army_Knife_Membership_Store::STATUS_ACTIVE !== $member['status'] || '' === $member['start_date'] ) {
-			return;
-		}
-
-		$table = self::table();
-		$row   = array(
-			'type_name'   => $member['type_name'],
-			'expiry_date' => '' === $member['expiry_date'] ? null : $member['expiry_date'],
-			'paid_on'     => '' === $member['paid_on'] ? null : $member['paid_on'],
-			'updated_at'  => current_time( 'mysql', true ),
-		);
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$existing = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE member_id = %d AND start_date = %s", (int) $member['id'], $member['start_date'] ) );
-
-		if ( $existing ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table.
-			$wpdb->update( $table, $row, array( 'id' => (int) $existing ) );
-			return;
-		}
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table.
-		$wpdb->insert(
-			$table,
-			$row + array(
-				'member_id'  => (int) $member['id'],
-				'start_date' => $member['start_date'],
-			)
-		);
-	}
-
-	/**
-	 * Forget a person's history (when their record is erased or deleted).
-	 *
-	 * @param int $member_id Member id.
-	 */
-	public static function remove_person( $member_id ) {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$wpdb->delete( self::table(), array( 'member_id' => (int) $member_id ), array( '%d' ) );
-	}
-
 	/* -------------------------------------------------------------
 	 * Reading
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * The periods of membership a person has held, earliest first.
+	 * The periods of membership a person has held, earliest first: each season they paid for.
 	 *
 	 * @param array $member Member row.
 	 * @return array[] Each { start_date, expiry_date ('' for none), type_name, paid_on }.
 	 */
 	public static function periods( array $member ) {
-		global $wpdb;
-
-		$table = self::table();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
-		$rows    = (array) $wpdb->get_results( $wpdb->prepare( "SELECT type_name, start_date, expiry_date, paid_on FROM {$table} WHERE member_id = %d ORDER BY start_date ASC", (int) $member['id'] ), ARRAY_A );
 		$periods = array();
 
-		foreach ( $rows as $row ) {
+		foreach ( Chess_Army_Knife_Membership_Seasons::paid_seasons( $member['id'] ) as $season ) {
 			$periods[] = array(
-				'start_date'  => (string) $row['start_date'],
-				'expiry_date' => null === $row['expiry_date'] ? '' : (string) $row['expiry_date'],
-				'type_name'   => (string) $row['type_name'],
-				'paid_on'     => null === $row['paid_on'] ? '' : (string) $row['paid_on'],
+				'start_date'  => $season['start_date'],
+				'expiry_date' => $season['end_date'],
+				'type_name'   => $season['type_name'],
+				'paid_on'     => $season['paid_on'],
 			);
 		}
 
-		// Someone who joined before history was kept: their current dates are all there is.
+		// Someone who joined before seasons were started: their current dates are all there is.
 		if ( ! $periods && '' !== $member['start_date'] && in_array( $member['status'], array( Chess_Army_Knife_Membership_Store::STATUS_ACTIVE, Chess_Army_Knife_Membership_Store::STATUS_CANCELLED ), true ) ) {
 			$periods[] = array(
 				'start_date'  => $member['start_date'],

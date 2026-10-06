@@ -258,6 +258,10 @@ class Chess_Army_Knife_Membership_Privacy {
 							'name'  => __( 'Last day', 'chess-army-knife' ),
 							'value' => $period['expiry_date'],
 						),
+						array(
+							'name'  => __( 'Payment received', 'chess-army-knife' ),
+							'value' => $period['paid_on'],
+						),
 					),
 				);
 			}

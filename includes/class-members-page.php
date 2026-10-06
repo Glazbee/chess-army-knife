@@ -684,7 +684,7 @@ class Chess_Army_Knife_Members_Page {
 		?>
 		<h2 id="membership-history"><?php esc_html_e( 'Membership history', 'chess-army-knife' ); ?></h2>
 		<?php if ( ! $periods ) : ?>
-			<p class="description"><?php esc_html_e( 'No membership has been recorded yet: history starts when an application is approved.', 'chess-army-knife' ); ?></p>
+			<p class="description"><?php esc_html_e( 'No membership has been recorded yet: history starts when a payment is recorded for a season.', 'chess-army-knife' ); ?></p>
 			<?php return; ?>
 		<?php endif; ?>
 		<p>
@@ -752,6 +752,7 @@ class Chess_Army_Knife_Members_Page {
 		$member  = $editing ? $member : array(
 			'manual_rating' => null,
 		) + array_fill_keys( array( 'name', 'nickname', 'blurb', 'email', 'phone', 'date_of_birth', 'guardian_name', 'ecf_code', 'payment_method', 'paid_on', 'notes', 'expiry_date', 'consent_at', 'guardian_email', 'guardian_phone', 'newsletter_consent_at', 'whatsapp_consent_at', 'payment_reference' ), '' ) + array(
+			'payment_amount'     => null,
 			'guardian_id'        => 0,
 			'membership_type_id' => 0,
 			'status'             => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
@@ -902,7 +903,9 @@ class Chess_Army_Knife_Members_Page {
 									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $member['payment_method'], $key ); ?>><?php echo esc_html( $label ); ?></option>
 								<?php endforeach; ?>
 							</select>
-							<p class="description"><?php esc_html_e( 'Payments are made outside the website.', 'chess-army-knife' ); ?></p>
+							<label for="payment_amount" class="screen-reader-text"><?php esc_html_e( 'Amount paid', 'chess-army-knife' ); ?></label>
+							<?php echo esc_html( Chess_Army_Knife_Memberships::currency_symbol() ); ?><input type="text" id="payment_amount" name="payment_amount" size="8" inputmode="decimal" placeholder="<?php esc_attr_e( 'Amount', 'chess-army-knife' ); ?>" value="<?php echo null === $member['payment_amount'] ? '' : esc_attr( Chess_Army_Knife_Memberships::price_field_value( $member['payment_amount'] ) ); ?>" />
+							<p class="description"><?php esc_html_e( 'Payments are made outside the website, once for each season. Leave the amount blank to use the price of the membership type.', 'chess-army-knife' ); ?></p>
 						</td>
 					</tr>
 					<?php if ( Chess_Army_Knife_Memberships::use_references() ) : ?>
