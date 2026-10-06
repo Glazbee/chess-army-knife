@@ -35,7 +35,7 @@ class Chess_Army_Knife_Section_Tabs {
 				'listed' => 'edit.php?post_type=' . Chess_Army_Knife_Clubs::POST_TYPE,
 				'tabs'   => array(
 					'clubs' => array(
-						'label'     => __( 'Other clubs', 'chess-army-knife' ),
+						'label'     => __( 'Other Clubs', 'chess-army-knife' ),
 						'url'       => admin_url( 'edit.php?post_type=' . Chess_Army_Knife_Clubs::POST_TYPE ),
 						'can'       => $can_teams,
 						'post_type' => Chess_Army_Knife_Clubs::POST_TYPE,

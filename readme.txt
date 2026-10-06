@@ -165,6 +165,7 @@ Yes — add as many blocks as you like, each configured independently.
 
 = Unreleased =
 
+* Changed: the menu order is Overview, Announcements, Dashboard, Seasons, Members, Officers, Teams, Tournaments, Club Events, Other Clubs, Templates, Setup, Settings and Block Help. The Overview screen still groups the screens as before.
 * Added: **correct or delete a payment.** On the Seasons page, click a season's payments to **Edit** one entered wrongly or **Delete** one made in error. For the season now running the member's own record changes too, and deleting makes them unpaid again.
 * Changed: **Seasons is a page of its own** (Chess Army Knife → Seasons) instead of a tab of Members.
 * Changed: the treasurer's CSV columns are now First name, Last Name, Membership Type, Payment Date, Payment Type, Payment reference, Amount and Free Year (Y or N). The first name is still the member's nickname if they have one.

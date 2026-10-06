@@ -249,7 +249,7 @@ class Chess_Army_Knife_Menu {
 			),
 			array(
 				'group'       => $teams_group,
-				'title'       => __( 'Other clubs', 'chess-army-knife' ),
+				'title'       => __( 'Other Clubs', 'chess-army-knife' ),
 				'description' => __( 'Other clubs and where they play, so away fixtures get a venue, with a Sort clubs tab to say which team names in the LMS belong to one club.', 'chess-army-knife' ),
 				'key'         => 'clubs',
 				'slug'        => 'edit.php?post_type=' . Chess_Army_Knife_Clubs::POST_TYPE,
@@ -397,6 +397,53 @@ class Chess_Army_Knife_Menu {
 	}
 
 	/**
+	 * The order of the menu items beneath Overview, by the key of each screen. The Overview screen groups
+	 * the screens its own way (see areas()), so this only orders the menu.
+	 *
+	 * @return string[]
+	 */
+	public static function menu_order() {
+		return array( 'announcements', 'dashboard', 'seasons', 'members', 'officers', 'teams', 'tournaments', 'club_events', 'clubs', 'templates', 'setup', 'settings', 'block_help' );
+	}
+
+	/**
+	 * The screens that have a menu item, in menu order. A screen not named in menu_order() goes last.
+	 *
+	 * @return array[] Screens from areas().
+	 */
+	public static function listed_areas() {
+		$order  = array_flip( self::menu_order() );
+		$listed = array_values(
+			array_filter(
+				self::areas(),
+				function ( $area ) {
+					return empty( $area['unlisted'] );
+				}
+			)
+		);
+
+		// A stable sort, so the screens not named keep the order areas() gives them.
+		foreach ( $listed as $position => &$area ) {
+			$area['_position'] = $position;
+		}
+		unset( $area );
+		usort(
+			$listed,
+			function ( $a, $b ) use ( $order ) {
+				$by_order = ( isset( $order[ $a['key'] ] ) ? $order[ $a['key'] ] : PHP_INT_MAX ) <=> ( isset( $order[ $b['key'] ] ) ? $order[ $b['key'] ] : PHP_INT_MAX );
+				return 0 !== $by_order ? $by_order : $a['_position'] <=> $b['_position'];
+			}
+		);
+		return array_map(
+			function ( $area ) {
+				unset( $area['_position'] );
+				return $area;
+			},
+			$listed
+		);
+	}
+
+	/**
 	 * One screen, by its key.
 	 *
 	 * @param string $key Key of a screen in areas().
@@ -430,14 +477,14 @@ class Chess_Army_Knife_Menu {
 		);
 		add_submenu_page( self::SLUG, __( 'Overview', 'chess-army-knife' ), __( 'Overview', 'chess-army-knife' ), $capability, self::SLUG, array( __CLASS__, 'render_overview' ) );
 
+		// A tab with a screen of its own can still be opened, just not listed.
 		foreach ( self::areas() as $area ) {
-			if ( ! empty( $area['unlisted'] ) ) {
-				// A tab with a screen of its own can still be opened, just not listed.
-				if ( null !== $area['callback'] ) {
-					add_submenu_page( null, $area['title'], $area['title'], $capability, $area['slug'], $area['callback'] );
-				}
-				continue;
+			if ( ! empty( $area['unlisted'] ) && null !== $area['callback'] ) {
+				add_submenu_page( null, $area['title'], $area['title'], $capability, $area['slug'], $area['callback'] );
 			}
+		}
+
+		foreach ( self::listed_areas() as $area ) {
 			$label = $area['title'] . ( Chess_Army_Knife_Memberships::MENU_SLUG === $area['slug'] ? $bubble : '' );
 			add_submenu_page( self::SLUG, $area['title'], $label, $capability, $area['slug'], null === $area['callback'] ? '' : $area['callback'] );
 		}
