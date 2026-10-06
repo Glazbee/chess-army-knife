@@ -17,6 +17,9 @@ class Chess_Army_Knife_Teams_Admin {
 	const NONCE_ACTION = 'chess_army_knife_save_team';
 	const NONCE_FIELD  = 'chess_army_knife_team_nonce';
 
+	const ARCHIVE_ACTION = 'chess_army_archive_team';
+	const SCOPE_ARG      = 'team_scope';
+
 	/**
 	 * Hook up the admin screens.
 	 */
