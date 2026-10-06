@@ -507,7 +507,7 @@ class MembershipsTest extends WP_UnitTestCase {
 			array( 'Chess_Army_Knife_Member_Checks_Page', 'manage members' ),
 			array( 'Chess_Army_Knife_Renewals_Page', 'manage members' ),
 			array( 'Chess_Army_Knife_Selection_Page', 'captain' ),
-			array( 'Chess_Army_Knife_Events_Import', 'club teams' ),
+			array( 'Chess_Army_Knife_League_Games', 'club teams' ),
 			array( 'Chess_Army_Knife_Tournaments_Page', 'administrator' ),
 			array( 'Chess_Army_Knife_Templates', 'administrator' ),
 			array( 'Chess_Army_Knife_Settings', 'administrator' ),
