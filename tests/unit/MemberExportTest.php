@@ -28,7 +28,6 @@ class MemberExportTest extends Chess_Army_Knife_TestCase {
 			'ecf_rating'            => 1850,
 			'ecf_rating_domain'     => 'S',
 			'ecf_checked_at'        => '2026-09-29 08:00:00',
-			'manual_rating'         => null,
 			'type_name'             => 'Adult',
 			'status'                => 'active',
 			'start_date'            => '2026-01-01',

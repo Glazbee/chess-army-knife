@@ -769,13 +769,15 @@ class Chess_Army_Knife_Members_Page {
 
 			<?php self::render_notices(); ?>
 
+			<p class="description"><strong style="color:#d63638" aria-hidden="true">*</strong> <?php esc_html_e( 'Required. Everything else is optional.', 'chess-army-knife' ); ?></p>
+
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="chess_army_knife_save_member" />
 				<input type="hidden" name="member_id" value="<?php echo esc_attr( $editing ? $member['id'] : 0 ); ?>" />
 				<?php wp_nonce_field( 'chess_army_knife_save_member' ); ?>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="name"><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></label></th>
+						<th scope="row"><label for="name"><strong><?php esc_html_e( 'Name', 'chess-army-knife' ); ?></strong> <span style="color:#d63638" aria-hidden="true">*</span><span class="screen-reader-text"><?php esc_html_e( '(required)', 'chess-army-knife' ); ?></span></label></th>
 						<td>
 								<input type="text" id="name" name="name" class="regular-text" value="<?php echo esc_attr( $member['name'] ); ?>" required />
 								<p class="description"><?php esc_html_e( 'Enter the name as Surname, Forename.', 'chess-army-knife' ); ?></p>
