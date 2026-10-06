@@ -35,9 +35,9 @@ class PaymentExportTest extends Chess_Army_Knife_TestCase {
 		return $rows;
 	}
 
-	public function test_a_row_has_the_names_date_type_reference_and_amount() {
+	public function test_a_row_has_the_names_membership_type_date_payment_type_reference_amount_and_free_year() {
 		$this->assertSame(
-			array( 'Ada', 'Lovelace', '2026-09-05', 'Bank transfer', 'MEM-1', '25.50' ),
+			array( 'Ada', 'Lovelace', 'Adult', '2026-09-05', 'Bank transfer', 'MEM-1', '25.50', 'N' ),
 			Chess_Army_Knife_Payment_Export::row( $this->payment() )
 		);
 	}
@@ -66,13 +66,13 @@ class PaymentExportTest extends Chess_Army_Knife_TestCase {
 	public function test_a_payment_with_no_amount_has_a_blank_amount() {
 		$row = Chess_Army_Knife_Payment_Export::row( $this->payment( array( 'amount' => null ) ) );
 
-		$this->assertSame( '', $row[5] );
+		$this->assertSame( '', $row[6] );
 	}
 
 	public function test_a_whole_pound_amount_has_two_decimal_places() {
 		$row = Chess_Army_Knife_Payment_Export::row( $this->payment( array( 'amount' => 2500 ) ) );
 
-		$this->assertSame( '25.00', $row[5] );
+		$this->assertSame( '25.00', $row[6] );
 	}
 
 	public function test_cash_has_no_reference() {
@@ -85,8 +85,31 @@ class PaymentExportTest extends Chess_Army_Knife_TestCase {
 			)
 		);
 
-		$this->assertSame( 'Cash', $row[3] );
-		$this->assertSame( '', $row[4] );
+		$this->assertSame( 'Cash', $row[4] );
+		$this->assertSame( '', $row[5] );
+	}
+
+	public function test_the_columns_are_in_the_order_the_treasurer_asked_for() {
+		$this->assertSame(
+			array( 'First name', 'Last Name', 'Membership Type', 'Payment Date', 'Payment Type', 'Payment reference', 'Amount', 'Free Year' ),
+			Chess_Army_Knife_Payment_Export::columns()
+		);
+	}
+
+	public function test_a_free_year_is_marked_y_and_any_other_payment_n() {
+		$free = Chess_Army_Knife_Payment_Export::row(
+			$this->payment(
+				array(
+					'method'    => 'free_year',
+					'reference' => '',
+					'amount'    => 0,
+				)
+			)
+		);
+		$paid = Chess_Army_Knife_Payment_Export::row( $this->payment() );
+
+		$this->assertSame( array( 'Free first year', '', '0.00', 'Y' ), array_slice( $free, 4 ) );
+		$this->assertSame( 'N', $paid[7] );
 	}
 
 	public function test_the_file_has_a_header_and_a_row_for_each_payment() {

@@ -1,6 +1,6 @@
 <?php
 /**
- * The Members > Seasons screen: start a new season, go through what to do next, and download each season's
+ * The Seasons screen, a menu item of its own: start a new season, go through what to do next, correct payments, and download each season's
  * payments for the treasurer.
  *
  * @package Chess_Army_Knife
@@ -18,6 +18,8 @@ class Chess_Army_Knife_Seasons_Page {
 	public static function init() {
 		add_action( 'admin_post_chess_army_knife_start_season', array( __CLASS__, 'handle_start' ) );
 		add_action( 'admin_post_chess_army_knife_save_season', array( __CLASS__, 'handle_save' ) );
+		add_action( 'admin_post_chess_army_knife_save_payment', array( __CLASS__, 'handle_save_payment' ) );
+		add_action( 'admin_post_chess_army_knife_delete_payment', array( __CLASS__, 'handle_delete_payment' ) );
 		add_action( 'admin_post_chess_army_knife_season_reviewed', array( __CLASS__, 'handle_reviewed' ) );
 		add_action( 'admin_post_chess_army_knife_export_payments', array( __CLASS__, 'handle_export' ) );
 	}
@@ -94,6 +96,55 @@ class Chess_Army_Knife_Seasons_Page {
 	}
 
 	/**
+	 * Correct a payment recorded wrongly.
+	 */
+	public static function handle_save_payment() {
+		self::require_permission();
+
+		$id = isset( $_POST['payment'] ) ? absint( $_POST['payment'] ) : 0;
+		check_admin_referer( 'chess_army_knife_save_payment_' . $id );
+
+		$payment = Chess_Army_Knife_Membership_Seasons::get_payment( $id );
+		$result  = Chess_Army_Knife_Membership_Seasons::update_payment(
+			$id,
+			array(
+				'paid_on'   => isset( $_POST['paid_on'] ) ? sanitize_text_field( wp_unslash( $_POST['paid_on'] ) ) : '',
+				'method'    => isset( $_POST['method'] ) ? sanitize_key( wp_unslash( $_POST['method'] ) ) : '',
+				'amount'    => isset( $_POST['amount'] ) ? sanitize_text_field( wp_unslash( $_POST['amount'] ) ) : '',
+				'reference' => isset( $_POST['reference'] ) ? sanitize_text_field( wp_unslash( $_POST['reference'] ) ) : '',
+			)
+		);
+
+		$season = $payment ? $payment['season_id'] : 0;
+		if ( is_wp_error( $result ) ) {
+			wp_safe_redirect( self::url( array( 'payments' => $season, 'edit' => $id, 'error' => $result->get_error_code() ) ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing
+			exit;
+		}
+
+		wp_safe_redirect( self::url( array( 'payments' => $season, 'payment_saved' => 1 ) ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing
+		exit;
+	}
+
+	/**
+	 * Delete a payment recorded in error.
+	 */
+	public static function handle_delete_payment() {
+		self::require_permission();
+
+		$id = isset( $_POST['payment'] ) ? absint( $_POST['payment'] ) : 0;
+		check_admin_referer( 'chess_army_knife_delete_payment_' . $id );
+
+		$payment = Chess_Army_Knife_Membership_Seasons::get_payment( $id );
+		if ( ! $payment || ! Chess_Army_Knife_Membership_Seasons::delete_payment( $id ) ) {
+			wp_safe_redirect( self::url( array( 'error' => 'payment_missing' ) ) );
+			exit;
+		}
+
+		wp_safe_redirect( self::url( array( 'payments' => $payment['season_id'], 'payment_deleted' => 1 ) ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing
+		exit;
+	}
+
+	/**
 	 * Note that the checklist after a new season has been gone through.
 	 */
 	public static function handle_reviewed() {
@@ -131,6 +182,12 @@ class Chess_Army_Knife_Seasons_Page {
 	 */
 	protected static function notice() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
+		if ( isset( $_GET['payment_saved'] ) ) {
+			return array( 'success', __( 'The payment has been corrected.', 'chess-army-knife' ) );
+		}
+		if ( isset( $_GET['payment_deleted'] ) ) {
+			return array( 'success', __( 'The payment has been deleted.', 'chess-army-knife' ) );
+		}
 		if ( isset( $_GET['saved'] ) ) {
 			return array( 'success', __( 'The season has been updated.', 'chess-army-knife' ) );
 		}
@@ -139,12 +196,16 @@ class Chess_Army_Knife_Seasons_Page {
 		}
 		if ( isset( $_GET['error'] ) ) {
 			$errors = array(
-				'season_name'    => __( 'Please give the season a name, such as 2026/27.', 'chess-army-knife' ),
-				'season_date'    => __( 'Please enter the start date as YYYY-MM-DD.', 'chess-army-knife' ),
-				'season_order'   => __( 'The new season has to start after the current one.', 'chess-army-knife' ),
-				'season_confirm' => __( 'Please tick the box to confirm that everyone should be marked as not paid.', 'chess-army-knife' ),
-				'season_end'     => __( 'The last day has to be a date on or after the first day.', 'chess-army-knife' ),
-				'season_missing' => __( 'That season could not be found.', 'chess-army-knife' ),
+				'season_name'     => __( 'Please give the season a name, such as 2026/27.', 'chess-army-knife' ),
+				'season_date'     => __( 'Please enter the start date as YYYY-MM-DD.', 'chess-army-knife' ),
+				'season_order'    => __( 'The new season has to start after the current one.', 'chess-army-knife' ),
+				'season_confirm'  => __( 'Please tick the box to confirm that everyone should be marked as not paid.', 'chess-army-knife' ),
+				'season_end'      => __( 'The last day has to be a date on or after the first day.', 'chess-army-knife' ),
+				'season_missing'  => __( 'That season could not be found.', 'chess-army-knife' ),
+				'payment_missing' => __( 'That payment could not be found.', 'chess-army-knife' ),
+				'payment_date'    => __( 'Please enter the payment date as YYYY-MM-DD.', 'chess-army-knife' ),
+				'payment_method'  => __( 'Please choose how it was paid.', 'chess-army-knife' ),
+				'payment_amount'  => __( 'Please enter the amount paid as a number, such as 25 or 12.50.', 'chess-army-knife' ),
 			);
 			$code   = sanitize_key( wp_unslash( $_GET['error'] ) );
 			if ( isset( $errors[ $code ] ) ) {
@@ -173,11 +234,19 @@ class Chess_Army_Knife_Seasons_Page {
 		$lms     = Chess_Army_Knife_Membership_Seasons::available_lms_seasons();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Members', 'chess-army-knife' ); ?></h1>
-			<?php Chess_Army_Knife_Member_Tabs::render( 'seasons' ); ?>
+			<h1><?php esc_html_e( 'Seasons', 'chess-army-knife' ); ?></h1>
 			<?php
 			if ( $notice ) {
 				printf( '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>', esc_attr( $notice[0] ), esc_html( $notice[1] ) );
+			}
+			?>
+			<?php
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
+			$payments_season = isset( $_GET['payments'] ) ? Chess_Army_Knife_Membership_Seasons::get( absint( $_GET['payments'] ) ) : null;
+			if ( $payments_season ) {
+				self::render_payments( $payments_season );
+				echo '</div>';
+				return;
 			}
 			?>
 			<p><?php esc_html_e( 'Membership is paid for each season. Starting a new season marks every member as not paid, so each has to pay again, and keeps the payments of the seasons before. How long someone has been a member comes from the seasons they have paid for.', 'chess-army-knife' ); ?></p>
@@ -283,7 +352,13 @@ class Chess_Army_Knife_Seasons_Page {
 							<td><?php echo esc_html( mysql2date( $format, $season['start_date'] ) ); ?></td>
 							<td><?php echo '' === $season['end_date'] ? esc_html__( 'Until the next season', 'chess-army-knife' ) : esc_html( mysql2date( $format, $season['end_date'] ) ); ?></td>
 							<td><?php echo $season['lms_seasons'] ? esc_html( implode( ', ', $season['lms_seasons'] ) ) : '&mdash;'; ?></td>
-							<td><?php echo esc_html( (string) $total['count'] ); ?></td>
+							<td>
+								<?php if ( $total['count'] ) : ?>
+									<a href="<?php echo esc_url( self::url( array( 'payments' => $season['id'] ) ) ); ?>"><?php echo esc_html( (string) $total['count'] ); ?><span class="screen-reader-text"> <?php echo esc_html( sprintf( /* translators: %s: season name */ __( 'payments in %s: view and correct', 'chess-army-knife' ), $season['name'] ) ); ?></span></a>
+								<?php else : ?>
+									0
+								<?php endif; ?>
+							</td>
 							<td><?php echo esc_html( Chess_Army_Knife_Memberships::currency_symbol() . number_format_i18n( $total['total'] / 100, 2 ) ); ?></td>
 							<td>
 								<?php if ( $total['count'] ) : ?>
@@ -296,7 +371,7 @@ class Chess_Army_Knife_Seasons_Page {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
-			<p class="description"><?php esc_html_e( 'The file has each payment\'s nickname, last name, date, type, bank transfer reference and amount, and opens in Excel.', 'chess-army-knife' ); ?></p>
+			<p class="description"><?php esc_html_e( 'The file has each payment\'s first name (the nickname if there is one), last name, membership type, date, payment type, bank transfer reference, amount and whether it was a free year (Y or N), and opens in Excel.', 'chess-army-knife' ); ?></p>
 
 			<?php if ( $seasons ) : ?>
 				<h2><?php esc_html_e( 'Change a season', 'chess-army-knife' ); ?></h2>
@@ -311,6 +386,121 @@ class Chess_Army_Knife_Seasons_Page {
 				<?php endforeach; ?>
 			<?php endif; ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * A season's payments, to correct or delete one recorded in error.
+	 *
+	 * @param array $season Season (see Chess_Army_Knife_Membership_Seasons::all()).
+	 */
+	protected static function render_payments( array $season ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state; nothing is changed.
+		$editing  = isset( $_GET['edit'] ) ? Chess_Army_Knife_Membership_Seasons::get_payment( absint( $_GET['edit'] ) ) : null;
+		$editing  = $editing && $editing['season_id'] === $season['id'] ? $editing : null;
+		$payments = Chess_Army_Knife_Membership_Seasons::payments_for_season( $season['id'] );
+		$methods  = Chess_Army_Knife_Memberships::payment_methods();
+		$format   = get_option( 'date_format' );
+		$style    = Chess_Army_Knife_Names::site_style();
+		?>
+		<p><a href="<?php echo esc_url( self::url() ); ?>">&larr; <?php esc_html_e( 'All seasons', 'chess-army-knife' ); ?></a></p>
+		<h2><?php echo esc_html( sprintf( /* translators: %s: season name */ __( 'Payments for %s', 'chess-army-knife' ), $season['name'] ) ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Correct a payment that was entered wrongly, or delete one made in error. For the season now running, the member\'s own record is changed too, and deleting a payment makes them unpaid again.', 'chess-army-knife' ); ?></p>
+
+		<?php if ( $editing ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="cak-payment-edit">
+				<input type="hidden" name="action" value="chess_army_knife_save_payment" />
+				<input type="hidden" name="payment" value="<?php echo esc_attr( $editing['id'] ); ?>" />
+				<?php wp_nonce_field( 'chess_army_knife_save_payment_' . $editing['id'] ); ?>
+				<h3><?php echo esc_html( sprintf( /* translators: %s: member's name */ __( 'Correct the payment of %s', 'chess-army-knife' ), Chess_Army_Knife_Names::person( $editing, $style ) ) ); ?></h3>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="payment_paid_on"><?php esc_html_e( 'Payment date', 'chess-army-knife' ); ?></label></th>
+						<td><input type="date" id="payment_paid_on" name="paid_on" value="<?php echo esc_attr( $editing['paid_on'] ); ?>" required /></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="payment_method"><?php esc_html_e( 'Payment type', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<select id="payment_method" name="method">
+								<?php foreach ( $methods as $key => $label ) : ?>
+									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $editing['method'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="payment_amount"><?php esc_html_e( 'Amount', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<?php echo esc_html( Chess_Army_Knife_Memberships::currency_symbol() ); ?><input type="text" id="payment_amount" name="amount" size="8" inputmode="decimal" value="<?php echo null === $editing['amount'] ? '' : esc_attr( Chess_Army_Knife_Memberships::price_field_value( $editing['amount'] ) ); ?>" />
+							<p class="description"><?php esc_html_e( 'A free first year is always nothing.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="payment_reference"><?php esc_html_e( 'Payment reference', 'chess-army-knife' ); ?></label></th>
+						<td>
+							<input type="text" id="payment_reference" name="reference" class="regular-text" maxlength="40" value="<?php echo esc_attr( $editing['reference'] ); ?>" />
+							<p class="description"><?php esc_html_e( 'For a bank transfer only.', 'chess-army-knife' ); ?></p>
+						</td>
+					</tr>
+				</table>
+				<?php submit_button( __( 'Save payment', 'chess-army-knife' ), 'primary', 'submit', false ); ?>
+				<a href="<?php echo esc_url( self::url( array( 'payments' => $season['id'] ) ) ); ?>" class="button"><?php esc_html_e( 'Cancel', 'chess-army-knife' ); ?></a>
+			</form>
+		<?php endif; ?>
+
+		<table class="wp-list-table widefat fixed striped">
+			<caption class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: season name */ __( 'Payments for %s', 'chess-army-knife' ), $season['name'] ) ); ?></caption>
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Member', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Membership', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Payment date', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Payment type', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Reference', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Amount', 'chess-army-knife' ); ?></th>
+					<th><?php esc_html_e( 'Actions', 'chess-army-knife' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php if ( ! $payments ) : ?>
+					<tr><td colspan="7"><?php esc_html_e( 'No payments for this season.', 'chess-army-knife' ); ?></td></tr>
+				<?php endif; ?>
+				<?php foreach ( $payments as $payment ) : ?>
+					<?php $who = '' === $payment['name'] ? __( 'Unknown member', 'chess-army-knife' ) : Chess_Army_Knife_Names::person( $payment, $style ); ?>
+					<tr>
+						<td><?php echo esc_html( $who ); ?></td>
+						<td><?php echo '' === $payment['type_name'] ? '&mdash;' : esc_html( $payment['type_name'] ); ?></td>
+						<td><?php echo esc_html( mysql2date( $format, $payment['paid_on'] ) ); ?></td>
+						<td><?php echo esc_html( isset( $methods[ $payment['method'] ] ) ? $methods[ $payment['method'] ] : '—' ); ?></td>
+						<td><?php echo '' === $payment['reference'] ? '&mdash;' : esc_html( $payment['reference'] ); ?></td>
+						<td><?php echo null === $payment['amount'] ? '&mdash;' : esc_html( Chess_Army_Knife_Memberships::currency_symbol() . number_format_i18n( $payment['amount'] / 100, 2 ) ); ?></td>
+						<td>
+							<a href="
+							<?php
+							echo esc_url(
+								self::url(
+									array(
+										'payments' => $season['id'],
+										'edit'     => $payment['id'],
+									)
+								)
+							);
+							?>
+										"><?php esc_html_e( 'Edit', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( sprintf( /* translators: %s: member's name */ __( 'the payment of %s', 'chess-army-knife' ), $who ) ); ?></span></a>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this payment? If it is for the season now running, the member will be unpaid again.', 'chess-army-knife' ) ); ?>');">
+								<input type="hidden" name="action" value="chess_army_knife_delete_payment" />
+								<input type="hidden" name="payment" value="<?php echo esc_attr( $payment['id'] ); ?>" />
+								<?php wp_nonce_field( 'chess_army_knife_delete_payment_' . $payment['id'] ); ?>
+								<button type="submit" class="button-link button-link-delete"><?php esc_html_e( 'Delete', 'chess-army-knife' ); ?><span class="screen-reader-text"> <?php echo esc_html( sprintf( /* translators: %s: member's name */ __( 'the payment of %s', 'chess-army-knife' ), $who ) ); ?></span></button>
+							</form>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php if ( $payments ) : ?>
+			<p><a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=chess_army_knife_export_payments&season=' . $season['id'] ), 'chess_army_knife_export_payments_' . $season['id'] ) ); ?>" class="button"><?php esc_html_e( 'Download payments (CSV)', 'chess-army-knife' ); ?></a></p>
+		<?php endif; ?>
 		<?php
 	}
 

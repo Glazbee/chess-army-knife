@@ -19,12 +19,14 @@ class Chess_Army_Knife_Payment_Export {
 	 */
 	public static function columns() {
 		return array(
-			__( 'Nickname', 'chess-army-knife' ),
-			__( 'Last name', 'chess-army-knife' ),
-			__( 'Payment date', 'chess-army-knife' ),
-			__( 'Payment type', 'chess-army-knife' ),
+			__( 'First name', 'chess-army-knife' ),
+			__( 'Last Name', 'chess-army-knife' ),
+			__( 'Membership Type', 'chess-army-knife' ),
+			__( 'Payment Date', 'chess-army-knife' ),
+			__( 'Payment Type', 'chess-army-knife' ),
 			__( 'Payment reference', 'chess-army-knife' ),
 			__( 'Amount', 'chess-army-knife' ),
+			__( 'Free Year', 'chess-army-knife' ),
 		);
 	}
 
@@ -41,7 +43,8 @@ class Chess_Army_Knife_Payment_Export {
 			$first   = '';
 			$surname = $payment['name'];
 		} else {
-			$parts   = Chess_Army_Knife_Names::parse( $payment['name'] );
+			$parts = Chess_Army_Knife_Names::parse( $payment['name'] );
+			// The first name is the member's nickname, or their first name if they have none.
 			$first   = '' !== trim( $payment['nickname'] ) ? trim( $payment['nickname'] ) : $parts['first'];
 			$surname = $parts['surname'];
 		}
@@ -49,11 +52,13 @@ class Chess_Army_Knife_Payment_Export {
 		return array(
 			$first,
 			$surname,
+			$payment['type_name'],
 			$payment['paid_on'],
 			isset( $methods[ $payment['method'] ] ) ? $methods[ $payment['method'] ] : $payment['method'],
 			$payment['reference'],
 			// A plain number, so a spreadsheet can add the column up.
 			null === $payment['amount'] ? '' : number_format( $payment['amount'] / 100, 2, '.', '' ),
+			Chess_Army_Knife_Memberships::FREE_YEAR === $payment['method'] ? 'Y' : 'N',
 		);
 	}
 

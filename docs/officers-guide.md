@@ -6,7 +6,7 @@ may use. Some need a permission that an administrator gives you on your user pro
 
 | You need | To use |
 |---|---|
-| The *Club memberships* permission | Members, Seasons, Renewals, Member Checks, Announcements, Do Not Record, Officers |
+| The *Club memberships* permission | Members, Renewals, Member Checks, Announcements, Do Not Record, Officers, Seasons |
 | The *Club teams* permission (or be a team's captain) | Teams (Details, Overview, Selection and Groups tabs), Clubs, Sort Clubs, Squad Review, League games (with the import); captains see only their own team in the Overview and Selection tabs |
 | Administrator | Settings, Setup, Policies, Templates |
 
@@ -60,11 +60,12 @@ the fixture has started.
 Approving makes someone a member; they pay for the season like everyone else. Tell people how to pay;
 record the payment on their record when it arrives, or use **Mark paid** on the Members list.
 
-**6. Seasons.** Membership is paid for every season. At the start of each season, open **Members → Seasons**
+**6. Seasons.** Membership is paid for every season. At the start of each season, open **Seasons** (its own item in the Chess Army Knife menu)
 and press **Start new season**: everyone is marked as not paid and has to pay again, and you are asked to
 check your teams (players and captains change) and to see who has not paid (**Unpaid this season** on
 Members). Squads carry on into the new season unless you tick **Start every squad empty**; either way the
-squads of the season that ended are kept and listed under **Squads by season**. Record each payment on the member's record with its date, method and amount. **Download payments
+squads of the season that ended are kept and listed under **Squads by season**. Record each payment on the member's record with its date, method and amount. Click a season's number of payments to see them: **Edit** corrects a payment entered wrongly and **Delete**
+removes one made in error (for the season now running the member is unpaid again). **Download payments
 (CSV)** next to a season gives the treasurer a file that opens in Excel. The first season you start counts
 the payments you have already recorded, so nobody is marked as unpaid by it.
 

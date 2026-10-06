@@ -552,7 +552,7 @@ class Chess_Army_Knife_Membership_Seasons {
 	 * The payments received for a season, for the treasurer.
 	 *
 	 * @param int $season_id Season id.
-	 * @return array[] Each { member_id, name, nickname, type_name, paid_on, method, reference, amount (pence, or null) }, by date then name.
+	 * @return array[] Each { id, season_id, member_id, name, nickname, type_name, paid_on, method, reference, amount (pence, or null) }, by date then name.
 	 */
 	public static function payments_for_season( $season_id ) {
 		global $wpdb;
@@ -560,11 +560,13 @@ class Chess_Army_Knife_Membership_Seasons {
 		$payments = self::payments_table();
 		$members  = Chess_Army_Knife_Membership_Store::table();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
-		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT p.member_id, p.type_name, p.paid_on, p.method, p.reference, p.amount, m.name, m.nickname FROM {$payments} p LEFT JOIN {$members} m ON m.id = p.member_id WHERE p.season_id = %d ORDER BY p.paid_on ASC, m.name ASC", (int) $season_id ), ARRAY_A );
+		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT p.id, p.season_id, p.member_id, p.type_name, p.paid_on, p.method, p.reference, p.amount, m.name, m.nickname FROM {$payments} p LEFT JOIN {$members} m ON m.id = p.member_id WHERE p.season_id = %d ORDER BY p.paid_on ASC, m.name ASC", (int) $season_id ), ARRAY_A );
 
 		return array_map(
 			function ( $row ) {
 				return array(
+					'id'        => (int) $row['id'],
+					'season_id' => (int) $row['season_id'],
 					'member_id' => (int) $row['member_id'],
 					'name'      => null === $row['name'] ? '' : (string) $row['name'],
 					'nickname'  => null === $row['nickname'] ? '' : (string) $row['nickname'],
@@ -577,6 +579,136 @@ class Chess_Army_Knife_Membership_Seasons {
 			},
 			$rows
 		);
+	}
+
+	/**
+	 * One payment.
+	 *
+	 * @param int $id Payment id.
+	 * @return array|null See payments_for_season(); null if there is no such payment.
+	 */
+	public static function get_payment( $id ) {
+		global $wpdb;
+
+		$payments = self::payments_table();
+		$members  = Chess_Army_Knife_Membership_Store::table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT p.id, p.season_id, p.member_id, p.type_name, p.paid_on, p.method, p.reference, p.amount, m.name, m.nickname FROM {$payments} p LEFT JOIN {$members} m ON m.id = p.member_id WHERE p.id = %d", (int) $id ), ARRAY_A );
+		if ( ! $row ) {
+			return null;
+		}
+
+		return array(
+			'id'        => (int) $row['id'],
+			'season_id' => (int) $row['season_id'],
+			'member_id' => (int) $row['member_id'],
+			'name'      => null === $row['name'] ? '' : (string) $row['name'],
+			'nickname'  => null === $row['nickname'] ? '' : (string) $row['nickname'],
+			'type_name' => (string) $row['type_name'],
+			'paid_on'   => (string) $row['paid_on'],
+			'method'    => (string) $row['method'],
+			'reference' => (string) $row['reference'],
+			'amount'    => null === $row['amount'] ? null : (int) $row['amount'],
+		);
+	}
+
+	/**
+	 * Correct a payment that was recorded wrongly. For the season now running the member's own payment is
+	 * changed too, so the member list agrees with the ledger.
+	 *
+	 * @param int   $id    Payment id.
+	 * @param array $input Raw values: paid_on (required), method, amount and reference.
+	 * @return true|WP_Error
+	 */
+	public static function update_payment( $id, array $input ) {
+		global $wpdb;
+
+		$payment = self::get_payment( $id );
+		if ( ! $payment ) {
+			return new WP_Error( 'payment_missing', __( 'That payment could not be found.', 'chess-army-knife' ) );
+		}
+
+		$paid_on = isset( $input['paid_on'] ) ? trim( sanitize_text_field( $input['paid_on'] ) ) : '';
+		if ( ! Chess_Army_Knife_Memberships::is_valid_date( $paid_on ) ) {
+			return new WP_Error( 'payment_date', __( 'Please enter the payment date as YYYY-MM-DD.', 'chess-army-knife' ) );
+		}
+
+		$method = isset( $input['method'] ) ? sanitize_key( $input['method'] ) : '';
+		if ( ! isset( Chess_Army_Knife_Memberships::payment_methods()[ $method ] ) ) {
+			return new WP_Error( 'payment_method', __( 'Please choose how it was paid.', 'chess-army-knife' ) );
+		}
+
+		$amount = null;
+		if ( Chess_Army_Knife_Memberships::FREE_YEAR === $method ) {
+			$amount = 0;
+		} elseif ( isset( $input['amount'] ) && '' !== trim( (string) $input['amount'] ) ) {
+			$amount = Chess_Army_Knife_Memberships::parse_price( sanitize_text_field( $input['amount'] ) );
+			if ( null === $amount ) {
+				return new WP_Error( 'payment_amount', __( 'Please enter the amount paid as a number, such as 25 or 12.50.', 'chess-army-knife' ) );
+			}
+		}
+
+		// Only a bank transfer has a reference to match.
+		$reference = 'bank_transfer' === $method && isset( $input['reference'] ) ? mb_substr( preg_replace( '/[^A-Za-z0-9\-_\/ ]/', '', trim( sanitize_text_field( $input['reference'] ) ) ), 0, 40 ) : '';
+
+		$current = self::current();
+		if ( $current && $current['id'] === $payment['season_id'] && Chess_Army_Knife_Membership_Store::get_member( $payment['member_id'] ) ) {
+			Chess_Army_Knife_Membership_Store::save_member(
+				array(
+					'id'             => $payment['member_id'],
+					'paid_on'        => $paid_on,
+					'payment_method' => $method,
+					'payment_amount' => $amount,
+				)
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal.
+		$wpdb->update(
+			self::payments_table(),
+			array(
+				'paid_on'    => $paid_on,
+				'method'     => $method,
+				'amount'     => $amount,
+				'reference'  => $reference,
+				'updated_at' => current_time( 'mysql', true ),
+			),
+			array( 'id' => (int) $id ),
+			array( '%s', '%s', '%d', '%s', '%s' ),
+			array( '%d' )
+		);
+		return true;
+	}
+
+	/**
+	 * Delete a payment that was recorded in error. If it was for the season now running the member is unpaid again.
+	 *
+	 * @param int $id Payment id.
+	 * @return bool False if there is no such payment.
+	 */
+	public static function delete_payment( $id ) {
+		global $wpdb;
+
+		$payment = self::get_payment( $id );
+		if ( ! $payment ) {
+			return false;
+		}
+
+		$current = self::current();
+		if ( $current && $current['id'] === $payment['season_id'] && Chess_Army_Knife_Membership_Store::get_member( $payment['member_id'] ) ) {
+			Chess_Army_Knife_Membership_Store::save_member(
+				array(
+					'id'             => $payment['member_id'],
+					'paid_on'        => null,
+					'payment_method' => '',
+					'payment_amount' => null,
+				)
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal.
+		$wpdb->delete( self::payments_table(), array( 'id' => (int) $id ), array( '%d' ) );
+		return true;
 	}
 
 	/**

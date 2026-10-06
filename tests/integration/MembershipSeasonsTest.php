@@ -203,7 +203,7 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 
 		$csv = Chess_Army_Knife_Payment_Export::to_csv( Chess_Army_Knife_Membership_Seasons::payments_for_season( $id ) );
 
-		$this->assertStringContainsString( 'Ads,Lovelace,2026-09-12,Cash,,12.50', $csv );
+		$this->assertStringContainsString( 'Ads,Lovelace,,2026-09-12,Cash,,12.50,N', $csv );
 	}
 
 	public function test_squads_carry_on_into_the_new_season_and_are_kept_for_the_one_that_ended() {
@@ -502,6 +502,198 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 
 		$csv = Chess_Army_Knife_Payment_Export::to_csv( Chess_Army_Knife_Membership_Seasons::payments_for_season( $id ) );
 
-		$this->assertStringContainsString( '"Free first year",,0.00', $csv );
+		$this->assertStringContainsString( '"Free first year",,0.00,Y', $csv );
+	}
+
+	/* -------------------------------------------------------------
+	 * Correcting payments
+	 * ------------------------------------------------------------- */
+
+	/**
+	 * The one payment of a season.
+	 *
+	 * @param int $season_id Season id.
+	 * @return array
+	 */
+	private function only_payment( $season_id ) {
+		$payments = Chess_Army_Knife_Membership_Seasons::payments_for_season( $season_id );
+		$this->assertCount( 1, $payments );
+		return $payments[0];
+	}
+
+	public function test_a_payment_for_the_current_season_can_be_corrected_and_the_member_agrees() {
+		$ada = $this->member( array( 'payment_reference' => 'ADA-1' ) );
+		$id  = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-12', 2500, 'cash' );
+
+		$result = Chess_Army_Knife_Membership_Seasons::update_payment(
+			$this->only_payment( $id )['id'],
+			array(
+				'paid_on'   => '2026-09-10',
+				'method'    => 'bank_transfer',
+				'amount'    => '£20.50',
+				'reference' => ' ADA-9 ',
+			)
+		);
+
+		$this->assertTrue( $result );
+		$payment = $this->only_payment( $id );
+		$this->assertSame( '2026-09-10', $payment['paid_on'] );
+		$this->assertSame( 'bank_transfer', $payment['method'] );
+		$this->assertSame( 2050, $payment['amount'] );
+		$this->assertSame( 'ADA-9', $payment['reference'] );
+		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
+		$this->assertSame( '2026-09-10', $member['paid_on'] );
+		$this->assertSame( 'bank_transfer', $member['payment_method'] );
+		$this->assertSame( 2050, $member['payment_amount'] );
+		$this->assertSame( 'ADA-1', $member['payment_reference'], 'Their own reference is not changed.' );
+	}
+
+	public function test_a_payment_for_an_earlier_season_is_corrected_without_touching_the_member() {
+		$ada = $this->member();
+		$old = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		$this->pay( $ada, '2025-09-12', 2500, 'cash' );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-12', 2600, 'cash' );
+
+		Chess_Army_Knife_Membership_Seasons::update_payment(
+			$this->only_payment( $old )['id'],
+			array(
+				'paid_on' => '2025-09-11',
+				'method'  => 'cash',
+				'amount'  => '24',
+			)
+		);
+
+		$this->assertSame( 2400, $this->only_payment( $old )['amount'] );
+		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
+		$this->assertSame( '2026-09-12', $member['paid_on'] );
+		$this->assertSame( 2600, $member['payment_amount'] );
+	}
+
+	public function test_correcting_a_payment_to_a_free_year_makes_it_nothing_and_cash_has_no_reference() {
+		$ada = $this->member();
+		$id  = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-12', 2500, 'bank_transfer' );
+
+		Chess_Army_Knife_Membership_Seasons::update_payment(
+			$this->only_payment( $id )['id'],
+			array(
+				'paid_on'   => '2026-09-12',
+				'method'    => 'free_year',
+				'amount'    => '25',
+				'reference' => 'MEM-1',
+			)
+		);
+
+		$payment = $this->only_payment( $id );
+		$this->assertSame( 0, $payment['amount'] );
+		$this->assertSame( '', $payment['reference'] );
+		$this->assertSame( 0, Chess_Army_Knife_Membership_Store::get_member( $ada )['payment_amount'] );
+	}
+
+	/**
+	 * @dataProvider invalid_corrections
+	 */
+	public function test_a_correction_that_is_not_valid_changes_nothing( array $input, $code ) {
+		$ada = $this->member();
+		$id  = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-12', 2500, 'cash' );
+		$payment = $this->only_payment( $id );
+
+		$result = Chess_Army_Knife_Membership_Seasons::update_payment( $payment['id'], $input + array( 'paid_on' => '2026-09-13', 'method' => 'cash', 'amount' => '30' ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing
+
+		$this->assertWPError( $result );
+		$this->assertSame( $code, $result->get_error_code() );
+		$this->assertSame( $payment, $this->only_payment( $id ) );
+	}
+
+	public function invalid_corrections() {
+		return array(
+			'no date'       => array( array( 'paid_on' => '' ), 'payment_date' ),
+			'impossible'    => array( array( 'paid_on' => '2026-02-30' ), 'payment_date' ),
+			'unknown type'  => array( array( 'method' => 'cheque' ), 'payment_method' ),
+			'not an amount' => array( array( 'amount' => 'lots' ), 'payment_amount' ),
+		);
+	}
+
+	public function test_a_payment_that_does_not_exist_cannot_be_corrected_or_deleted() {
+		$this->assertWPError( Chess_Army_Knife_Membership_Seasons::update_payment( 999999, array( 'paid_on' => '2026-09-13' ) ) );
+		$this->assertFalse( Chess_Army_Knife_Membership_Seasons::delete_payment( 999999 ) );
+	}
+
+	public function test_deleting_a_payment_for_the_current_season_makes_the_member_unpaid_again() {
+		$ada = $this->member();
+		$id  = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-12', 2500, 'cash' );
+		$this->assertSame( 0, Chess_Army_Knife_Membership_Store::count_view( 'unpaid' ) );
+
+		$this->assertTrue( Chess_Army_Knife_Membership_Seasons::delete_payment( $this->only_payment( $id )['id'] ) );
+
+		$this->assertSame( array(), Chess_Army_Knife_Membership_Seasons::payments_for_season( $id ) );
+		$member = Chess_Army_Knife_Membership_Store::get_member( $ada );
+		$this->assertSame( '', $member['paid_on'] );
+		$this->assertSame( '', $member['payment_method'] );
+		$this->assertNull( $member['payment_amount'] );
+		$this->assertSame( 1, Chess_Army_Knife_Membership_Store::count_view( 'unpaid' ) );
+	}
+
+	public function test_deleting_a_payment_for_an_earlier_season_leaves_this_seasons_payment_alone() {
+		$ada = $this->member();
+		$old = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		$this->pay( $ada, '2025-09-12' );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-12' );
+
+		Chess_Army_Knife_Membership_Seasons::delete_payment( $this->only_payment( $old )['id'] );
+
+		$this->assertSame( array(), Chess_Army_Knife_Membership_Seasons::payments_for_season( $old ) );
+		$this->assertSame( '2026-09-12', Chess_Army_Knife_Membership_Store::get_member( $ada )['paid_on'] );
+		$this->assertCount( 1, Chess_Army_Knife_Membership_Seasons::paid_seasons( $ada ) );
+	}
+
+	public function test_the_payments_of_a_season_can_be_seen_edited_and_deleted_from_the_seasons_screen() {
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+		wp_set_current_user( $user );
+		$ada = $this->member( array( 'name' => 'Lovelace, Ada' ) );
+		$id  = Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->pay( $ada, '2026-09-12', 2500, 'cash' );
+		$payment = $this->only_payment( $id );
+
+		$_GET = array( 'payments' => $id );
+		ob_start();
+		Chess_Army_Knife_Seasons_Page::render_page();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'Payments for 2026/27', $html );
+		$this->assertStringContainsString( 'Ada Lovelace', $html );
+		$this->assertStringContainsString( 'chess_army_knife_delete_payment', $html );
+		$this->assertStringContainsString( 'edit=' . $payment['id'], $html );
+		$this->assertStringNotContainsString( 'Start your first season', $html, 'It is the payments, not the season list.' );
+
+		$_GET = array(
+			'payments' => $id,
+			'edit'     => $payment['id'],
+		);
+		ob_start();
+		Chess_Army_Knife_Seasons_Page::render_page();
+		$html = ob_get_clean();
+		$_GET = array();
+
+		$this->assertStringContainsString( 'chess_army_knife_save_payment', $html );
+		$this->assertStringContainsString( 'Correct the payment of Ada Lovelace', $html );
+	}
+
+	/* -------------------------------------------------------------
+	 * Its own page
+	 * ------------------------------------------------------------- */
+
+	public function test_seasons_is_a_screen_of_its_own_and_not_a_tab_of_members() {
+		$areas = wp_list_pluck( Chess_Army_Knife_Menu::areas(), null, 'key' );
+
+		$this->assertArrayHasKey( 'seasons', $areas );
+		$this->assertEmpty( $areas['seasons']['unlisted'], 'It has a menu item of its own.' );
+		$this->assertArrayNotHasKey( 'seasons', Chess_Army_Knife_Member_Tabs::tabs() );
 	}
 }

@@ -126,7 +126,7 @@ class Chess_Army_Knife_Menu {
 			array(
 				'group'       => $members_group,
 				'title'       => __( 'Members', 'chess-army-knife' ),
-				'description' => __( 'Members and applications: approve, edit, bulk actions and CSV export, with Checks, Membership types, Seasons and Renewals tabs.', 'chess-army-knife' ),
+				'description' => __( 'Members and applications: approve, edit, bulk actions and CSV export, with Checks, Membership types and Renewals tabs.', 'chess-army-knife' ),
 				'key'         => 'members',
 				'slug'        => Chess_Army_Knife_Memberships::MENU_SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Members_Page', 'render_page' ),
@@ -150,17 +150,6 @@ class Chess_Army_Knife_Menu {
 				'key'         => 'member_checks',
 				'slug'        => Chess_Army_Knife_Member_Checks_Page::SLUG,
 				'callback'    => array( 'Chess_Army_Knife_Member_Checks_Page', 'render_page' ),
-				'kind'        => 'members',
-				'can'         => $can_members,
-				'unlisted'    => true, // A tab of Members.
-			),
-			array(
-				'group'       => $members_group,
-				'title'       => __( 'Seasons', 'chess-army-knife' ),
-				'description' => __( 'Start a new season, when every member pays again, and download each season\'s payments for the treasurer.', 'chess-army-knife' ),
-				'key'         => 'seasons',
-				'slug'        => Chess_Army_Knife_Seasons_Page::SLUG,
-				'callback'    => array( 'Chess_Army_Knife_Seasons_Page', 'render_page' ),
 				'kind'        => 'members',
 				'can'         => $can_members,
 				'unlisted'    => true, // A tab of Members.
@@ -301,6 +290,16 @@ class Chess_Army_Knife_Menu {
 				'kind'        => 'teams',
 				'can'         => $can_teams,
 				'unlisted'    => true, // A tab of another screen.
+			),
+			array(
+				'group'       => $club_group,
+				'title'       => __( 'Seasons', 'chess-army-knife' ),
+				'description' => __( 'The club\'s seasons: start a new one, when every member pays again and the squads are kept, link LMS seasons to it, correct payments and download them for the treasurer.', 'chess-army-knife' ),
+				'key'         => 'seasons',
+				'slug'        => Chess_Army_Knife_Seasons_Page::SLUG,
+				'callback'    => array( 'Chess_Army_Knife_Seasons_Page', 'render_page' ),
+				'kind'        => 'members',
+				'can'         => $can_members,
 			),
 			array(
 				'group'       => $club_group,

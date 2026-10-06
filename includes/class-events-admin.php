@@ -207,7 +207,7 @@ class Chess_Army_Knife_Events_Admin {
 				<th scope="row"><?php esc_html_e( 'Season time', 'chess-army-knife' ); ?></th>
 				<td>
 					<label for="chess_army_event_in_season"><input type="checkbox" id="chess_army_event_in_season" name="chess_army_event_in_season" value="1" <?php checked( $in_season ); ?> /> <?php esc_html_e( 'Only happens during the season', 'chess-army-knife' ); ?></label>
-					<p class="description"><?php esc_html_e( 'For a repeating event such as a club night: it is left out of the calendar before a season has started and after its last day (set under Members > Seasons). Nothing is left out until a first season has been started.', 'chess-army-knife' ); ?></p>
+					<p class="description"><?php esc_html_e( 'For a repeating event such as a club night: it is left out of the calendar before a season has started and after its last day (set under Seasons). Nothing is left out until a first season has been started.', 'chess-army-knife' ); ?></p>
 				</td>
 			</tr>
 			<tr>
