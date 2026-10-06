@@ -85,7 +85,7 @@ class MembershipPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( 'Cash', $values['Payment method'] );
 		$this->assertSame( 'Prefers email', $values['Club notes'] );
 		$this->assertSame( '2026-09-01 10:00:00', $values['Agreed to the club keeping these details (UTC)'] );
-		$this->assertArrayNotHasKey( 'Membership expires', $values, 'Empty fields are left out.' );
+		$this->assertArrayNotHasKey( 'Nickname', $values, 'Empty fields are left out.' );
 	}
 
 	public function test_the_exporter_finds_nothing_for_an_unknown_or_empty_address() {
