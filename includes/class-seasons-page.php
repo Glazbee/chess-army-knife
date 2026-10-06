@@ -56,7 +56,7 @@ class Chess_Army_Knife_Seasons_Page {
 			exit;
 		}
 
-		$result = Chess_Army_Knife_Membership_Seasons::start( $name, $start );
+		$result = Chess_Army_Knife_Membership_Seasons::start( $name, $start, ! empty( $_POST['season_empty_squads'] ) );
 		if ( is_wp_error( $result ) ) {
 			wp_safe_redirect( self::url( array( 'error' => $result->get_error_code() ) ) );
 			exit;
@@ -193,6 +193,13 @@ class Chess_Army_Knife_Seasons_Page {
 								<label for="season_confirm"><input type="checkbox" id="season_confirm" name="season_confirm" value="1" /> <?php esc_html_e( 'Mark every member as not paid. Payments already recorded stay in the earlier season.', 'chess-army-knife' ); ?></label>
 							</td>
 						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Teams', 'chess-army-knife' ); ?></th>
+							<td>
+								<label for="season_empty_squads"><input type="checkbox" id="season_empty_squads" name="season_empty_squads" value="1" /> <?php esc_html_e( 'Start every squad empty', 'chess-army-knife' ); ?></label>
+								<p class="description"><?php esc_html_e( 'The squads as they are now are kept for the season that ends. Unless you tick this, they carry on into the new season for you to review.', 'chess-army-knife' ); ?></p>
+							</td>
+						</tr>
 					<?php endif; ?>
 				</table>
 				<?php if ( ! $current ) : ?>
@@ -243,7 +250,67 @@ class Chess_Army_Knife_Seasons_Page {
 				</tbody>
 			</table>
 			<p class="description"><?php esc_html_e( 'The file has each payment\'s nickname, last name, date, type, bank transfer reference and amount, and opens in Excel.', 'chess-army-knife' ); ?></p>
+
+			<?php if ( $seasons ) : ?>
+				<h2><?php esc_html_e( 'Squads by season', 'chess-army-knife' ); ?></h2>
+				<?php foreach ( $seasons as $season ) : ?>
+					<?php self::render_squads( $season, $season['id'] === $current['id'] ); ?>
+				<?php endforeach; ?>
+			<?php endif; ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * The squads of a season: the teams as they stand now for the season running, or as they stood when an earlier
+	 * season ended.
+	 *
+	 * @param array $season     Season (see Chess_Army_Knife_Membership_Seasons::all()).
+	 * @param bool  $is_current Whether it is the season running.
+	 */
+	protected static function render_squads( array $season, $is_current ) {
+		$teams  = Chess_Army_Knife_Teams::choices();
+		$squads = array();
+		if ( $is_current ) {
+			foreach ( array_keys( $teams ) as $team_id ) {
+				$squads[ $team_id ] = Chess_Army_Knife_Teams::squad( $team_id );
+			}
+		} else {
+			$squads = Chess_Army_Knife_Teams::squads_of_season( $season['id'] );
+		}
+
+		$ids = array();
+		foreach ( $squads as $team_id => $people ) {
+			$ids = array_merge( $ids, isset( $teams[ $team_id ] ) ? $people : array() );
+		}
+		$names = array();
+		foreach ( Chess_Army_Knife_Membership_Store::get_members_by_ids( $ids ) as $member ) {
+			$names[ $member['id'] ] = Chess_Army_Knife_Names::person( $member, Chess_Army_Knife_Names::site_style() );
+		}
+		?>
+		<details>
+			<summary><?php echo esc_html( $season['name'] . ( $is_current ? ' ' . __( '(current)', 'chess-army-knife' ) : '' ) ); ?></summary>
+			<?php
+			$shown = false;
+			foreach ( $teams as $team_id => $team_name ) {
+				if ( empty( $squads[ $team_id ] ) ) {
+					continue;
+				}
+				$shown = true;
+				$list  = array();
+				foreach ( $squads[ $team_id ] as $person_id ) {
+					if ( isset( $names[ $person_id ] ) ) {
+						$list[] = $names[ $person_id ];
+					}
+				}
+				sort( $list );
+				echo '<p><strong>' . esc_html( $team_name ) . '</strong> (' . esc_html( (string) count( $list ) ) . '): ' . esc_html( implode( ', ', $list ) ) . '</p>';
+			}
+			if ( ! $shown ) {
+				echo '<p class="description">' . esc_html__( 'No squads were kept for this season.', 'chess-army-knife' ) . '</p>';
+			}
+			?>
+		</details>
 		<?php
 	}
 }

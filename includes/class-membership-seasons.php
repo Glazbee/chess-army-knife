@@ -10,6 +10,10 @@
  *
  * Starting the first season counts the payments already recorded as that season's, and resets nothing.
  *
+ * Teams are permanent, but their squads are for a season: when a season ends the squads are kept for it (see
+ * Chess_Army_Knife_Teams::archive_squads()), and the new season's squads start as they were unless the admin
+ * empties them.
+ *
  * @package Chess_Army_Knife
  */
 
@@ -89,11 +93,12 @@ class Chess_Army_Knife_Membership_Seasons {
 	 * the plugin is in development, so installs made earlier would otherwise have nowhere to keep payments.
 	 */
 	public static function maybe_install_tables() {
-		if ( get_option( 'Chess_Army_Knife_season_tables' ) === '1' ) {
+		if ( get_option( 'Chess_Army_Knife_season_tables' ) === '2' ) {
 			return;
 		}
 		self::install_tables();
-		update_option( 'Chess_Army_Knife_season_tables', '1', true );
+		Chess_Army_Knife_Teams::install_table(); // Adds the table that keeps the squads of past seasons.
+		update_option( 'Chess_Army_Knife_season_tables', '2', true );
 	}
 
 	/* -------------------------------------------------------------
@@ -200,11 +205,13 @@ class Chess_Army_Knife_Membership_Seasons {
 	 * has to pay again, and the admin is asked to go through the checklist. The very first season counts the
 	 * payments already recorded as its own and resets nothing.
 	 *
-	 * @param string $name       Season name.
-	 * @param string $start_date First day, YYYY-MM-DD.
+	 * @param string $name         Season name.
+	 * @param string $start_date   First day, YYYY-MM-DD.
+	 * @param bool   $empty_squads True to take everyone out of every squad, so each team starts from scratch. By
+	 *                             default the squads carry on, to be reviewed.
 	 * @return int|WP_Error The new season's id, or the problem with the details.
 	 */
-	public static function start( $name, $start_date ) {
+	public static function start( $name, $start_date, $empty_squads = false ) {
 		global $wpdb;
 
 		$current = self::current();
@@ -230,6 +237,11 @@ class Chess_Army_Knife_Membership_Seasons {
 		$id = (int) $wpdb->insert_id;
 
 		if ( $current ) {
+			// The squads as they stood are kept for the season that ended.
+			Chess_Army_Knife_Teams::archive_squads( $current['id'] );
+			if ( $empty_squads ) {
+				Chess_Army_Knife_Teams::clear_squads();
+			}
 			Chess_Army_Knife_Membership_Store::clear_payments();
 			update_option( self::REVIEW_OPTION, $id, false );
 		} else {

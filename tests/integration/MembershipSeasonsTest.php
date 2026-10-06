@@ -12,11 +12,12 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		update_option( 'Chess_Army_Knife_settings', array( 'use_local_cache' => 0 ) );
-		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Membership_Seasons::seasons_table(), Chess_Army_Knife_Membership_Seasons::payments_table() ) as $table ) {
+		foreach ( array( Chess_Army_Knife_Membership_Store::table(), Chess_Army_Knife_Membership_Seasons::seasons_table(), Chess_Army_Knife_Membership_Seasons::payments_table(), Chess_Army_Knife_Teams::squad_table(), Chess_Army_Knife_Teams::squad_history_table() ) as $table ) {
 			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS ' . $table ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		Chess_Army_Knife_Membership_Store::install_table();
 		Chess_Army_Knife_Membership_Seasons::install_tables();
+		Chess_Army_Knife_Teams::install_table();
 		delete_option( Chess_Army_Knife_Membership_Seasons::REVIEW_OPTION );
 	}
 
@@ -26,6 +27,16 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 				'name'   => 'Ada Lovelace',
 				'email'  => 'ada@example.test',
 				'status' => Chess_Army_Knife_Membership_Store::STATUS_ACTIVE,
+			)
+		);
+	}
+
+	private function team( $name = 'Club A' ) {
+		return self::factory()->post->create(
+			array(
+				'post_type'   => Chess_Army_Knife_Teams::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => $name,
 			)
 		);
 	}
@@ -193,5 +204,77 @@ class MembershipSeasonsTest extends WP_UnitTestCase {
 		$csv = Chess_Army_Knife_Payment_Export::to_csv( Chess_Army_Knife_Membership_Seasons::payments_for_season( $id ) );
 
 		$this->assertStringContainsString( 'Ads,Lovelace,2026-09-12,Cash,,12.50', $csv );
+	}
+
+	public function test_squads_carry_on_into_the_new_season_and_are_kept_for_the_one_that_ended() {
+		$team = $this->team();
+		$ada  = $this->member();
+		$alan = $this->member( array( 'name' => 'Alan Turing' ) );
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada, $alan ) );
+		$first = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) ); // Alan left during the season.
+
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+
+		$this->assertSame( array( $ada ), Chess_Army_Knife_Teams::squad( $team ), 'The squad carries on to be reviewed.' );
+		$this->assertSame( array( $team => array( $ada ) ), Chess_Army_Knife_Teams::squads_of_season( $first ), 'As it stood when the season ended.' );
+	}
+
+	public function test_a_season_can_start_with_every_squad_empty() {
+		$team = $this->team();
+		$ada  = $this->member();
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
+
+		$old = Chess_Army_Knife_Membership_Seasons::all()[0]['id'];
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01', true );
+
+		$this->assertSame( array(), Chess_Army_Knife_Teams::squad( $team ) );
+		$this->assertSame( array( $team => array( $ada ) ), Chess_Army_Knife_Teams::squads_of_season( $old ), 'The old squad is still on record.' );
+	}
+
+	public function test_the_first_season_leaves_the_squads_alone() {
+		$team = $this->team();
+		$ada  = $this->member();
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
+
+		$first = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01', true );
+
+		$this->assertSame( array( $ada ), Chess_Army_Knife_Teams::squad( $team ) );
+		$this->assertSame( array(), Chess_Army_Knife_Teams::squads_of_season( $first ) );
+	}
+
+	public function test_erasing_a_person_takes_them_out_of_the_squads_of_past_seasons() {
+		$team = $this->team();
+		$ada  = $this->member();
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
+		$first = Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+		$this->assertNotEmpty( Chess_Army_Knife_Teams::squads_of_season( $first ) );
+
+		Chess_Army_Knife_Membership_Store::erase_member( $ada );
+
+		$this->assertSame( array(), Chess_Army_Knife_Teams::squads_of_season( $first ) );
+	}
+
+	public function test_the_seasons_screen_lists_the_squads_of_each_season() {
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		get_userdata( $user )->add_cap( Chess_Army_Knife_Memberships::CAPABILITY );
+		wp_set_current_user( $user );
+		$team = $this->team( 'Club A' );
+		$ada  = $this->member( array( 'name' => 'Lovelace, Ada' ) );
+		Chess_Army_Knife_Teams::set_squad( $team, array( $ada ) );
+		Chess_Army_Knife_Membership_Seasons::start( '2025/26', '2025-09-01' );
+		Chess_Army_Knife_Membership_Seasons::start( '2026/27', '2026-09-01' );
+
+		ob_start();
+		Chess_Army_Knife_Seasons_Page::render_page();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'Squads by season', $html );
+		$this->assertStringContainsString( '2025/26', $html );
+		$this->assertStringContainsString( 'Club A', $html );
+		$this->assertStringContainsString( 'Ada Lovelace', $html );
+		$this->assertStringContainsString( 'Start every squad empty', $html );
 	}
 }

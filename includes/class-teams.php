@@ -121,13 +121,24 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
-	 * Create or upgrade the squad table.
+	 * Full name of the table that keeps the squads of past seasons.
+	 *
+	 * @return string
+	 */
+	public static function squad_history_table() {
+		global $wpdb;
+		return $wpdb->prefix . 'chess_army_knife_squad_history';
+	}
+
+	/**
+	 * Create or upgrade the squad table, and the one that keeps the squads of past seasons.
 	 */
 	public static function install_table() {
 		global $wpdb;
 
 		$charset = $wpdb->get_charset_collate();
 		$table   = self::squad_table();
+		$history = self::squad_history_table();
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -138,6 +149,18 @@ class Chess_Army_Knife_Teams {
 			added_at DATETIME NOT NULL,
 			last_played DATE NULL,
 			PRIMARY KEY  (team_id,person_id),
+			KEY person_id (person_id)
+			) {$charset};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$history} (
+			season_id BIGINT(20) UNSIGNED NOT NULL,
+			team_id BIGINT(20) UNSIGNED NOT NULL,
+			person_id BIGINT(20) UNSIGNED NOT NULL,
+			added_at DATETIME NOT NULL,
+			last_played DATE NULL,
+			PRIMARY KEY  (season_id,team_id,person_id),
 			KEY person_id (person_id)
 			) {$charset};"
 		);
@@ -761,6 +784,52 @@ class Chess_Army_Knife_Teams {
 	}
 
 	/**
+	 * Keep the squads as they are now as those of a season, when the season ends. The squads themselves carry
+	 * on into the next season unless they are emptied (see clear_squads()).
+	 *
+	 * @param int $season_id The season that is ending.
+	 */
+	public static function archive_squads( $season_id ) {
+		global $wpdb;
+
+		$squad   = self::squad_table();
+		$history = self::squad_history_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom tables; the table names are internal and dynamic values are prepared.
+		$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$history} ( season_id, team_id, person_id, added_at, last_played ) SELECT %d, team_id, person_id, added_at, last_played FROM {$squad}", (int) $season_id ) );
+	}
+
+	/**
+	 * Take everyone out of every squad, so each team starts a season from scratch.
+	 */
+	public static function clear_squads() {
+		global $wpdb;
+
+		$table = self::squad_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and no value is dynamic.
+		$wpdb->query( "DELETE FROM {$table}" );
+	}
+
+	/**
+	 * The squads of a past season, as they stood when it ended.
+	 *
+	 * @param int $season_id Season id.
+	 * @return int[][] Member ids by team id.
+	 */
+	public static function squads_of_season( $season_id ) {
+		global $wpdb;
+
+		$table = self::squad_history_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$rows   = (array) $wpdb->get_results( $wpdb->prepare( "SELECT team_id, person_id FROM {$table} WHERE season_id = %d ORDER BY team_id ASC, person_id ASC", (int) $season_id ), ARRAY_A );
+		$squads = array();
+
+		foreach ( $rows as $row ) {
+			$squads[ (int) $row['team_id'] ][] = (int) $row['person_id'];
+		}
+		return $squads;
+	}
+
+	/**
 	 * Note the latest game each person has played for a team, from a league import.
 	 *
 	 * @param int      $team_id Team id.
@@ -1026,6 +1095,8 @@ class Chess_Army_Knife_Teams {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 		$wpdb->delete( self::squad_table(), array( 'person_id' => (int) $person_id ), array( '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+		$wpdb->delete( self::squad_history_table(), array( 'person_id' => (int) $person_id ), array( '%d' ) );
 		delete_metadata( 'post', 0, self::META_CAPTAIN, (int) $person_id, true );
 	}
 
@@ -1040,6 +1111,8 @@ class Chess_Army_Knife_Teams {
 		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
 			$wpdb->delete( self::squad_table(), array( 'team_id' => (int) $post_id ), array( '%d' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned custom table; the table name is internal and dynamic values are prepared.
+			$wpdb->delete( self::squad_history_table(), array( 'team_id' => (int) $post_id ), array( '%d' ) );
 		}
 	}
 }

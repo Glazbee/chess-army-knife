@@ -63,7 +63,8 @@ record the payment on their record when it arrives, or use **Mark paid** on the 
 **6. Seasons.** Membership is paid for every season. At the start of each season, open **Members → Seasons**
 and press **Start new season**: everyone is marked as not paid and has to pay again, and you are asked to
 check your teams (players and captains change) and to see who has not paid (**Unpaid this season** on
-Members). Record each payment on the member's record with its date, method and amount. **Download payments
+Members). Squads carry on into the new season unless you tick **Start every squad empty**; either way the
+squads of the season that ended are kept and listed under **Squads by season**. Record each payment on the member's record with its date, method and amount. **Download payments
 (CSV)** next to a season gives the treasurer a file that opens in Excel. The first season you start counts
 the payments you have already recorded, so nobody is marked as unpaid by it.
 
