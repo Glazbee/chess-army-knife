@@ -347,8 +347,6 @@ class Chess_Army_Knife_Memberships {
 		$methods = array(
 			'bank_transfer' => __( 'Bank transfer', 'chess-army-knife' ),
 			'cash'          => __( 'Cash', 'chess-army-knife' ),
-			'cheque'        => __( 'Cheque', 'chess-army-knife' ),
-			'other'         => __( 'Other', 'chess-army-knife' ),
 		);
 
 		/**

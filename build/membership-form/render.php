@@ -93,7 +93,7 @@ $attrs        = function ( $field_id, $hint_id = '' ) use ( $error_field, $notic
 				</p>
 				<p>
 					<label for="cak-member-nickname"><?php esc_html_e( 'Preferred first name (optional)', 'chess-army-knife' ); ?></label>
-					<span id="cak-member-nickname-hint" class="cak-membership-form__hint"><?php esc_html_e( 'If you would rather we used a different first name, for example Maddy instead of Madeline.', 'chess-army-knife' ); ?></span>
+					<span id="cak-member-nickname-hint" class="cak-membership-form__hint"><?php esc_html_e( 'If you would rather we used a different first name, for example Jim instead of James.', 'chess-army-knife' ); ?></span>
 					<input type="text" id="cak-member-nickname" name="nickname" maxlength="60" value="<?php echo esc_attr( Chess_Army_Knife_Form_State::value( 'nickname' ) ); ?>" autocomplete="nickname" aria-describedby="cak-member-nickname-hint" />
 				</p>
 				<p>

@@ -18,3 +18,21 @@
 	choice.addEventListener( 'change', show );
 	show();
 } )();
+
+// The date of birth is only asked for when a junior membership type is chosen.
+( function () {
+	var type = document.getElementById( 'membership_type_id' );
+	var row = document.getElementById( 'cak-dob-row' );
+	var dob = document.getElementById( 'date_of_birth' );
+	if ( ! type || ! row || ! dob ) {
+		return;
+	}
+
+	function show() {
+		var option = type.options[ type.selectedIndex ];
+		row.style.display = dob.value || ( option && option.getAttribute( 'data-junior' ) === '1' ) ? '' : 'none';
+	}
+
+	type.addEventListener( 'change', show );
+	show();
+} )();
